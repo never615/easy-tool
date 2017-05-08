@@ -1,0 +1,25 @@
+{
+    "name": "mallto/easy-tool",
+    "description": "tools",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "tools"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "never615",
+            "email": "never615@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.6.4",
+        "laravel/framework": "5.4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mallto\\Tool\\": "src/"
+        }
+    }
+}
