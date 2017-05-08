@@ -9,5 +9,7 @@ namespace Mallto\Tool\SensitiveWord;
  */
 class SensitiveWord
 {
-    
+
+
+    //test
 }
