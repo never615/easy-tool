@@ -6,10 +6,7 @@ namespace Mallto\Tool\Controller;
 use Encore\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Mallto\Activity\Data\Coupon;
-use Mallto\Mall\Data\Log;
-use Mallto\Mall\Data\Shop;
-use Mallto\Mall\Data\ShopCategory;
+use Mallto\Tool\Data\Log;
 
 /**
  * 第三方接口请求日志记录
@@ -19,8 +16,6 @@ use Mallto\Mall\Data\ShopCategory;
  */
 class ThirdLogController extends AdminCommonController
 {
-
-
     /**
      * 获取这个模块的标题
      *

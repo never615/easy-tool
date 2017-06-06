@@ -15,7 +15,7 @@
 use Illuminate\Support\Facades\Route;
 
 $attributes = [
-    'namespace'  => 'Mallto\Mall\Controller',
+    'namespace'  => 'Mallto\Tool\Controller',
     'middleware' => ['web'],
 ];
 

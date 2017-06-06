@@ -13,7 +13,7 @@
 use Illuminate\Support\Facades\Route;
 
 $attributes = [
-    'namespace'  => 'Mallto\Mall\Controller\Api',
+    'namespace'  => 'Mallto\Tool\Controller\Api',
     'prefix'     => 'api',
     'middleware' => ['api'],
 ];
