@@ -2,7 +2,7 @@
 namespace Mallto\Tool\Domain\Log;
 
 use Encore\Admin\AppUtils;
-use Mallto\Mall\Data\Log;
+use Mallto\Tool\Data\Log;
 
 
 /**
