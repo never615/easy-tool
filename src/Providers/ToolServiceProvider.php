@@ -2,14 +2,13 @@
 
 namespace Mallto\Tool\Providers;
 
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
-use Mallto\Mall\Data\Activity;
-use Mallto\Mall\Data\RegisterCoupon;
-use Mallto\Mall\Data\Scenic;
-use Mallto\Mall\Data\Shop;
-use Mallto\Mall\Data\SpecialTopic;
-use Mallto\Mall\Data\Store;
-use Mallto\Mall\Data\Subject;
+use Laravel\Passport\Passport;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -49,6 +48,43 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+
+
+        //自定义校验规则 手机号
+        Validator::extend('mobile', function ($attribute, $value, $parameters) {
+            $mobile_regex = '"^1\d{10}$"';
+
+            return preg_match($mobile_regex, $value);
+        });
+
+
+        Queue::failing(function (JobFailed $event) {
+            // $event->connectionName
+            // $event->job
+            // $event->exception
+            Log::info("任务失败");
+        });
+
+        //自定义响应方法
+        Response::macro('nocontent', function () {
+            return Response::make('', 204);
+        });
+        Response::macro('redirect', function ($value) {
+            return Response::json(['redirectUrl' => $value]);
+        });
+
+
+        //
+        Passport::routes();
+//        Passport::tokensExpireIn(Carbon::now()->addDays(15));
+//        Passport::refreshTokensExpireIn(Carbon::now()->addDays(30));
+
+
+        Passport::tokensCan([
+            'mobile-token' => 'mobile token可以访问所有需要用户绑定了手机号才能访问的接口',
+            'wechat-token' => '微信token是通过openId换取的,只能访问部分接口',
+        ]);
+        
     }
 
 
