@@ -6,6 +6,7 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
@@ -50,6 +51,14 @@ class ToolServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
 
 
+        $this->appBoot();
+        $this->authBoot();
+        $this->routeBoot();
+    }
+
+
+    private function appBoot()
+    {
         //自定义校验规则 手机号
         Validator::extend('mobile', function ($attribute, $value, $parameters) {
             $mobile_regex = '"^1\d{10}$"';
@@ -72,8 +81,10 @@ class ToolServiceProvider extends ServiceProvider
         Response::macro('redirect', function ($value) {
             return Response::json(['redirectUrl' => $value]);
         });
+    }
 
-
+    private function authBoot()
+    {
         //
         Passport::routes();
 //        Passport::tokensExpireIn(Carbon::now()->addDays(15));
@@ -84,7 +95,11 @@ class ToolServiceProvider extends ServiceProvider
             'mobile-token' => 'mobile token可以访问所有需要用户绑定了手机号才能访问的接口',
             'wechat-token' => '微信token是通过openId换取的,只能访问部分接口',
         ]);
-        
+    }
+
+    private function routeBoot()
+    {
+        Route::pattern('id', '[0-9]+');
     }
 
 

@@ -3,13 +3,13 @@
 namespace Mallto\Tool\Controller;
 
 
-use App\Lib\AppUtils;
 use Encore\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Schema;
 use Mallto\Tool\Data\Log;
+use Mallto\Tool\Utils\AppUtils;
 
 /**
  * 第三方接口请求日志记录
