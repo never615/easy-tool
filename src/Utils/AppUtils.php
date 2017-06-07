@@ -72,27 +72,29 @@ class AppUtils
     /**
      * 获取指定的header
      *
-     * @param $headerKey
+     * @param      $headerKey
+     * @param bool $low
      * @return mixed|null
      */
-    public static function getHeader($headerKey)
+    public static function getHeader($headerKey, $low = false)
     {
-//        Log::info($_SERVER);
-
-        $headers = array ();
-        foreach ($_SERVER as $key => $value) {
-            if ('HTTP_' == substr($key, 0, 5)) {
-                $key = strtolower($key);
-                $value = strtolower($value);
-                $headers[str_replace('_', '-', substr($key, 5))] = $value;
-            }
-        }
-
-        if (isset($headers[$headerKey])) {
-            return $headers[$headerKey];
-        } else {
-            return null;
-        }
+        return \Illuminate\Support\Facades\Request::header($headerKey);
+//        $headers = array ();
+//        foreach ($_SERVER as $key => $value) {
+//            if ('HTTP_' == substr($key, 0, 5)) {
+//                if ($low) {
+//                    $key = strtolower($key);
+//                    $value = strtolower($value);
+//                }
+//                $headers[str_replace('_', '-', substr($key, 5))] = $value;
+//            }
+//        }
+//
+//        if (isset($headers[$headerKey])) {
+//            return $headers[$headerKey];
+//        } else {
+//            return null;
+//        }
     }
 
     /**
@@ -122,6 +124,7 @@ class AppUtils
                 //如果要换成的协议是https,而url不是以https开头,替换掉
                 $url = substr($url, 4);
                 $url = "https".$url;
+
                 return $url;
             }
 
@@ -151,6 +154,7 @@ class AppUtils
     {
         $pa = '%<string.*?>(.*?)</string>%si';
         preg_match_all($pa, $string, $match);
+
         return str_replace(PHP_EOL, '', $match[1][0]);
     }
 
