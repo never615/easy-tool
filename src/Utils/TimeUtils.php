@@ -14,6 +14,23 @@ use Carbon\Carbon;
 class TimeUtils
 {
 
+    /**
+     * 判断当前时间是否在两个时间之中
+     *
+     * @param $time1
+     * @param $time2
+     * @return bool
+     */
+    public static function inTimes($time1, $time2)
+    {
+        $now = self::getNowTime();
+        if ($now >= $time1 && $now <= $time2) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     /**
      * 获取当前时间
