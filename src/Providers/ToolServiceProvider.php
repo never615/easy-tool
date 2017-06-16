@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
+use Mallto\Tool\Domain\Log\Logger;
+use Mallto\Tool\Domain\Log\LoggerAliyun;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -113,6 +115,8 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booting(function () {
         });
         $this->commands($this->commands);
+
+        $this->app->singleton(Logger::class, LoggerAliyun::class);
     }
 
 
