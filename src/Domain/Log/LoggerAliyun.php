@@ -84,10 +84,12 @@ class LoggerAliyun implements Logger
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
-        $logItem->setContents($log);
+        $logItem->setContents(array_merge($log, [
+            "server_name" => $this->serverName,
+            "request_url" => config("app.url"),
+        ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source, $logitems);
         $res2 = $this->client->putLogs($req2);
-        \Log::info($res2->getAllHeaders());
     }
 }
