@@ -55,18 +55,18 @@ class AppUtils
         return $pathArr[$number];
     }
 
-
-    /**
-     * 生成核销码
-     * 核销码生成规则  加10位时间戳+(用户id,补足6位);
-     *
-     * @param $userId
-     * @return string
-     */
-    public static function generateVerifyCode($userId)
-    {
-        return time().sprintf('%06d', $userId);
-    }
+//
+//    /**
+//     * 生成核销码
+//     * 核销码生成规则  加10位时间戳+(用户id,补足6位);
+//     *
+//     * @param $userId
+//     * @return string
+//     */
+//    public static function generateVerifyCode($userId)
+//    {
+//        return time().sprintf('%06d', $userId);
+//    }
 
 
     /**
