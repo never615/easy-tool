@@ -20,7 +20,7 @@ class MenuTablesSeeder extends Seeder
 
         $order = Menu::orderBy("order", "desc")->first()->order;
 
-        $tempMenu = Menu::where("title", "第三方日志")->get();
+        $tempMenu = Menu::where("title", "第三方日志")->first();
         if ($tempMenu) {
             return;
         }

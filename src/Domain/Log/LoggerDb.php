@@ -42,12 +42,14 @@ class LoggerDb implements Logger
         // TODO: Implement logOwnerApi() method.
     }
 
+
     /**
      * 记录管理端的操作日志
      *
+     * @param  array $log
      * @return mixed
      */
-    public function logAdminOperation()
+    public function logAdminOperation($log)
     {
         // TODO: Implement logAdminOperation() method.
     }
