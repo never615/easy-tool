@@ -32,15 +32,6 @@ class LoggerDb implements Logger
         ]);
     }
 
-    /**
-     * 记录自己api的通讯日志
-     *
-     * @return mixed
-     */
-    public function logOwnerApi()
-    {
-        // TODO: Implement logOwnerApi() method.
-    }
 
 
     /**
@@ -52,5 +43,18 @@ class LoggerDb implements Logger
     public function logAdminOperation($log)
     {
         // TODO: Implement logAdminOperation() method.
+    }
+
+
+    /**
+     * 记录自己api的通讯日志
+     *
+     * @param $action
+     * @param $content
+     * @return
+     */
+    public function logOwnerApi( $action, $content)
+    {
+        // TODO: Implement logOwnerApi() method.
     }
 }

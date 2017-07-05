@@ -5,6 +5,7 @@ use Aliyun\SLS\Client;
 use Aliyun\SLS\Models\LogItem;
 use Aliyun\SLS\Models\PutLogsRequest;
 use Encore\Admin\AppUtils;
+use Illuminate\Support\Facades\Request;
 use Mallto\Tool\Data\Log;
 
 
@@ -19,6 +20,7 @@ class LoggerAliyun implements Logger
     private $project;
     private $logstore_third_part_api = "third_part_api";
     private $logstore_admin_operation = "admin_operation";
+    private $logstore_own_api = "own_api";
 
     private $client;
     private $serverName;
@@ -64,11 +66,25 @@ class LoggerAliyun implements Logger
     /**
      * 记录自己api的通讯日志
      *
-     * @return mixed
+     * @param $action
+     * @param $content
+     * @return mixed|void
      */
-    public function logOwnerApi()
+    public function logOwnerApi($action, $content)
     {
-        // TODO: Implement logAdminOperation() method.
+        $topic = "";
+        $source = "";
+        $logitems = array ();
+        $logItem = new LogItem();
+        $logItem->setTime(time());
+        $logItem->setContents(array_merge($content, [
+            'action'=>$action,
+            "server_name" => $this->serverName,
+            "request_url" => config("app.url"),
+        ]));
+        array_push($logitems, $logItem);
+        $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
+        $res2 = $this->client->putLogs($req2);
     }
 
     /**

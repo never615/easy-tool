@@ -26,9 +26,11 @@ interface Logger
     /**
      * 记录自己api的通讯日志
      *
-     * @return mixed
+     * @param $action
+     * @param $content
+     * @return
      */
-    public function logOwnerApi();
+    public function logOwnerApi( $action, $content);
 
     /**
      * 记录管理端的操作日志

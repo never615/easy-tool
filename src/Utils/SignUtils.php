@@ -6,7 +6,7 @@
  * 3.处理完的参数最后在拼接上秘钥
  * 4.md5加密,全部转为小写
  * 5.校验签名的时候,不包括签名参数sign
- * 
+ *
  * Created by PhpStorm.
  * User: never615
  * Date: 5/5/16
@@ -15,6 +15,7 @@
 namespace Mallto\Tool\Utils;
 
 
+use App\Exceptions\SignException;
 
 class SignUtils
 {
@@ -27,49 +28,58 @@ class SignUtils
     /**
      * 签名
      * 最后签名最结果为小写
+     *
      * @param array $arr
-     * @param $key
+     * @param       $key
      * @return string
      */
     public static function sign(array $arr, $key)
     {
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
-        $stringSignTemp = $tmpHttp . '&key=' . $key;
+        $stringSignTemp = $tmpHttp.'&key='.$key;
+
         return strtolower(md5($stringSignTemp));
     }
 
 
     /**
      * 签名
+     *
      * @param array $arr
-     * @param $key
+     * @param       $key
      * @return string
      */
     public static function signByUpper(array $arr, $key)
     {
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
-        $stringSignTemp = $tmpHttp . '&secret=' . $key;
-        $stringSignTemp=urldecode($stringSignTemp);
+        $stringSignTemp = $tmpHttp.'&secret='.$key;
+        $stringSignTemp = urldecode($stringSignTemp);
+
         return strtolower(md5($stringSignTemp));
     }
 
 
     /**
      * 签名校验
+     *
      * @param array $arr
      * @return bool
      */
     public static function verifySign(array $arr)
     {
+        if (!isset($arr['sign'])) {
+            throw new SignException("缺少sign字段");
+        }
+
         $waiteSign = $arr['sign'];
         unset($arr['sign']);
 
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
 //        Log::info($tmpHttp);
-        $stringSignTemp = $tmpHttp . '&key=' . self::$mallto_key;
+        $stringSignTemp = $tmpHttp.'&key='.self::$mallto_key;
 //        Log::info($stringSignTemp);
         $sign = strtolower(md5($stringSignTemp));
 

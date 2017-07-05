@@ -78,9 +78,6 @@ class TimeUtils
      */
     public static function diffDate($date1, $date2)
     {
-//        \Log::info($date1);
-//        \Log::info($date2);
-
         if (strtotime($date1) > strtotime($date2)) {
             $tmp = $date2;
             $date2 = $date1;
@@ -99,9 +96,7 @@ class TimeUtils
             $m += 12;
             $Y--;
         }
-//        echo $Y;
-//        return array('year' => $Y, 'month' => $m, 'day' => $d);
-        return $Y;
+        return array('year' => $Y, 'month' => $m, 'day' => $d);
     }
 
 
