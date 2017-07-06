@@ -14,6 +14,7 @@ use Illuminate\Support\MessageBag;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use Symfony\Component\Debug\Exception\FatalErrorException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
@@ -122,7 +123,9 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof MissingScopeException) {
                 //没有对应作用域的授权
                 throw new PermissionDeniedException("没有权限访问该的接口");
-            } else {
+            } elseif($exception instanceof FatalErrorException) {
+                throw new InternalHttpException($exception->getMessage());
+            }else {
                 //todo 记录 通知
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
