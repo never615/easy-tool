@@ -1,6 +1,6 @@
 <?php
 
-namespace Mallto\Tool\Domain\Exception;
+namespace Mallto\Tool\Exception;
 
 
 use Encore\Admin\Facades\Admin;

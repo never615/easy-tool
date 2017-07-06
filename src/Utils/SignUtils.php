@@ -15,7 +15,7 @@
 namespace Mallto\Tool\Utils;
 
 
-use Mallto\Tool\Domain\Exception\SignException;
+use Mallto\Tool\Exception\SignException;
 
 class SignUtils
 {

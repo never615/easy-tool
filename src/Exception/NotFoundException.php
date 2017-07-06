@@ -1,22 +1,23 @@
 <?php
 
-namespace Mallto\Tool\Domain\Exception;
+namespace Mallto\Tool\Exception;
 
 
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * 第三方服务异常
+ *
  * Class ThirdPartException
  * @package App\Exceptions
  */
-class SessionExpiredException extends HttpException
+class NotFoundException extends HttpException
 {
-    
+
     public function __construct($message = null, Exception $previous = null, $headers = [], $code = 0)
     {
-        parent::__construct(403, $message ?: trans("errors.session_expired"), $previous, $headers, $code);
+        parent::__construct(404, $message ?: trans("errors.not_found"), $previous, $headers, $code);
     }
 }
