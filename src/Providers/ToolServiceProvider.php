@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
-use Mallto\Tool\Middleware\ThirdApiLogAfter;
-use Mallto\Tool\Middleware\ThirdApiLogBefore;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Middleware\ThirdApiLogAfter;
+use Mallto\Tool\Middleware\ThirdApiLogBefore;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -103,6 +103,7 @@ class ToolServiceProvider extends ServiceProvider
             'mobile-token'  => 'mobile token可以访问所有需要用户绑定了手机号才能访问的接口',
             'wechat-token'  => '微信token是通过openId换取的,只能访问部分接口',
             'parking-token' => '停车需要使用到的token',
+            'account-token' => "账户操作权限:如重新绑定手机",
         ]);
     }
 
