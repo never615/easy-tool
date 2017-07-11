@@ -119,7 +119,7 @@ class AppUtils
     {
 
         if (strpos($url, "http") === 0) {
-            $httpProtocol = config("app.http_protocol");
+            $httpProtocol = config("app.http_protocol",'https');
             if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉
                 $url = substr($url, 4);
