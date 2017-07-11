@@ -13,6 +13,8 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Middleware\AuthenticateSign;
+use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdApiLogAfter;
 use Mallto\Tool\Middleware\ThirdApiLogBefore;
 
@@ -32,6 +34,8 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
+        "requestCheck" => RequestCheck::class,
+        'authSign'     => AuthenticateSign::class,
     ];
 
     /**
