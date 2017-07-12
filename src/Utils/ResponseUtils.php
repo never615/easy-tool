@@ -79,6 +79,7 @@ class ResponseUtils
      */
     public static function responseBasicByRedirect2($url, $data)
     {
+        $url=urldecode($url);
         $ancho="";
         if (str_contains($url, "#")) {
             $ancho = mb_substr($url, strrpos($url, "#"));
