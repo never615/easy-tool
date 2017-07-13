@@ -9,6 +9,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\ValidationException;
@@ -123,6 +124,8 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof MissingScopeException) {
                 //没有对应作用域的授权
                 throw new PermissionDeniedException("没有权限访问该的接口");
+            } elseif ($exception instanceof TokenMismatchException) {
+                return $this->unauthenticated($request, $exception);
             } else {
                 //todo 记录 通知
                 throw new InternalHttpException(trans("errors.internal_error"));
