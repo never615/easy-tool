@@ -2,8 +2,6 @@
 namespace Mallto\Tool\Utils;
 
 
-use Illuminate\Support\Facades\Log;
-
 /**
  * 工具类
  * 处理响应,主要是为了统一响应格式
@@ -79,8 +77,8 @@ class ResponseUtils
      */
     public static function responseBasicByRedirect2($url, $data)
     {
-        $url=urldecode($url);
-        $ancho="";
+//        $url = urldecode($url);
+        $ancho = "";
         if (str_contains($url, "#")) {
             $ancho = mb_substr($url, strrpos($url, "#"));
             $url = str_replace($ancho, "", $url);
@@ -90,6 +88,7 @@ class ResponseUtils
         } else {
             $url = $url.'?'.http_build_query($data).$ancho;
         }
+
         return redirect($url);
     }
 

@@ -16,6 +16,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
 class Handler extends ExceptionHandler
@@ -59,6 +60,12 @@ class Handler extends ExceptionHandler
     {
         DB::rollBack();
 
+        if($exception instanceof NotFoundHttpException){
+            \Log::info("not found http");
+            \Log::info($request->url());
+        }
+
+
         if ($request->expectsJson()) {
             if (Admin::user()) {
                 return $this->interHandler($exception, $request, true);
@@ -94,7 +101,8 @@ class Handler extends ExceptionHandler
                 ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401);
         }
 
-        return redirect()->guest(config("common.admin_login"));
+        return redirect()->guest(config('app.url').config("admin.admin_login"));
+//        return redirect()->guest(config("common.admin_login"));
     }
 
 
