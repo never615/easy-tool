@@ -119,7 +119,7 @@ class AppUtils
     {
 
         if (strpos($url, "http") === 0) {
-            $httpProtocol = config("app.http_protocol",'https');
+            $httpProtocol = config("app.http_protocol", 'https');
             if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉
                 $url = substr($url, 4);
@@ -156,6 +156,25 @@ class AppUtils
         preg_match_all($pa, $string, $match);
 
         return str_replace(PHP_EOL, '', $match[1][0]);
+    }
+
+
+    /**
+     * 检查字符串是否有中文
+     *
+     * @param $str
+     * @return bool
+     */
+    public static function hasChinese($str)
+    {
+//        if (preg_match("/^[".chr(0xa1)."-".chr(0xff)."]+$/", $str)) { //只能在GB2312情况下使用
+//        if (preg_match("/^[\x7f-\xff]+$/", $str)) { //兼容gb2312,utf-8  //判断字符串是否全是中文
+        if (preg_match("/[\x7f-\xff]/", $str)) {  //判断字符串中是否有中文
+            return true;
+        } else {
+            return false;
+        }
+
     }
 
 }
