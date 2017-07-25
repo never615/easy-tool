@@ -50,13 +50,12 @@ class SignUtils
      * @param       $key
      * @return string
      */
-    public static function signByUpper(array $arr, $key)
+    public static function signByLower(array $arr, $key)
     {
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
         $stringSignTemp = $tmpHttp.'&secret='.$key;
         $stringSignTemp = urldecode($stringSignTemp);
-
         return strtolower(md5($stringSignTemp));
     }
 
