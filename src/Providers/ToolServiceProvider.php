@@ -141,15 +141,18 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected function registerRouteMiddleware()
     {
-        // register route middleware.
-        foreach ($this->routeMiddleware as $key => $middleware) {
-            app('router')->aliasMiddleware($key, $middleware);
-        }
 
         // register middleware group.
         foreach ($this->middlewareGroups as $key => $middleware) {
             app('router')->middlewareGroup($key, $middleware);
         }
+
+        // register route middleware.
+        foreach ($this->routeMiddleware as $key => $middleware) {
+            app('router')->aliasMiddleware($key, $middleware);
+        }
+
+
     }
 
 

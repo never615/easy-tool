@@ -40,6 +40,8 @@ class LoggerAliyun implements Logger
     /**
      * 记录第三方接口通讯日志
      *
+     * 请求别人的接口的日志记录
+     *
      * @param $tag
      * @param $action
      * @param $content
