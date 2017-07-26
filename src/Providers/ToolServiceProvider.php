@@ -130,7 +130,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerRouteMiddleware();
 
-
+        //todo 日志注册优化
         $this->app->singleton(Logger::class, LoggerAliyun::class);
     }
 

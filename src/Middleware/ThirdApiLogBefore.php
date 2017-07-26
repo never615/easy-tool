@@ -4,7 +4,6 @@ namespace Mallto\Tool\Middleware;
 
 
 use Encore\Admin\AppUtils;
-use Encore\Admin\Facades\Admin;
 use Illuminate\Http\Request;
 use Mallto\Tool\Domain\Log\Logger;
 
@@ -26,11 +25,12 @@ class ThirdApiLogBefore
     public function handle(Request $request, \Closure $next)
     {
         $log = [
-            'path'   => $request->path(),
-            'method' => $request->method(),
-            'request_ip'     => $request->header("X-Forwarded-For"),
-            'input'  => json_encode($request->input()),
-            'uuid'   => AppUtils::getUUID(),
+            'path'       => $request->path(),
+            'method'     => $request->method(),
+            'request_ip' => $request->header("X-Forwarded-For"),
+            'input'      => json_encode($request->all()),
+            'uuid'       => AppUtils::getUUID(),
+//            'header'     => $request->headers,
         ];
 
         $logger = resolve(Logger::class);
