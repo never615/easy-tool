@@ -12,6 +12,7 @@
  * Date: 5/5/16
  * Time: 3:31 PM
  */
+
 namespace Mallto\Tool\Utils;
 
 
@@ -38,6 +39,7 @@ class SignUtils
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
         $stringSignTemp = $tmpHttp.'&key='.$key;
+        $stringSignTemp = strtolower($stringSignTemp);
 
         return strtolower(md5($stringSignTemp));
     }
@@ -56,6 +58,7 @@ class SignUtils
         $tmpHttp = http_build_query($arr);
         $stringSignTemp = $tmpHttp.'&secret='.$key;
         $stringSignTemp = urldecode($stringSignTemp);
+
         return strtolower(md5($stringSignTemp));
     }
 
@@ -80,6 +83,8 @@ class SignUtils
 //        Log::info($tmpHttp);
         $stringSignTemp = $tmpHttp.'&key='.self::$mallto_key;
 //        Log::info($stringSignTemp);
+        $stringSignTemp = strtolower($stringSignTemp);
+
         $sign = strtolower(md5($stringSignTemp));
 
         if (array_key_exists('timestamp', $arr)) {
