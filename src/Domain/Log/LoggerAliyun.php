@@ -1,12 +1,10 @@
 <?php
+
 namespace Mallto\Tool\Domain\Log;
 
 use Aliyun\SLS\Client;
 use Aliyun\SLS\Models\LogItem;
 use Aliyun\SLS\Models\PutLogsRequest;
-use Encore\Admin\AppUtils;
-use Illuminate\Support\Facades\Request;
-use Mallto\Tool\Data\Log;
 
 
 /**
@@ -25,11 +23,14 @@ class LoggerAliyun implements Logger
     private $client;
     private $serverName;
 
+    private $switch = false;
+
     /**
      * LoggerAliyun constructor.
      */
     public function __construct()
     {
+        $this->switch = config("app.diy_log", true);
         $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_log_access_key_id"),
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
@@ -48,6 +49,10 @@ class LoggerAliyun implements Logger
      */
     public function logThirdPart($tag, $action, $content)
     {
+        if (!$this->switch) {
+            return;
+        }
+
         $topic = "";
         $source = "";
         $logitems = array ();
@@ -74,13 +79,17 @@ class LoggerAliyun implements Logger
      */
     public function logOwnerApi($action, $content)
     {
+        if (!$this->switch) {
+            return;
+        }
+
         $topic = "";
         $source = "";
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
-            'action'=>$action,
+            'action'      => $action,
             "server_name" => $this->serverName,
             "request_url" => config("app.url"),
         ]));
@@ -97,6 +106,10 @@ class LoggerAliyun implements Logger
      */
     public function logAdminOperation($log)
     {
+        if (!$this->switch) {
+            return;
+        }
+
         $topic = "";
         $source = "";
         $logitems = array ();
