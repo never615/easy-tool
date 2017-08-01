@@ -24,10 +24,17 @@ class ThirdApiLogBefore
      */
     public function handle(Request $request, \Closure $next)
     {
+        $ip = "";
+        $tempIp = $request->header("X-Forwarded-For");
+        if ($tempIp) {
+            $ip = $tempIp;
+        } else {
+            $ip = $request->getClientIp();
+        }
         $log = [
             'path'       => $request->path(),
             'method'     => $request->method(),
-            'request_ip' => $request->header("X-Forwarded-For"),
+            'request_ip' => $ip,
             'input'      => json_encode($request->all()),
             'uuid'       => AppUtils::getUUID(),
 //            'header'     => $request->headers,

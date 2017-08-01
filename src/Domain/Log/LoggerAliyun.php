@@ -30,7 +30,7 @@ class LoggerAliyun implements Logger
      */
     public function __construct()
     {
-        $this->switch = config("app.diy_log", true);
+        $this->switch = config("app.ali_log", true);
         $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_log_access_key_id"),
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
