@@ -15,7 +15,6 @@ use Illuminate\Support\MessageBag;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
-use Overtrue\Socialite\AuthorizeFailedException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
@@ -105,7 +104,8 @@ class Handler extends ExceptionHandler
         if (Admin::user()) {
             return redirect()->guest(config('app.url').config("admin.admin_login"));
         } else {
-            $e=new \Mallto\Tool\Exception\AuthorizeFailedException();
+            $e = new \Mallto\Tool\Exception\AuthorizeFailedException();
+
             return $this->toIlluminateResponse($this->renderHttpException($e), $e);
         }
     }
@@ -139,6 +139,9 @@ class Handler extends ExceptionHandler
                 throw new PermissionDeniedException("没有权限访问该的接口");
             } elseif ($exception instanceof TokenMismatchException) {
                 return $this->unauthenticated($request, $exception);
+            } elseif ($exception instanceof \PDOException) {
+                $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
+                throw new ResourceException($msg);
             } else {
                 //todo 记录 通知
                 throw new InternalHttpException(trans("errors.internal_error"));
