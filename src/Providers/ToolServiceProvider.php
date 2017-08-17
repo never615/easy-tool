@@ -65,7 +65,6 @@ class ToolServiceProvider extends ServiceProvider
 
 
         $this->appBoot();
-        $this->authBoot();
         $this->routeBoot();
     }
 
@@ -96,20 +95,6 @@ class ToolServiceProvider extends ServiceProvider
         });
     }
 
-    private function authBoot()
-    {
-        Passport::routes();
-        Passport::tokensExpireIn(Carbon::now()->addDays(15));
-//        Passport::refreshTokensExpireIn(Carbon::now()->addDays(30));
-
-
-        Passport::tokensCan([
-            'mobile-token'  => 'mobile token可以访问所有需要用户绑定了手机号才能访问的接口',
-            'wechat-token'  => '微信token是通过openId换取的,只能访问部分接口',
-            'parking-token' => '停车需要使用到的token',
-            'account-token' => "账户操作权限:如重新绑定手机",
-        ]);
-    }
 
     private function routeBoot()
     {
