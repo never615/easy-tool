@@ -2,7 +2,6 @@
 
 namespace Mallto\Tool\Providers;
 
-use Carbon\Carbon;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -10,7 +9,6 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Passport\Passport;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Middleware\AuthenticateSign;
@@ -76,6 +74,21 @@ class ToolServiceProvider extends ServiceProvider
             $mobile_regex = '"^1\d{10}$"';
 
             return preg_match($mobile_regex, $value);
+        });
+
+        //小数点后最多有一位
+        Validator::extend('decimal1', function ($attribute, $value, $parameters) {
+
+            if (!is_numeric($value)) {
+                return false;
+            }
+
+            $tempArr = explode('.', $value);
+            if (count($tempArr) == 2 && strlen($tempArr[1]) > 1) {
+                return false;
+            }
+
+            return true;
         });
 
 
