@@ -142,6 +142,8 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 throw new ResourceException($msg);
+            } elseif ($exception instanceof \Overtrue\Socialite\AuthorizeFailedException) {
+                return $this->unauthenticated($request, $exception);
             } else {
                 //todo 记录 通知
                 throw new InternalHttpException(trans("errors.internal_error"));
