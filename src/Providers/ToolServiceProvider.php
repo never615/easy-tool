@@ -76,15 +76,19 @@ class ToolServiceProvider extends ServiceProvider
             return preg_match($mobile_regex, $value);
         });
 
-        //小数点后最多有一位
-        Validator::extend('decimal1', function ($attribute, $value, $parameters) {
+        /**
+         * $parameters 传参设置可以有几位小数,设置几,就是几
+         */
+        Validator::extend('decimal', function ($attribute, $value, $parameters) {
+
+            $decimalNum=$parameters[0]?:1;
 
             if (!is_numeric($value)) {
                 return false;
             }
 
             $tempArr = explode('.', $value);
-            if (count($tempArr) == 2 && strlen($tempArr[1]) > 1) {
+            if (count($tempArr) == 2 && strlen($tempArr[1]) > $decimalNum) {
                 return false;
             }
 
