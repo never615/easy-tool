@@ -19,6 +19,16 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
+/**
+ *
+ * 异常处理:
+ * 1. 检查转化所有到来的异常
+ * 2. 检查请求的方式,是期望json响应还是视图响应,然后针对异常做不同的处理
+ *
+ * Class Handler
+ *
+ * @package Mallto\Tool\Exception
+ */
 class Handler extends ExceptionHandler
 {
     /**
@@ -60,6 +70,7 @@ class Handler extends ExceptionHandler
     {
         DB::rollBack();
 
+
         if ($exception instanceof NotFoundHttpException) {
             \Log::info("not found http");
             \Log::info($request->url());
@@ -68,11 +79,15 @@ class Handler extends ExceptionHandler
 
         if ($request->expectsJson()) {
             if (Admin::user()) {
-                return $this->interHandler($exception, $request, true);
+                return $this->interJsonHandler($exception, $request, true);
             } else {
-                return $this->interHandler($exception, $request);
+                return $this->interJsonHandler($exception, $request);
             }
         } else {
+            if ($exception instanceof TokenMismatchException) {
+                return $this->unauthenticated($request, $exception);
+            }
+
             //如果是管理端请求
             if (Admin::user()) {
                 $error = new MessageBag([
@@ -111,7 +126,15 @@ class Handler extends ExceptionHandler
     }
 
 
-    protected function interHandler($exception, $request, $isAdmin = false)
+    /**
+     * 返回的是json的错误响应
+     *
+     * @param      $exception
+     * @param      $request
+     * @param bool $isAdmin
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
+     */
+    protected function interJsonHandler($exception, $request, $isAdmin = false)
     {
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
