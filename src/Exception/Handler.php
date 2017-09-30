@@ -85,7 +85,7 @@ class Handler extends ExceptionHandler
             }
         } else {
             if ($exception instanceof TokenMismatchException) {
-                return $this->unauthenticated($request, $exception);
+                return redirect()->guest(config('app.url').config("admin.admin_login"));
             }
 
             //如果是管理端请求
