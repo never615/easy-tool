@@ -76,13 +76,14 @@ class Handler extends ExceptionHandler
             \Log::info($request->url());
         }
 
-
         if ($request->expectsJson()) {
             if (Admin::user()) {
                 return $this->interJsonHandler($exception, $request, true);
             } else {
                 return $this->interJsonHandler($exception, $request);
             }
+
+
         } else {
             if ($exception instanceof TokenMismatchException) {
                 return redirect()->guest(config('app.url').config("admin.admin_login"));

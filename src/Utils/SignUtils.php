@@ -59,6 +59,8 @@ class SignUtils
         $stringSignTemp = $tmpHttp.'&secret='.$key;
         $stringSignTemp = urldecode($stringSignTemp);
 
+//        \Log::info($stringSignTemp);
+
         return strtolower(md5($stringSignTemp));
     }
 

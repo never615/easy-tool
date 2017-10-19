@@ -96,7 +96,8 @@ class TimeUtils
             $m += 12;
             $Y--;
         }
-        return array('year' => $Y, 'month' => $m, 'day' => $d);
+
+        return array ('year' => $Y, 'month' => $m, 'day' => $d);
     }
 
 

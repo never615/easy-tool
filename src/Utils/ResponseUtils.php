@@ -73,7 +73,7 @@ class ResponseUtils
      *
      * @param $url
      * @param $data
-     * @return
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
     public static function responseBasicByRedirect2($url, $data)
     {

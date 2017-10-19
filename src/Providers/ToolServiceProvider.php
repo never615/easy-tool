@@ -24,6 +24,7 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected $commands = [
         'Mallto\Tool\Commands\InstallCommand',
+        'Mallto\Tool\Commands\UpdateCommand',
     ];
 
     /**
@@ -81,7 +82,7 @@ class ToolServiceProvider extends ServiceProvider
          */
         Validator::extend('decimal', function ($attribute, $value, $parameters) {
 
-            $decimalNum=$parameters[0]?:1;
+            $decimalNum = $parameters[0] ?: 1;
 
             if (!is_numeric($value)) {
                 return false;
