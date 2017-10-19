@@ -44,6 +44,7 @@ class Handler extends ExceptionHandler
         \Illuminate\Session\TokenMismatchException::class,
         \Illuminate\Validation\ValidationException::class,
         \League\OAuth2\Server\Exception\OAuthServerException::class,
+        \Overtrue\Socialite\AuthorizeFailedException::class
     ];
 
     /**
