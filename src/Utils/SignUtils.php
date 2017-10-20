@@ -1,5 +1,9 @@
 <?php
 /**
+ * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ */
+
+/**
  * 签名规则:
  * 1.需要签名的参数使用key值,按照字典序从小到大排序
  * 2.参数拼接,key=value形式拼接,使用&相连接,需要url转码.
