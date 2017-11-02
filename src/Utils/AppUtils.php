@@ -181,4 +181,27 @@ class AppUtils
 
     }
 
+    /**
+     * PHP - 通用唯一识别码（UUID）的生成
+     *
+     * 简单的说 UUID 就是一串全球唯一的(16进制)数字串。
+     * UUID 的全拼为“Universally Unique Identifier”，可以译为“通用唯一识别码”。UUID 由开源软件基金会 (Open Software Foundation, OSF) 定义，是分布式计算环境 (Distributed Computing Environment, DCE) 的一个组成部分。
+     * UUID 的标准格式为“xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx”，五个部分分别为8个字符、4个字符、4个字符、4个字符、12个字符，中间用“-”号间隔。常见的 GUID(Globally Unique Identifier)是微软对 UUID 标准的一种实现。
+     *
+     * 原文出自：www.hangge.com  转载请保留原文链接：http://www.hangge.com/blog/cache/detail_1528.html
+     *
+     * @param string $prefix
+     * @return string
+     */
+    public static function create_uuid($prefix = "")
+    {
+        $str = md5(uniqid(mt_rand(), true));
+        $uuid = substr($str, 0, 8).'-';
+        $uuid .= substr($str, 8, 4).'-';
+        $uuid .= substr($str, 12, 4).'-';
+        $uuid .= substr($str, 16, 4).'-';
+        $uuid .= substr($str, 20, 12);
+
+        return $prefix.$uuid;
+    }
 }
