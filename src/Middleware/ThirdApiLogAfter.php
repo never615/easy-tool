@@ -9,6 +9,7 @@ use Encore\Admin\AppUtils;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Http\Request;
 use Mallto\Tool\Domain\Log\Logger;
+use Mallto\Tool\Utils\SubjectUtils;
 
 /**
  * 向第三方提供的接口通讯日志记录
@@ -40,7 +41,7 @@ class ThirdApiLogAfter
             'method' => $request->method(),
             'request_ip'     => $ip,
             'input'  => $response->getContent(),
-            'uuid'   => AppUtils::getUUID(),
+            'uuid'   => SubjectUtils::getUUID(),
         ];
         $logger = resolve(Logger::class);
         $logger->logOwnerApi("响应", $log);

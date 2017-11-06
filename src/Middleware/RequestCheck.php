@@ -8,6 +8,7 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Encore\Admin\AppUtils;
+use Mallto\Tool\Utils\SubjectUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
@@ -22,7 +23,7 @@ class RequestCheck
     public function handle($request, Closure $next)
     {
 
-        $uuid = AppUtils::getUUID();
+        $uuid = SubjectUtils::getUUID();
         $requestType = $request->header('REQUEST_TYPE');
         if (!$requestType || !$uuid) {
             throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
@@ -32,8 +33,6 @@ class RequestCheck
         if (!in_array($requestType, config('mall.request_type'))) {
             throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
         }
-
-        AppUtils::getSubject();
 
         return $next($request);
     }

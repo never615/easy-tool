@@ -9,6 +9,7 @@ namespace Mallto\Tool\Middleware;
 use Encore\Admin\AppUtils;
 use Illuminate\Http\Request;
 use Mallto\Tool\Domain\Log\Logger;
+use Mallto\Tool\Utils\SubjectUtils;
 
 /**
  * 向第三方提供的接口通讯日志记录
@@ -39,7 +40,7 @@ class ThirdApiLogBefore
             'method'     => $request->method(),
             'request_ip' => $ip,
             'input'      => json_encode($request->all()),
-            'uuid'       => AppUtils::getUUID(),
+            'uuid'       => SubjectUtils::getUUID(),
 //            'header'     => $request->headers,
         ];
 
