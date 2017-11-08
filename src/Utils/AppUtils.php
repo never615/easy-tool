@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use RuntimeException;
+
 
 /**
  * 工具类
@@ -203,5 +205,31 @@ class AppUtils
         $uuid .= substr($str, 20, 12);
 
         return $prefix.$uuid;
+    }
+
+    /**
+     * 获取随机字符串
+     *
+     * @param int $length
+     * @return bool|string
+     */
+    public static function getRandomString($length = 42)
+    {
+        /*
+         * Use OpenSSL (if available)
+         */
+        if (function_exists('openssl_random_pseudo_bytes')) {
+            $bytes = openssl_random_pseudo_bytes($length * 2);
+
+            if ($bytes === false) {
+                throw new RuntimeException('Unable to generate a random string');
+            }
+
+            return substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $length);
+        }
+
+        $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        return substr(str_shuffle(str_repeat($pool, 5)), 0, $length);
     }
 }
