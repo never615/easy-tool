@@ -38,18 +38,20 @@ class Lottery
             $sumWeight += $lottery[$weightColumn];
         }
         //2. 在权重和中随机一个数字,判断落在那个区间
-        $lotteryResult = mt_rand(1, $sumWeight);
+        if ($sumWeight > 0) {
 
-        \Log::info($lotteries);
+            $lotteryResult = mt_rand(1, $sumWeight);
 
-        //3. 找到该区间对应的对象,返回
-        foreach ($lotteries as $key => $lottery) {
-            if ($lotteryResult >= $lottery["interval"][0] && $lotteryResult <= $lottery["interval"][1]) {
-                return $lottery[$idColumn];
+
+            //3. 找到该区间对应的对象,返回
+            foreach ($lotteries as $key => $lottery) {
+                if ($lotteryResult >= $lottery["interval"][0] && $lotteryResult <= $lottery["interval"][1]) {
+                    return $lottery[$idColumn];
+                }
             }
+            throw new InternalHttpException("抽奖失败");
+        } else {
+            return null;
         }
-
-
-        throw new InternalHttpException("抽奖失败");
     }
 }
