@@ -75,10 +75,10 @@ class Handler extends ExceptionHandler
         DB::rollBack();
 
 
-        if ($exception instanceof NotFoundHttpException) {
-            \Log::info("not found http");
-            \Log::info($request->url());
-        }
+//        if ($exception instanceof NotFoundHttpException) {
+//            \Log::info("not found http");
+//            \Log::info($request->url());
+//        }
 
         if ($request->expectsJson()) {
             if (Admin::user()) {
