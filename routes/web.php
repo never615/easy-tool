@@ -37,6 +37,8 @@ Route::group($attributes, function ($router) {
             //第三方接口请求日志
             Route::resource("third_logs", "ThirdLogController");
 
+            //意见反馈
+            Route::resource("feedbacks", "FeedBackController");
 
         });
     });

@@ -31,6 +31,8 @@ Route::group($attributes, function ($router) {
         //请求会员权益
         Route::get("subject/member_interest", "SubjectController@memberInterest");
 
+        //意见反馈
+        Route::post("feedback", "FeedbackController@store");
 
         /**
          * 需要经过签名校验
