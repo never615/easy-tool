@@ -3,21 +3,17 @@
  * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
  */
 
-namespace Mallto\Tool\Controller;
+namespace Mallto\Tool\Controller\Admin;
 
 
 use Encore\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Mallto\Tool\Data\Feedback;
+use Mallto\Tool\Data\Tag;
 
-/**
- * Class LogController
- *
- * @package Mallto\Mall\Controller
- */
-class FeedBackController extends AdminCommonController
+class TagController extends AdminCommonController
 {
+
     /**
      * 获取这个模块的标题
      *
@@ -25,7 +21,7 @@ class FeedBackController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "意见反馈";
+        return "标签管理";
     }
 
     /**
@@ -35,27 +31,30 @@ class FeedBackController extends AdminCommonController
      */
     protected function getModel()
     {
-        return Feedback::class;
+        return Tag::class;
     }
 
+    /**
+     * @param Grid $grid
+     */
     protected function gridOption(Grid $grid)
     {
-        $grid->mobile();
-        $grid->content()->limit(250);
-
-        $grid->disableCreation();
+        $grid->name()->editable()->sortable();
+        $grid->type()->select(Tag::TYPE)->sortable();
         $grid->filter(function (Grid\Filter $filter) {
-            $filter->ilike("content");
-            $filter->ilike("mobile");
+            $filter->equal('type')->select(Tag::TYPE);
+            $filter->ilike("name");
         });
-
-
     }
 
+    /**
+     * @param Form $form
+     */
     protected function formOption(Form $form)
     {
-        $form->display("mobile");
-        $form->display("content", "反馈内容");
+        $form->text('name')->rule('required');
+        $form->select('type')
+            ->default("common")
+            ->options(Tag::TYPE);
     }
-
 }

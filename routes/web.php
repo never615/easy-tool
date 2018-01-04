@@ -33,12 +33,18 @@ Route::group($attributes, function ($router) {
         //需要授权的
         Route::group(['middleware' => ['admin.auto_permission']], function ($router) {  //指定auth的guard为mall
 
+            Route::group(["namespace"=>'Admin'], function () {
 
-            //第三方接口请求日志
-            Route::resource("third_logs", "ThirdLogController");
+                //第三方接口请求日志
+                Route::resource("third_logs", "ThirdLogController");
 
-            //意见反馈
-            Route::resource("feedbacks", "FeedBackController");
+                //标签管理
+                Route::resource("tags", "TagController");
+
+
+                //意见反馈
+                Route::resource("feedbacks", "FeedBackController");
+            });
 
         });
     });
