@@ -7,8 +7,6 @@ namespace Mallto\Tool\Seeder;
 
 use Encore\Admin\Auth\Database\Menu;
 use Illuminate\Database\Seeder;
-use Mallto\Mall\Data\AdminUser;
-use Mallto\Mall\Data\Subject;
 
 class MenuTablesSeeder extends Seeder
 {
