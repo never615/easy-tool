@@ -30,6 +30,10 @@ Route::group($attributes, function ($router) {
     Route::group(['prefix' => config('admin.prefix'), "middleware" => ["admin"]], function ($router) {
 
 
+        Route::group(["middleware" => ['admin.permission:allow,owner']], function ($router) {
+            $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
+        });
+
         //需要授权的
         Route::group(['middleware' => ['admin.auto_permission']], function ($router) {  //指定auth的guard为mall
 
