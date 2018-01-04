@@ -27,7 +27,6 @@ class CreateFeedbacksTable extends Migration
             $table->string('title')->nullable();
             $table->text('content');
             $table->unsignedInteger('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('CASCADE');
             $table->timestamps();
             $table->softDeletes();
 
