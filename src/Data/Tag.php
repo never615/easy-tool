@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Data;
 
 use Encore\Admin\Auth\Database\Traits\BaseModel;
+use Mallto\Mall\Data\Shop;
 use Mallto\User\Data\User;
 
 
