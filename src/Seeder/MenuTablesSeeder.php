@@ -19,7 +19,22 @@ class MenuTablesSeeder extends Seeder
     {
         $menu = Menu::where("title", "管理")->first();
 
-        $order = Menu::orderBy("order", "desc")->first()->order;
+        if (!$menu) {
+            $menu = Menu::create([
+                'parent_id' => 0,
+                'order'     => $order = 2000,
+                'title'     => '管理',
+                'icon'      => 'fa-tasks',
+                'uri'       => '',
+            ]);
+        }
+
+        $firstMenu = Menu::orderBy("order", "desc")->first();
+        if ($firstMenu) {
+            $order = $firstMenu->order;
+        } else {
+            $order = 2000;
+        }
 
         $tempMenu = Menu::where("title", "第三方日志")->first();
         if ($tempMenu) {
