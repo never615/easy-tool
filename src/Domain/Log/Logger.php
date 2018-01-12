@@ -17,6 +17,9 @@ use Mallto\Tool\Data\Log;
  */
 interface Logger
 {
+
+
+
     /**
      * 记录第三方接口通讯日志
      *

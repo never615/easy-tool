@@ -8,6 +8,8 @@ namespace Mallto\Tool\Exception;
 
 use Encore\Admin\Facades\Admin;
 use Exception;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -19,7 +21,6 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
 /**
@@ -47,7 +48,7 @@ class Handler extends ExceptionHandler
         \Illuminate\Session\TokenMismatchException::class,
         \Illuminate\Validation\ValidationException::class,
         \League\OAuth2\Server\Exception\OAuthServerException::class,
-        \Overtrue\Socialite\AuthorizeFailedException::class
+        \Overtrue\Socialite\AuthorizeFailedException::class,
     ];
 
     /**
@@ -155,6 +156,10 @@ class Handler extends ExceptionHandler
                 return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404');
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getCode(), $exception->getMessage());
+            } elseif ($exception instanceof ClientException) {
+                return response()->json(["error" => $exception->getMessage()], $exception->getCode());
+            } elseif ($exception instanceof ServerException) {
+                return response()->json(["error" => $exception->getMessage()], $exception->getCode());
             } elseif ($exception instanceof AuthenticationException) {
                 return $this->unauthenticated($request, $exception);
             } elseif ($exception instanceof ValidationException) {

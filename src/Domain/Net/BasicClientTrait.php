@@ -39,14 +39,9 @@ trait BasicClientTrait
             'base_uri' => $this->baseUrl,
         ]);
         $resultArr = null;
+
         try {
-            if ($requestType == 'post') {
-                $response = $client->post($url, $data);
-            } elseif ($requestType == 'get') {
-                $response = $client->get($url, $data);
-            } else {
-                throw new InternalHttpException("无效的请求类型");
-            }
+            $response=$client->request($requestType,$url,$data);
             $body = $response->getBody();
             $logger->logThirdPart(self::SLUG, '返回:'.$url, $body);
 

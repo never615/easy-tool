@@ -9,6 +9,7 @@ use Encore\Admin\Auth\Database\Subject;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Request;
 use Mallto\Tool\Exception\InvalidParamException;
+use Mallto\Tool\Exception\PermissionDeniedException;
 
 /**
  * 工具类
@@ -20,6 +21,26 @@ use Mallto\Tool\Exception\InvalidParamException;
 class SubjectUtils
 {
     private static $subject;
+
+
+    /**
+     * 获取主体的配置信息
+     *
+     * @param $subject
+     * @param $key
+     * @return mixed
+     */
+    public static function getSubectConfig($subject, $key)
+    {
+        $subjectConfig = $subject->subjectConfigs()
+            ->where("key", $key)
+            ->first();
+        if (!$subjectConfig) {
+            throw new PermissionDeniedException($key."未配置");
+        }
+
+        return $subjectConfig->value;
+    }
 
 
     /**
