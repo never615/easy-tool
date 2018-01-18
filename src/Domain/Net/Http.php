@@ -39,7 +39,7 @@ class Http
      * @var array
      */
     protected static $defaults = [
-        'curl'        => [
+        'curl' => [
             CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
         ],
 //        'http_errors' => false,
@@ -87,15 +87,16 @@ class Http
      * @param string       $url
      * @param array|string $options
      *
+     * @param              $other
      * @return ResponseInterface
-     *
-     * @throws ThirdPartException
      */
-    public function post($url, $options = [])
+    public function post($url, $options = [], $other = [])
     {
         $key = is_array($options) ? 'form_params' : 'body';
 
-        return $this->request($url, 'POST', [$key => $options]);
+        return $this->request($url, 'POST', array_merge(
+            [$key => $options],
+            $other));
     }
 
     /**
@@ -103,19 +104,24 @@ class Http
      *
      * @param string       $url
      * @param string|array $options
-     * @param array        $queries
      * @param int          $encodeOption
      *
+     * @param array        $queries
+     * @param array        $other
      * @return ResponseInterface
-     *
-     * @throws ThirdPartException
      */
-    public function json($url, $options = [], $encodeOption = JSON_UNESCAPED_UNICODE, $queries = [])
+    public function json($url, $options = [], $encodeOption = JSON_UNESCAPED_UNICODE, $queries = [], $other = [])
     {
         is_array($options) && $options = json_encode($options, $encodeOption);
 
         return $this->request($url, 'POST',
-            ['query' => $queries, 'body' => $options, 'headers' => ['content-type' => 'application/json']]);
+            array_merge(
+                [
+                    'query'   => $queries,
+                    'body'    => $options,
+                    'headers' => ['content-type' => 'application/json'],
+                ],
+                $other));
     }
 
     /**
@@ -249,6 +255,7 @@ class Http
 
         return $contents;
     }
+
 
     /**
      * Filter the invalid JSON string.

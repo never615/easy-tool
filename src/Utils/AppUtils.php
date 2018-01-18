@@ -61,19 +61,6 @@ class AppUtils
         return $pathArr[$number];
     }
 
-//
-//    /**
-//     * 生成核销码
-//     * 核销码生成规则  加10位时间戳+(用户id,补足6位);
-//     *
-//     * @param $userId
-//     * @return string
-//     */
-//    public static function generateVerifyCode($userId)
-//    {
-//        return time().sprintf('%06d', $userId);
-//    }
-
 
     /**
      * 获取指定的header
@@ -231,5 +218,25 @@ class AppUtils
         $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
         return substr(str_shuffle(str_repeat($pool, 5)), 0, $length);
+    }
+
+    /**
+     * 将stdClass Object转换成array格式
+     *
+     * @param  $array ,需要转换的对象
+     * @return array
+     */
+    public static function object2array($array)
+    {
+        if (is_object($array)) {
+            $array = (array) $array;
+        }
+        if (is_array($array)) {
+            foreach ($array as $key => $value) {
+                $array[$key] = self::object2array($value);
+            }
+        }
+
+        return $array;
     }
 }

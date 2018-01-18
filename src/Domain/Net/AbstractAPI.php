@@ -65,7 +65,7 @@ abstract class AbstractAPI
      * @param $subject
      * @return mixed
      */
-    public function getBaseUrl($subject)
+    protected function getBaseUrl($subject)
     {
         if (empty($this->SETTING_KEY_BASE_URL)) {
             throw new InternalHttpException("未设置SETTING_KEY_BASE_URL");
@@ -79,7 +79,7 @@ abstract class AbstractAPI
     /**
      * @param mixed $baseUrl
      */
-    public function setBaseUrl($baseUrl)
+    protected function setBaseUrl($baseUrl)
     {
         $this->baseUrl = $baseUrl;
     }
@@ -90,7 +90,7 @@ abstract class AbstractAPI
      *
      * @return \EasyWeChat\Core\Http
      */
-    public function getHttp()
+    protected function getHttp()
     {
         if (is_null($this->http)) {
             $this->http = new Http();
@@ -110,7 +110,7 @@ abstract class AbstractAPI
      *
      * @return $this
      */
-    public function setHttp(Http $http)
+    protected function setHttp(Http $http)
     {
         $this->http = $http;
 
@@ -125,7 +125,7 @@ abstract class AbstractAPI
      *
      * @return Collection
      */
-    public function parseJSON($method, array $args)
+    protected function parseJSON($method, array $args)
     {
         $http = $this->getHttp();
 
@@ -135,6 +135,7 @@ abstract class AbstractAPI
 
         return new Collection($contents);
     }
+
 
     /**
      * Register Guzzle middlewares.
