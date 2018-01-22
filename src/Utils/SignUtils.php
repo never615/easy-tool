@@ -94,7 +94,12 @@ class SignUtils
         $tmpHttp = http_build_query($arr);
         $tmpHttp = urldecode($tmpHttp);
 
-        $stringSignTemp = $tmpHttp.'&key='.$key;
+        if ($tmpHttp) {
+            $stringSignTemp = $tmpHttp.'&key='.$key;
+        } else {
+            $stringSignTemp = 'key='.$key;
+        }
+
 //        \Log::info($stringSignTemp);
         $stringSignTemp = base64_encode($stringSignTemp);
 //        \Log::info('base64以后:'.$stringSignTemp);
