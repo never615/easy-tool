@@ -90,11 +90,14 @@ class SignUtils
         unset($arr['sign']);
 
         ksort($arr, SORT_STRING);
+
         $tmpHttp = http_build_query($arr);
-//        Log::info($tmpHttp);
+        $tmpHttp = urldecode($tmpHttp);
+
         $stringSignTemp = $tmpHttp.'&key='.$key;
-//        Log::info($stringSignTemp);
-        $stringSignTemp = strtolower($stringSignTemp);
+//        \Log::info($stringSignTemp);
+        $stringSignTemp = base64_encode($stringSignTemp);
+//        \Log::info('base64以后:'.$stringSignTemp);
 
         $sign = strtolower(md5($stringSignTemp));
 
@@ -106,9 +109,9 @@ class SignUtils
                 return false;
             }
         }
-//        Log::info($arr);
-//        Log::info($waiteSign);
-//        Log::info($sign);
+//        \Log::info($arr);
+//        \Log::info($waiteSign);
+//        \Log::info($sign);
 
         if ($sign == $waiteSign) {
             return true;
