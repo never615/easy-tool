@@ -131,6 +131,7 @@ abstract class AbstractAPI
 
         $contents = $http->parseJSON(call_user_func_array([$http, $method], $args));
 
+
         $this->checkAndThrow($contents);
 
         return new Collection($contents);

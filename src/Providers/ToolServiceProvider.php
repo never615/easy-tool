@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Providers;
 
+use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdApiLogAfter;
@@ -136,6 +138,8 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerRouteMiddleware();
 
+        $this->registerMail();
+
         //todo 日志注册优化
         $this->app->singleton(Logger::class, LoggerAliyun::class);
     }
@@ -147,7 +151,6 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected function registerRouteMiddleware()
     {
-
         // register middleware group.
         foreach ($this->middlewareGroups as $key => $middleware) {
             app('router')->middlewareGroup($key, $middleware);
@@ -157,8 +160,26 @@ class ToolServiceProvider extends ServiceProvider
         foreach ($this->routeMiddleware as $key => $middleware) {
             app('router')->aliasMiddleware($key, $middleware);
         }
+    }
 
+    /**
+     * Register aliyun mail service
+     */
+    protected function registerMail()
+    {
+        $this->mergeConfigFrom(__DIR__.'/../../config/services.php'
+            , 'services'
+        );
+        $this->app->resolving('swift.transport', function (TransportManager $tm) {
+            $tm->extend('aliyun_mail', function () {
+                $AccessKeyId = config('services.aliyun_mail.AccessKeyId');
+                $AccessSecret = config('services.aliyun_mail.AccessSecret');
+                $ReplyToAddress = config('services.aliyun_mail.ReplyToAddress');
+                $AddressType = config('services.aliyun_mail.AddressType');
 
+                return new AliyunMailTransport($AccessKeyId, $AccessSecret, $ReplyToAddress, $AddressType);
+            });
+        });
     }
 
 

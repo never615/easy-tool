@@ -73,10 +73,15 @@ class SignUtils
      * 签名校验
      *
      * @param array $arr
+     * @param null  $key
      * @return bool
      */
-    public static function verifySign(array $arr)
+    public static function verifySign(array $arr, $key = null)
     {
+        if (is_null($key)) {
+            $key = self::$mallto_key;
+        }
+
         if (!isset($arr['sign'])) {
             throw new SignException("缺少sign字段");
         }
@@ -87,7 +92,7 @@ class SignUtils
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
 //        Log::info($tmpHttp);
-        $stringSignTemp = $tmpHttp.'&key='.self::$mallto_key;
+        $stringSignTemp = $tmpHttp.'&key='.$key;
 //        Log::info($stringSignTemp);
         $stringSignTemp = strtolower($stringSignTemp);
 

@@ -11,17 +11,21 @@
  * Date: 11/11/2016
  * Time: 8:16 PM
  */
+
 namespace Mallto\Tool\Middleware;
 
 
-use Mallto\Tool\Exception\SignException;
 use Closure;
+use Mallto\Tool\Exception\SignException;
+use Mallto\Tool\Exception\SubjectConfigException;
 use Mallto\Tool\Utils\SignUtils;
+use Mallto\Tool\Utils\SubjectUtils;
 
 /**
  * 管理端权限过滤
  *
  * Class AuthenticateAdmin
+ *
  * @package App\Http\Middleware
  */
 class AuthenticateSign
@@ -31,7 +35,8 @@ class AuthenticateSign
 
     /**
      * Handle an incoming request.
-     * @param $request
+     *
+     * @param         $request
      * @param Closure $next
      * @return mixed
      */
@@ -39,7 +44,15 @@ class AuthenticateSign
     {
 
         $inputs = $request->all();
-        if (SignUtils::verifySign($inputs)) {
+        $subject = SubjectUtils::getSubject();
+        $key = null;
+
+        try {
+            $key = SubjectUtils::getSubectConfig($subject, "sign_key");
+        } catch (SubjectConfigException $exception) {
+            $key = null;
+        }
+        if (SignUtils::verifySign($inputs, $key)) {
             //pass
             return $next($request);
         } else {
