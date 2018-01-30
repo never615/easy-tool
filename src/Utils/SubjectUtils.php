@@ -9,6 +9,7 @@ use Encore\Admin\Auth\Database\Subject;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Request;
 use Mallto\Tool\Exception\InvalidParamException;
+use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SubjectConfigException;
 
 /**
@@ -33,6 +34,10 @@ class SubjectUtils
      */
     public static function getSubectConfig($subject, $key, $default = null)
     {
+        if(!$subject){
+            throw new ResourceException("主体未找到");
+        }
+
         $subjectConfig = $subject->subjectConfigs()
             ->where("key", $key)
             ->first();

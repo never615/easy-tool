@@ -131,7 +131,6 @@ abstract class AbstractAPI
 
         $contents = $http->parseJSON(call_user_func_array([$http, $method], $args));
 
-
         $this->checkAndThrow($contents);
 
         return new Collection($contents);
@@ -232,7 +231,7 @@ abstract class AbstractAPI
     }
 
     /**
-     * 不同的实现需要重写此方法
+     * 不同的实现需要重写此方法 标准的json请求使用
      * Check the array data errors, and Throw exception when the contents contains error.
      *
      * @param array $contents
@@ -243,4 +242,5 @@ abstract class AbstractAPI
     protected abstract function checkAndThrow(
         array $contents
     );
+
 }
