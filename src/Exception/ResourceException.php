@@ -6,15 +6,12 @@
 namespace Mallto\Tool\Exception;
 
 
-
 use Exception;
 use Illuminate\Support\MessageBag;
-use Log;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * todo 我处理errors干嘛?
  * Class ResourceException
+ *
  * @package App\Exceptions
  */
 class ResourceException extends HttpException implements MessageBagErrors
@@ -29,21 +26,26 @@ class ResourceException extends HttpException implements MessageBagErrors
     /**
      * Create a new resource exception instance.
      *
-     * @param string $message
+     * @param string                               $message
      * @param \Illuminate\Support\MessageBag|array $errors
-     * @param \Exception $previous
-     * @param array $headers
-     * @param int $code
+     * @param null                                 $errCode
+     * @param \Exception                           $previous
+     * @param array                                $headers
+     * @param int                                  $code
      *
-     * @return void
      */
-    public function __construct($message = null, $errors = null, Exception $previous = null, $headers = [], $code = 0)
-    {
+    public function __construct(
+        $message = null,
+        $errors = null,
+        $errCode = null,
+        Exception $previous = null,
+        $headers = [],
+        $code = 0
+    ) {
         if (is_null($errors)) {
             $this->errors = new MessageBag;
         } else {
             if (is_array($errors)) {
-//                Log::info($errors);
                 $message = current($errors);
                 $this->errors = new MessageBag($errors);
             } else {
@@ -51,9 +53,8 @@ class ResourceException extends HttpException implements MessageBagErrors
                 $message = $errors;
                 $this->errors = $errors;
             }
-//            $this->errors = (is_array($errors) ? new MessageBag($errors) : $errors);
         }
-        parent::__construct(422, $message, $previous, $headers, $code);
+        parent::__construct(422, $message, $errCode, $previous, $headers, $code);
     }
 
     /**

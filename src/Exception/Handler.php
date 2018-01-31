@@ -147,8 +147,14 @@ class Handler extends ExceptionHandler
                 return response()->json(["error" => "系统维护中"], $exception->getStatusCode());
             }
 
-            return response()->json(["error" => $exception->getMessage()], $exception->getStatusCode());
-
+            if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
+                return response()->json([
+                    "error" => $exception->getMessage(),
+                    'code'  => $exception->getErrCode(),
+                ], $exception->getStatusCode());
+            } else {
+                return response()->json(["error" => $exception->getMessage()], $exception->getStatusCode());
+            }
         } else {
             if ($exception instanceof ModelNotFoundException) {
                 $arr = explode('\\', $exception->getModel());
