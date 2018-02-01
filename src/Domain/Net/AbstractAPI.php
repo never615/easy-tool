@@ -156,13 +156,13 @@ abstract class AbstractAPI
     protected function logMiddleware()
     {
         return Middleware::tap(function (RequestInterface $request, $options) {
-            $this->logger->logThirdPart($this->slug.' - Request:', $request->getMethod().":".$request->getUri(),
+            $this->logger->logThirdPart($this->slug, '请求'.$request->getMethod().":".$request->getUri(),
                 $request->getBody()->getContents());
-            $this->logger->logThirdPart($this->slug.' - Request headers:', $request->getMethod().":".$request->getUri(),
-                json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE));
+//            $this->logger->logThirdPart($this->slug, '请求头'.$request->getMethod().":".$request->getUri(),
+//                json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE));
         }, function (RequestInterface $request, $options, Promise $response) {
             $response->then(function (ResponseInterface $response) use ($request) {
-                $this->logger->logThirdPart($this->slug.' - Response', $request->getMethod().":".$request->getUri(),
+                $this->logger->logThirdPart($this->slug, '响应'.$request->getMethod().":".$request->getUri(),
                     json_encode([
                         'Status'  => $response->getStatusCode(),
                         'Reason'  => $response->getReasonPhrase(),
