@@ -28,8 +28,6 @@ Route::group($attributes, function ($router) {
      */
     Route::group(['middleware' => ['requestCheck']], function () {
 
-        //请求会员权益
-        Route::get("subject/member_interest", "SubjectController@memberInterest");
 
         //意见反馈
         Route::post("feedback", "FeedbackController@store");
