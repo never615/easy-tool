@@ -42,10 +42,17 @@ class SignUtils
     {
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
-        $stringSignTemp = $tmpHttp.'&key='.$key;
-        $stringSignTemp = strtolower($stringSignTemp);
+        $tmpHttp = urldecode($tmpHttp);
 
-        return strtolower(md5($stringSignTemp));
+        if ($tmpHttp) {
+            $stringSignTemp = $tmpHttp.'&key='.$key;
+        } else {
+            $stringSignTemp = 'key='.$key;
+        }
+        $stringSignTemp = base64_encode($stringSignTemp);
+        $sign = strtolower(md5($stringSignTemp));
+
+        return $sign;
     }
 
 

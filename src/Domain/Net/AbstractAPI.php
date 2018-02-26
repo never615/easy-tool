@@ -198,7 +198,6 @@ abstract class AbstractAPI
                 return false;
             }
 
-
             $this->logger->logThirdPart($this->slug.' - Retry', $request->getMethod().":".$request->getUri(),
                 \GuzzleHttp\json_encode([
                     "retries:"    => $retries + 1,
