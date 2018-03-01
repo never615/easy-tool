@@ -44,14 +44,7 @@ class AuthenticateSign
     {
 
         $inputs = $request->all();
-        $subject = SubjectUtils::getSubject();
         $key = null;
-
-        try {
-            $key = SubjectUtils::getSubectConfig($subject, "sign_key");
-        } catch (SubjectConfigException $exception) {
-            $key = null;
-        }
         if (SignUtils::verifySign($inputs, $key)) {
             //pass
             return $next($request);
