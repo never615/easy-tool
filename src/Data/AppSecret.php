@@ -8,17 +8,9 @@ namespace Mallto\Tool\Data;
 use Encore\Admin\Auth\Database\Traits\DynamicData;
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * 意见反馈
- * Class Log
- *
- */
-class Feedback extends Model
+
+class AppSecret extends Model
 {
-    use DynamicData;
-
-    protected $table = "feedbacks";
-
     protected $guarded = [
     ];
 }

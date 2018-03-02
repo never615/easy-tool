@@ -17,6 +17,7 @@ use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
+use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdApiLogAfter;
 use Mallto\Tool\Middleware\ThirdApiLogBefore;
@@ -40,6 +41,7 @@ class ToolServiceProvider extends ServiceProvider
     protected $routeMiddleware = [
         "requestCheck" => RequestCheck::class,
         'authSign'     => AuthenticateSign::class,
+        'authSign2'     => AuthenticateSign2::class,
     ];
 
     /**

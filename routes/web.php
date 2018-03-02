@@ -48,6 +48,9 @@ Route::group($attributes, function ($router) {
 
                 //意见反馈
                 Route::resource("feedbacks", "FeedBackController");
+
+                //appsecret manager
+                Route::resource('app_secrets','AppSecretController');
             });
 
         });
