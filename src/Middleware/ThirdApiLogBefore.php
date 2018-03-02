@@ -6,7 +6,6 @@
 namespace Mallto\Tool\Middleware;
 
 
-use Encore\Admin\AppUtils;
 use Illuminate\Http\Request;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Utils\SubjectUtils;
@@ -35,13 +34,15 @@ class ThirdApiLogBefore
         } else {
             $ip = $request->getClientIp();
         }
+
+
         $log = [
             'path'       => $request->path(),
             'method'     => $request->method(),
             'request_ip' => $ip,
-            'input'      => json_encode($request->all()),
+            'input'      => json_encode($request->all(),JSON_UNESCAPED_UNICODE),
             'uuid'       => SubjectUtils::getUUID(),
-//            'header'     => $request->headers,
+            'header'     => json_encode($request->headers->all(),JSON_UNESCAPED_UNICODE),
         ];
 
         $logger = resolve(Logger::class);

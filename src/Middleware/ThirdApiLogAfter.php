@@ -5,8 +5,6 @@
 
 namespace Mallto\Tool\Middleware;
 
-use Encore\Admin\AppUtils;
-use Encore\Admin\Facades\Admin;
 use Illuminate\Http\Request;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Utils\SubjectUtils;
@@ -29,6 +27,7 @@ class ThirdApiLogAfter
     public function handle(Request $request, \Closure $next)
     {
         $response = $next($request);
+
         $ip = "";
         $tempIp = $request->header("X-Forwarded-For");
         if ($tempIp) {
@@ -37,11 +36,11 @@ class ThirdApiLogAfter
             $ip = $request->getClientIp();
         }
         $log = [
-            'path'   => $request->path(),
-            'method' => $request->method(),
-            'request_ip'     => $ip,
-            'input'  => $response->getContent(),
-            'uuid'   => SubjectUtils::getUUID(),
+            'path'       => $request->path(),
+            'method'     => $request->method(),
+            'request_ip' => $ip,
+            'input'      => $response->getContent(),
+            'uuid'       => SubjectUtils::getUUID(),
         ];
         $logger = resolve(Logger::class);
         $logger->logOwnerApi("响应", $log);

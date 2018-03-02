@@ -115,7 +115,7 @@ class Handler extends ExceptionHandler
      * @param                           $exception
      * @return \Illuminate\Http\Response
      */
-    protected function unauthenticated($request, $exception)
+    protected function unauthenticated($request, Exception $exception)
     {
         if ($request->expectsJson()) {
             return response()
