@@ -9,6 +9,7 @@ namespace Mallto\Tool\Exception;
 use Encore\Admin\Facades\Admin;
 use Exception;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -140,7 +141,7 @@ class Handler extends ExceptionHandler
      * @param bool $isAdmin
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
      */
-    protected function interJsonHandler($exception, $request, $isAdmin = false)
+    protected function interJsonHandler(Exception $exception, $request, $isAdmin = false)
     {
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
@@ -183,8 +184,12 @@ class Handler extends ExceptionHandler
                 throw new ResourceException($msg);
             } elseif ($exception instanceof \Overtrue\Socialite\AuthorizeFailedException) {
                 return $this->unauthenticated($request, $exception);
-            } else {
-                //todo 记录 通知
+            } elseif($exception instanceof  RequestException) {
+
+                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
+            }else {
+                \Log::error("内部异常");
+                \Log::warning($exception->getTraceAsString());
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }
