@@ -185,7 +185,6 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof \Overtrue\Socialite\AuthorizeFailedException) {
                 return $this->unauthenticated($request, $exception);
             } elseif($exception instanceof  RequestException) {
-
                 return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
             }else {
                 \Log::error("内部异常");
