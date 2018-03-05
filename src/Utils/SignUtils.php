@@ -40,6 +40,8 @@ class SignUtils
      */
     public static function sign(array $arr, $key)
     {
+        $arr=array_filter($arr);
+
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
         $tmpHttp = urldecode($tmpHttp);
@@ -49,7 +51,10 @@ class SignUtils
         } else {
             $stringSignTemp = 'key='.$key;
         }
+//        \Log::info($stringSignTemp);
         $stringSignTemp = base64_encode($stringSignTemp);
+//        \Log::info('base64以后:'.$stringSignTemp);
+
         $sign = strtolower(md5($stringSignTemp));
 
         return $sign;
@@ -65,9 +70,12 @@ class SignUtils
      */
     public static function signByLower(array $arr, $key)
     {
+        $arr=array_filter($arr);
+
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
         $stringSignTemp = $tmpHttp.'&secret='.$key;
+
         $stringSignTemp = urldecode($stringSignTemp);
 
 //        \Log::info($stringSignTemp);
