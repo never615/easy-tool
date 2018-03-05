@@ -226,10 +226,11 @@ abstract class AbstractAPI
      */
     protected function isConnectError(RequestException $exception = null)
     {
-        if (strpos($exception->getMessage(), ' Connection reset by peer')
-            || $exception instanceof ConnectException
+        if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer')
+                || $exception instanceof ConnectException)
         ) {
             \Log::error($exception->getMessage());
+
             return true;
         } else {
             return false;
