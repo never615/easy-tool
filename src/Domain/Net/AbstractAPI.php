@@ -229,8 +229,8 @@ abstract class AbstractAPI
         if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer')
                 || $exception instanceof ConnectException)
         ) {
-            \Log::error($exception->getMessage());
-
+            \Log::warning("基础网络库");
+            \Log::warning($exception->getMessage());
             return true;
         } else {
             return false;
