@@ -40,7 +40,7 @@ class SignUtils
      */
     public static function sign(array $arr, $key)
     {
-        $arr=array_filter($arr);
+//        $arr=array_filter($arr);
 
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
@@ -70,7 +70,7 @@ class SignUtils
      */
     public static function signByLower(array $arr, $key)
     {
-        $arr=array_filter($arr);
+//        $arr=array_filter($arr);
 
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
