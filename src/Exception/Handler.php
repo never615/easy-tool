@@ -173,7 +173,7 @@ class Handler extends ExceptionHandler
                 return $this->convertValidationExceptionToResponse($exception, $request);
             } elseif ($exception instanceof DecryptException) {
                 //解密失败
-                throw new ValidationHttpException(trans("errors.validation_error"));
+                throw new ValidationHttpException("解密失败");
             } elseif ($exception instanceof MissingScopeException) {
                 //没有对应作用域的授权
                 throw new PermissionDeniedException("没有权限访问该的接口");
