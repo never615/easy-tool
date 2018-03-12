@@ -57,7 +57,8 @@ class AppSecretController extends AdminCommonController
     {
         $form->text("name");
         $form->text('app_id');
-        $form->text('app_secret');
+        $form->text('app_secret')
+        ->help("﻿openssl rand -hex 16");
     }
 
 }

@@ -48,7 +48,7 @@ class AuthenticateSign2
     {
         $appId=$request->header("app_id");
 
-        \Log::info("header app_id:".$appId);
+//        \Log::info("header app_id:".$appId);
         $appSecret=AppSecret::where("app_id",$appId)->first();
         if(!$appSecret){
             throw new SignException("app_id 无效");
