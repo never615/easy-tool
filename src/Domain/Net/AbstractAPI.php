@@ -198,10 +198,11 @@ abstract class AbstractAPI
                 return false;
             }
 
-            $this->logger->logThirdPart($this->slug.' - Retry', $request->getMethod().":".$request->getUri(),
+            $this->logger->logThirdPart($this->slug.'_Retry', $request->getMethod().":".$request->getUri(),
                 \GuzzleHttp\json_encode([
                     "retries:"    => $retries + 1,
                     "max_retries" => self::MAX_RETRIES,
+                    "request"     => $request->getBody()->getContents(),
                     "response"    => $response ? 'status code: '.$response->getStatusCode() : $exception->getMessage(),
                 ], true));
 

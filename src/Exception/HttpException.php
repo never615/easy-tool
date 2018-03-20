@@ -7,7 +7,7 @@ namespace Mallto\Tool\Exception;
 
 
 /**
- * Class ResourceException
+ * 自定义的http异常,一般在需要返回自定义响应码的时候使用
  *
  * @package App\Exceptions
  */
