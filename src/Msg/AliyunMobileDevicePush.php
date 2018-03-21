@@ -19,6 +19,12 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
 
     protected $slug = 'aliyun_push';
 
+    const TARGET_DEVICE='DEVICE';
+    const TARGET_ACCOUNT='ACCOUNT';
+    const TARGET_ALIAS='ALIAS';
+    const TARGET_TAG='TAG';
+    const TARGET_ALL='ALL';
+
 
     //http://cloudpush.aliyuncs.com
     protected $SETTING_KEY_BASE_URL = "aliyun_push_url";
