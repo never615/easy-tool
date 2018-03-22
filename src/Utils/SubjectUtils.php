@@ -34,7 +34,7 @@ class SubjectUtils
      */
     public static function getSubectConfig($subject, $key, $default = null)
     {
-        if(!$subject){
+        if (!$subject) {
             throw new ResourceException("主体未找到");
         }
 
@@ -74,6 +74,13 @@ class SubjectUtils
         }
 
         if (empty($uuid)) {
+            $defaultUUid = env("DEFAULT_UUID");
+            if ($defaultUUid) {
+                $uuid = $defaultUUid;
+            }
+        }
+
+        if (empty($uuid) && \Admin::user()) {
             throw new InvalidParamException("uuid参数错误");
         }
 
