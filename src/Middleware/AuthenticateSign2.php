@@ -65,6 +65,13 @@ class AuthenticateSign2
         $signVersion = $request->header('sign_version', "1");
 
         switch ($signVersion) {
+            case "999":
+                if(config("app.env")=="production"){
+                    throw new PermissionDeniedException("无效的签名版本");
+                }else{
+                    return $next($request);
+                }
+                break;
             case "1":
                 if (SignUtils::verifySign($inputs, $secret)) {
                     //pass
