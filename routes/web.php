@@ -26,18 +26,18 @@ Route::group($attributes, function ($router) {
 
 //----------------------------------------  管理端开始  -----------------------------------------------
 
+    $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
 
-    Route::group(['prefix' => config('admin.prefix'), "middleware" => ["admin"]], function ($router) {
+    Route::group(['prefix' => config('admin.route.prefix'), "middleware" => config("admin.route.middleware")],
+        function ($router) {
 
 
-        Route::group(["middleware" => ['admin.permission:allow,owner']], function ($router) {
-            $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
-        });
+            Route::group(["middleware" => ['adminE.permission:allow,owner']], function ($router) {
+//            $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
+            });
 
-        //需要授权的
-        Route::group(['middleware' => ['admin.auto_permission']], function ($router) {  //指定auth的guard为mall
 
-            Route::group(["namespace"=>'Admin'], function () {
+            Route::group(["namespace" => 'Admin'], function () {
 
                 //第三方接口请求日志
                 Route::resource("third_logs", "ThirdLogController");
@@ -50,11 +50,10 @@ Route::group($attributes, function ($router) {
                 Route::resource("feedbacks", "FeedBackController");
 
                 //appsecret manager
-                Route::resource('app_secrets','AppSecretController');
+                Route::resource('app_secrets', 'AppSecretController');
             });
 
         });
-    });
 
 //----------------------------------------  管理端结束  -----------------------------------------------
 

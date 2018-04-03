@@ -113,10 +113,10 @@ class Handler extends ExceptionHandler
      * Convert an authentication exception into an unauthenticated response.
      *
      * @param  \Illuminate\Http\Request $request
-     * @param                           $exception
+     * @param AuthenticationException   $exception
      * @return \Illuminate\Http\Response
      */
-    protected function unauthenticated($request, Exception $exception)
+    protected function unauthenticated($request, AuthenticationException $exception)
     {
         if ($request->expectsJson()) {
             return response()
@@ -170,7 +170,7 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof AuthenticationException) {
                 return $this->unauthenticated($request, $exception);
             } elseif ($exception instanceof ValidationException) {
-                return $this->convertValidationExceptionToResponse($exception, $request);
+                return $this->invalidJson($request, $exception);
             } elseif ($exception instanceof DecryptException) {
                 //解密失败
                 throw new ValidationHttpException("解密失败");
@@ -178,12 +178,12 @@ class Handler extends ExceptionHandler
                 //没有对应作用域的授权
                 throw new PermissionDeniedException("没有权限访问该的接口");
             } elseif ($exception instanceof TokenMismatchException) {
-                return $this->unauthenticated($request, $exception);
+                return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 throw new ResourceException($msg);
             } elseif ($exception instanceof \Overtrue\Socialite\AuthorizeFailedException) {
-                return $this->unauthenticated($request, $exception);
+                return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
             } elseif($exception instanceof  RequestException) {
                 return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
             }else {
@@ -192,5 +192,18 @@ class Handler extends ExceptionHandler
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }
+    }
+
+
+    /**
+     * Convert a validation exception into a JSON response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Validation\ValidationException  $exception
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function invalidJson($request, ValidationException $exception)
+    {
+        return response()->json($exception->errors(), $exception->status);
     }
 }

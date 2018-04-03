@@ -7,7 +7,7 @@ namespace Mallto\Tool\Middleware;
 
 
 use Closure;
-use Encore\Admin\AppUtils;
+use Mallto\Tool\Utils\SubjectUtils;
 use Mallto\Tool\Utils\SubjectUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;

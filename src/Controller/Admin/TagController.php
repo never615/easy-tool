@@ -6,7 +6,7 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
-use Encore\Admin\Controllers\Base\AdminCommonController;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Tool\Data\Tag;
@@ -52,7 +52,7 @@ class TagController extends AdminCommonController
      */
     protected function formOption(Form $form)
     {
-        $form->text('name')->rule('required');
+        $form->text('name')->rules('required');
         $form->select('type')
             ->default("common")
             ->options(Tag::TYPE);

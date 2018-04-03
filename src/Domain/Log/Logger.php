@@ -5,7 +5,7 @@
 
 namespace Mallto\Tool\Domain\Log;
 
-use Encore\Admin\AppUtils;
+use Mallto\Tool\Utils\SubjectUtils;
 use Mallto\Tool\Data\Log;
 
 

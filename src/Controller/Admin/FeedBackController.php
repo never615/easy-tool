@@ -6,7 +6,7 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
-use Encore\Admin\Controllers\Base\AdminCommonController;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Tool\Data\Feedback;

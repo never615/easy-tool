@@ -5,9 +5,11 @@
 
 namespace Mallto\Tool\Utils;
 
-use Encore\Admin\Auth\Database\Subject;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Schema;
+use Mallto\Admin\Data\Administrator;
+use Mallto\Admin\Data\Subject;
 use Mallto\Tool\Exception\InvalidParamException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SubjectConfigException;
@@ -34,7 +36,7 @@ class SubjectUtils
      */
     public static function getSubectConfig($subject, $key, $default = null)
     {
-        if(!$subject){
+        if (!$subject) {
             throw new ResourceException("主体未找到");
         }
 
@@ -161,4 +163,47 @@ class SubjectUtils
 
         throw new InvalidParamException("uuid参数错误:".$uuid);
     }
+
+    /**
+     *
+     * @param                    $tableName
+     * @param                    $subjectId
+     * @param Administrator|null $adminUser
+     * @return array|bool
+     */
+    public static function dynamicSubjectIds($tableName, $subjectId, Administrator $adminUser = null)
+    {
+        if (Schema::hasColumn($tableName, 'subject_id')) {
+            if (!empty($adminUserId)) {
+                //如果设置了manager_subject_ids,则优先处理该值
+
+                $managerSubjectIds = $adminUser->manager_subject_ids;
+
+                if (!empty($managerSubjectIds)) {
+                    $tempSubject = new Subject();
+                    $tempSubjectIds = $managerSubjectIds;
+
+                    foreach ($managerSubjectIds as $managerSubjectId) {
+                        $tempSubjectIds = array_merge($tempSubjectIds,
+                            $tempSubject->getChildrenSubject($managerSubjectId));
+                    }
+                    $tempSubjectIds = array_unique($tempSubjectIds);
+                } else {
+                    $currentSubject = $adminUser->subject;
+                    $tempSubjectIds = $currentSubject->getChildrenSubject();
+                }
+            } else {
+                //1.获取当前登录账户属于哪一个主体
+                $currentSubject = Subject::find($subjectId);
+                //2.获取当前主体的所有子主体
+                $ids = $currentSubject->getChildrenSubject($currentSubject->id);
+                $tempSubjectIds = $ids;
+            }
+
+            return $tempSubjectIds;
+        } else {
+            return false;
+        }
+    }
+
 }

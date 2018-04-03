@@ -6,7 +6,7 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
-use Encore\Admin\Controllers\Base\AdminCommonController;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -95,9 +95,9 @@ class ThirdLogController extends AdminCommonController
                 $grid->subject()->name("所属主体");
             }
         }
-        $grid->created_at(trans('admin::lang.created_at'));
+        $grid->created_at(trans('admin.created_at'));
 
-//        $grid->updated_at(trans('admin::lang.updated_at'))->sortable();
+//        $grid->updated_at(trans('admin.updated_at'))->sortable();
 
         $grid->filter(function ($filter) {
             // 禁用id查询框

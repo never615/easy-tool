@@ -5,7 +5,7 @@
 
 namespace Mallto\Tool\Data;
 
-use Encore\Admin\Auth\Database\Traits\DynamicData;
+use Mallto\Admin\Data\Traits\DynamicData;
 use Illuminate\Database\Eloquent\Model;
 
 

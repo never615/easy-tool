@@ -6,12 +6,10 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
-use Encore\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Illuminate\Support\Facades\Auth;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\AppSecret;
-use Mallto\Tool\Data\Feedback;
 
 /**
  * Class LogController
@@ -58,7 +56,7 @@ class AppSecretController extends AdminCommonController
         $form->text("name");
         $form->text('app_id');
         $form->text('app_secret')
-        ->help("﻿openssl rand -hex 16");
+            ->help("﻿openssl rand -hex 16");
     }
 
 }
