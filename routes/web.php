@@ -26,15 +26,12 @@ Route::group($attributes, function ($router) {
 
 //----------------------------------------  管理端开始  -----------------------------------------------
 
-    $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
 
-    Route::group(['prefix' => config('admin.route.prefix'), "middleware" => config("admin.route.middleware")],
+    Route::group(['prefix' => config('admin.route.prefix'), "middleware" => ['adminE']],
         function ($router) {
 
 
-            Route::group(["middleware" => ['adminE.permission:allow,owner']], function ($router) {
-//            $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
-            });
+            $router->get('log', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
 
 
             Route::group(["namespace" => 'Admin'], function () {

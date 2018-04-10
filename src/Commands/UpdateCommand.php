@@ -37,7 +37,7 @@ class UpdateCommand extends Command
      */
     public function fire()
     {
-        $this->call('migrate', ['--path' => str_replace(base_path(), '', __DIR__).'/../../migrations/']);
+//        $this->call('migrate', ['--path' => str_replace(base_path(), '', __DIR__).'/../../migrations/']);
     }
 
 }

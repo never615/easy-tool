@@ -19,9 +19,7 @@ use Closure;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
-use Mallto\Tool\Exception\SubjectConfigException;
 use Mallto\Tool\Utils\SignUtils;
-use Mallto\Tool\Utils\SubjectUtils;
 
 /**
  * 管理端权限过滤

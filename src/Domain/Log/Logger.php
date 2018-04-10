@@ -5,7 +5,7 @@
 
 namespace Mallto\Tool\Domain\Log;
 
-use Mallto\Tool\Utils\SubjectUtils;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\Log;
 
 

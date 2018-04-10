@@ -5,7 +5,7 @@
 
 namespace Mallto\Tool\Domain\Log;
 
-use Mallto\Tool\Utils\SubjectUtils;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\Log;
 
 
@@ -32,7 +32,7 @@ class LoggerDb implements Logger
             'code'       => $tag,
             'tag'        => $action,
             'content'    => $content,
-            'subject_id' => AppUtils::getSubjectId(),
+            'subject_id' => SubjectUtils::getSubjectId(),
         ]);
     }
 

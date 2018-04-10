@@ -9,7 +9,7 @@ namespace Mallto\Tool\Controller\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Mallto\Tool\Data\Feedback;
-use Mallto\Tool\Utils\SubjectUtils;
+use Mallto\Admin\SubjectUtils;
 
 class FeedbackController extends Controller
 {

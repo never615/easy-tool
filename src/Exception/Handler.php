@@ -69,7 +69,7 @@ class Handler extends ExceptionHandler
      * Render an exception into an HTTP response.
      *
      * @param  \Illuminate\Http\Request $request
-     * @param  \Exception               $exception
+     * @param  \Exception $exception
      * @return \Illuminate\Http\Response
      */
     public function render($request, Exception $exception)
@@ -92,7 +92,7 @@ class Handler extends ExceptionHandler
 
         } else {
             if ($exception instanceof TokenMismatchException) {
-                return redirect()->guest(config('app.url').config("admin.admin_login"));
+                return redirect()->guest(config('app.url') . config("admin.admin_login"));
             }
 
             //如果是管理端请求
@@ -113,18 +113,18 @@ class Handler extends ExceptionHandler
      * Convert an authentication exception into an unauthenticated response.
      *
      * @param  \Illuminate\Http\Request $request
-     * @param AuthenticationException   $exception
+     * @param AuthenticationException $exception
      * @return \Illuminate\Http\Response
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         if ($request->expectsJson()) {
             return response()
-                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401);
+                ->json(['error' => trans("errors.unauthenticated") . ',' . $exception->getMessage()], 401);
         }
 
         if (Admin::user()) {
-            return redirect()->guest(config('app.url').config("admin.admin_login"));
+            return redirect()->guest(config('app.url') . config("admin.admin_login"));
         } else {
             $e = new \Mallto\Tool\Exception\AuthorizeFailedException();
 
@@ -151,16 +151,25 @@ class Handler extends ExceptionHandler
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
                 return response()->json([
                     "error" => $exception->getMessage(),
-                    'code'  => $exception->getErrCode(),
+                    'code' => $exception->getErrCode(),
                 ], $exception->getStatusCode());
             } else {
-                return response()->json(["error" => $exception->getMessage()], $exception->getStatusCode());
+//                if($isAdmin){
+//                    return response()
+//                        ->json(["status"=>false,"message" => $exception->getMessage()],
+//                            $exception->getStatusCode());
+//                }else{
+
+                return response()
+                    ->json(["error" => $exception->getMessage()],
+                        $exception->getStatusCode());
+//                }
             }
         } else {
             if ($exception instanceof ModelNotFoundException) {
                 $arr = explode('\\', $exception->getModel());
 
-                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404');
+                return response()->json(["error" => trans("errors.not_found") . "," . array_last($arr)], '404');
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
@@ -184,11 +193,11 @@ class Handler extends ExceptionHandler
                 throw new ResourceException($msg);
             } elseif ($exception instanceof \Overtrue\Socialite\AuthorizeFailedException) {
                 return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
-            } elseif($exception instanceof  RequestException) {
-                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
-            }else {
+            } elseif ($exception instanceof RequestException) {
+                return response()->json(["error" => "网络繁忙,请重试:" . $exception->getMessage()], 422);
+            } else {
                 \Log::error("内部异常");
-                \Log::warning($exception->getTraceAsString());
+//                \Log::warning($exception->getTraceAsString());
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }
@@ -198,8 +207,8 @@ class Handler extends ExceptionHandler
     /**
      * Convert a validation exception into a JSON response.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
+     * @param  \Illuminate\Http\Request $request
+     * @param  \Illuminate\Validation\ValidationException $exception
      * @return \Illuminate\Http\JsonResponse
      */
     protected function invalidJson($request, ValidationException $exception)

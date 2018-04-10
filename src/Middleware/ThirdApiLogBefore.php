@@ -8,7 +8,7 @@ namespace Mallto\Tool\Middleware;
 
 use Illuminate\Http\Request;
 use Mallto\Tool\Domain\Log\Logger;
-use Mallto\Tool\Utils\SubjectUtils;
+use Mallto\Admin\SubjectUtils;
 
 /**
  * 向第三方提供的接口通讯日志记录

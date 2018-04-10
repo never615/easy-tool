@@ -40,8 +40,8 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected $routeMiddleware = [
         "requestCheck" => RequestCheck::class,
-        'authSign'     => AuthenticateSign::class,
-        'authSign2'     => AuthenticateSign2::class,
+        'authSign' => AuthenticateSign::class,
+        'authSign2' => AuthenticateSign2::class,
     ];
 
     /**
@@ -64,10 +64,10 @@ class ToolServiceProvider extends ServiceProvider
     public function boot()
     {
 
-        $this->loadMigrationsFrom(__DIR__.'/../../migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
 
-        $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
-        $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
 
 
         $this->appBoot();
@@ -169,7 +169,7 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected function registerMail()
     {
-        $this->mergeConfigFrom(__DIR__.'/../../config/services.php'
+        $this->mergeConfigFrom(__DIR__ . '/../../config/services.php'
             , 'services'
         );
         $this->app->resolving('swift.transport', function (TransportManager $tm) {

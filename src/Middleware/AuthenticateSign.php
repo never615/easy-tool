@@ -17,9 +17,7 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Mallto\Tool\Exception\SignException;
-use Mallto\Tool\Exception\SubjectConfigException;
 use Mallto\Tool\Utils\SignUtils;
-use Mallto\Tool\Utils\SubjectUtils;
 
 /**
  * 管理端权限过滤

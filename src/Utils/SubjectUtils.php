@@ -16,6 +16,9 @@ use Mallto\Tool\Exception\SubjectConfigException;
 
 /**
  * 工具类
+ *
+ * @deprecated
+ *
  * Created by PhpStorm.
  * User: never615
  * Date: 05/11/2016

@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\ThirdPartException;
-use Mallto\Tool\Utils\SubjectUtils;
+use Mallto\Admin\SubjectUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
