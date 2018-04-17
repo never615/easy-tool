@@ -70,7 +70,7 @@ class Handler extends ExceptionHandler
      *
      * @param  \Illuminate\Http\Request $request
      * @param  \Exception               $exception
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
      */
     public function render($request, Exception $exception)
     {
@@ -88,8 +88,6 @@ class Handler extends ExceptionHandler
             } else {
                 return $this->interJsonHandler($exception, $request);
             }
-
-
         } else {
             if ($exception instanceof TokenMismatchException) {
                 return redirect()->guest(config('app.url').config("admin.admin_login"));
@@ -101,7 +99,7 @@ class Handler extends ExceptionHandler
                     'title' => $exception->getMessage(),
                 ]);
 
-                return back()->with(compact('error'));
+                return back()->with(compact('error'))->withInput();
             } else {
                 return parent::render($request, $exception);
             }
