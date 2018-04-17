@@ -32,6 +32,17 @@ Route::group($attributes, function ($router) {
         //意见反馈
         Route::post("feedback", "FeedbackController@store");
 
+        //获取当前系统时间
+        Route::get("time/now", "TimeController@now");
+
+        //-------------------  页面配置开始 ------------------------
+        //轮播图
+        Route::resource("page/banner", "PageBannerController", ["only" => ['index']]);
+        //模块头图
+        Route::resource("page/head_image", "HeadImageController", ["only" => ['index']]);
+
+        //-------------------  页面配置结束 ------------------------
+
         /**
          * 需要经过签名校验
          */
@@ -43,8 +54,9 @@ Route::group($attributes, function ($router) {
         /**
          * 需要经过授权
          */
-//        Route::group(['middleware' => ['jwt.auth', 'jwt.refresh']], function () {
         Route::group(['middleware' => ['auth:api']], function () {
+
+
 
             Route::group(["middleware" => ["scopes:mobile-token"]], function () {
 

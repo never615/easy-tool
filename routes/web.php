@@ -48,6 +48,20 @@ Route::group($attributes, function ($router) {
 
                 //appsecret manager
                 Route::resource('app_secrets', 'AppSecretController');
+
+
+                //----------------------------  系统配置 开始  -----------------------------------------------
+                Route::resource("wechat_template_ids", "WechatTemplateMsgContoller");
+                //----------------------------  系统配置 结束-----------------------------------------------
+
+                //----------------------------  页面配置开始  -----------------------------------------------
+                //轮播图
+                Route::resource('page_banners', 'PageBannerController');
+                //模块头图配置
+                Route::resource('head_images', 'HeadImageController');
+
+                //----------------------------  页面配置结束  -----------------------------------------------
+
             });
 
         });
