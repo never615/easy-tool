@@ -79,6 +79,13 @@ class SubjectUtils
         }
 
         if (empty($uuid)) {
+            $defaultUUid = env("DEFAULT_UUID");
+            if ($defaultUUid) {
+                $uuid = $defaultUUid;
+            }
+        }
+
+        if (empty($uuid) && \Admin::user()) {
             throw new InvalidParamException("uuid参数错误");
         }
 

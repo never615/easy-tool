@@ -15,8 +15,10 @@
 namespace Mallto\Tool\Middleware;
 
 
+use Carbon\Carbon;
 use Closure;
 use Mallto\Tool\Data\AppSecret;
+use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\SignUtils;
@@ -44,26 +46,64 @@ class AuthenticateSign2
      */
     public function handle($request, Closure $next)
     {
-        $appId=$request->header("app_id");
+        $appId = $request->header("app_id");
 
 //        \Log::info("header app_id:".$appId);
-        $appSecret=AppSecret::where("app_id",$appId)->first();
-        if(!$appSecret){
+        $appSecret = AppSecret::where("app_id", $appId)->first();
+        if (!$appSecret) {
             throw new SignException("app_id 无效");
         }
 
-        if(is_null($appSecret->app_secret)){
+        if (is_null($appSecret->app_secret)) {
             throw new ResourceException("未设置秘钥");
         }
 
-        $key=$appSecret->app_secret;
+        $secret = $appSecret->app_secret;
 
         $inputs = $request->all();
-        if (SignUtils::verifySign($inputs, $key)) {
-            //pass
-            return $next($request);
-        } else {
-            throw new SignException(trans("errors.sign_error"));
+
+        $signVersion = $request->header('sign_version', "1");
+
+        switch ($signVersion) {
+            case "999":
+                if(config("app.env")=="production"){
+                    throw new PermissionDeniedException("无效的签名版本");
+                }else{
+                    return $next($request);
+                }
+                break;
+            case "1":
+                if (SignUtils::verifySign($inputs, $secret)) {
+                    //pass
+                    return $next($request);
+                } else {
+                    throw new SignException(trans("errors.sign_error"));
+                }
+                break;
+            case "2":
+                $timestamp = $request->header("timestamp");
+                //时间戳格式检查
+                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                    throw new ResourceException("InvalidTimeStamp.Format");
+                }
+
+
+                if (Carbon::now()->subMinutes(15) < $timestamp) {
+                    //和当前时间间隔比较在15分钟内
+                    //检查签名
+                    if (SignUtils::verifySign2($inputs, $secret)) {
+                        //pass
+                        return $next($request);
+                    } else {
+                        throw new SignException(trans("errors.sign_error"));
+                    }
+                } else {
+                    throw new ResourceException("InvalidTimeStamp.Expired");
+                }
+                break;
+            default:
+                throw new PermissionDeniedException("无效的签名版本");
+                break;
         }
 
 
