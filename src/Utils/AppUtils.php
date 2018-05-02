@@ -239,4 +239,20 @@ class AppUtils
 
         return $array;
     }
+
+
+    /**
+     * 提取富文本中的文字字符
+     *
+     * @param $text
+     * @return string
+     */
+    public static function htmlFilter($text)
+    {
+        $content_02 = htmlspecialchars_decode($text);//把一些预定义的 HTML 实体转换为字符
+        $content_03 = str_replace("&nbsp;", "", $content_02);//将空格替换成空
+        $contents = strip_tags($content_03);//函数剥去字符串中的 HTML、XML 以及 PHP 的标签,获取纯文本内容
+
+        return $contents;
+    }
 }
