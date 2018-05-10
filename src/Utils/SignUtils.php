@@ -132,11 +132,32 @@ class SignUtils
 //        \Log::info($arr);
 //        \Log::info($waiteSign);
 //        \Log::info($sign);
+        return $sign == $waiteSign ? true : false;
+    }
 
-        if ($sign == $waiteSign) {
-            return true;
-        } else {
-            return false;
+
+    /**
+     * 签名校验
+     *
+     * 签名2.0版本
+     *
+     * @param array $arr
+     * @param null  $secret
+     * @return string
+     */
+    public static  function verifySign2(array $arr, $secret)
+    {
+        if (!isset($arr['signature'])) {
+            throw new SignException("缺少sign字段");
         }
+
+        $waiteSign = $arr['signature'];
+        unset($arr['signature']);
+        ksort($arr, SORT_STRING);
+        $stringToSign = http_build_query($arr);
+        $stringToSign = urlencode($stringToSign);
+        $sign = base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
+
+        return $sign == $waiteSign ? true : false;
     }
 }

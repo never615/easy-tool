@@ -73,6 +73,7 @@ class TimeUtils
         }
     }
 
+
     /**
      * 计算两个日期相隔多少年，多少月，多少天
      *
@@ -102,6 +103,19 @@ class TimeUtils
         }
 
         return array ('year' => $Y, 'month' => $m, 'day' => $d);
+    }
+
+    /**
+     * 返回字符串的毫秒数时间戳
+     */
+    public static function millisecond()
+    {
+        $time = explode(" ", microtime());
+        $time = $time [1].($time [0] * 1000);
+        $time2 = explode(".", $time);
+        $time = $time2 [0];
+
+        return $time;
     }
 
 

@@ -108,13 +108,14 @@ class Http
      *
      * @param array        $queries
      * @param array        $other
+     * @param string       $mothod
      * @return ResponseInterface
      */
-    public function json($url, $options = [], $encodeOption = JSON_UNESCAPED_UNICODE, $queries = [], $other = [])
+    public function json($url, $options = [], $encodeOption = JSON_UNESCAPED_UNICODE, $queries = [], $other = [],$mothod='POST')
     {
         is_array($options) && $options = json_encode($options, $encodeOption);
 
-        return $this->request($url, 'POST',
+        return $this->request($url, $mothod,
             array_merge(
                 [
                     'query'   => $queries,
