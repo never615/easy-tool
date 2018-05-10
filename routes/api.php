@@ -26,7 +26,7 @@ Route::group($attributes, function ($router) {
     /**
      * 需要经过验证
      */
-    Route::group(['middleware' => ['requestCheck']], function () {
+    Route::group(['middleware' => ['requestCheck','owner_api']], function () {
 
 
         //意见反馈

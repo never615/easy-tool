@@ -18,9 +18,10 @@ use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
+use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
-use Mallto\Tool\Middleware\ThirdApiLogAfter;
-use Mallto\Tool\Middleware\ThirdApiLogBefore;
+use Mallto\Tool\Middleware\OwnerApiLogAfter;
+use Mallto\Tool\Middleware\OwnerApiLogBefore;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -42,6 +43,7 @@ class ToolServiceProvider extends ServiceProvider
         "requestCheck" => RequestCheck::class,
         'authSign' => AuthenticateSign::class,
         'authSign2' => AuthenticateSign2::class,
+        "owner_api"=>OwnerApiLog::class,
     ];
 
     /**
@@ -50,10 +52,6 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $middlewareGroups = [
-        'third_api' => [
-            ThirdApiLogBefore::class,
-            ThirdApiLogAfter::class,
-        ],
     ];
 
     /**
