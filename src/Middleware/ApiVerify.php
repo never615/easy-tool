@@ -24,7 +24,8 @@ use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\SignUtils;
 
 /**
- * 管理端权限过滤
+ * api 接口校验
+ * 签名校验(HMAC)和时间戳校验
  *
  * 使用appid和secret
  *
@@ -32,7 +33,7 @@ use Mallto\Tool\Utils\SignUtils;
  *
  * @package App\Http\Middleware
  */
-class AuthenticateSign2
+class ApiVerify
 {
     protected $except = [
     ];
@@ -62,23 +63,18 @@ class AuthenticateSign2
 
         $inputs = $request->all();
 
-        $signVersion = $request->header('sign_version', "1");
+        $apiVersion = $request->header('api_version', "1");
 
-        switch ($signVersion) {
-            case "999":  //用户测试环境,直接通过校验
+        switch ($apiVersion) {
+            case "999": //用户测试环境,直接通过校验
                 if (config("app.env") == "production" || config("app.env") == "staging") {
-                    throw new PermissionDeniedException("无效的签名版本");
+                    throw new PermissionDeniedException("无效的api版本");
                 } else {
                     return $next($request);
                 }
                 break;
-            case "1": //原始版本,只有签名校验
-                if (SignUtils::verifySign($inputs, $secret)) {
-                    //pass
-                    return $next($request);
-                } else {
-                    throw new SignException(trans("errors.sign_error"));
-                }
+            case "1": //默认api版本,不进行校验
+                return $next($request);
                 break;
             case "2":  //签名校验+时间戳校验
                 $timestamp = $request->header("timestamp");
@@ -87,8 +83,7 @@ class AuthenticateSign2
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
-
-                if (Carbon::now()->subMinutes(15) < $timestamp) {
+                if (Carbon::now()->subMinutes(5) < $timestamp) {
                     //和当前时间间隔比较在15分钟内
                     //检查签名
                     if (SignUtils::verifySign2($inputs, $secret)) {
@@ -97,6 +92,7 @@ class AuthenticateSign2
                     } else {
                         throw new SignException(trans("errors.sign_error"));
                     }
+
                 } else {
                     throw new ResourceException("InvalidTimeStamp.Expired");
                 }

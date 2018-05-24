@@ -97,6 +97,7 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
             'Timestamp'        => Carbon::createFromTimestampUTC(time())->format('Y-m-d\\TH:i:s\\Z'),
         ], $params);
 
+        //todo 签名未完成
 
         ksort($params, SORT_STRING);
         $stringToSign = http_build_query($params);

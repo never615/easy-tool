@@ -141,11 +141,13 @@ class SignUtils
      *
      * 签名2.0版本
      *
+     * http://wiki.mall-to.com/web/#/3?page_id=139
+     *
      * @param array $arr
      * @param null  $secret
      * @return string
      */
-    public static  function verifySign2(array $arr, $secret)
+    public static function verifySign2(array $arr, $secret)
     {
         if (!isset($arr['signature'])) {
             throw new SignException("缺少sign字段");
@@ -155,9 +157,34 @@ class SignUtils
         unset($arr['signature']);
         ksort($arr, SORT_STRING);
         $stringToSign = http_build_query($arr);
+        $stringToSign = urldecode($stringToSign);
         $stringToSign = urlencode($stringToSign);
+        $stringToSign = str_replace(['+', '*', '~'], ['%20', '%2A', '%7E'], $stringToSign);
+
+
         $sign = base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
 
         return $sign == $waiteSign ? true : false;
+    }
+
+
+    /**
+     * 签名2.0
+     *
+     * http://wiki.mall-to.com/web/#/3?page_id=139
+     * @param $arr
+     * @param $secret
+     * @return string
+     */
+    public static function signVersion2($arr, $secret)
+    {
+        ksort($arr, SORT_STRING);
+        $stringToSign = http_build_query($arr);
+        $stringToSign = urldecode($stringToSign);
+        $stringToSign = urlencode($stringToSign);
+        $stringToSign = str_replace(['+', '*', '~'], ['%20', '%2A', '%7E'], $stringToSign);
+        \Log::info($stringToSign);
+
+        return base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
     }
 }
