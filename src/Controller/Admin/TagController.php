@@ -49,10 +49,12 @@ class TagController extends AdminCommonController
 
     /**
      * @param Form $form
+     * @return mixed|void
      */
     protected function formOption(Form $form)
     {
         $form->text('name')->rules('required');
+        $form->text("slug");
         $form->select('type')
             ->default("common")
             ->options(Tag::TYPE);
