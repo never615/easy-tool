@@ -183,8 +183,10 @@ class SignUtils
         $stringToSign = urldecode($stringToSign);
         $stringToSign = urlencode($stringToSign);
         $stringToSign = str_replace(['+', '*', '~'], ['%20', '%2A', '%7E'], $stringToSign);
-        \Log::info($stringToSign);
 
         return base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
     }
+
+
+
 }
