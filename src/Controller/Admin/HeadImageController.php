@@ -49,6 +49,7 @@ class HeadImageController extends AdminCommonController
             ->options(HeadImage::TYPE)
             ->help("一个模块只能设置一个头图");
         $form->image('image')
+            ->removable()
             ->uniqueName()
             ->move('head_image/image'.$this->currentId)
             ->rules("required");

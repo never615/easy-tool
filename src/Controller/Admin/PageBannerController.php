@@ -52,6 +52,7 @@ class PageBannerController extends AdminCommonController
         $form->text('link')->help("链接需要填写http://或者https://");
         $form->image('image')
             ->uniqueName()
+            ->removable()
             ->move('page_banner/image'.$this->currentId)
             ->rules("required");
         $form->text("weight")->default(0)->rules("numeric");
