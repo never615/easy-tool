@@ -101,6 +101,8 @@ class Handler extends ExceptionHandler
 
                 return back()->with(compact('error'))->withInput();
             } else {
+                \Log::warning($exception->getMessage());
+                \Log::warning($exception->getTraceAsString());
                 return parent::render($request, $exception);
             }
         }
