@@ -17,6 +17,26 @@ use RuntimeException;
  */
 class AppUtils
 {
+
+    /**
+     * 获取前端项目使用的url
+     * 结尾不包含/
+     *
+     * @return string
+     */
+    public static function h5Url()
+    {
+        $url = "";
+        if (config("app.env") == "production" || config("app.env") == "staging") {
+            $url = "https://h5.mall-to.com/";
+        } else {
+            $url = "https://h5-test.mall-to.com/";
+        }
+
+        return $url.config("app.env");
+    }
+
+
     /**
      * 移除数组中的指定值的元素
      *
@@ -43,52 +63,6 @@ class AppUtils
         return $originArr;
     }
 
-
-    /**
-     * 获取域名后的第一段路径
-     *
-     * 比如:http://mall.mall-to.com/test/test1/test2  number=0,获取test
-     *
-     * @param $request
-     * @param $number ,获取路径的第几段信息
-     * @return mixed
-     */
-    public static function getPathKey($request, $number = 0)
-    {
-        $path = $request->path();
-        $pathArr = explode("/", $path);
-
-        return $pathArr[$number];
-    }
-
-
-    /**
-     * 获取指定的header
-     *
-     * @param      $headerKey
-     * @param bool $low
-     * @return mixed|null
-     */
-    public static function getHeader($headerKey, $low = false)
-    {
-        return \Illuminate\Support\Facades\Request::header($headerKey);
-//        $headers = array ();
-//        foreach ($_SERVER as $key => $value) {
-//            if ('HTTP_' == substr($key, 0, 5)) {
-//                if ($low) {
-//                    $key = strtolower($key);
-//                    $value = strtolower($value);
-//                }
-//                $headers[str_replace('_', '-', substr($key, 5))] = $value;
-//            }
-//        }
-//
-//        if (isset($headers[$headerKey])) {
-//            return $headers[$headerKey];
-//        } else {
-//            return null;
-//        }
-    }
 
     /**
      * 富文本转纯文本,图片显示成[图片]
@@ -255,4 +229,54 @@ class AppUtils
 
         return $contents;
     }
+
+
+    /**
+     * 获取域名后的第一段路径
+     *
+     * 比如:http://mall.mall-to.com/test/test1/test2  number=0,获取test
+     *
+     * @deprecated
+     * @param $request
+     * @param $number ,获取路径的第几段信息
+     * @return mixed
+     */
+    public static function getPathKey($request, $number = 0)
+    {
+        $path = $request->path();
+        $pathArr = explode("/", $path);
+
+        return $pathArr[$number];
+    }
+
+
+    /**
+     * 获取指定的header
+     *
+     * @deprecated
+     * @param      $headerKey
+     * @param bool $low
+     * @return mixed|null
+     */
+    public static function getHeader($headerKey, $low = false)
+    {
+        return \Illuminate\Support\Facades\Request::header($headerKey);
+//        $headers = array ();
+//        foreach ($_SERVER as $key => $value) {
+//            if ('HTTP_' == substr($key, 0, 5)) {
+//                if ($low) {
+//                    $key = strtolower($key);
+//                    $value = strtolower($value);
+//                }
+//                $headers[str_replace('_', '-', substr($key, 5))] = $value;
+//            }
+//        }
+//
+//        if (isset($headers[$headerKey])) {
+//            return $headers[$headerKey];
+//        } else {
+//            return null;
+//        }
+    }
+
 }

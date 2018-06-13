@@ -27,8 +27,7 @@ trait BasicClientTrait
      * @param        $data
      * @param string $requestType
      * @return array
-     * @throws InternalHttpException
-     * @throws ThirdPartException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     protected function basicClient($url, $data, $requestType = 'post')
     {
