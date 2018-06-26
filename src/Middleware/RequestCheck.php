@@ -21,6 +21,13 @@ use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
  */
 class RequestCheck
 {
+    protected $requestTypes = [
+        'wechat'  => 'WECHAT',
+        'android' => 'ANDROID',
+        'ios'     => 'IOS',
+        'web'     => 'WEB',
+        'server'  => 'SERVER',
+    ];
 
     /**
      * @param         $request
@@ -29,7 +36,6 @@ class RequestCheck
      */
     public function handle(Request $request, Closure $next)
     {
-
         $uuid = SubjectUtils::getUUID();
         $requestType = $request->header('REQUEST_TYPE');
         if (!$uuid) {
@@ -38,7 +44,7 @@ class RequestCheck
         }
 
 
-        if ($requestType&&!in_array($requestType, config('mall.request_type'))) {
+        if ($requestType && !in_array($requestType, $this->requestTypes)) {
             throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
         }
 
