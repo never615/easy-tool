@@ -70,7 +70,11 @@ class LoggerAliyun implements Logger
         ]);
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_third_part_api, $topic, $source, $logitems);
-        $res2 = $this->client->putLogs($req2);
+        try {
+            $res2 = $this->client->putLogs($req2);
+        } catch (\Exception $exception) {
+
+        }
     }
 
     /**
@@ -98,7 +102,12 @@ class LoggerAliyun implements Logger
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
-        $res2 = $this->client->putLogs($req2);
+
+        try {
+            $res2 = $this->client->putLogs($req2);
+        } catch (\Exception $exception) {
+
+        }
     }
 
     /**
@@ -124,6 +133,10 @@ class LoggerAliyun implements Logger
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source, $logitems);
-        $res2 = $this->client->putLogs($req2);
+        try {
+            $res2 = $this->client->putLogs($req2);
+        } catch (\Exception $exception) {
+
+        }
     }
 }
