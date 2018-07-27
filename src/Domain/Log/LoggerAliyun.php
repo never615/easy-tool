@@ -47,10 +47,9 @@ class LoggerAliyun implements Logger
      * 请求别人的接口的日志记录
      *
      * @param $tag
-     * @param $action
      * @param $content
      */
-    public function logThirdPart($tag, $action, $content)
+    public function logThirdPart( $content)
     {
         if (!$this->switch) {
             return;
@@ -61,19 +60,19 @@ class LoggerAliyun implements Logger
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
-        $logItem->setContents([
-            "content"     => $content,
-            "action"      => $action,
-            "tag"         => $tag,
-            "server_name" => $this->serverName,
-            "request_url" => config("app.url"),
-        ]);
+
+        $logItem->setContents(
+            array_merge($content, [
+                "server_name" => $this->serverName,
+                "env"         => config("app.env"),
+            ])
+        );
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_third_part_api, $topic, $source, $logitems);
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-
+            \Log::error($exception->getMessage());
         }
     }
 

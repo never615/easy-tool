@@ -26,14 +26,9 @@ class LoggerDb implements Logger
      * @param $content
      * @return
      */
-    public function logThirdPart($tag, $action, $content)
+    public function logThirdPart($tag,  $content)
     {
-        return Log::create([
-            'code'       => $tag,
-            'tag'        => $action,
-            'content'    => $content,
-            'subject_id' => SubjectUtils::getSubjectId(),
-        ]);
+        // TODO: Implement logAdminOperation() method.
     }
 
 

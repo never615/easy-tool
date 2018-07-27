@@ -9,10 +9,11 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\ThirdPartException;
-use Mallto\Admin\SubjectUtils;
+use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -156,19 +157,26 @@ abstract class AbstractAPI
     protected function logMiddleware()
     {
         return Middleware::tap(function (RequestInterface $request, $options) {
-            $this->logger->logThirdPart($this->slug, '请求'.$request->getMethod().":".$request->getUri(),
-                $request->getBody()->getContents());
-//            $this->logger->logThirdPart($this->slug, '请求头'.$request->getMethod().":".$request->getUri(),
-//                json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE));
+
+            $this->logger->logThirdPart(
+                [
+                    "tag"     => $this->slug,
+                    "action"  => '请求'.$request->getMethod(),
+                    "url"     => $request->getUri(),
+                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"    => json_encode(AppUtils::httpQueryBuildReverse($request->getBody()->getContents()),
+                        JSON_UNESCAPED_UNICODE),
+                ]);
+
         }, function (RequestInterface $request, $options, Promise $response) {
             $response->then(function (ResponseInterface $response) use ($request) {
-                $this->logger->logThirdPart($this->slug, '响应'.$request->getMethod().":".$request->getUri(),
-                    json_encode([
-                        'Status'  => $response->getStatusCode(),
-                        'Reason'  => $response->getReasonPhrase(),
-                        'Headers' => $response->getHeaders(),
-                        'Body'    => strval($response->getBody()->getContents()),
-                    ], JSON_UNESCAPED_UNICODE));
+                $this->logger->logThirdPart([
+                    "tag"     => $this->slug,
+                    "action"  => '响应'.$request->getMethod(),
+                    "url"     => $request->getUri(),
+                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"    => $response->getBody()->getContents(),
+                ]);
             });
 
 
@@ -232,6 +240,7 @@ abstract class AbstractAPI
         ) {
             \Log::warning("基础网络库");
             \Log::warning($exception->getMessage());
+
             return true;
         } else {
             return false;

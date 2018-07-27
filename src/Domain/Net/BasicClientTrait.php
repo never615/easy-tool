@@ -13,6 +13,7 @@ use Mallto\Tool\Exception\ThirdPartConnectException;
 use Mallto\Tool\Exception\ThirdPartException;
 
 /**
+ * @deprecated
  * Created by PhpStorm.
  * User: never615
  * Date: 06/07/2017
@@ -23,6 +24,7 @@ trait BasicClientTrait
     /**
      * 基本
      *
+     * @deprecated
      * @param        $url
      * @param        $data
      * @param string $requestType
@@ -42,6 +44,8 @@ trait BasicClientTrait
         try {
             $response=$client->request($requestType,$url,$data);
             $body = $response->getBody();
+
+
             $logger->logThirdPart(self::SLUG, '返回:'.$url, $body);
 
             return $this->resultHandler($body);

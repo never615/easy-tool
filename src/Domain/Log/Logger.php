@@ -23,12 +23,10 @@ interface Logger
     /**
      * 记录第三方接口通讯日志
      *
-     * @param $tag
-     * @param $action
      * @param $content
      * @return
      */
-    public function logThirdPart($tag, $action, $content);
+    public function logThirdPart( $content);
 
     /**
      * 记录自己api的通讯日志

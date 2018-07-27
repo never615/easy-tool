@@ -89,10 +89,10 @@ class AppUtils
         if (strpos($url, "http") === 0) {
             //            $httpProtocol = config("app.http_protocol", 'https');
             $secure = config("admin.secure");
-            if($secure){
-                $httpProtocol="https";
-            }else{
-                $httpProtocol="http";
+            if ($secure) {
+                $httpProtocol = "https";
+            } else {
+                $httpProtocol = "http";
             }
             if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉
@@ -285,5 +285,25 @@ class AppUtils
 //            return null;
 //        }
     }
+
+    /**
+     * http_build_query()函数的反操作
+     *
+     * @param $data
+     * @return array
+     */
+    public static function httpQueryBuildReverse($data)
+    {
+        $data = urldecode($data);
+        $result = [];
+        $queries = explode("&", $data);
+        foreach ($queries as $query) {
+            $subQuery = explode("=", $query);
+            $result[$subQuery[0]] = $subQuery[1];
+        }
+
+        return $result;
+    }
+
 
 }
