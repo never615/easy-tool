@@ -5,9 +5,6 @@
 
 namespace Mallto\Tool\Domain\Log;
 
-use Mallto\Admin\SubjectUtils;
-use Mallto\Tool\Data\Log;
-
 
 /**
  * Created by PhpStorm.
@@ -19,14 +16,13 @@ interface Logger
 {
 
 
-
     /**
      * 记录第三方接口通讯日志
      *
      * @param $content
      * @return
      */
-    public function logThirdPart( $content);
+    public function logThirdPart($content);
 
     /**
      * 记录自己api的通讯日志
@@ -35,7 +31,7 @@ interface Logger
      * @param $content
      * @return
      */
-    public function logOwnerApi( $action, $content);
+    public function logOwnerApi($content);
 
     /**
      * 记录管理端的操作日志

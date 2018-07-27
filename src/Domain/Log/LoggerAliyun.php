@@ -8,6 +8,7 @@ namespace Mallto\Tool\Domain\Log;
 use Aliyun\SLS\Client;
 use Aliyun\SLS\Models\LogItem;
 use Aliyun\SLS\Models\PutLogsRequest;
+use Mallto\Admin\SubjectUtils;
 
 
 /**
@@ -49,7 +50,7 @@ class LoggerAliyun implements Logger
      * @param $tag
      * @param $content
      */
-    public function logThirdPart( $content)
+    public function logThirdPart($content)
     {
         if (!$this->switch) {
             return;
@@ -65,6 +66,8 @@ class LoggerAliyun implements Logger
             array_merge($content, [
                 "server_name" => $this->serverName,
                 "env"         => config("app.env"),
+                'uuid'        => SubjectUtils::getUUIDNoException(),
+
             ])
         );
         array_push($logitems, $logItem);
@@ -79,11 +82,10 @@ class LoggerAliyun implements Logger
     /**
      * 记录自己api的通讯日志
      *
-     * @param $action
      * @param $content
      * @return mixed|void
      */
-    public function logOwnerApi($action, $content)
+    public function logOwnerApi($content)
     {
         if (!$this->switch) {
             return;
@@ -95,9 +97,9 @@ class LoggerAliyun implements Logger
         $logItem = new LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
-            'action'      => $action,
             "server_name" => $this->serverName,
-            "request_url" => config("app.url"),
+            "env"         => config("app.env"),
+            'uuid'        => SubjectUtils::getUUIDNoException(),
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);

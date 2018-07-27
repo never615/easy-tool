@@ -161,7 +161,8 @@ abstract class AbstractAPI
             $this->logger->logThirdPart(
                 [
                     "tag"     => $this->slug,
-                    "action"  => '请求'.$request->getMethod(),
+                    "action"  => '请求',
+                    "method"  => $request->getMethod(),
                     "url"     => $request->getUri(),
                     "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     "body"    => json_encode(AppUtils::httpQueryBuildReverse($request->getBody()->getContents()),
@@ -172,10 +173,12 @@ abstract class AbstractAPI
             $response->then(function (ResponseInterface $response) use ($request) {
                 $this->logger->logThirdPart([
                     "tag"     => $this->slug,
-                    "action"  => '响应'.$request->getMethod(),
+                    "action"  => '响应',
+                    "method"  => $request->getMethod(),
                     "url"     => $request->getUri(),
                     "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     "body"    => $response->getBody()->getContents(),
+                    "status"  => $response->getStatusCode(),
                 ]);
             });
 
