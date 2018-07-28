@@ -107,7 +107,8 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-
+            \Log::error($exception->getMessage());
+            \Log::warning($exception->getTraceAsString());
         }
     }
 
@@ -137,7 +138,7 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-
+            \Log::error($exception->getMessage());
         }
     }
 }

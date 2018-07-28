@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Mallto\Tool\Domain\Log\Logger;
 
 /**
@@ -26,7 +27,7 @@ class OwnerApiLog
      */
     public function handle(Request $request, \Closure $next)
     {
-        $ip = "";
+        $ip = 0;
         $tempIp = $request->header("X-Forwarded-For");
         if ($tempIp) {
             $ip = $tempIp;
@@ -35,11 +36,16 @@ class OwnerApiLog
 //            $ip = $request->getClientIp();
 //        }
 
+
+        $user = Auth::guard("api")->user();
+        $userId = $user ? $user->id : 0;
+
         $log = [
             'action'     => "请求",
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
+            'user_id'    => $userId,
             'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
             'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
         ];
@@ -61,6 +67,7 @@ class OwnerApiLog
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
+            'user_id'    => $userId,
             'input'      => $response->getContent(),
             'status'     => $response->getStatusCode(),
         ];
