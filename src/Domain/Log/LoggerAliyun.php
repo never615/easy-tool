@@ -26,6 +26,7 @@ class LoggerAliyun implements Logger
 
     private $client;
     private $serverName;
+    private $localIp;
 
     private $switch = false;
 
@@ -39,6 +40,7 @@ class LoggerAliyun implements Logger
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n");
+        $this->localIp = $_SERVER['SERVER_ADDR'] ?: "";
     }
 
 
@@ -57,7 +59,7 @@ class LoggerAliyun implements Logger
         }
 
         $topic = "";
-        $source = "";
+        $source = $this->localIp;
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
@@ -94,7 +96,7 @@ class LoggerAliyun implements Logger
         }
 
         $topic = "";
-        $source = "";
+        $source = $this->localIp;
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
@@ -128,7 +130,7 @@ class LoggerAliyun implements Logger
         }
 
         $topic = "";
-        $source = "";
+        $source = $this->localIp;
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
