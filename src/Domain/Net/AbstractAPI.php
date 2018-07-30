@@ -25,7 +25,7 @@ abstract class AbstractAPI
     /**
      * Http instance.
      *
-     * @var \EasyWeChat\Core\Http
+     * @var
      */
     protected $http;
 
@@ -89,7 +89,7 @@ abstract class AbstractAPI
     /**
      * Return the http instance.
      *
-     * @return \EasyWeChat\Core\Http
+     * @return
      */
     protected function getHttp()
     {
@@ -205,24 +205,30 @@ abstract class AbstractAPI
                 return false;
             }
 
-            if (!($this->isServerError($response) || $this->isConnectError($exception))) {
+
+            if ($this->isServerError($response) || $this->isConnectError($exception)) {
+                $this->logger->logThirdPart([
+                    "tag"     => $this->slug,
+                    "action"  => 'Retry请求',
+                    "method"  => $request->getMethod(),
+                    "url"     => $request->getUri(),
+                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"    => [
+                        "request"  => $request->getBody()->getContents(),
+                        "response" => $response ? 'status code: '.$response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
+                    ],
+                ]);
+
+                return true;
+            } else {
                 return false;
             }
 
-            $this->logger->logThirdPart([
-                "tag"     => $this->slug,
-                "action"  => 'Retry请求',
-                "method"  => $request->getMethod(),
-                "url"     => $request->getUri(),
-                "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                "body"    => [
-                    "request"  => $request->getBody()->getContents(),
-                    "response" => $response ? 'status code: '.$response->getStatusCode() : $exception->getMessage(),
-                ],
-            ]);
+//            if (!($this->isServerError($response) || $this->isConnectError($exception))) {
+//                return false;
+//            }
 
 
-            return true;
         });
     }
 
@@ -242,16 +248,38 @@ abstract class AbstractAPI
      */
     protected function isConnectError(RequestException $exception = null)
     {
-        if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer')
-                || $exception instanceof ConnectException)
-        ) {
-            \Log::warning("基础网络库");
-            \Log::warning($exception->getMessage());
+        if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer'))) {
+//            \Log::warning("基础网络库:".$exception->getMessage());
+            if ($exception instanceof ConnectException) {
+                \Log::warning("基础网络库:reset by peer属于ConnectException");
+            }
 
             return true;
         } else {
-            return false;
+            if ($exception instanceof ConnectException) {
+                \Log::warning("基础网络库:".$exception->getMessage());
+
+                return false;
+            } else {
+                if ($exception) {
+                    \Log::warning("基础网络库:其他异常");
+                    \Log::warning($exception->getMessage());
+                    \Log::warning($exception->getTraceAsString());
+                }
+
+                return false;
+            }
         }
+
+//        if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer')
+//                || $exception instanceof ConnectException)
+//        ) {
+//            \Log::warning("基础网络库:".$exception->getMessage());
+//
+//            return true;
+//        } else {
+//            return false;
+//        }
 
     }
 

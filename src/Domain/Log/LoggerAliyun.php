@@ -40,7 +40,7 @@ class LoggerAliyun implements Logger
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n");
-        $this->localIp = $_SERVER['SERVER_ADDR'] ?: "";
+        $this->localIp = isset($_SERVER['SERVER_ADDR']) ? ($_SERVER['SERVER_ADDR'] ?: "") : "";
     }
 
 
@@ -80,6 +80,7 @@ class LoggerAliyun implements Logger
             \Log::error("阿里日志");
             \Log::warning($exception->getMessage());
             \Log::warning($exception->getTraceAsString());
+            \Log::warning($content);
         }
     }
 
