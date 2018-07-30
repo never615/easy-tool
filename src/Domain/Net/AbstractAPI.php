@@ -213,10 +213,10 @@ abstract class AbstractAPI
                     "method"  => $request->getMethod(),
                     "url"     => $request->getUri(),
                     "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"    => [
+                    "body"    => \GuzzleHttp\json_encode([
                         "request"  => $request->getBody()->getContents(),
                         "response" => $response ? 'status code: '.$response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
-                    ],
+                    ], JSON_UNESCAPED_UNICODE),
                 ]);
 
                 return true;
