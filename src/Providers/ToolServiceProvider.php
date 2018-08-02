@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Mallto\Tool\Domain\Config\Config;
+use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\Sms\AliyunSms;
@@ -152,6 +154,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(Logger::class, LoggerAliyun::class);
         $this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
+        $this->app->singleton(Config::class, MtConfig::class);
     }
 
     /**

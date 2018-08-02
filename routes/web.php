@@ -61,6 +61,8 @@ Route::group($attributes, function ($router) {
                 Route::resource('head_images', 'HeadImageController');
 
                 //----------------------------  页面配置结束  -----------------------------------------------
+Route::resource('configs', 'ConfigController');
+//DummyRoutePlaceholder
 
             });
 
