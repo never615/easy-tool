@@ -3,6 +3,7 @@
 namespace Mallto\Tool\Msg;
 
 /**
+ *
  * Created by PhpStorm.
  * User: never615 <never615.com>
  * Date: 2018/3/19

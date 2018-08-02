@@ -2,11 +2,10 @@
 
 namespace Mallto\Tool\Msg;
 
-use Carbon\Carbon;
 use GuzzleHttp\Exception\ClientException;
 use Mallto\Tool\Domain\Net\AbstractAPI;
+use Mallto\Tool\Domain\Traits\AliyunTrait;
 use Mallto\Tool\Exception\ThirdPartException;
-use Mallto\Tool\Utils\AppUtils;
 
 /**
  * Created by PhpStorm.
@@ -17,17 +16,17 @@ use Mallto\Tool\Utils\AppUtils;
 class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
 {
 
-    protected $slug = 'aliyun_push';
+    use AliyunTrait;
 
-    const TARGET_DEVICE='DEVICE';
-    const TARGET_ACCOUNT='ACCOUNT';
-    const TARGET_ALIAS='ALIAS';
-    const TARGET_TAG='TAG';
-    const TARGET_ALL='ALL';
+    const TARGET_DEVICE = 'DEVICE';
+    const TARGET_ACCOUNT = 'ACCOUNT';
+    const TARGET_ALIAS = 'ALIAS';
+    const TARGET_TAG = 'TAG';
+    const TARGET_ALL = 'ALL';
 
 
-    //http://cloudpush.aliyuncs.com
-    protected $SETTING_KEY_BASE_URL = "aliyun_push_url";
+    protected $baseUrl = "http://cloudpush.aliyuncs.com/";
+
 
     /**
      * 推送消息给安卓
@@ -42,72 +41,46 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
      */
     public function pushMessageToAndroid($subject, $target, $targetValue, $title, $body, $appKey = null)
     {
-        $request = $this->mergePublicParamsAndSign([
-            'Action'      => 'PushMessageToAndroid',
+
+
+        $params = array_merge([
             'AppKey'      => $appKey,
             'Target'      => $target,
             'TargetValue' => $targetValue,
             'Title'       => $title,
             'Body'        => $body,
-        ]);
+        ], array (
+            "RegionId" => "cn-hangzhou",
+            "Action"   => "PushMessageToAndroid",
+            "Version"  => "2016-08-01",
+        ));
 
 
+        $query = $this->mergePublicParamsAndSign($params);
+
+        $http = $this->getHttp();
         try {
-            $response = $this->parseJSON('json', [
-                $this->getBaseUrl($subject),
-                [],
-                JSON_UNESCAPED_UNICODE,
-                $request,
-                [],
-                'GET',
-            ]);
+            $response = $http->request($this->baseUrl."?$query", 'GET');
 
 
-            return true;
+            try {
+                $contents = $http->parseJson($response);
+                $this->checkAndThrow($contents);
+
+                return true;
+            } catch (\Exception $exception) {
+                \Log::error("阿里云移动推送:数据解析错误");
+                \Log::warning($exception);
+
+                return false;
+            }
+
         } catch (ClientException $exception) {
-            \Log::error("移动推送失败");
-            \Log::error($exception->getResponse()->getBody()->getContents());
+            \Log::error($exception);
+            \Log::error($exception->getResponse()->getBody());
+
             return false;
         }
-
-
-    }
-
-
-    /**
-     * 合并公众请求参数,并且签名
-     *
-     * @param        $params
-     * @param string $httpMethod
-     * @return string
-     */
-    private function mergePublicParamsAndSign($params, $httpMethod = 'GET')
-    {
-        $aliyunAccessKeySecret = env('ALIYUN_LOG_ACCESS_KEY');
-
-
-        $params = array_merge([
-            'Format'           => 'JSON',
-            'RegionId'         => 'cn-hangzhou',
-            'Version'          => '2016-08-01',
-            'AccessKeyId'      => env('ALIYUN_LOG_ACCESS_KEY_ID'),
-            'SignatureMethod'  => 'HMAC-SHA1',
-            'SignatureNonce'   => AppUtils::getRandomString(14),
-            'SignatureVersion' => '1.0',
-            'Timestamp'        => Carbon::createFromTimestampUTC(time())->format('Y-m-d\\TH:i:s\\Z'),
-        ], $params);
-
-        //todo 签名未完成
-
-        ksort($params, SORT_STRING);
-        $stringToSign = http_build_query($params);
-        $stringToSign = $httpMethod.'&'.urlencode('/').'&'.urlencode($stringToSign);
-        $sign = base64_encode(hash_hmac('sha1', $stringToSign, $aliyunAccessKeySecret.'&', true));
-        $params = array_merge($params, [
-            'Signature' => $sign,
-        ]);
-
-        return http_build_query($params);
     }
 
 

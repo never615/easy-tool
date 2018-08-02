@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Domain\Sms\AliyunSms;
+use Mallto\Tool\Domain\Sms\Sms;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -22,6 +24,8 @@ use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\OwnerApiLogAfter;
 use Mallto\Tool\Middleware\OwnerApiLogBefore;
 use Mallto\Tool\Middleware\RequestCheck;
+use Mallto\Tool\Msg\AliyunMobileDevicePush;
+use Mallto\Tool\Msg\MobileDevicePush;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -145,8 +149,9 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerMail();
 
-        //todo 日志注册优化
         $this->app->singleton(Logger::class, LoggerAliyun::class);
+        $this->app->singleton(Sms::class, AliyunSms::class);
+        $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
     }
 
     /**

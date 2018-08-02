@@ -294,19 +294,30 @@ class AppUtils
      */
     public static function httpQueryBuildReverse($data)
     {
-        if ($data) {
-            $data = urldecode($data);
-            $result = [];
-            $queries = explode("&", $data);
-            foreach ($queries as $query) {
-                $subQuery = explode("=", $query);
-                $result[$subQuery[0]] = $subQuery[1];
-            }
+        try {
+            if ($data) {
+                $decodeData = urldecode($data);
+                $result = [];
+                $queries = explode("&", $decodeData);
+                foreach ($queries as $query) {
+                    $subQuery = explode("=", $query);
+                    if(count($subQuery)!=2){
+                        return [];
+                    }
+                    $result[$subQuery[0]] = $subQuery[1];
+                }
 
-            return $result;
-        }else{
-            return $data;
+                return $result;
+            } else {
+                return $data;
+            }
+        } catch (\Exception $e) {
+            \Log::warning($e);
+            \Log::warning($data);
+
+            return [];
         }
+
     }
 
 
