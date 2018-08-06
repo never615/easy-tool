@@ -52,7 +52,7 @@ Route::group($attributes, function ($router) {
 
                 //----------------------------  系统配置 开始  -----------------------------------------------
                 Route::resource("wechat_template_ids", "WechatTemplateMsgContoller");
-                //----------------------------  系统配置 结束-----------------------------------------------
+                //-----ScaffoldController-----------------------  系统配置 结束-----------------------------------------------
 
                 //----------------------------  页面配置开始  -----------------------------------------------
                 //轮播图
@@ -62,6 +62,7 @@ Route::group($attributes, function ($router) {
 
                 //----------------------------  页面配置结束  -----------------------------------------------
 Route::resource('configs', 'ConfigController');
+Route::resource('sms_notifies', 'SmsNotifyController');
 //DummyRoutePlaceholder
 
             });

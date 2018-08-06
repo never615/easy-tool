@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
+use Mallto\Tool\Seeder\TablesSeeder;
 
 class UpdateCommand extends Command
 {
@@ -37,7 +38,8 @@ class UpdateCommand extends Command
      */
     public function handle()
     {
-//        $this->call('migrate', ['--path' => str_replace(base_path(), '', __DIR__).'/../../migrations/']);
+        $this->call('db:seed', ['--class' => TablesSeeder::class]);
+
     }
 
 }

@@ -6,14 +6,10 @@
 namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
-use Mallto\Admin\Seeder\SeederMaker;
+use Mallto\Tool\Seeder\Menu\WechatTemplateSeeder;
 
-class PermissionTablesSeeder extends Seeder
+class TablesSeeder extends Seeder
 {
-
-    use SeederMaker;
-
-
     /**
      * Run the database seeds.
      *
@@ -21,8 +17,9 @@ class PermissionTablesSeeder extends Seeder
      */
     public function run()
     {
-    $this->call(\Mallto\Tool\Seeder\Permission\SmsNotifySeeder::class);
+        $this->call(WechatTemplateSeeder::class);
+$this->call(\Mallto\Tool\Seeder\Permission\SmsNotifySeeder::class);
+$this->call(\Mallto\Tool\Seeder\Menu\SmsNotifySeeder::class);
 //DummySeeder
-
     }
 }

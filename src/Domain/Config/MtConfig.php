@@ -26,7 +26,7 @@ class MtConfig
      */
     public function getConfig($key, $default = null, $type = null)
     {
-        $query = Config::where("key", $key);
+        $query = \Mallto\Tool\Data\Config::where("key", $key);
         if ($type) {
             $query = $query->where("type", $type);
         }

@@ -39,7 +39,7 @@ class LoggerAliyun implements Logger
         $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_log_access_key_id"),
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
-        $this->serverName = php_uname("n");
+        $this->serverName = php_uname("n")?:"cli";
         $this->localIp = isset($_SERVER['SERVER_ADDR']) ? ($_SERVER['SERVER_ADDR'] ?: "") : "";
     }
 
@@ -68,7 +68,7 @@ class LoggerAliyun implements Logger
             array_merge($content, [
                 "server_name" => $this->serverName,
                 "env"         => config("app.env"),
-                'uuid'        => SubjectUtils::getUUIDNoException(),
+                'uuid'        => SubjectUtils::getUUIDNoException()?:0,
 
             ])
         );
@@ -78,8 +78,7 @@ class LoggerAliyun implements Logger
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
             \Log::error("阿里日志");
-            \Log::warning($exception->getMessage());
-            \Log::warning($exception->getTraceAsString());
+            \Log::warning($exception);
             \Log::warning($content);
         }
     }
@@ -104,7 +103,7 @@ class LoggerAliyun implements Logger
         $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
             "env"         => config("app.env"),
-            'uuid'        => SubjectUtils::getUUIDNoException(),
+            'uuid'        => SubjectUtils::getUUIDNoException()?:0,
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
@@ -113,8 +112,7 @@ class LoggerAliyun implements Logger
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
             \Log::error("阿里日志");
-            \Log::warning($exception->getMessage());
-            \Log::warning($exception->getTraceAsString());
+            \Log::warning($exception);
         }
     }
 
@@ -138,6 +136,8 @@ class LoggerAliyun implements Logger
         $logItem->setContents(array_merge($log, [
             "server_name" => $this->serverName,
             "request_url" => config("app.url"),
+            "env"         => config("app.env"),
+            'uuid'        => SubjectUtils::getUUIDNoException()?:0,
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source, $logitems);
@@ -145,8 +145,7 @@ class LoggerAliyun implements Logger
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
             \Log::error("阿里日志");
-            \Log::warning($exception->getMessage());
-            \Log::warning($exception->getTraceAsString());
+            \Log::warning($exception);
         }
     }
 }
