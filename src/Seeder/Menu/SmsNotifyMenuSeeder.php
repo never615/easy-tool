@@ -2,12 +2,13 @@
 
 namespace Mallto\Tool\Seeder\Menu;
 
-use Mallto\Admin\Data\Menu;
 use Illuminate\Database\Seeder;
+use Mallto\Admin\Data\Menu;
 
 
-class SmsNotifySeeder extends Seeder
+class SmsNotifyMenuSeeder extends Seeder
 {
+
     /**
      * Run the database seeds.
      *
@@ -15,13 +16,14 @@ class SmsNotifySeeder extends Seeder
      */
     public function run()
     {
+
         $menu = Menu::where("uri", "user_manager")->first();
 
-        $order=10000;
-        $parentId=0;
-        if($menu){
-            $order=$menu->order;
-            $parentId=$menu->parent_id;
+        $order = 10000;
+        $parentId = 0;
+        if ($menu) {
+            $order = $menu->order;
+            $parentId = $menu->id;
         }
 
         Menu::updateOrCreate([

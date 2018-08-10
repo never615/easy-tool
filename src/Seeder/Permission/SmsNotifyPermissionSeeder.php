@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Mallto\Admin\Seeder\SeederMaker;
 
 
-class SmsNotifySeeder extends Seeder
+class SmsNotifyPermissionSeeder extends Seeder
 {
 
     use SeederMaker;
