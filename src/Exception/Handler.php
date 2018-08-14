@@ -143,6 +143,16 @@ class Handler extends ExceptionHandler
      */
     protected function interJsonHandler(Exception $exception, $request, $isAdmin = false)
     {
+        if ($exception instanceof InternalHttpException) {
+            \Log::error("系统内部异常");
+            try {
+                \Log::warning($exception->getMessage());
+                \Log::warning($exception->getTraceAsString());
+            } catch (\Exception $e) {
+
+            }
+        }
+
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
                 return response()->json(["error" => "系统维护中"], $exception->getStatusCode());
