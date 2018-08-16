@@ -41,4 +41,12 @@ interface Logger
      */
     public function logAdminOperation($log);
 
+    /**
+     * 调度任务执行记录
+     *
+     * @param $slug
+     * @param $status
+     * @return mixed
+     */
+    public function logSchedule($slug, $status);
 }

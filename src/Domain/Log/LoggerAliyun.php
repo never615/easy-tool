@@ -23,6 +23,7 @@ class LoggerAliyun implements Logger
     private $logstore_third_part_api = "third_part_api";
     private $logstore_admin_operation = "admin_operation";
     private $logstore_own_api = "own_api";
+    private $logstore_schedule = "schedule";
 
     private $client;
     private $serverName;
@@ -39,7 +40,7 @@ class LoggerAliyun implements Logger
         $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_log_access_key_id"),
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
-        $this->serverName = php_uname("n")?:"cli";
+        $this->serverName = php_uname("n") ?: "cli";
         $this->localIp = isset($_SERVER['SERVER_ADDR']) ? ($_SERVER['SERVER_ADDR'] ?: "") : "";
     }
 
@@ -68,7 +69,7 @@ class LoggerAliyun implements Logger
             array_merge($content, [
                 "server_name" => $this->serverName,
                 "env"         => config("app.env"),
-                'uuid'        => SubjectUtils::getUUIDNoException()?:0,
+                'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
 
             ])
         );
@@ -103,7 +104,7 @@ class LoggerAliyun implements Logger
         $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
             "env"         => config("app.env"),
-            'uuid'        => SubjectUtils::getUUIDNoException()?:0,
+            'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
@@ -137,7 +138,7 @@ class LoggerAliyun implements Logger
             "server_name" => $this->serverName,
             "request_url" => config("app.url"),
             "env"         => config("app.env"),
-            'uuid'        => SubjectUtils::getUUIDNoException()?:0,
+            'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source, $logitems);
@@ -148,4 +149,37 @@ class LoggerAliyun implements Logger
             \Log::warning($exception);
         }
     }
+
+
+    public function logSchedule($slug, $status)
+    {
+        if (!$this->switch) {
+            return;
+        }
+
+        $topic = "";
+        $source = $this->localIp;
+        $logitems = array ();
+        $logItem = new LogItem();
+        $logItem->setTime(time());
+        $logItem->setContents(array_merge([
+            "slug"   => $slug,
+            "status" => $status,
+        ], [
+            "server_name" => $this->serverName,
+            "env"         => config("app.env"),
+        ]));
+        array_push($logitems, $logItem);
+        $req2 = new PutLogsRequest($this->project, $this->logstore_schedule, $topic, $source, $logitems);
+        try {
+            $res2 = $this->client->putLogs($req2);
+        } catch (\Exception $exception) {
+            \Log::error("阿里日志 schedule");
+            \Log::warning($exception);
+        }
+
+
+    }
+
+
 }
