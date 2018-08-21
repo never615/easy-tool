@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Providers;
 
+use Carbon\Carbon;
 use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Log;
@@ -81,6 +82,9 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->appBoot();
         $this->routeBoot();
+
+
+        Carbon::useMonthsOverflow(false);
     }
 
 

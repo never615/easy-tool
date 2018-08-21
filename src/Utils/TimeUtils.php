@@ -56,23 +56,6 @@ class TimeUtils
         return date('Y-m-d');
     }
 
-    /**
-     * 判断当前时间和oldTime是否在day间隔内,是返回 true
-     *
-     * @param $intervalDay
-     * @param $oldTime
-     * @return bool
-     */
-    public static function inTimeIntervalByDay($intervalDay, $oldTime)
-    {
-        if (Carbon::now()->subDays($intervalDay) < $oldTime) {
-            //表示不到day天
-            return true;
-        } else {
-            return false;
-        }
-    }
-
 
     /**
      * 计算两个日期相隔多少年，多少月，多少天
