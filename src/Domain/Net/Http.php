@@ -72,13 +72,13 @@ class Http
      * @param string $url
      * @param array  $options
      *
+     * @param        $otherOptions
      * @return ResponseInterface
      *
-     * @throws ThirdPartException
      */
-    public function get($url, array $options = [])
+    public function get($url, array $options = [],$otherOptions=[])
     {
-        return $this->request($url, 'GET', ['query' => $options]);
+        return $this->request($url, 'GET', array_merge(['query' => $options],$otherOptions));
     }
 
     /**

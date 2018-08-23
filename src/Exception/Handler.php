@@ -147,8 +147,8 @@ class Handler extends ExceptionHandler
         if ($exception instanceof InternalHttpException) {
             \Log::error("系统内部异常");
             try {
-                \Log::warning($exception->getMessage());
-                \Log::warning($exception->getTraceAsString());
+                \Log::warning($exception);
+//                \Log::warning($exception->getTraceAsString());
             } catch (\Exception $e) {
 
             }
