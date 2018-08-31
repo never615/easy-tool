@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Providers;
 
 use Carbon\Carbon;
+use Encore\Admin\Facades\Admin;
 use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Horizon\Horizon;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
@@ -82,6 +84,17 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->appBoot();
         $this->routeBoot();
+
+        //吹horizon队列管理看板的进入权限
+        Horizon::auth(function ($request) {
+
+            $user = Admin::user();
+            if ($user&&$user->isOwner()) {
+                return true;
+            } else {
+                return false;
+            }
+        });
 
 
         Carbon::useMonthsOverflow(false);

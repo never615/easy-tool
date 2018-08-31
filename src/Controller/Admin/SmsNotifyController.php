@@ -59,8 +59,16 @@ class SmsNotifyController extends AdminCommonController
     {
         $templates = [];
         if ($this->currentId) {
-            $form->text("sms_template_name", "模板名");
-            $form->text("content", "短信内容");
+            $form->choice("selects", "范围")
+                ->selects([
+                    "member_levels" => "会员等级",
+                    "users"         => "会员",
+                ])->dataUrls([
+                    "users"         => data_source_url("users"),
+                    "member_levels" => data_source_url("member_levels"),
+                ]);
+            $form->display("sms_template_name", "模板名");
+            $form->display("content", "短信内容");
             $form->display("status")->with(function($value){
                 return SmsNotify::STATUS[$value];
             });
@@ -97,10 +105,6 @@ class SmsNotifyController extends AdminCommonController
         }
 
         $form->textarea("remark");
-
-
-        $form->ignore(["choice_users", "templates"]);
-
 
         $form->saving(function ($form) use ($templates) {
             if (!empty($templates)) {

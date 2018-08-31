@@ -57,7 +57,6 @@ class BatchSmsJob implements ShouldQueue
      */
     public function __construct($id)
     {
-
         $this->id = $id;
     }
 
@@ -68,6 +67,8 @@ class BatchSmsJob implements ShouldQueue
      */
     public function handle()
     {
+        \Log::debug("群发短信任务");
+
         $smsNotify = SmsNotify::find($this->id);
         if ($smsNotify->status == "not_start") {
             $smsNotify->status = "processing";
@@ -83,7 +84,8 @@ class BatchSmsJob implements ShouldQueue
         $templateCode = $smsNotify->sms_template_code;
         $selects = $smsNotify->selects;
         $selects = json_decode($selects, true);
-        $subjectId = $smsNotify->subject->id;
+        $subject=$smsNotify->subject;
+        $subjectId = $subject->id;
 
 
         //array (
@@ -97,18 +99,18 @@ class BatchSmsJob implements ShouldQueue
             return $value["type"] == "member_levels";
         });
 
-        \Log::debug($memberLevelSelects);
+//        \Log::debug($memberLevelSelects);
 
         $userSelects = array_where($selects, function ($value, $key) {
             return $value["type"] == "users";
         });
 
-        \Log::debug($userSelects);
-        $sign = SubjectUtils::getSubectConfig2("sms_sign", "墨兔");
+//        \Log::debug($userSelects);
+
+        $sign = SubjectUtils::getSubectConfig2("sms_sign", "墨兔",$subject);
 
         //已经处理过的会员等级
         $handledMemberLevel = [];
-
 
         foreach ($memberLevelSelects as $select) {
             //检查select是会员分类,还是单一用户
@@ -136,6 +138,7 @@ class BatchSmsJob implements ShouldQueue
             ->chunk(100, function ($users) use ($sms, $templateCode, $sign) {
                 $this->send($sms, $users, $sign, $templateCode);
             });
+
 
         $smsNotify->status = "finish";
         $smsNotify->save();
