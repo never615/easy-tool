@@ -88,6 +88,7 @@ class AliyunSms extends AbstractAPI implements Sms
             } catch (\Exception $exception) {
                 \Log::error("阿里云短信:数据解析错误");
                 \Log::warning($exception);
+
                 return false;
             }
 
@@ -104,13 +105,13 @@ class AliyunSms extends AbstractAPI implements Sms
     /**
      * 群发短信
      *
-     * @param $mobiles array 手机号
-     * @param $smsSigns array 短信签名
+     * @param $mobiles         array 手机号
+     * @param $smsSigns        array 短信签名
      * @param $smsTemplateCode string 模板号
-     * @param $templateParams string 模板参数
+     * @param $templateParams  string 模板参数
      * @return mixed
      */
-    public function sendBatchSms($mobiles,$smsSigns,$smsTemplateCode,$templateParams)
+    public function sendBatchSms($mobiles, $smsSigns, $smsTemplateCode, $templateParams)
     {
         $params = array ();
 
@@ -136,7 +137,7 @@ class AliyunSms extends AbstractAPI implements Sms
 
 
         // *** 需用户填写部分结束, 以下代码若无必要无需更改 ***
-        $params["TemplateParamJson"]  = json_encode($params["TemplateParamJson"], JSON_UNESCAPED_UNICODE);
+        $params["TemplateParamJson"] = json_encode($params["TemplateParamJson"], JSON_UNESCAPED_UNICODE);
         $params["SignNameJson"] = json_encode($params["SignNameJson"], JSON_UNESCAPED_UNICODE);
         $params["PhoneNumberJson"] = json_encode($params["PhoneNumberJson"], JSON_UNESCAPED_UNICODE);
 
@@ -164,9 +165,12 @@ class AliyunSms extends AbstractAPI implements Sms
             try {
                 $contents = $http->parseJson($response);
                 $this->checkAndThrow($contents);
+            } catch (ResourceException $resourceException) {
+                throw $resourceException;
             } catch (\Exception $exception) {
                 \Log::error("阿里云短信:数据解析错误");
                 \Log::warning($exception);
+
                 return false;
             }
 
@@ -203,13 +207,11 @@ class AliyunSms extends AbstractAPI implements Sms
     protected function checkAndThrow(
         array $contents
     ) {
-        \Log::debug($contents);
+//        \Log::debug($contents);
         if ($contents['Code'] != 'OK') {
             throw new ResourceException("短信发送失败:".$contents['Code'].",".$contents["Message"]);
         }
     }
-
-
 
 
 }
