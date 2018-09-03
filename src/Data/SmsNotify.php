@@ -11,7 +11,7 @@ class SmsNotify extends BaseModel
         "not_start"  => "未开始",
         "processing" => "进行中",
         "finish"     => "已完成",
-        'failure'    => "失败",
+        'failure'    => "失败,请重新发送",
     ];
     protected $table = 'sms_notifies';
 
