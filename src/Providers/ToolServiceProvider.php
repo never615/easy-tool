@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
@@ -84,25 +87,15 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->appBoot();
         $this->routeBoot();
-
-        //吹horizon队列管理看板的进入权限
-        Horizon::auth(function ($request) {
-
-            $user = Admin::user();
-            if ($user&&$user->isOwner()) {
-                return true;
-            } else {
-                return false;
-            }
-        });
-
-
-        Carbon::useMonthsOverflow(false);
+//        $this->queueBoot();
     }
 
 
     private function appBoot()
     {
+        //日历默认一个月30天,执行这个,回归真实
+        Carbon::useMonthsOverflow(false);
+
         //自定义校验规则 手机号
         Validator::extend('mobile', function ($attribute, $value, $parameters) {
             $mobile_regex = '"^1\d{10}$"';
@@ -150,6 +143,71 @@ class ToolServiceProvider extends ServiceProvider
     private function routeBoot()
     {
         Route::pattern('id', '[0-9]+');
+    }
+
+
+    private function queueBoot()
+    {
+        //吹horizon队列管理看板的进入权限
+        Horizon::auth(function ($request) {
+
+            $user = Admin::user();
+            if ($user && $user->isOwner()) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        //任务循环前
+        Queue::looping(function () {
+            while (DB::transactionLevel() > 0) {
+                \Log::debug("queue rollback");
+                DB::rollBack();
+            }
+        });
+
+        Queue::before(function (JobProcessing $event) {
+//            \Log::info($event->connectionName);
+//            \Log::info($event->job->getRawBody());
+//            \Log::info($event->job->payload());
+            $logger = app(Logger::class);
+            $logger->logQueue([
+                "connection_name" => $event->connectionName,
+                "status"          => "before",
+                "payload"         => $event->job->getRawBody(),
+            ]);
+        });
+
+        Queue::after(function (JobProcessed $event) {
+            $logger = app(Logger::class);
+            $logger->logQueue([
+                "connection_name" => $event->connectionName,
+                "status"          => "after",
+                "payload"         => $event->job->getRawBody(),
+            ]);
+        });
+
+
+        //任务失败后
+        Queue::failing(function (JobFailed $event) {
+            // $event->connectionName
+            // $event->job
+            // $event->exception
+            \Log::error("队列任务失败");
+            \Log::warning($event->job->payload());
+
+        });
+
+        //异常发生后
+        Queue::exceptionOccurred(function (JobFailed $event) {
+            // $event->connectionName
+            // $event->job
+            // $event->exception
+            \Log::error("队列任务异常");
+            \Log::warning($event->job->payload());
+            \Log::warning($event->exception);
+        });
     }
 
 
