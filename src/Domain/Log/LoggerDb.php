@@ -33,11 +33,10 @@ class LoggerDb implements Logger
     /**
      * 调度任务执行记录
      *
-     * @param $slug
-     * @param $status
+     * @param $content
      * @return mixed
      */
-    public function logSchedule($slug, $status)
+    public function logSchedule($content)
     {
         // TODO: Implement logSchedule() method.
     }
@@ -45,7 +44,6 @@ class LoggerDb implements Logger
     /**
      * 记录自己api的通讯日志
      *
-     * @param $action
      * @param $content
      * @return
      */
@@ -63,5 +61,16 @@ class LoggerDb implements Logger
     public function logAdminOperation($log)
     {
         // TODO: Implement logAdminOperation() method.
+    }
+
+    /**
+     * 队列任务执行记录
+     *
+     * @param      $content
+     * @return mixed
+     */
+    public function logQueue($content)
+    {
+        // TODO: Implement logQueue() method.
     }
 }

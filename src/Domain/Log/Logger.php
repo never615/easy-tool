@@ -44,9 +44,16 @@ interface Logger
     /**
      * 调度任务执行记录
      *
-     * @param $slug
-     * @param $status
+     * @param $content
      * @return mixed
      */
-    public function logSchedule($slug, $status);
+    public function logSchedule($content);
+
+    /**
+     * 队列任务执行记录
+     *
+     * @param      $content
+     * @return mixed
+     */
+    public function logQueue($content);
 }

@@ -24,6 +24,7 @@ class LoggerAliyun implements Logger
     private $logstore_admin_operation = "admin_operation";
     private $logstore_own_api = "own_api";
     private $logstore_schedule = "schedule";
+    private $logstore_queue = "queue";
 
     private $client;
     private $serverName;
@@ -150,8 +151,13 @@ class LoggerAliyun implements Logger
         }
     }
 
-
-    public function logSchedule($slug, $status)
+    /**
+     * 调度任务执行记录
+     *
+     * @param $content
+     * @return mixed
+     */
+    public function logSchedule($content)
     {
         if (!$this->switch) {
             return;
@@ -162,13 +168,10 @@ class LoggerAliyun implements Logger
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
-        $logItem->setContents(array_merge([
-            "slug"   => $slug,
-            "status" => $status,
-        ], [
+        $logItem->setContents($content, [
             "server_name" => $this->serverName,
             "env"         => config("app.env"),
-        ]));
+        ]);
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_schedule, $topic, $source, $logitems);
         try {
@@ -177,9 +180,38 @@ class LoggerAliyun implements Logger
             \Log::error("阿里日志 schedule");
             \Log::warning($exception);
         }
-
-
     }
 
 
+    /**
+     * 队列任务执行记录
+     *
+     * @param      $content
+     * @return mixed
+     */
+    public function logQueue($content)
+    {
+        if (!$this->switch) {
+            return;
+        }
+
+
+        $topic = "";
+        $source = $this->localIp;
+        $logitems = array ();
+        $logItem = new LogItem();
+        $logItem->setTime(time());
+        $logItem->setContents(array_merge($content, [
+            "server_name" => $this->serverName,
+            "env"         => config("app.env"),
+        ]));
+        array_push($logitems, $logItem);
+        $req2 = new PutLogsRequest($this->project, $this->logstore_queue, $topic, $source, $logitems);
+        try {
+            $res2 = $this->client->putLogs($req2);
+        } catch (\Exception $exception) {
+            \Log::error("阿里日志 queue");
+            \Log::warning($exception);
+        }
+    }
 }
