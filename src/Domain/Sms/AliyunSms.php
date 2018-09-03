@@ -208,6 +208,8 @@ class AliyunSms extends AbstractAPI implements Sms
         array $contents
     ) {
         switch ($contents['Code']) {
+            case "OK":
+                break;
             case "isv.BUSINESS_LIMIT_CONTROL":
                 throw new ResourceException("一分钟内只能发送一条短信");
                 break;
