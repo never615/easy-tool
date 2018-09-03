@@ -132,7 +132,7 @@ class SmsNotifyController extends AdminCommonController
         //  '_token' => 'OUKat9VS8oNniprHVUON3lmMzuW8zhOXUphxS10A',
         //)
         $form->saved(function ($form) {
-            \Log::info(Input::all());
+//            \Log::debug(Input::all());
             if (!$this->currentId) {
                 dispatch(new BatchSmsJob($form->model()->id));
             }
