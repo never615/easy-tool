@@ -67,7 +67,7 @@ class BatchSmsJob implements ShouldQueue
      */
     public function handle()
     {
-        \Log::debug("群发短信任务");
+//        \Log::debug("群发短信任务");
 
         $smsNotify = SmsNotify::find($this->id);
         if ($smsNotify->status == "not_start") {

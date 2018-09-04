@@ -87,7 +87,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->appBoot();
         $this->routeBoot();
-//        $this->queueBoot();
+        $this->queueBoot();
     }
 
 
@@ -168,9 +168,6 @@ class ToolServiceProvider extends ServiceProvider
         });
 
         Queue::before(function (JobProcessing $event) {
-//            \Log::info($event->connectionName);
-//            \Log::info($event->job->getRawBody());
-//            \Log::info($event->job->payload());
             $logger = app(Logger::class);
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
@@ -191,22 +188,28 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务失败后
         Queue::failing(function (JobFailed $event) {
-            // $event->connectionName
-            // $event->job
-            // $event->exception
             \Log::error("队列任务失败");
             \Log::warning($event->job->payload());
+            $logger = app(Logger::class);
+            $logger->logQueue([
+                "connection_name" => $event->connectionName,
+                "status"          => "failure",
+                "payload"         => $event->job->getRawBody(),
+            ]);
 
         });
 
         //异常发生后
         Queue::exceptionOccurred(function (JobFailed $event) {
-            // $event->connectionName
-            // $event->job
-            // $event->exception
             \Log::error("队列任务异常");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
+            $logger = app(Logger::class);
+            $logger->logQueue([
+                "connection_name" => $event->connectionName,
+                "status"          => "exception",
+                "payload"         => $event->job->getRawBody(),
+            ]);
         });
     }
 
