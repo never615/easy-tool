@@ -38,6 +38,11 @@ class LogJob implements ShouldQueue
      * @var int
      */
     public $tries = 3;
+    /**
+     * 日志的方法名
+     *
+     * @var
+     */
     private $type;
     private $content;
 
@@ -61,8 +66,6 @@ class LogJob implements ShouldQueue
      */
     public function handle()
     {
-        \Log::debug("111");
-
         $logger = app(Logger::class);
 
         call_user_func([$logger, $this->type], $this->content);

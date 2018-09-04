@@ -10,9 +10,9 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Mallto\Admin\SubjectUtils;
-use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\ThirdPartException;
+use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -38,26 +38,10 @@ abstract class AbstractAPI
     protected $SETTING_KEY_BASE_URL;
     const MAX_RETRIES = 2;
 
-    /**
-     * @var Logger
-     */
-    protected $logger;
-
     protected $slug;
 
 
     protected $baseUrl;
-
-
-    /**
-     * AbstractAPI constructor.
-     *
-     * @param Logger $logger
-     */
-    public function __construct(Logger $logger)
-    {
-        $this->logger = $logger;
-    }
 
 
     /**
@@ -157,21 +141,18 @@ abstract class AbstractAPI
     protected function logMiddleware()
     {
         return Middleware::tap(function (RequestInterface $request, $options) {
-
-            $this->logger->logThirdPart(
-                [
-                    "tag"     => $this->slug,
-                    "action"  => '请求',
-                    "method"  => $request->getMethod(),
-                    "url"     => $request->getUri(),
-                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"    => json_encode(AppUtils::httpQueryBuildReverse($request->getBody()->getContents()),
-                        JSON_UNESCAPED_UNICODE),
-                ]);
-
+            dispatch(new LogJob("logThirdPart",[
+                "tag"     => $this->slug,
+                "action"  => '请求',
+                "method"  => $request->getMethod(),
+                "url"     => $request->getUri(),
+                "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                "body"    => json_encode(AppUtils::httpQueryBuildReverse($request->getBody()->getContents()),
+                    JSON_UNESCAPED_UNICODE),
+            ]));
         }, function (RequestInterface $request, $options, Promise $response) {
             $response->then(function (ResponseInterface $response) use ($request) {
-                $this->logger->logThirdPart([
+                dispatch(new LogJob("logThirdPart",[
                     "tag"     => $this->slug,
                     "action"  => '响应',
                     "method"  => $request->getMethod(),
@@ -179,7 +160,7 @@ abstract class AbstractAPI
                     "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     "body"    => $response->getBody()->getContents(),
                     "status"  => $response->getStatusCode(),
-                ]);
+                ]));
             });
 
 
@@ -199,7 +180,6 @@ abstract class AbstractAPI
             ResponseInterface $response = null,
             $exception
         ) {
-
             // Limit the number of retries to MAX_RETRIES
             if ($retries && $retries > self::MAX_RETRIES) {
                 return false;
@@ -207,7 +187,7 @@ abstract class AbstractAPI
 
 
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
-                $this->logger->logThirdPart([
+                dispatch(new LogJob("logThirdPart",[
                     "tag"     => $this->slug,
                     "action"  => 'Retry请求',
                     "method"  => $request->getMethod(),
@@ -217,18 +197,12 @@ abstract class AbstractAPI
                         "request"  => $request->getBody()->getContents(),
                         "response" => $response ? 'status code: '.$response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
                     ], JSON_UNESCAPED_UNICODE),
-                ]);
+                ]));
 
                 return true;
             } else {
                 return false;
             }
-
-//            if (!($this->isServerError($response) || $this->isConnectError($exception))) {
-//                return false;
-//            }
-
-
         });
     }
 
@@ -270,17 +244,6 @@ abstract class AbstractAPI
                 return false;
             }
         }
-
-//        if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer')
-//                || $exception instanceof ConnectException)
-//        ) {
-//            \Log::warning("基础网络库:".$exception->getMessage());
-//
-//            return true;
-//        } else {
-//            return false;
-//        }
-
     }
 
     /**

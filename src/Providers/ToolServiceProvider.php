@@ -172,7 +172,8 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "before",
-                "payload"         => $event->job->getRawBody(),
+                "queue"          => $event->job->getQueue(),
+                "name"          => $event->job->resolveName(),
             ]);
         });
 
@@ -181,7 +182,8 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "after",
-                "payload"         => $event->job->getRawBody(),
+                "queue"          => $event->job->getQueue(),
+                "name"          => $event->job->resolveName(),
             ]);
         });
 
@@ -194,6 +196,8 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "failure",
+                "queue"          => $event->job->getQueue(),
+                "name"          => $event->job->resolveName(),
                 "payload"         => $event->job->getRawBody(),
             ]);
 
@@ -208,6 +212,8 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "exception",
+                "queue"          => $event->job->getQueue(),
+                "name"          => $event->job->resolveName(),
                 "payload"         => $event->job->getRawBody(),
             ]);
         });

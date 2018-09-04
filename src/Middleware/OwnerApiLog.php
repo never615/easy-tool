@@ -8,6 +8,7 @@ namespace Mallto\Tool\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Mallto\Tool\Domain\Log\Logger;
+use Mallto\Tool\Jobs\LogJob;
 
 /**
  * 向第三方提供的接口通讯日志记录
@@ -50,8 +51,11 @@ class OwnerApiLog
             'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
         ];
 
-        $logger = resolve(Logger::class);
-        $logger->logOwnerApi($log);
+        
+        dispatch(new LogJob("logOwnerApi",$log));
+        
+//        $logger = resolve(Logger::class);
+//        $logger->logOwnerApi($log);
 
         $response = $next($request);
 
@@ -71,8 +75,11 @@ class OwnerApiLog
             'input'      => $response->getContent(),
             'status'     => $response->getStatusCode(),
         ];
-        $logger = resolve(Logger::class);
-        $logger->logOwnerApi($log);
+
+        dispatch(new LogJob("logOwnerApi",$log));
+
+//        $logger = resolve(Logger::class);
+//        $logger->logOwnerApi($log);
 
         return $response;
     }

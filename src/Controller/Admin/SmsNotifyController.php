@@ -4,11 +4,10 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Illuminate\Support\Facades\Input;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Tool\Jobs\BatchSmsJob;
 use Mallto\Tool\Data\SmsNotify;
 use Mallto\Tool\Exception\ResourceException;
+use Mallto\Tool\Jobs\BatchSmsJob;
 
 
 class SmsNotifyController extends AdminCommonController
@@ -39,7 +38,7 @@ class SmsNotifyController extends AdminCommonController
     {
         $grid->sms_template_name("模板名");
         $grid->remark();
-        $grid->status()->display(function($value){
+        $grid->status()->display(function ($value) {
             return SmsNotify::STATUS[$value];
         });
 
@@ -69,7 +68,7 @@ class SmsNotifyController extends AdminCommonController
                 ]);
             $form->display("sms_template_name", "模板名");
             $form->display("content", "短信内容");
-            $form->display("status")->with(function($value){
+            $form->display("status")->with(function ($value) {
                 return SmsNotify::STATUS[$value];
             });
 
@@ -119,7 +118,7 @@ class SmsNotifyController extends AdminCommonController
 
                     $form->model()->content = $template["content"];
                     $form->model()->sms_template_name = $template["name"];
-                }else{
+                } else {
                     throw new ResourceException("请选择短息模板");
                 }
             }
@@ -132,9 +131,8 @@ class SmsNotifyController extends AdminCommonController
         //  '_token' => 'OUKat9VS8oNniprHVUON3lmMzuW8zhOXUphxS10A',
         //)
         $form->saved(function ($form) {
-//            \Log::debug(Input::all());
             if (!$this->currentId) {
-                dispatch(new BatchSmsJob($form->model()->id));
+                dispatch(new BatchSmsJob($form->model()->id))->onQueue("mid");
             }
         });
     }
