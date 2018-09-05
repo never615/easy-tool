@@ -85,6 +85,8 @@ class AliyunSms extends AbstractAPI implements Sms
             try {
                 $contents = $http->parseJson($response);
                 $this->checkAndThrow($contents);
+            } catch (ResourceException $resourceException) {
+                throw $resourceException;
             } catch (\Exception $exception) {
                 \Log::error("阿里云短信:数据解析错误");
                 \Log::warning($exception);
