@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Contracts\Encryption\DecryptException;
+use Mallto\Tool\Exception\ResourceException;
 use RuntimeException;
 
 
@@ -17,6 +19,26 @@ use RuntimeException;
  */
 class AppUtils
 {
+
+
+    /**
+     * 解析openid
+     *
+     * @param $openid
+     * @return mixed|string
+     */
+    public static  function decryptOpenid($openid)
+    {
+        try {
+            $openid = urldecode($openid);
+            $openid = decrypt($openid);
+
+            return $openid;
+        } catch (DecryptException $e) {
+            \Log::error("openid解密失败:".$openid);
+            throw new ResourceException("openid无效");
+        }
+    }
 
     /**
      * 获取前端项目使用的url
@@ -301,7 +323,7 @@ class AppUtils
                 $queries = explode("&", $decodeData);
                 foreach ($queries as $query) {
                     $subQuery = explode("=", $query);
-                    if(count($subQuery)!=2){
+                    if (count($subQuery) != 2) {
                         return [];
                     }
                     $result[$subQuery[0]] = $subQuery[1];
