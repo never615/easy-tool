@@ -7,7 +7,7 @@ namespace Mallto\Tool\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Mallto\Tool\Domain\Log\Logger;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Jobs\LogJob;
 
 /**
@@ -33,13 +33,12 @@ class OwnerApiLog
         if ($tempIp) {
             $ip = $tempIp;
         }
-//        else {
-//            $ip = $request->getClientIp();
-//        }
 
 
         $user = Auth::guard("api")->user();
         $userId = $user ? $user->id : 0;
+
+        $uuid = SubjectUtils::getUUIDNoException();
 
         $log = [
             'action'     => "请求",
@@ -49,17 +48,14 @@ class OwnerApiLog
             'user_id'    => $userId,
             'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
             'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
+            "uuid"       => $uuid,
         ];
 
-        
-        dispatch(new LogJob("logOwnerApi",$log));
-        
-//        $logger = resolve(Logger::class);
-//        $logger->logOwnerApi($log);
+
+        dispatch(new LogJob("logOwnerApi", $log));
 
         $response = $next($request);
 
-        $ip = "";
         $tempIp = $request->header("X-Forwarded-For");
         if ($tempIp) {
             $ip = $tempIp;
@@ -74,12 +70,11 @@ class OwnerApiLog
             'user_id'    => $userId,
             'input'      => $response->getContent(),
             'status'     => $response->getStatusCode(),
+            "uuid"       => $uuid,
         ];
 
-        dispatch(new LogJob("logOwnerApi",$log));
+        dispatch(new LogJob("logOwnerApi", $log));
 
-//        $logger = resolve(Logger::class);
-//        $logger->logOwnerApi($log);
 
         return $response;
     }

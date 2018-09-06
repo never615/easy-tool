@@ -141,7 +141,8 @@ abstract class AbstractAPI
     protected function logMiddleware()
     {
         return Middleware::tap(function (RequestInterface $request, $options) {
-            dispatch(new LogJob("logThirdPart",[
+            dispatch(new LogJob("logThirdPart", [
+                "uuid"    => SubjectUtils::getUUIDNoException(),
                 "tag"     => $this->slug,
                 "action"  => '请求',
                 "method"  => $request->getMethod(),
@@ -152,7 +153,8 @@ abstract class AbstractAPI
             ]));
         }, function (RequestInterface $request, $options, Promise $response) {
             $response->then(function (ResponseInterface $response) use ($request) {
-                dispatch(new LogJob("logThirdPart",[
+                dispatch(new LogJob("logThirdPart", [
+                    "uuid"    => SubjectUtils::getUUIDNoException(),
                     "tag"     => $this->slug,
                     "action"  => '响应',
                     "method"  => $request->getMethod(),
@@ -187,7 +189,8 @@ abstract class AbstractAPI
 
 
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
-                dispatch(new LogJob("logThirdPart",[
+                dispatch(new LogJob("logThirdPart", [
+                    "uuid"=>SubjectUtils::getUUIDNoException(),
                     "tag"     => $this->slug,
                     "action"  => 'Retry请求',
                     "method"  => $request->getMethod(),

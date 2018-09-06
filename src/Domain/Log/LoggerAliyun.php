@@ -70,8 +70,6 @@ class LoggerAliyun implements Logger
             array_merge($content, [
                 "server_name" => $this->serverName,
                 "env"         => config("app.env"),
-                'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
-
             ])
         );
         array_push($logitems, $logItem);
@@ -105,7 +103,6 @@ class LoggerAliyun implements Logger
         $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
             "env"         => config("app.env"),
-            'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
@@ -139,7 +136,6 @@ class LoggerAliyun implements Logger
             "server_name" => $this->serverName,
             "request_url" => config("app.url"),
             "env"         => config("app.env"),
-            'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
         ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source, $logitems);
@@ -194,7 +190,6 @@ class LoggerAliyun implements Logger
         if (!$this->switch) {
             return;
         }
-
 
         $topic = "";
         $source = $this->localIp;
