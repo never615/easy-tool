@@ -38,7 +38,8 @@ class OwnerApiLog
         $user = Auth::guard("api")->user();
         $userId = $user ? $user->id : 0;
 
-        $uuid = SubjectUtils::getUUIDNoException();
+        $uuid = SubjectUtils::getUUIDNoException() ?: 0;
+
 
         $log = [
             'action'     => "请求",
