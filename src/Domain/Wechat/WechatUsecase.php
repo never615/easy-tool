@@ -45,8 +45,10 @@ class  WechatUsecase extends AbstractAPI
             if ($content['code'] == 0) {
                 return true;
             } else {
-                \Log::warning("微信模板消息发送失败1");
-                \Log::warning($content['msg']);
+                if (!starts_with($content['msg'], "require subscribe")) {
+                    \Log::warning("微信模板消息发送失败1");
+                    \Log::warning($content['msg']);
+                }
 
                 return false;
             }
