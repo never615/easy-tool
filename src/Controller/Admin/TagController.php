@@ -6,10 +6,11 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
-use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Tag;
+use Mallto\Tool\Exception\ResourceException;
 
 class TagController extends AdminCommonController
 {
@@ -54,9 +55,33 @@ class TagController extends AdminCommonController
     protected function formOption(Form $form)
     {
         $form->text('name')->rules('required');
-        $form->text("slug");
+
         $form->select('type')
             ->default("common")
             ->options(Tag::TYPE);
+
+        $form->text("slug")
+            ->rules("required|alpha_dash")
+            ->help("一种类型下标识需要唯一,可以包含字母和数字，以及破折号和下划线。");
+
+
+        $form->image("logo")
+            ->uniqueName()
+            ->removable()
+            ->move('tag/logo/'.$this->currentId);
+
+        $form->saving(function ($form) {
+            $subjectId = $form->subject_id ?: $form->model()->subject_id;
+
+            if ($form->slug) {
+                if (Tag::where("subject_id", $subjectId)
+                    ->where("slug", $form->slug)
+                    ->exists()) {
+                    throw new ResourceException("标识:".$form->slug."已存在");
+                }
+
+            }
+
+        });
     }
 }

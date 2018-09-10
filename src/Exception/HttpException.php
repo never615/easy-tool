@@ -15,15 +15,30 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
 {
     protected $errCode;
 
+    protected $content;
+
+    /**
+     * HttpException constructor.
+     *
+     * @param                 $statusCode
+     * @param null            $message
+     * @param null            $errCode
+     * @param array           $content 不能包含error和code的key
+     * @param \Exception|null $previous
+     * @param array           $headers
+     * @param int             $code
+     */
     public function __construct(
         $statusCode,
         $message = null,
         $errCode = null,
+        $content = null,
         \Exception $previous = null,
         array $headers = array (),
         $code = 0
     ) {
         $this->errCode = $errCode;
+        $this->content = $content;
         parent::__construct($statusCode, $message, $previous, $headers, $code);
     }
 
@@ -42,6 +57,31 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
     public function setErrCode($errCode)
     {
         $this->errCode = $errCode;
+    }
+
+    /**
+     * @return null
+     */
+    public function getContent()
+    {
+        return $this->content;
+    }
+
+    /**
+     * @param null $content
+     */
+    public function setContent($content): void
+    {
+        $this->content = $content;
+    }
+
+
+    public function getResponseContent()
+    {
+        return array_merge([
+            "error" => $this->errCode,
+            "code"  => $this->errCode,
+        ], $this->content);
     }
 
 

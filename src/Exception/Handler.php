@@ -49,7 +49,6 @@ class Handler extends ExceptionHandler
         \Illuminate\Session\TokenMismatchException::class,
         \Illuminate\Validation\ValidationException::class,
         \League\OAuth2\Server\Exception\OAuthServerException::class,
-        \Overtrue\Socialite\AuthorizeFailedException::class,
     ];
 
     /**
@@ -160,10 +159,7 @@ class Handler extends ExceptionHandler
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json([
-                    "error" => $exception->getMessage(),
-                    'code'  => $exception->getErrCode(),
-                ], $exception->getStatusCode());
+                return response()->json($exception->getResponseContent(), $exception->getStatusCode());
             } else {
 //                if($isAdmin){
 //                    return response()

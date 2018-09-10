@@ -15,6 +15,7 @@ class Tag extends BaseModel
     const TYPE = [
         "common" => "通用标签",
         "user"   => "用户自选标签",
+        "coupon" => "卡券标签",
     ];
 
 
@@ -25,10 +26,29 @@ class Tag extends BaseModel
             ->pluck("name", "id");
     }
 
+    /**
+     * @deprecated
+     * @return mixed
+     */
     public static function selectNotUserTags()
     {
         return static::dynamicData()
-            ->where("type", "!=", "user")
+            ->where("type", "common")
+            ->pluck("name", "id");
+    }
+
+
+    /**
+     * 按类型查询标签
+     *
+     * @param $query
+     * @param $type
+     * @return
+     */
+    public function scopeOfType($query, $type)
+    {
+        return $query->dynamicData()
+            ->where("type", $type)
             ->pluck("name", "id");
     }
 
