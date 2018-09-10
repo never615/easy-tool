@@ -8,6 +8,7 @@ namespace Mallto\Tool\Providers;
 use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Mail\TransportManager;
+use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -29,8 +30,6 @@ use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\OwnerApiLog;
-use Mallto\Tool\Middleware\OwnerApiLogAfter;
-use Mallto\Tool\Middleware\OwnerApiLogBefore;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
@@ -172,8 +171,8 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "before",
-                "queue"          => $event->job->getQueue(),
-                "name"          => $event->job->resolveName(),
+                "queue"           => $event->job->getQueue(),
+                "name"            => $event->job->resolveName(),
             ]);
         });
 
@@ -182,8 +181,8 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "after",
-                "queue"          => $event->job->getQueue(),
-                "name"          => $event->job->resolveName(),
+                "queue"           => $event->job->getQueue(),
+                "name"            => $event->job->resolveName(),
             ]);
         });
 
@@ -196,15 +195,15 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "failure",
-                "queue"          => $event->job->getQueue(),
-                "name"          => $event->job->resolveName(),
+                "queue"           => $event->job->getQueue(),
+                "name"            => $event->job->resolveName(),
                 "payload"         => $event->job->getRawBody(),
             ]);
 
         });
 
         //异常发生后
-        Queue::exceptionOccurred(function (JobFailed $event) {
+        Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
             \Log::error("队列任务异常");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
@@ -212,10 +211,11 @@ class ToolServiceProvider extends ServiceProvider
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
                 "status"          => "exception",
-                "queue"          => $event->job->getQueue(),
-                "name"          => $event->job->resolveName(),
+                "queue"           => $event->job->getQueue(),
+                "name"            => $event->job->resolveName(),
                 "payload"         => $event->job->getRawBody(),
             ]);
+
         });
     }
 
