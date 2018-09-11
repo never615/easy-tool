@@ -79,7 +79,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
     public function getResponseContent()
     {
         return array_merge([
-            "error" => $this->errCode,
+            "error" => $this->message,
             "code"  => $this->errCode,
         ], $this->content);
     }

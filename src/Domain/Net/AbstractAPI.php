@@ -141,20 +141,28 @@ abstract class AbstractAPI
     protected function logMiddleware()
     {
         return Middleware::tap(function (RequestInterface $request, $options) {
-            dispatch(new LogJob("logThirdPart", [
-                'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
-                "tag"     => $this->slug,
-                "action"  => '请求',
-                "method"  => $request->getMethod(),
-                "url"     => $request->getUri(),
-                "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                "body"    => json_encode(AppUtils::httpQueryBuildReverse($request->getBody()->getContents()),
-                    JSON_UNESCAPED_UNICODE),
-            ]));
+
+            try {
+                dispatch(new LogJob("logThirdPart", [
+                    'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
+                    "tag"     => $this->slug,
+                    "action"  => '请求',
+                    "method"  => $request->getMethod(),
+                    "url"     => $request->getUri(),
+                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"    => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
+                        JSON_UNESCAPED_UNICODE) : $request->getBody()."",
+                ]));
+            } catch (\Exception $exception) {
+                \Log::error("记录第三方方请求日志错误");
+                \Log::warning($exception);
+            }
+
+
         }, function (RequestInterface $request, $options, Promise $response) {
             $response->then(function (ResponseInterface $response) use ($request) {
                 dispatch(new LogJob("logThirdPart", [
-                    'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
+                    'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
                     "tag"     => $this->slug,
                     "action"  => '响应',
                     "method"  => $request->getMethod(),
@@ -190,7 +198,7 @@ abstract class AbstractAPI
 
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
                 dispatch(new LogJob("logThirdPart", [
-                    'uuid'        => SubjectUtils::getUUIDNoException() ?: 0,
+                    'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
                     "tag"     => $this->slug,
                     "action"  => 'Retry请求',
                     "method"  => $request->getMethod(),

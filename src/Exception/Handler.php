@@ -198,9 +198,7 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 throw new ResourceException($msg);
-            } elseif ($exception instanceof \Overtrue\Socialite\AuthorizeFailedException) {
-                return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
-            } elseif ($exception instanceof RequestException) {
+            }elseif ($exception instanceof RequestException) {
                 return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
             } else {
 //                \Log::error("内部异常");
