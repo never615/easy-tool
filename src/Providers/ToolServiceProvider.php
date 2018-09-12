@@ -8,7 +8,6 @@ namespace Mallto\Tool\Providers;
 use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Mail\TransportManager;
-use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -122,12 +121,6 @@ class ToolServiceProvider extends ServiceProvider
         });
 
 
-        Queue::failing(function (JobFailed $event) {
-            // $event->connectionName
-            // $event->job
-            // $event->exception
-            Log::info("任务失败");
-        });
 
         //自定义响应方法
         Response::macro('nocontent', function () {
@@ -186,7 +179,6 @@ class ToolServiceProvider extends ServiceProvider
             ]);
         });
 
-
         //任务失败后
         Queue::failing(function (JobFailed $event) {
             \Log::error("队列任务失败");
@@ -203,7 +195,7 @@ class ToolServiceProvider extends ServiceProvider
         });
 
         //异常发生后
-        Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
+        Queue::exceptionOccurred(function (JobFailed $event) {
             \Log::error("队列任务异常");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
