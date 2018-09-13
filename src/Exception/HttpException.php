@@ -81,7 +81,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         return array_merge([
             "error" => $this->message,
             "code"  => $this->errCode,
-        ], $this->content);
+        ], (array)$this->content);
     }
 
 
