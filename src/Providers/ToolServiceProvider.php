@@ -12,7 +12,6 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
@@ -121,7 +120,6 @@ class ToolServiceProvider extends ServiceProvider
         });
 
 
-
         //自定义响应方法
         Response::macro('nocontent', function () {
             return Response::make('', 204);
@@ -195,7 +193,7 @@ class ToolServiceProvider extends ServiceProvider
         });
 
         //异常发生后
-        Queue::exceptionOccurred(function (JobFailed $event) {
+        Queue::exceptionOccurred(function ($event) {
             \Log::error("队列任务异常");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
