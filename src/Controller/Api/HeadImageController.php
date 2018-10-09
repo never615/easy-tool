@@ -8,7 +8,7 @@ namespace Mallto\Tool\Controller\Api;
 
 use Mallto\Admin\SubjectUtils;
 use Illuminate\Http\Request;
-use Mallto\Tool\Data\HeadImage;
+use Mallto\Tool\Data\AdImage;
 
 /**
  * Created by PhpStorm.
@@ -28,7 +28,7 @@ class HeadImageController extends \App\Http\Controllers\Controller
 
         $subjectId = SubjectUtils::getSubjectId();
 
-        return HeadImage::where("subject_id", $subjectId)
+        return AdImage::where("subject_id", $subjectId)
             ->where("type", $request->type)
             ->first();
     }

@@ -58,11 +58,11 @@ Route::group($attributes, function ($router) {
                 //轮播图
                 Route::resource('page_banners', 'PageBannerController');
                 //模块头图配置
-                Route::resource('head_images', 'HeadImageController');
+                Route::resource('ads', 'AdController');
 
                 //----------------------------  页面配置结束  -----------------------------------------------
-Route::resource('configs', 'ConfigController');
-Route::resource('sms_notifies', 'SmsNotifyController');
+                Route::resource('configs', 'ConfigController');
+                Route::resource('sms_notifies', 'SmsNotifyController');
 //DummyRoutePlaceholder
 
             });

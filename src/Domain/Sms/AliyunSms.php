@@ -216,7 +216,7 @@ class AliyunSms extends AbstractAPI implements Sms
                 throw new ResourceException("一分钟内只能发送一条短信");
                 break;
             default:
-                \Log::error("短信发送失败,checkAndThrow");
+                \Log::error("短信发送失败");
                 \Log::warning($contents);
                 throw new ResourceException("短信发送失败:".$contents['Code'].",".$contents["Message"]);
                 break;

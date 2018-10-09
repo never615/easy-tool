@@ -9,11 +9,13 @@ namespace Mallto\Tool\Data;
 use Mallto\Admin\Data\Traits\BaseModel;
 
 
-class HeadImage extends BaseModel
+class AdImage extends BaseModel
 {
-    const TYPE = [
-        "seckill" => "秒杀模块",
-    ];
+
+    public function ad()
+    {
+        return $this->belongsTo(Ad::class);
+    }
 
 
 }
