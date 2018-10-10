@@ -31,6 +31,7 @@ class SubjectUtils
 
     /**
      * 获取主体的配置信息
+     * @deprecated
      *
      * @param      $subject
      * @param      $key

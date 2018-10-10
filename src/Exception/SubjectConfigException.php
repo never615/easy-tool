@@ -10,6 +10,7 @@ use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
+ * @deprecated
  * 第三方服务异常
  * Class PermissionDeniedException
  *
