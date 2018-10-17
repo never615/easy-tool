@@ -42,8 +42,10 @@ Route::group($attributes, function ($router) {
         //-------------------  页面配置开始 ------------------------
         //轮播图
         Route::resource("page/banner", "PageBannerController", ["only" => ['index']]);
-        //模块头图
+        //页面广告
         Route::resource("page/ad", "AdController", ["only" => ['index']]);
+        //模块头图
+        Route::resource("page/head_image", "AdController", ["only" => ['index']]);
 
         //-------------------  页面配置结束 ------------------------
 
