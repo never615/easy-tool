@@ -141,7 +141,7 @@ class SignUtils
      *
      * 签名2.0版本
      *
-     * http://wiki.mall-to.com/web/#/3?page_id=139
+     * https://wiki.mall-to.com/web/#/19?page_id=183
      *
      * @param array $arr
      * @param null  $secret
@@ -150,7 +150,7 @@ class SignUtils
     public static function verifySign2(array $arr, $secret)
     {
         if (!isset($arr['signature'])) {
-            throw new SignException("缺少sign字段");
+            throw new SignException("缺少signature字段");
         }
 
         $waiteSign = $arr['signature'];
@@ -171,7 +171,7 @@ class SignUtils
     /**
      * 签名2.0
      *
-     * http://wiki.mall-to.com/web/#/3?page_id=139
+     * https://wiki.mall-to.com/web/#/19?page_id=183
      * @param $arr
      * @param $secret
      * @return string
@@ -186,7 +186,6 @@ class SignUtils
 
         return base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
     }
-
 
 
 }

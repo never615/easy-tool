@@ -8,26 +8,19 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Mallto\Admin\SubjectUtils;
+use Mallto\Mall\Data\Subject;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
- * api 接口请求专用
+ * 第三方 api 接口请求专用
  *
  * Class RequestCheck
  *
  * @package Mallto\Tool\Middleware
  */
-class RequestCheck
+class ThirdRequestCheck
 {
-    protected $requestTypes = [
-        'wechat'  => 'WECHAT',
-        'android' => 'ANDROID',
-        'ios'     => 'IOS',
-        'web'     => 'WEB',
-        'server'  => 'SERVER',
-    ];
 
     /**
      * @param         $request
@@ -36,20 +29,29 @@ class RequestCheck
      */
     public function handle(Request $request, Closure $next)
     {
-        //todo 优化
-        $uuid = SubjectUtils::getUUID();
-        $requestType = $request->header('REQUEST_TYPE');
-        if (!$uuid) {
-//            if (!$requestType || !$uuid) {
+        $headKeys = $request->headers->keys();
+
+
+        $waitCheckHeaders = [
+            "uuid",
+            "app-id",
+            "accept",
+            "timestamp",
+            "sign-version",
+        ];
+
+        if (count(array_diff($headKeys, $waitCheckHeaders)) != (count($headKeys) - count($waitCheckHeaders))) {
             throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
         }
 
+        $uuid = $request->header('UUID');
 
-        if ($requestType && !in_array($requestType, $this->requestTypes)) {
-            throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
+        $subject = Subject::where("uuid", $uuid)
+            ->first();
+        if (!$subject) {
+            throw new PreconditionFailedHttpException(trans("errors.precondition_failed").":uuid");
         }
 
-        $request->headers->set("mode", "api");
 
         return $next($request);
     }

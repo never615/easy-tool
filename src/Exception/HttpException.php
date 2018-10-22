@@ -35,8 +35,9 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         $content = null,
         \Exception $previous = null,
         array $headers = array (),
-        $code = 0
-    ) {
+        $code = 0 //todo 系统有定义异常码,我又自己定义了errCode,优化
+    )
+    {
         $this->errCode = $errCode;
         $this->content = $content;
         parent::__construct($statusCode, $message, $previous, $headers, $code);
@@ -81,7 +82,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         return array_merge([
             "error" => $this->message,
             "code"  => $this->errCode,
-        ], (array)$this->content);
+        ], (array) $this->content);
     }
 
 

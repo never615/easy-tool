@@ -29,6 +29,7 @@ use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
+use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
 
@@ -49,10 +50,11 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-        "requestCheck" => RequestCheck::class,
-        'authSign'     => AuthenticateSign::class,
-        'authSign2'    => AuthenticateSign2::class,
-        "owner_api"    => OwnerApiLog::class,
+        "requestCheck"    => RequestCheck::class,
+        'authSign'        => AuthenticateSign::class,
+        'authSign2'       => AuthenticateSign2::class,
+        "owner_api"       => OwnerApiLog::class,
+        "third_api_check" => ThirdRequestCheck::class,
     ];
 
     /**
