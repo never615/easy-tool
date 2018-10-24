@@ -14,6 +14,7 @@ use GuzzleHttp\Exception\ServerException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
@@ -195,10 +196,16 @@ class Handler extends ExceptionHandler
                 throw new PermissionDeniedException("没有权限访问该的接口");
             } elseif ($exception instanceof TokenMismatchException) {
                 return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
+            } elseif ($exception instanceof QueryException) {
+                \Log::error("无效的搜索");
+                \Log::warning($exception);
+                throw new ResourceException("无效的搜索");
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
+                \Log::error("PDOException");
+                \Log::warning($exception);
                 throw new ResourceException($msg);
-            }elseif ($exception instanceof RequestException) {
+            } elseif ($exception instanceof RequestException) {
                 return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
             } else {
 //                \Log::error("内部异常");
