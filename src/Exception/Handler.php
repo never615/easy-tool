@@ -197,9 +197,9 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof TokenMismatchException) {
                 return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
             } elseif ($exception instanceof QueryException) {
-                \Log::error("无效的搜索");
+                \Log::error("QueryException");
                 \Log::warning($exception);
-                throw new ResourceException("无效的搜索");
+                throw new ResourceException("无效的搜索(SQL错误)");
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 \Log::error("PDOException");

@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Data;
 
+use Encore\Admin\Facades\Admin;
+use Illuminate\Support\Facades\DB;
 use Mallto\Admin\Data\Traits\BaseModel;
 use Mallto\Mall\Data\Shop;
 use Mallto\User\Data\User;
@@ -13,9 +15,10 @@ use Mallto\User\Data\User;
 class Tag extends BaseModel
 {
     const TYPE = [
-        "common" => "通用标签",
-        "user"   => "用户自选标签",
-        "coupon" => "卡券标签",
+        "common"   => "通用标签",
+        "user"     => "用户自选标签",
+        "coupon"   => "卡券标签",
+        'discount' => "会员优惠标签",
     ];
 
 
@@ -47,9 +50,15 @@ class Tag extends BaseModel
      */
     public function scopeOfType($query, $type)
     {
-        return $query->dynamicData()
-            ->where("type", $type)
-            ->pluck("name", "id");
+        if (Admin::user()->isOwner()) {
+            return static::dynamicData()
+                ->where("type", $type)
+                ->select(DB::raw("name||subject_id as name,id"))->pluck("name", "id");
+        } else {
+            return $query->dynamicData()
+                ->where("type", $type)
+                ->pluck("name", "id");
+        }
     }
 
 

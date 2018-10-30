@@ -45,7 +45,7 @@ class UrlUtils
     {
         $tempu = parse_url($url);
 
-        return isset($tempu['host']) ? $tempu['host'] : "";
+        return $tempu['host'] ?? "";
 
 //        $urlArr1 = explode("//", $url);
 //        if (count($urlArr1) > 1) {
@@ -70,10 +70,10 @@ class UrlUtils
         if (strpos($url, "http") === 0) {
 //            $httpProtocol = config("app.http_protocol", 'https');
             $secure = config("admin.secure");
-            if($secure){
-                $httpProtocol="https";
-            }else{
-                $httpProtocol="http";
+            if ($secure) {
+                $httpProtocol = "https";
+            } else {
+                $httpProtocol = "http";
             }
             if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉

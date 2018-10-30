@@ -8,7 +8,6 @@ namespace Mallto\Tool\Domain\Log;
 use Aliyun\SLS\Client;
 use Aliyun\SLS\Models\LogItem;
 use Aliyun\SLS\Models\PutLogsRequest;
-use Mallto\Admin\SubjectUtils;
 
 
 /**
@@ -42,7 +41,7 @@ class LoggerAliyun implements Logger
             config("app.aliyun_log_access_key"));
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n") ?: "cli";
-        $this->localIp = isset($_SERVER['SERVER_ADDR']) ? ($_SERVER['SERVER_ADDR'] ?: "") : "";
+        $this->localIp = $_SERVER['SERVER_ADDR'] ?? "";
     }
 
 
