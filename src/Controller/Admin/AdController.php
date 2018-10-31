@@ -50,13 +50,13 @@ class AdController extends AdminCommonController
 
         $form->select("ad_type", "广告类型")
             ->default("image")
-            ->addElementClass("mt-ad-ad-type")
+            ->addElementClass2("mt-ad-ad-type")
             ->options(Ad::AD_TYPE);
 
         $form->select("type", "模块")
             ->options(Ad::MODULE)
             ->rules("required")
-            ->addElementClass("mt-ad-type");
+            ->addElementClass2("mt-ad-type");
 
         $this->imageFormOption($form);
         $this->textFormOption($form);
@@ -64,7 +64,7 @@ class AdController extends AdminCommonController
 
 
         $form->text("link", "跳转链接")
-            ->addElementClass("mt-ad-link")
+            ->addElementClass2("mt-ad-link")
             ->help("如:https://baidu.com");
     }
 
@@ -79,7 +79,7 @@ class AdController extends AdminCommonController
         $form->image('image')
             ->removable()
             ->uniqueName()
-            ->addElementClass("mt-ad-image")
+            ->addElementClass2("mt-ad-image")
             ->move('ads/image'.$this->currentId ?: 0);
     }
 
@@ -91,7 +91,7 @@ class AdController extends AdminCommonController
     private function textFormOption($form)
     {
         $form->text("content")
-            ->addElementClass("mt-ad-text");
+            ->addElementClass2("mt-ad-text");
     }
 
     /**
@@ -105,13 +105,13 @@ class AdController extends AdminCommonController
             $form->image("image")
                 ->removable()
                 ->uniqueName()
-                ->addElementClass("mt-ad-images")
+                ->addElementClass2("mt-ad-images")
                 ->move('ads/images'.$this->currentId ?: 0);
 
             $form->text("link", "跳转链接")
-                ->addElementClass("mt-ad-images")
+                ->addElementClass2("mt-ad-images")
                 ->help("如:https://baidu.com");
-        })->addElementClass("mt-ad-images");
+        })->addElementClass2("mt-ad-images");
     }
 
 
