@@ -69,13 +69,13 @@ class OwnerApiLog
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
             'user_id'    => $userId,
-            'input'      => $response->getContent(),
+            'input'      => is_array($response->getContent()) ? $response->getContent() : null,
             'status'     => $response->getStatusCode(),
             "uuid"       => $uuid,
         ];
 
-        dispatch(new LogJob("logOwnerApi", $log));
 
+        dispatch(new LogJob("logOwnerApi", $log));
 
         return $response;
     }

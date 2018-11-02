@@ -24,6 +24,11 @@ $attributes = [
 
 Route::group($attributes, function ($router) {
 
+
+    Route::group(['middleware' => ['owner_api']], function () {
+        Route::get("qr_image", 'QrController@index');
+    });
+
     /**
      * 需要经过验证
      */
