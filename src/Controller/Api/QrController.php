@@ -9,6 +9,9 @@ use App\Http\Controllers\Controller;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Response\QrCodeResponse;
 use Illuminate\Http\Request;
+use Mallto\Tool\Exception\PermissionDeniedException;
+use Mallto\Tool\Utils\HttpUtils;
+use Mallto\Tool\Utils\UrlUtils;
 
 /**
  * Created by PhpStorm.
@@ -21,10 +24,20 @@ class QrController extends Controller
 
     public function index(Request $request)
     {
+        $referer = $request->header("referer");
+        if (!$referer) {
+            throw new PermissionDeniedException("没有权限调用");
+        }
+
+        $refererDomin = UrlUtils::getDomain($referer);
+
         $data = $request->get("data");
 
         $size = $request->get("size");
 
+        if (!HttpUtils::isAllowReferer($refererDomin)) {
+            throw new PermissionDeniedException("没有权限调用:".$refererDomin);
+        }
 
         $qrCode = new QrCode($data);
         try {
