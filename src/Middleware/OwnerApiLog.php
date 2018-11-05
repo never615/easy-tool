@@ -69,7 +69,7 @@ class OwnerApiLog
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
             'user_id'    => $userId,
-            'input'      => is_array($response->getContent()) ? $response->getContent() : null,
+            'input'      => is_array($response->getContent()) ? $response->getContent() : "",
             'status'     => $response->getStatusCode(),
             "uuid"       => $uuid,
         ];
