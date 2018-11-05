@@ -374,4 +374,26 @@ class AppUtils
     }
 
 
+    /**
+     * 根据numbers 返回天数数组,如:
+     * $numbers 为 3,返回
+     * [
+     *   "第一天","第二天","第三天"
+     * ]
+     *
+     * @param $numbers
+     * @return array
+     */
+    public static function daysGenerator($numbers)
+    {
+        $dayArr = [];
+
+        for ($i = 1; $i <= $numbers; $i++) {
+            $dayArr[] = "第".$i."天";
+        }
+
+        return $dayArr;
+    }
+
+
 }
