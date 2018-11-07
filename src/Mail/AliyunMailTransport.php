@@ -35,9 +35,6 @@ class AliyunMailTransport extends Transport
      */
     public function __construct($AccessKeyId, $AccessSecret, $ReplyToAddress, $AddressType)
     {
-
-        \Log::info($ReplyToAddress);
-
         $this->AccessKeyId = $AccessKeyId;
         $this->AccessSecret = $AccessSecret;
         $this->ReplyToAddress = $ReplyToAddress;
@@ -102,20 +99,11 @@ class AliyunMailTransport extends Transport
         $Parameters['Signature'] = $this->makeSign($Parameters);
         $Http = new Client();
         try {
-
-            \Log::info($Parameters);
-            \Log::info(\GuzzleHttp\json_encode($Parameters));
-
             $Response = $Http->post(self::API_URL, [
                 'form_params' => $Parameters,
             ]);
 
-
-            \Log::info($Response);
-
         } catch (ClientException $e) {
-            \Log::info($e->getResponse()->getBody()->getContents());
-
             return $this->response($e->getResponse());
         }
 
