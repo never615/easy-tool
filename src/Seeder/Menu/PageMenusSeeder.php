@@ -21,12 +21,11 @@ class PageMenusSeeder extends Seeder
      */
     public function run()
     {
-        $order = 2500;
+        $order = 10000;
 
         $pageManagerMenu = $this->updateOrCreate(
             "page_manager", 0, $order++, "页面配置", "fa-pagelines");
 
-        $order = $pageManagerMenu->order;
 
         $this->updateOrCreate(
             "page_banners.index", $pageManagerMenu->id, $order++, "轮播图", "fa-image");
