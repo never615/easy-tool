@@ -101,6 +101,34 @@ class AuthenticateSign2
                     throw new ResourceException("InvalidTimeStamp.Expired");
                 }
                 break;
+            case "3":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
+                $timestamp = $request->header("timestamp");
+                $uuid = $request->header("uuid");
+                $appId = $request->header("app_id");
+
+
+                //时间戳格式检查
+                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                    throw new ResourceException("InvalidTimeStamp.Format");
+                }
+
+                if (Carbon::now()->subMinutes(15) < $timestamp) {
+                    //和当前时间间隔比较在15分钟内
+                    //检查签名
+                    if (SignUtils::verifySign2(array_merge($inputs, [
+                        "timestamp" => $timestamp,
+                        "uuid"      => $uuid,
+                        "app_id"    => $appId,
+                    ]), $secret)) {
+                        //pass
+                        return $next($request);
+                    } else {
+                        throw new SignException(trans("errors.sign_error"));
+                    }
+                } else {
+                    throw new ResourceException("InvalidTimeStamp.Expired");
+                }
+                break;
             default:
                 throw new PermissionDeniedException("无效的签名版本");
                 break;
