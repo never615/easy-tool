@@ -14,6 +14,13 @@ class WechatTemplateMsg extends BaseModel
 {
     use DynamicData;
 
+
+    //微信模板
+    const WECHAT_TEMPLATE = [
+        "TM00504"         => "自助积分失败通知",
+        "OPENTM202764141" => "会员积分变动通知",
+    ];
+
     protected $guarded = [
 
     ];
