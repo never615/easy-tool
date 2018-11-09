@@ -13,6 +13,7 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
+use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
@@ -66,9 +67,12 @@ class WechatTemplateMsgContoller extends AdminCommonController
     {
 //        $form->text("public_template_id", "微信公共模板id");
         $form->select("public_template_id", "微信公共模板id")
-            ->options(WechatTemplateMsg::WECHAT_TEMPLATE);
+            ->options(WechatTemplateMsg::WECHAT_TEMPLATE)
+            ->rules("required");
 
-        $form->display("template_id", "公众号对应的模板id");
+        if (Admin::user()->isOwner()) {
+            $form->display("template_id", "公众号对应的模板id");
+        }
 //        $form->text("remark", "模板描述");
 
         $form->text("template_remark", "模板消息备注")
