@@ -8,7 +8,7 @@ namespace Mallto\Tool\Seeder\Menu;
 use Illuminate\Database\Seeder;
 use Mallto\Admin\Seeder\MenuSeederMaker;
 
-class WechatTemplateMenuSeeder extends Seeder
+class BaseMenuSeeder extends Seeder
 {
     use MenuSeederMaker;
 

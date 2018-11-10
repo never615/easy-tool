@@ -6,16 +6,17 @@
 namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
-use Mallto\Tool\Seeder\Menu\WechatTemplateMenuSeeder;
 
 class TablesSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      *
+     * @param MenuTablesSeeder       $menuTablesSeeder
+     * @param PermissionTablesSeeder $permissionTablesSeeder
      * @return void
      */
-    public function run(MenuTablesSeeder $menuTablesSeeder,PermissionTablesSeeder $permissionTablesSeeder)
+    public function run(MenuTablesSeeder $menuTablesSeeder, PermissionTablesSeeder $permissionTablesSeeder)
     {
         $menuTablesSeeder->run();
         $permissionTablesSeeder->run();

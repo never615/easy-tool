@@ -8,7 +8,7 @@ namespace Mallto\Tool\Seeder;
 use Illuminate\Database\Seeder;
 use Mallto\Tool\Seeder\Menu\PageMenusSeeder;
 use Mallto\Tool\Seeder\Menu\SmsNotifyMenuSeeder;
-use Mallto\Tool\Seeder\Menu\WechatTemplateMenuSeeder;
+use Mallto\Tool\Seeder\Menu\BaseMenuSeeder;
 
 class MenuTablesSeeder extends Seeder
 {
@@ -21,7 +21,7 @@ class MenuTablesSeeder extends Seeder
     public function run()
     {
         $this->call(SmsNotifyMenuSeeder::class);
-        $this->call(WechatTemplateMenuSeeder::class);
+        $this->call(BaseMenuSeeder::class);
         $this->call(PageMenusSeeder::class);
 
 //DummySeeder
