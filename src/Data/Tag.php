@@ -14,11 +14,14 @@ use Mallto\User\Data\User;
 
 class Tag extends BaseModel
 {
+
     const TYPE = [
-        "common"   => "通用标签",
+        'shop'     => "店铺标签",
+        'activity' => "活动标签",
         "user"     => "用户自选标签",
         "coupon"   => "卡券标签",
-        'discount' => "会员优惠标签",
+        'discount' => "会员优惠模块标签",
+//        "common"   => "通用标签",
     ];
 
 
@@ -52,11 +55,17 @@ class Tag extends BaseModel
     {
         if (Admin::user()->isOwner()) {
             return static::dynamicData()
-                ->where("type", $type)
+                ->where(function ($query) use ($type) {
+                    $query->where("type", $type)
+                        ->orWhere("type", "common");
+                })
                 ->select(DB::raw("name||subject_id as name,id"))->pluck("name", "id");
         } else {
             return $query->dynamicData()
-                ->where("type", $type)
+                ->where(function ($query) use ($type) {
+                    $query->where("type", $type)
+                        ->orWhere("type", "common");
+                })
                 ->pluck("name", "id");
         }
     }
