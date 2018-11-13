@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
+use Mallto\Tool\Seeder\Permission\BasePermissionsSeeder;
 use Mallto\Tool\Seeder\Permission\PagePermissionsSeeder;
 
 class PermissionTablesSeeder extends Seeder
@@ -19,6 +20,7 @@ class PermissionTablesSeeder extends Seeder
     {
         $this->call(\Mallto\Tool\Seeder\Permission\SmsNotifyPermissionSeeder::class);
         $this->call(PagePermissionsSeeder::class);
+        $this->call(BasePermissionsSeeder::class);
 
 //DummySeeder
 
