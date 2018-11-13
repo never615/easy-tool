@@ -85,6 +85,10 @@ class AliyunSms extends AbstractAPI implements Sms
             try {
                 $contents = $http->parseJson($response);
                 $this->checkAndThrow($contents);
+            } catch (ClientException $clientException) {
+                \Log::error("阿里云短信 client exception");
+                \Log::warning($clientException->getMessage());
+                throw new ResourceException("请重试");
             } catch (ResourceException $resourceException) {
                 throw $resourceException;
             } catch (\Exception $exception) {
@@ -113,8 +117,13 @@ class AliyunSms extends AbstractAPI implements Sms
      * @param $templateParams  string 模板参数
      * @return mixed
      */
-    public function sendBatchSms($mobiles, $smsSigns, $smsTemplateCode, $templateParams)
-    {
+    public
+    function sendBatchSms(
+        $mobiles,
+        $smsSigns,
+        $smsTemplateCode,
+        $templateParams
+    ) {
         $params = array ();
 
         // *** 需用户填写部分 ***
@@ -191,7 +200,8 @@ class AliyunSms extends AbstractAPI implements Sms
      *
      * @return mixed
      */
-    public function querySendDetails()
+    public
+    function querySendDetails()
     {
         // TODO: Implement querySendDetails() method.
     }
@@ -206,7 +216,8 @@ class AliyunSms extends AbstractAPI implements Sms
      * @return array
      * @throws ThirdPartException
      */
-    protected function checkAndThrow(
+    protected
+    function checkAndThrow(
         array $contents
     ) {
         switch ($contents['Code']) {
