@@ -121,7 +121,7 @@ class Handler extends ExceptionHandler
     {
         if ($request->expectsJson()) {
             return response()
-                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401);
+                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401,JSON_UNESCAPED_UNICODE);
         }
 
         if (Admin::user()) {
@@ -156,11 +156,11 @@ class Handler extends ExceptionHandler
 
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
-                return response()->json(["error" => "系统维护中"], $exception->getStatusCode());
+                return response()->json(["error" => "系统维护中"], $exception->getStatusCode(),[],JSON_UNESCAPED_UNICODE);
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json($exception->getResponseContent(), $exception->getStatusCode());
+                return response()->json($exception->getResponseContent(), $exception->getStatusCode(),[],JSON_UNESCAPED_UNICODE);
             } else {
 //                if($isAdmin){
 //                    return response()
@@ -169,21 +169,20 @@ class Handler extends ExceptionHandler
 //                }else{
 
                 return response()
-                    ->json(["error" => $exception->getMessage()],
-                        $exception->getStatusCode());
+                    ->json(["error" => $exception->getMessage()], $exception->getStatusCode(),[],JSON_UNESCAPED_UNICODE);
 //                }
             }
         } else {
             if ($exception instanceof ModelNotFoundException) {
                 $arr = explode('\\', $exception->getModel());
 
-                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404');
+                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404',[],JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
-                return response()->json(["error" => $exception->getMessage()], $exception->getCode());
+                return response()->json(["error" => $exception->getMessage()], $exception->getCode(),[],JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof ServerException) {
-                return response()->json(["error" => $exception->getMessage()], $exception->getCode());
+                return response()->json(["error" => $exception->getMessage()], $exception->getCode(),[],JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof AuthenticationException) {
                 return $this->unauthenticated($request, $exception);
             } elseif ($exception instanceof ValidationException) {
@@ -206,7 +205,7 @@ class Handler extends ExceptionHandler
                 \Log::warning($exception);
                 throw new ResourceException($msg);
             } elseif ($exception instanceof RequestException) {
-                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422);
+                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422,[],JSON_UNESCAPED_UNICODE);
             } else {
 //                \Log::error("内部异常");
 //                \Log::warning($exception->getTraceAsString());
@@ -232,9 +231,9 @@ class Handler extends ExceptionHandler
                 [
                     'errors'  => $exception->errors(),
                     "message" => $exception->getMessage(),
-                ], $exception->status);
+                ], $exception->status,[],JSON_UNESCAPED_UNICODE);
         } else {
-            return response()->json($exception->errors(), $exception->status);
+            return response()->json($exception->errors(), $exception->status,[],JSON_UNESCAPED_UNICODE);
         }
     }
 
