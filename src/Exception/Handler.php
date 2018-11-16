@@ -76,13 +76,6 @@ class Handler extends ExceptionHandler
     public function render($request, Exception $exception)
     {
         DB::rollBack();
-
-
-//        if ($exception instanceof NotFoundHttpException) {
-//            \Log::info("not found http");
-//            \Log::info($request->url());
-//        }
-
         if ($request->expectsJson()) {
             if (Admin::user()) {
                 return $this->interJsonHandler($exception, $request, true);
@@ -102,8 +95,6 @@ class Handler extends ExceptionHandler
 
                 return back()->with(compact('error'))->withInput();
             } else {
-//                \Log::warning($exception->getMessage());
-//                \Log::warning($exception->getTraceAsString());
                 return parent::render($request, $exception);
             }
         }
@@ -121,7 +112,8 @@ class Handler extends ExceptionHandler
     {
         if ($request->expectsJson()) {
             return response()
-                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401,JSON_UNESCAPED_UNICODE);
+                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401,
+                    JSON_UNESCAPED_UNICODE);
         }
 
         if (Admin::user()) {
@@ -148,7 +140,6 @@ class Handler extends ExceptionHandler
             \Log::error("系统内部异常");
             try {
                 \Log::warning($exception);
-//                \Log::warning($exception->getTraceAsString());
             } catch (\Exception $e) {
 
             }
@@ -156,33 +147,40 @@ class Handler extends ExceptionHandler
 
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
-                return response()->json(["error" => "系统维护中"], $exception->getStatusCode(),[],JSON_UNESCAPED_UNICODE);
+                return response()->json(["error" => "系统维护中"], $exception->getStatusCode(), [],
+                    JSON_UNESCAPED_UNICODE);
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json($exception->getResponseContent(), $exception->getStatusCode(),[],JSON_UNESCAPED_UNICODE);
+                return response()->json($exception->getResponseContent(), $exception->getStatusCode(), [],
+                    JSON_UNESCAPED_UNICODE);
             } else {
-//                if($isAdmin){
-//                    return response()
-//                        ->json(["status"=>false,"message" => $exception->getMessage()],
-//                            $exception->getStatusCode());
-//                }else{
+                $data = [
+                    "error" => $exception->getMessage(),
+                ];
+
+                if ($exception->getCode()) {
+                    $data["code"] = $exception->getCode();
+                }
 
                 return response()
-                    ->json(["error" => $exception->getMessage()], $exception->getStatusCode(),[],JSON_UNESCAPED_UNICODE);
-//                }
+                    ->json($data, $exception->getStatusCode(), [],
+                        JSON_UNESCAPED_UNICODE);
             }
         } else {
             if ($exception instanceof ModelNotFoundException) {
                 $arr = explode('\\', $exception->getModel());
 
-                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404',[],JSON_UNESCAPED_UNICODE);
+                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404', [],
+                    JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
-                return response()->json(["error" => $exception->getMessage()], $exception->getCode(),[],JSON_UNESCAPED_UNICODE);
+                return response()->json(["error" => $exception->getMessage()], $exception->getCode(), [],
+                    JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof ServerException) {
-                return response()->json(["error" => $exception->getMessage()], $exception->getCode(),[],JSON_UNESCAPED_UNICODE);
+                return response()->json(["error" => $exception->getMessage()], $exception->getCode(), [],
+                    JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof AuthenticationException) {
                 return $this->unauthenticated($request, $exception);
             } elseif ($exception instanceof ValidationException) {
@@ -205,10 +203,9 @@ class Handler extends ExceptionHandler
                 \Log::warning($exception);
                 throw new ResourceException($msg);
             } elseif ($exception instanceof RequestException) {
-                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422,[],JSON_UNESCAPED_UNICODE);
+                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422, [],
+                    JSON_UNESCAPED_UNICODE);
             } else {
-//                \Log::error("内部异常");
-//                \Log::warning($exception->getTraceAsString());
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }
@@ -231,9 +228,9 @@ class Handler extends ExceptionHandler
                 [
                     'errors'  => $exception->errors(),
                     "message" => $exception->getMessage(),
-                ], $exception->status,[],JSON_UNESCAPED_UNICODE);
+                ], $exception->status, [], JSON_UNESCAPED_UNICODE);
         } else {
-            return response()->json($exception->errors(), $exception->status,[],JSON_UNESCAPED_UNICODE);
+            return response()->json($exception->errors(), $exception->status, [], JSON_UNESCAPED_UNICODE);
         }
     }
 
