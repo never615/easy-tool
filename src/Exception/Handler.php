@@ -230,7 +230,11 @@ class Handler extends ExceptionHandler
                     "message" => $exception->getMessage(),
                 ], $exception->status, [], JSON_UNESCAPED_UNICODE);
         } else {
-            return response()->json($exception->errors(), $exception->status, [], JSON_UNESCAPED_UNICODE);
+//            return response()->json($exception->errors(), $exception->status, [], JSON_UNESCAPED_UNICODE);
+            return response()->json([
+                "error" => array_first($exception->errors())[0] ?? $exception->getMessage(),
+            ], $exception->status, [], JSON_UNESCAPED_UNICODE);
+
         }
     }
 
