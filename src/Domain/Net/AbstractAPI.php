@@ -11,6 +11,7 @@ use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\InternalHttpException;
+use Mallto\Tool\Exception\NotSettingException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
@@ -53,7 +54,7 @@ abstract class AbstractAPI
     protected function getBaseUrl($subject)
     {
         if (empty($this->SETTING_KEY_BASE_URL)) {
-            throw new InternalHttpException("未设置SETTING_KEY_BASE_URL");
+            throw new NotSettingException("未设置SETTING_KEY_BASE_URL");
         }
 
         $this->baseUrl = SubjectUtils::getSubectConfig($subject, $this->SETTING_KEY_BASE_URL);

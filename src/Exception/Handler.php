@@ -112,8 +112,8 @@ class Handler extends ExceptionHandler
     {
         if ($request->expectsJson()) {
             return response()
-                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()], 401,
-                    JSON_UNESCAPED_UNICODE);
+                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()],
+                    401, [], JSON_UNESCAPED_UNICODE);
         }
 
         if (Admin::user()) {
@@ -136,14 +136,10 @@ class Handler extends ExceptionHandler
      */
     protected function interJsonHandler(Exception $exception, $request, $isAdmin = false)
     {
-        if ($exception instanceof InternalHttpException) {
-            \Log::error("系统内部异常");
-            try {
-                \Log::warning($exception);
-            } catch (\Exception $e) {
-
-            }
-        }
+//        if ($exception instanceof InternalHttpException) {
+//            \Log::error("系统内部异常");
+//            \Log::warning($exception);
+//        }
 
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {

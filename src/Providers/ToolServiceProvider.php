@@ -155,7 +155,7 @@ class ToolServiceProvider extends ServiceProvider
         Queue::looping(function () {
             while (DB::transactionLevel() > 0) {
                 //防止事务没有释放
-                \Log::debug("queue rollback");
+                \Log::info("queue rollback");
                 DB::rollBack();
             }
         });
