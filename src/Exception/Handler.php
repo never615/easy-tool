@@ -192,7 +192,7 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof QueryException) {
                 \Log::error("QueryException");
                 \Log::warning($exception);
-                throw new ResourceException("无效的搜索(SQL错误)");
+                throw new InternalHttpException("无效的搜索(SQL错误)");
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 \Log::error("PDOException");
