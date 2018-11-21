@@ -65,7 +65,6 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
     protected function formOption(Form $form)
     {
-//        $form->text("public_template_id", "微信公共模板id");
         $form->select("public_template_id", "微信模板消息")
             ->options(WechatTemplateMsg::WECHAT_TEMPLATE)
             ->rules("required")
@@ -74,7 +73,6 @@ class WechatTemplateMsgContoller extends AdminCommonController
         if (Admin::user()->isOwner()) {
             $form->display("template_id", "公众号对应的模板id");
         }
-//        $form->text("remark", "模板描述");
 
         $form->text("template_remark", "模板消息备注")
             ->help('此填写内容会出现在模板消息的备注位置<br>

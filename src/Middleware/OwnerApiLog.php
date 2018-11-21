@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Jobs\LogJob;
+use Mallto\Tool\Utils\AppUtils;
 
 /**
  * 向第三方提供的接口通讯日志记录
@@ -41,6 +42,9 @@ class OwnerApiLog
         $uuid = SubjectUtils::getUUIDNoException() ?: 0;
 
 
+        $requestId = AppUtils::create_uuid();
+
+
         $log = [
             'action'     => "请求",
             'method'     => $request->method(),
@@ -50,6 +54,7 @@ class OwnerApiLog
             'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
             'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
             "uuid"       => $uuid,
+            "request_id" => $requestId,
         ];
 
 
@@ -73,6 +78,7 @@ class OwnerApiLog
                 (is_string($response->getContent()) ? $response->getContent() : "异常数据"),
             'status'     => $response->getStatusCode(),
             "uuid"       => $uuid,
+            "request_id" => $requestId,
         ];
 
 
