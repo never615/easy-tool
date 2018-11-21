@@ -8,6 +8,7 @@ namespace Mallto\Tool\Domain\Wechat;
 
 use GuzzleHttp\Exception\ClientException;
 use Mallto\Tool\Domain\Net\AbstractAPI;
+use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\SignUtils;
 
 /**
@@ -50,28 +51,26 @@ class  WechatUsecase extends AbstractAPI
                     ],
                 ],
             ]);
-            if ($content['code'] == 0) {
-                return true;
-            } else {
-                if (!starts_with($content['msg'], "require subscribe")) {
-                    \Log::warning("微信模板消息发送失败1");
-                    \Log::warning($content['msg']);
-                }
 
-                return false;
+            return true;
+        } catch (ResourceException $exception) {
+            if (!starts_with($exception->getMessage(), "require subscribe")) {
+                \Log::warning("微信模板消息发送失败 ResourceException");
+                \Log::warning($content['msg']);
             }
 
+            return false;
         } catch (ClientException $clientException) {
-            \Log::error("微信模板消息发送失败2");
+            \Log::error("微信模板消息发送失败 ClientException");
             $response = $clientException->getResponse();
-            \Log::warning($clientException->getMessage());
+            \Log::warning($clientException);
             \Log::warning($response->getBody()->getContents());
 
             return false;
 
         } catch (\Exception $exception) {
-            \Log::error("微信模板消息发送失败3");
-            \Log::warning($exception->getMessage());
+            \Log::error("微信模板消息发送失败 Exception");
+            \Log::warning($exception);
 
             return false;
         }
@@ -80,7 +79,7 @@ class  WechatUsecase extends AbstractAPI
 
 
     /**
-     * 获取模板消息id
+     * 获取/设置模板消息id
      *
      * @param $shortId
      * @param $subject
@@ -116,8 +115,10 @@ class  WechatUsecase extends AbstractAPI
             ]);
 
             return $content["template_id"];
+        } catch (ResourceException $resourceException) {
+            throw $resourceException;
         } catch (ClientException $clientException) {
-            \Log::error("获取模板消息id 1");
+            \Log::error("获取/设置模板消息id client exception");
             $response = $clientException->getResponse();
             \Log::warning($clientException->getMessage());
             \Log::warning($response->getBody()->getContents());
@@ -125,7 +126,7 @@ class  WechatUsecase extends AbstractAPI
             return false;
 
         } catch (\Exception $exception) {
-            \Log::error("获取模板消息id 2");
+            \Log::error("获取/设置模板消息id exception");
             \Log::warning($exception->getMessage());
 
             return false;
@@ -146,6 +147,8 @@ class  WechatUsecase extends AbstractAPI
     protected function checkAndThrow(
         array $contents
     ) {
-        // TODO: Implement checkAndThrow() method.
+        if ($contents['code'] != 0) {
+            throw new ResourceException($contents['msg']);
+        }
     }
 }
