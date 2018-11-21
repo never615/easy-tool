@@ -8,7 +8,9 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Mallto\Admin\SubjectUtils;
+use Mallto\Tool\Exception\ResourceException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
@@ -40,8 +42,16 @@ class RequestCheck
         $uuid = SubjectUtils::getUUID();
         $requestType = $request->header('REQUEST_TYPE');
         if (!$uuid) {
-//            if (!$requestType || !$uuid) {
             throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
+        }
+
+        $user = Auth::guard("api")->user();
+        //如果user存在,检查user和uuid是否一致
+        if ($user) {
+            $subject = $user->subject;
+            if ($subject->uuid != $uuid) {
+                throw new ResourceException("当前请求用户不属于该uuid");
+            }
         }
 
 
