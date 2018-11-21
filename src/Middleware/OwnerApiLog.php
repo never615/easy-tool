@@ -69,7 +69,8 @@ class OwnerApiLog
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
             'user_id'    => $userId,
-            'input'      => is_array($response->getContent()) ? $response->getContent() : "",
+            'input'      => is_array($response->getContent()) ? $response->getContent() :
+                (is_string($response->getContent()) ? $response->getContent() : "异常数据"),
             'status'     => $response->getStatusCode(),
             "uuid"       => $uuid,
         ];
