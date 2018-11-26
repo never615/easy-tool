@@ -11,13 +11,13 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Input;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Mall\Domain\Traits\TagAutoSave;
+use Mallto\Mall\Domain\Traits\SlugAutoSave;
 use Mallto\Tool\Data\Tag;
 
 class TagController extends AdminCommonController
 {
 
-    use  TagAutoSave;
+    use  SlugAutoSave;
 
     /**
      * 获取这个模块的标题
@@ -94,7 +94,7 @@ class TagController extends AdminCommonController
         $form->saving(function ($form) {
             $type = $form->type ?: $form->model()->type;
             //自动生成标识
-            $this->tagSavingCheck($form, $this->getModel(), "slug",
+            $this->slugSavingCheck($form, $this->getModel(), "slug",
                 "type", $type);
         });
     }

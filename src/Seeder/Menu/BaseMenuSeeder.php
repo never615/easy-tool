@@ -31,11 +31,20 @@ class BaseMenuSeeder extends Seeder
             "wechat_template_ids.index", $adminManagerMenu->id, $order++, "模板消息管理", "fa-wechat");
 
 
-        $this->updateOrCreate(
-            "app_secrets.index", $adminManagerMenu->id, $order++, "app_secrets", "fa-user-secret");
+
+        $order = 101;
+
+        $systemManagerMenu = $this->updateOrCreate(
+            "system_manager", 0, $order++, "系统管理", "fa-windows");
 
         $this->updateOrCreate(
-            "third_logs.index", $adminManagerMenu->id, $order++, "第三方日志", "fa-history");
+            "app_secrets.index", $systemManagerMenu->id, $order++, "app_secrets", "fa-user-secret");
+
+        $this->updateOrCreate(
+            "configs.index", $systemManagerMenu->id, $order++, "系统通用配置项", "fa-bullseye");
+
+        $this->updateOrCreate(
+            "third_logs.index", $systemManagerMenu->id, $order++, "第三方日志", "fa-history");
 
     }
 }

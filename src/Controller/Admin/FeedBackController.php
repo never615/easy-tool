@@ -12,6 +12,8 @@ use Encore\Admin\Grid;
 use Mallto\Tool\Data\Feedback;
 
 /**
+ * todo
+ *
  * Class LogController
  *
  * @package Mallto\Mall\Controller
@@ -25,7 +27,7 @@ class FeedBackController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "意见反馈";
+        return "app意见反馈";
     }
 
     /**

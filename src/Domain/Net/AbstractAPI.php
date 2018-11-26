@@ -141,11 +141,14 @@ abstract class AbstractAPI
      */
     protected function logMiddleware()
     {
-        return Middleware::tap(function (RequestInterface $request, $options) {
 
+        $requestId=AppUtils::create_uuid();
+
+        return Middleware::tap(function (RequestInterface $request, $options) use($requestId){
             try {
                 dispatch(new LogJob("logThirdPart", [
                     'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
+                    "request_id"=>$requestId,
                     "tag"     => $this->slug,
                     "action"  => '请求',
                     "method"  => $request->getMethod(),
@@ -160,10 +163,11 @@ abstract class AbstractAPI
             }
 
 
-        }, function (RequestInterface $request, $options, Promise $response) {
-            $response->then(function (ResponseInterface $response) use ($request) {
+        }, function (RequestInterface $request, $options, Promise $response) use($requestId){
+            $response->then(function (ResponseInterface $response) use ($request,$requestId) {
                 dispatch(new LogJob("logThirdPart", [
                     'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
+                    "request_id"=>$requestId,
                     "tag"     => $this->slug,
                     "action"  => '响应',
                     "method"  => $request->getMethod(),

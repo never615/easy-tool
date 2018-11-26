@@ -55,8 +55,11 @@ class  WechatUsecase extends AbstractAPI
             return true;
         } catch (ResourceException $exception) {
             if (!starts_with($exception->getMessage(), "require subscribe")) {
-                \Log::warning("微信模板消息发送失败 ResourceException");
-                \Log::warning($content['msg']);
+                \Log::error("微信模板消息发送失败 ResourceException");
+                \Log::warning($exception);
+            }else{
+                \Log::debug("微信模板消息发送失败 ResourceException");
+                \Log::debug($exception);
             }
 
             return false;
@@ -127,7 +130,7 @@ class  WechatUsecase extends AbstractAPI
 
         } catch (\Exception $exception) {
             \Log::error("获取/设置模板消息id exception");
-            \Log::warning($exception->getMessage());
+            \Log::warning($exception);
 
             return false;
         }
@@ -147,7 +150,7 @@ class  WechatUsecase extends AbstractAPI
     protected function checkAndThrow(
         array $contents
     ) {
-        if ($contents['code'] != 0) {
+        if (isset($contents['code'])&&$contents['code'] != 0) {
             throw new ResourceException($contents['msg']);
         }
     }
