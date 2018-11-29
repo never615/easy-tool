@@ -57,9 +57,6 @@ class  WechatUsecase extends AbstractAPI
             if (!starts_with($exception->getMessage(), "require subscribe")) {
                 \Log::error("微信模板消息发送失败 ResourceException");
                 \Log::warning($exception);
-            }else{
-                \Log::debug("微信模板消息发送失败 ResourceException");
-                \Log::debug($exception);
             }
 
             return false;
