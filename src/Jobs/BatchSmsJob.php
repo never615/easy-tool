@@ -107,7 +107,7 @@ class BatchSmsJob implements ShouldQueue
 
 //        \Log::debug($userSelects);
 
-        $sign = SubjectUtils::getSubectConfig2("sms_sign", "墨兔",$subject);
+        $sign = SubjectUtils::getDynamicKeyConfigByOwner("sms_sign",$subject,"墨兔");
 
         //已经处理过的会员等级
         $handledMemberLevel = [];

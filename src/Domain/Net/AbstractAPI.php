@@ -57,7 +57,7 @@ abstract class AbstractAPI
             throw new NotSettingException("未设置SETTING_KEY_BASE_URL");
         }
 
-        $this->baseUrl = SubjectUtils::getSubectConfig($subject, $this->SETTING_KEY_BASE_URL);
+        $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner( $this->SETTING_KEY_BASE_URL,$subject);
 
         return rtrim($this->baseUrl, '/').'/';
     }
