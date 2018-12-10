@@ -44,6 +44,8 @@ class AppUtils
      * 获取前端项目使用的url
      * 结尾不包含/
      *
+     * @deprecated
+     * 
      * @return string
      */
     public static function h5Url()
