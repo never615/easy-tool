@@ -68,14 +68,29 @@ class OwnerApiLog
         } else {
             $ip = $request->getClientIp();
         }
+
+
+        if (is_array($response->getContent())) {
+            $input = $response->getContent();
+        } else {
+            if (is_string($response->getContent())) {
+                try {
+                    $input = json_decode($response->getContent());
+                } catch (\Exception $exception) {
+                    $input = "异常数据";
+                }
+            } else {
+                $input = "其他数据";
+            }
+        }
+
         $log = [
             'action'     => "响应",
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
             'user_id'    => $userId,
-            'input'      => is_array($response->getContent()) ? $response->getContent() :
-                (is_string($response->getContent()) ? $response->getContent() : "异常数据"),
+            'input'      => $input,
             'status'     => $response->getStatusCode(),
             "uuid"       => $uuid,
             "request_id" => $requestId,
