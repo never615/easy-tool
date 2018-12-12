@@ -35,10 +35,10 @@ class Ad extends BaseModel
 
     //广告类型
     const AD_TYPE = [
-        "image"       => "单图",
-        "text"        => "文字",
-        "images"      => "多图",
-        "float_image" => "浮动图",
+        "image"       => "模块头图",
+        "text"        => "跑马灯广告",
+        "images"      => "多图(轮播图)",
+        "float_image" => "浮层广告",
     ];
 
 
