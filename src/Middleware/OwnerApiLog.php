@@ -71,15 +71,15 @@ class OwnerApiLog
 
 
         if (is_array($response->getContent())) {
-            $input = $response->getContent();
+            $input = json_encode($response->getContent());
         } else {
             if (is_string($response->getContent())) {
                 try {
                     $input = json_decode($response->getContent());
-                    if(is_null($input)){
-                        $input="非json数据";
-                    }else{
-                        $input=$response->getContent();
+                    if (is_null($input)) {
+                        $input = "非json数据";
+                    } else {
+                        $input = $response->getContent();
                     }
                 } catch (\Exception $exception) {
                     $input = "异常数据";

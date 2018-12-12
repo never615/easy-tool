@@ -84,7 +84,7 @@ class AdController extends AdminCommonController
         $form->saving(function ($form) {
             //检查模块与对应的广告类型是否匹配
             $type = $form->type ?? $form->model()->type;
-            $adType = $form->ad_typ ?? $form->model()->ad_type;
+            $adType = $form->ad_type ?? $form->model()->ad_type;
             $subjectId = $form->subject_id ?? $form->model()->subject_id;
 
             $page = PagePvManager::where("subject_id", $subjectId)
