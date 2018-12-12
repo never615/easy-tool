@@ -111,6 +111,7 @@ class LoggerAliyun implements Logger
         } catch (\Exception $exception) {
             \Log::error("阿里日志");
             \Log::warning($exception);
+            \Log::warning($content);
         }
     }
 

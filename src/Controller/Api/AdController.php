@@ -20,19 +20,12 @@ class AdController extends \App\Http\Controllers\Controller
 {
     public function index(Request $request)
     {
-
-//        $this->validate($request, [
-//            "type"    => "required",
-//            "ad_type" => "required",
-//        ]);
-
-
         $subjectId = SubjectUtils::getSubjectId();
 
         return Ad::with("ad_images")
             ->where("subject_id", $subjectId)
-            ->where("type", $request->get("type", "seckill"))
-            ->where("ad_type", $request->get("ad_type", "image"))
+            ->where("type", $request->get("type"))
+            ->where("ad_type", $request->get("ad_type"))
             ->firstOrFail();
     }
 

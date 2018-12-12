@@ -10,7 +10,9 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
+use Mallto\Mall\Data\PagePvManager;
 use Mallto\Tool\Data\Ad;
+use Mallto\Tool\Exception\ResourceException;
 
 
 class AdController extends AdminCommonController
@@ -39,8 +41,16 @@ class AdController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->ad_type("广告类型")->select(Ad::AD_TYPE);
-        $grid->type("使用模块")->select(Ad::MODULE);
+        $grid->ad_type("广告类型")->display(function ($value) {
+            return Ad::AD_TYPE[$value] ?? $value;
+        });
+
+        $grid->type("使用模块")
+            ->display(function ($value) {
+                $page = PagePvManager::where("path", $value)->first();
+
+                return $page ? $page->name.":".$page->path : $value;
+            });
     }
 
 
@@ -48,15 +58,19 @@ class AdController extends AdminCommonController
     {
         $this->dynamicDisplay();
 
+        $form->select("type", "模块")
+//            ->options(Ad::MODULE)
+            ->options(PagePvManager::selectSourceDatas())
+//            ->load("ad_type", data_source_url("ad_type"))
+            ->required()
+            ->addElementClass2("mt-ad-type");
+
         $form->select("ad_type", "广告类型")
-            ->default("image")
+            ->default("float_image")
+            ->required()
             ->addElementClass2("mt-ad-ad-type")
             ->options(Ad::AD_TYPE);
 
-        $form->select("type", "模块")
-            ->options(Ad::MODULE)
-            ->rules("required")
-            ->addElementClass2("mt-ad-type");
 
         $this->imageFormOption($form);
         $this->textFormOption($form);
@@ -66,6 +80,22 @@ class AdController extends AdminCommonController
         $form->text("link", "跳转链接")
             ->addElementClass2("mt-ad-link")
             ->help("如:https://baidu.com");
+
+        $form->saving(function ($form) {
+            //检查模块与对应的广告类型是否匹配
+            $type = $form->type ?? $form->model()->type;
+            $adType = $form->ad_typ ?? $form->model()->ad_type;
+            $subjectId = $form->subject_id ?? $form->model()->subject_id;
+
+            $page = PagePvManager::where("subject_id", $subjectId)
+                ->where("path", $type)
+                ->first();
+
+            if (!in_array($adType, $page->ad_types)) {
+                throw new ResourceException("该模块不支持设置该广告类型");
+            }
+        });
+
     }
 
 
@@ -137,6 +167,7 @@ class AdController extends AdminCommonController
              console.log(selectVal);
               switch (selectVal) {
                 case 'image':
+                case 'float_image':
                     $(".mt-ad-text").closest('.form-group').hide();
                     $(".mt-ad-images").closest('.form-has-many').hide();
                     $(".mt-ad-image").closest('.form-group').show();
