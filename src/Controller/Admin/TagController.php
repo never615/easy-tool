@@ -11,7 +11,7 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Input;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Mall\Domain\Traits\SlugAutoSave;
+use Mallto\Tool\Domain\Traits\SlugAutoSave;
 use Mallto\Tool\Data\Tag;
 
 class TagController extends AdminCommonController
