@@ -38,7 +38,6 @@ class RequestCheck
      */
     public function handle(Request $request, Closure $next)
     {
-        //todo 优化
         $uuid = SubjectUtils::getUUID();
         $requestType = $request->header('REQUEST_TYPE');
         if (!$uuid) {
@@ -49,6 +48,10 @@ class RequestCheck
         //如果user存在,检查user和uuid是否一致
         if ($user) {
             $subject = $user->subject;
+            if (!$subject->base) {
+                $subject = $subject->baseSubject();
+            }
+
             if ($subject->uuid != $uuid) {
                 throw new ResourceException("当前请求用户不属于该uuid");
             }
