@@ -51,6 +51,8 @@ class AdController extends AdminCommonController
 
                 return $page ? $page->name.":".$page->path : $value;
             });
+
+        $grid->switch()->switch();
     }
 
 
@@ -71,6 +73,7 @@ class AdController extends AdminCommonController
             ->addElementClass2("mt-ad-ad-type")
             ->options(Ad::AD_TYPE);
 
+        $form->switch("switch");
 
         $this->imageFormOption($form);
         $this->textFormOption($form);

@@ -26,6 +26,7 @@ class AdController extends \App\Http\Controllers\Controller
             ->where("subject_id", $subjectId)
             ->where("type", $request->get("type"))
             ->where("ad_type", $request->get("ad_type"))
+            ->where("switch", true)
             ->firstOrFail();
     }
 
