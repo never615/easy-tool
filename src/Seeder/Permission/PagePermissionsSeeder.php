@@ -7,6 +7,7 @@ namespace Mallto\Tool\Seeder\Permission;
 
 
 use Illuminate\Database\Seeder;
+use Mallto\Admin\Data\Permission;
 use Mallto\Admin\Seeder\SeederMaker;
 
 class PagePermissionsSeeder extends Seeder
@@ -23,8 +24,11 @@ class PagePermissionsSeeder extends Seeder
      */
     public function run()
     {
-        $parentId = $this->createPermissions("页面管理", "page", false);
-        $this->createPermissions("轮播图", "page_banners", true, $parentId);
+//        $parentId = $this->createPermissions("页面管理", "page", false);
+        Permission::where("slug", "page")->delete();
+        $parentId = 0;
         $this->createPermissions("页面广告", "ads", true, $parentId);
+        //轮播图模块今后会废弃
+        $this->createPermissions("轮播图", "page_banners", true, $parentId);
     }
 }

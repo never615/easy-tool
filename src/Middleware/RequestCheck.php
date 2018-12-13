@@ -53,6 +53,7 @@ class RequestCheck
             }
 
             if ($subject->uuid != $uuid) {
+                \Log::warning("当前请求用户不属于该uuid");
                 throw new ResourceException("当前请求用户不属于该uuid");
             }
         }
