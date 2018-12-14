@@ -165,10 +165,12 @@ class Handler extends ExceptionHandler
             }
         } else {
             if ($exception instanceof ModelNotFoundException) {
-                $arr = explode('\\', $exception->getModel());
+//                $arr = explode('\\', $exception->getModel());
 
-                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404', [],
+                return response()->json(["error" => trans("errors.not_found")], '404', [],
                     JSON_UNESCAPED_UNICODE);
+//                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404', [],
+//                    JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
