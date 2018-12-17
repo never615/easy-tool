@@ -25,7 +25,6 @@ class SmsNotifyMenuSeeder extends Seeder
         $menu = Menu::where("uri", "user_manager")->first();
 
         if ($menu) {
-            $order = $menu->order;
             $parentId = $menu->id;
         }
 
