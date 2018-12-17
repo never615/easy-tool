@@ -17,7 +17,7 @@ use Mallto\Tool\Utils\AppUtils;
 trait SlugAutoSave
 {
     /**
-     * 自动生成
+     * 自动生成slug
      *
      * @param        $form
      * @param        $modelClass
@@ -37,30 +37,45 @@ trait SlugAutoSave
             $modelClass = $this->getModel();
         }
 
-        if ($form->name && $form->name != $form->model()->name) {
-            //检查name,一个subject下不能重复
 
-            $query = $modelClass::where("subject_id", $form->subject_id)
-                ->where("name", $form->name);
+        $subjectId = $form->subject_id ?? $form->model()->subject_id;
 
-            if ($anotherWhereColumn && $antherWhereValue) {
-                $query = $query->where($anotherWhereColumn, $antherWhereValue);
+
+        //如果主动修改或提交了标识需要保存
+        if ($form->slug) {
+            //检查slug是否已经存在
+            if ($modelClass::where("subject_id", $subjectId)
+                ->where($slugColumn, $form->slug)->exists()) {
+                throw new ResourceException("该标识已经存在:".$form->slug);
             }
+        } else {
+            if ($form->name && $form->name != $form->model()->name) {
+                //检查name,一个subject下不能重复
 
-            if ($query->exists()) {
-                throw new ResourceException($form->name." 已存在,请更换名称");
+                $query = $modelClass::where("subject_id", $subjectId)
+                    ->where("name", $form->name);
+
+                if ($anotherWhereColumn && $antherWhereValue) {
+                    $query = $query->where($anotherWhereColumn, $antherWhereValue);
+                }
+
+                if ($query->exists()) {
+                    throw new ResourceException($form->name." 已存在,请更换名称");
+                }
+
+
+                //处理slug
+                //自动生成slug,同一个主体下不能重复
+                $slug = pinyin_permalink($form->name);
+                $slug = $this->generatorSlug($slug, $subjectId, $modelClass);
+                if (!$form->slug) {
+                    $form->slug = $slug;
+                }
+                $form->model()->$slugColumn = $slug;
             }
-
-
-            //处理slug
-            //自动生成slug,同一个主体下不能重复
-            $slug = pinyin_permalink($form->name);
-            $slug = $this->generatorSlug($slug, $form->subject_id, $modelClass);
-            if (!$form->slug) {
-                $form->slug = $slug;
-            }
-            $form->model()->$slugColumn = $slug;
         }
+
+
     }
 
 
@@ -87,7 +102,7 @@ trait SlugAutoSave
         $slug = pinyin_permalink($name);
 
 
-        $query = $this->getModel()::where("subject_id", $subjectId)
+        $query = $modelClass::where("subject_id", $subjectId)
             ->where($slugColumn, $slug);
 
         if ($anotherWhereColumn && $antherWhereValue) {
