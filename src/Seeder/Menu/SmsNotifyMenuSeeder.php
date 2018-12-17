@@ -4,10 +4,12 @@ namespace Mallto\Tool\Seeder\Menu;
 
 use Illuminate\Database\Seeder;
 use Mallto\Admin\Data\Menu;
+use Mallto\Admin\Seeder\MenuSeederMaker;
 
 
 class SmsNotifyMenuSeeder extends Seeder
 {
+    use MenuSeederMaker;
 
     /**
      * Run the database seeds.
@@ -17,24 +19,17 @@ class SmsNotifyMenuSeeder extends Seeder
     public function run()
     {
 
+        $order = Menu::max('order');
+        $parentId = 0;
+
         $menu = Menu::where("uri", "user_manager")->first();
 
-        $order = 10000;
-        $parentId = 0;
         if ($menu) {
             $order = $menu->order;
             $parentId = $menu->id;
         }
 
-        Menu::updateOrCreate([
-            'uri' => 'sms_notifies.index',
-        ], [
-                'parent_id' => $parentId,
-                'order'     => $order += 1,
-                'title'     => '短信群发',
-                'icon'      => 'fa-500px',
-            ]
-        );
-
+        $this->updateOrCreate(
+            "sms_notifies.index", $parentId, $order++, "短信群发", "fa-500px");
     }
 }

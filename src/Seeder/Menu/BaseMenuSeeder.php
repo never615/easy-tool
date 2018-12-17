@@ -19,7 +19,7 @@ class BaseMenuSeeder extends Seeder
      */
     public function run()
     {
-        $order = 100;
+        $order = 2;
 
         $adminManagerMenu = $this->updateOrCreate(
             "admin_manager", 0, $order++, "管理", "fa-tasks");
@@ -30,9 +30,7 @@ class BaseMenuSeeder extends Seeder
         $this->updateOrCreate(
             "wechat_template_ids.index", $adminManagerMenu->id, $order++, "模板消息管理", "fa-wechat");
 
-
-
-        $order = 101;
+        $order = 3;
 
         $systemManagerMenu = $this->updateOrCreate(
             "system_manager", 0, $order++, "系统管理", "fa-windows");

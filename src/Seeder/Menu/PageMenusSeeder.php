@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Seeder\Menu;
 
 
+use Encore\Admin\Auth\Database\Menu;
 use Illuminate\Database\Seeder;
 use Mallto\Admin\Seeder\MenuSeederMaker;
 
@@ -21,7 +22,7 @@ class PageMenusSeeder extends Seeder
      */
     public function run()
     {
-        $order = 10000;
+        $order = Menu::max('order');
 
         $pageManagerMenu = $this->updateOrCreate(
             "page_manager", 0, $order++, "页面配置", "fa-pagelines");
