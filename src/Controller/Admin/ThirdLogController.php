@@ -54,7 +54,6 @@ class ThirdLogController extends AdminCommonController
             $filter->ilike("code", "对象");
             $filter->ilike("tag");
             $filter->ilike("content");
-            $filter->between("created_at");
         });
 
 

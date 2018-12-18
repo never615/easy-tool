@@ -32,14 +32,11 @@ trait SlugAutoSave
         $anotherWhereColumn = null,
         $antherWhereValue = null
     ) {
-
         if (!$modelClass) {
             $modelClass = $this->getModel();
         }
 
-
         $subjectId = $form->subject_id ?? $form->model()->subject_id;
-
 
         //如果主动修改或提交了标识需要保存
         if ($form->slug) {
