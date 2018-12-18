@@ -43,10 +43,12 @@ trait SlugAutoSave
 
         //如果主动修改或提交了标识需要保存
         if ($form->slug) {
-            //检查slug是否已经存在
-            if ($modelClass::where("subject_id", $subjectId)
-                ->where($slugColumn, $form->slug)->exists()) {
-                throw new ResourceException("该标识已经存在:".$form->slug);
+            if ($form->slug != $form->model()->slug) {
+                //检查slug是否已经存在
+                if ($modelClass::where("subject_id", $subjectId)
+                    ->where($slugColumn, $form->slug)->exists()) {
+                    throw new ResourceException("该标识已经存在:".$form->slug);
+                }
             }
         } else {
             if ($form->name && $form->name != $form->model()->name) {
