@@ -6,7 +6,9 @@
 namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
+use Mallto\Tool\Seeder\Menu\ApiPvManagerMenuSeeder;
 use Mallto\Tool\Seeder\Menu\PageMenusSeeder;
+use Mallto\Tool\Seeder\Menu\PagePvManagerMenuSeeder;
 use Mallto\Tool\Seeder\Menu\SmsNotifyMenuSeeder;
 use Mallto\Tool\Seeder\Menu\BaseMenuSeeder;
 
@@ -23,7 +25,8 @@ class MenuTablesSeeder extends Seeder
         $this->call(SmsNotifyMenuSeeder::class);
         $this->call(BaseMenuSeeder::class);
         $this->call(PageMenusSeeder::class);
-
+        $this->call(ApiPvManagerMenuSeeder::class);
+        $this->call(PagePvManagerMenuSeeder::class);
 //DummySeeder
 
     }
