@@ -27,6 +27,7 @@ class AdController extends \App\Http\Controllers\Controller
             ->where("type", $request->get("type"))
             ->where("ad_type", $request->get("ad_type"))
             ->where("switch", true)
+            ->orderBy("created_at", "desc")
             ->firstOrFail();
     }
 

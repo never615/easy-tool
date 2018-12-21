@@ -63,32 +63,20 @@ class AdController extends AdminCommonController
     {
         $this->dynamicDisplay();
 
-//        $form->select("type", "模块")
-//            ->options(PagePvManager::selectSourceDatas())
-//            ->required()
-//            ->addElementClass2("mt-ad-type");
-//
-//        $form->select("ad_type", "广告类型")
-//            ->default("float_image")
-//            ->required()
-//            ->addElementClass2("mt-ad-ad-type")
-//            ->options(Ad::AD_TYPE)
-//            ->help("浮层广告建议尺寸:420 * 520");
-
-
         $form->select("type", "模块")
             ->options(PagePvManager::selectSourceDatas())
             ->addElementClass2("mt-ad-type")
             ->rules("required")
+            ->help("如果一个模块同时配置了同一类型多个开启状态下广告,则会使用最新创建的")
             ->load("ad_type", "/admin/select_source/ad_types");
 
-        $that=$this;
+        $that = $this;
 
         $form->select("ad_type", "广告类型")
             ->addElementClass2("mt-ad-ad-type")
             ->rules("required")
             ->help("浮层广告建议尺寸:420 * 520")
-            ->options(function ($value) use($that){
+            ->options(function ($value) use ($that) {
                 $type = $this->type;
                 if ($type) {
                     $subjectId = $this->subject_id;
