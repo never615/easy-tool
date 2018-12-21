@@ -71,6 +71,7 @@ class Tag extends BaseModel
     }
 
 
+    //todo mall库引用处理
     public function shops()
     {
         return $this->morphedByMany(Shop::class, "taggable");

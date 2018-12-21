@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * 系统日志
  * Class Log
  *
- * @package Mallto\Mall\Module\Log
+ * @package Mallto\Tool\Data
  */
 class Log extends Model
 {

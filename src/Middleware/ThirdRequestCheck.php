@@ -8,7 +8,7 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Mallto\Mall\Data\Subject;
+use Mallto\Admin\Data\Subject;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 

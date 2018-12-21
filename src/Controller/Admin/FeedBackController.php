@@ -12,11 +12,9 @@ use Encore\Admin\Grid;
 use Mallto\Tool\Data\Feedback;
 
 /**
- * todo
+ * Class FeedBackController
  *
- * Class LogController
- *
- * @package Mallto\Mall\Controller
+ * @package Mallto\Tool\Controller\Admin
  */
 class FeedBackController extends AdminCommonController
 {

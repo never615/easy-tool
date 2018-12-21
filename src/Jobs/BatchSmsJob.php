@@ -24,7 +24,7 @@ use Mallto\User\Data\User;
  *
  * Class BatchSmsJob
  *
- * @package Mallto\Mall\Jobs
+ * @package Mallto\Tool\Jobs
  */
 class BatchSmsJob implements ShouldQueue
 {

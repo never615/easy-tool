@@ -12,9 +12,9 @@ use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\AppSecret;
 
 /**
- * Class LogController
+ * Class AppSecretController
  *
- * @package Mallto\Mall\Controller
+ * @package Mallto\Tool\Controller\Admin
  */
 class AppSecretController extends AdminCommonController
 {

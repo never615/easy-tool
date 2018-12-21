@@ -16,9 +16,10 @@ use Mallto\Tool\Utils\AppUtils;
 
 /**
  * 第三方接口请求日志记录
- * Class LogController
  *
- * @package Mallto\Mall\Controller
+ * Class ThirdLogController
+ *
+ * @package Mallto\Tool\Controller\Admin
  */
 class ThirdLogController extends AdminCommonController
 {

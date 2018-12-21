@@ -17,7 +17,7 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Mall\Data\Subject;
+use Mallto\Admin\Data\Subject;
 use Mallto\Tool\Data\WechatTemplateMsg;
 use Mallto\Tool\Domain\Wechat\WechatUsecase;
 use Mallto\Tool\Exception\ResourceException;

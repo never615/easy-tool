@@ -9,8 +9,9 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Illuminate\Http\Request;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Mall\Data\PagePvManager;
+use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Exception\ResourceException;
 
@@ -61,9 +62,7 @@ class AdController extends AdminCommonController
         $this->dynamicDisplay();
 
         $form->select("type", "模块")
-//            ->options(Ad::MODULE)
             ->options(PagePvManager::selectSourceDatas())
-//            ->load("ad_type", data_source_url("ad_type"))
             ->required()
             ->addElementClass2("mt-ad-type");
 
@@ -71,7 +70,8 @@ class AdController extends AdminCommonController
             ->default("float_image")
             ->required()
             ->addElementClass2("mt-ad-ad-type")
-            ->options(Ad::AD_TYPE);
+            ->options(Ad::AD_TYPE)
+            ->help("浮层广告建议尺寸:420 * 520");
 
         $form->switch("switch");
 
@@ -98,8 +98,10 @@ class AdController extends AdminCommonController
                 throw new ResourceException("该模块不支持设置该广告类型");
             }
         });
-
     }
+
+
+
 
 
     /**
