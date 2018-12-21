@@ -5,19 +5,23 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
+use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Illuminate\Http\Request;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
+use Mallto\Admin\SubjectUtils;
+use Mallto\Tool\Controller\Admin\Traits\GetAdTypes;
+use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Data\PagePv;
 use Mallto\Tool\Data\PagePvManager;
-use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
 
 class PagePvManagerController extends AdminCommonController
 {
 
-    use SlugAutoSave;
+    use SlugAutoSave,GetAdTypes;
 
     /**
      * 获取这个模块的标题
@@ -79,6 +83,30 @@ class PagePvManagerController extends AdminCommonController
 //            $this->slugSavingCheck($form, $this->getModel());
         });
     }
+
+
+    public function getPageAdType(Request $request)
+    {
+        $q = $request->get('q');
+
+        $adminUser = Admin::user();
+
+        $subject = SubjectUtils::getSubject();
+        if (!$subject) {
+            $subject = $adminUser->subject;
+        }
+
+        //查询子主体
+        $childSubjectIds = $subject->getChildrenSubject();
+
+        $pagePvManager = PagePvManager::whereIn("subject_id", $childSubjectIds)
+            ->where("path", $q)
+            ->first();
+
+        return $this->getAdTypes($pagePvManager);
+    }
+
+
 
 
 }

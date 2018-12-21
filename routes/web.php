@@ -32,6 +32,9 @@ Route::group($attributes, function ($router) {
 
             Route::group(["namespace" => 'Admin'], function () {
 
+                Route::get("select_source/ad_types",'PagePvManagerController@getPageAdType');
+
+
                 Route::group(["namespace" => "Statistics"], function ($router) {
                     //todo 主页不能没,动态权限显示内容处理
                     //统计
@@ -64,6 +67,11 @@ Route::group($attributes, function ($router) {
 
                     //第三方接口请求日志
                     Route::resource("third_logs", "ThirdLogController");
+                    //接口管理
+                    Route::resource('api_pv_managers', 'ApiPvManagerController');
+                    //前端页面管理
+                    Route::resource('page_pv_manager', 'PagePvManagerController');
+
 
                     //标签管理
                     Route::resource("tags", "TagController");

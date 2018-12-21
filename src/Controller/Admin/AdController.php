@@ -9,15 +9,17 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Illuminate\Http\Request;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Tool\Data\PagePvManager;
+use Mallto\Admin\SubjectUtils;
+use Mallto\Tool\Controller\Admin\Traits\GetAdTypes;
 use Mallto\Tool\Data\Ad;
+use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Exception\ResourceException;
 
 
 class AdController extends AdminCommonController
 {
+    use GetAdTypes;
 
     /**
      * 获取这个模块的标题
@@ -61,17 +63,48 @@ class AdController extends AdminCommonController
     {
         $this->dynamicDisplay();
 
+//        $form->select("type", "模块")
+//            ->options(PagePvManager::selectSourceDatas())
+//            ->required()
+//            ->addElementClass2("mt-ad-type");
+//
+//        $form->select("ad_type", "广告类型")
+//            ->default("float_image")
+//            ->required()
+//            ->addElementClass2("mt-ad-ad-type")
+//            ->options(Ad::AD_TYPE)
+//            ->help("浮层广告建议尺寸:420 * 520");
+
+
         $form->select("type", "模块")
             ->options(PagePvManager::selectSourceDatas())
-            ->required()
-            ->addElementClass2("mt-ad-type");
+            ->addElementClass2("mt-ad-type")
+            ->rules("required")
+            ->load("ad_type", "/admin/select_source/ad_types");
+
+        $that=$this;
 
         $form->select("ad_type", "广告类型")
-            ->default("float_image")
-            ->required()
             ->addElementClass2("mt-ad-ad-type")
-            ->options(Ad::AD_TYPE)
-            ->help("浮层广告建议尺寸:420 * 520");
+            ->rules("required")
+            ->help("浮层广告建议尺寸:420 * 520")
+            ->options(function ($value) use($that){
+                $type = $this->type;
+                if ($type) {
+                    $subjectId = $this->subject_id;
+                    if (!$subjectId) {
+                        $subjectId = SubjectUtils::getSubjectId();
+                    }
+                    $pagePvManager = PagePvManager::where("subject_id", $subjectId)
+                        ->where("path", $type)
+                        ->first();
+
+//
+                    return $that->getAdTypes($pagePvManager, true);
+                }
+
+                return [];
+            });
 
         $form->switch("switch");
 
@@ -99,9 +132,6 @@ class AdController extends AdminCommonController
             }
         });
     }
-
-
-
 
 
     /**
