@@ -239,19 +239,9 @@ abstract class AbstractAPI
     protected function isConnectError(RequestException $exception = null)
     {
         if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer'))) {
-//            \Log::warning("基础网络库:".$exception->getMessage());
-                //todo 回头删除,用来检查错误数据什么
-            if ($exception instanceof ConnectException) {
-                \Log::warning("基础网络库:reset by peer属于ConnectException");
-            }else{
-                \Log::warning("基础网络库:reset by peer不属于ConnectException");
-            }
-
             return true;
         } else {
             if ($exception instanceof ConnectException) {
-//                \Log::warning("基础网络库:ConnectException".$exception->getMessage());
-
                 return true;
             } else {
                 if ($exception) {
