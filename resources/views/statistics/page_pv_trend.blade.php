@@ -19,11 +19,11 @@
             <label>区间:</label>
             <div class="input-group">
                 <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                <input id="page_pv_trend_started_at" type="text" name="started_at" class="form-control started_at">
+                <input id="page_pv_trend_started_at" type="text" name="started_at" class="form-control started_at" autocomplete="off">
             </div>
             <div class="input-group">
                 <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                <input id="page_pv_trend_ended_at" type="text" name="ended_at" class="form-control ended_at">
+                <input id="page_pv_trend_ended_at" type="text" name="ended_at" class="form-control ended_at" autocomplete="off">
             </div>
         </div>
         <button id="page_pv_trend_submit" type="submit" class="btn btn-primary">提交</button>

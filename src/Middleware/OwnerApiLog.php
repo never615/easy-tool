@@ -62,14 +62,6 @@ class OwnerApiLog
 
         $response = $next($request);
 
-        $tempIp = $request->header("X-Forwarded-For");
-        if ($tempIp) {
-            $ip = $tempIp;
-        } else {
-            $ip = $request->getClientIp();
-        }
-
-
         if (is_array($response->getContent())) {
             $input = json_encode($response->getContent());
         } else {

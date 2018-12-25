@@ -17,11 +17,11 @@
         <label>区间:</label>
         <div class="input-group">
             <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-            <input id="users_new_started_at" type="text" name="users_new_started_at" class="form-control started_at">
+            <input id="users_new_started_at" type="text" name="users_new_started_at" class="form-control started_at" autocomplete="off">
         </div>
         <div class="input-group">
             <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-            <input id="users_new_ended_at" type="text" name="users_new_ended_at" class="form-control ended_at">
+            <input id="users_new_ended_at" type="text" name="users_new_ended_at" class="form-control ended_at" autocomplete="off">
         </div>
     </div>
 
