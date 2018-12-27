@@ -22,9 +22,13 @@ class DashboardController extends Controller
     {
         return Admin::content(function (Content $content) use ($request) {
             $content->header('Dashboard');
-//            $content->description("微信用户是指进入过微信页面的用户,如进入停车缴费页面/秒杀商城页面");
+            $content->description(" ");
 
             $user = Admin::user();
+            if (!$user->can("dashboard")) {
+                return;
+            }
+
             $subject = $user->subject;
             $childrenSubjectIds = $subject->getChildrenSubject();
             //view 中select 选择器需要使用的主体数据
