@@ -10,6 +10,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Response\QrCodeResponse;
 use Illuminate\Http\Request;
 use Mallto\Tool\Exception\PermissionDeniedException;
+use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\HttpUtils;
 use Mallto\Tool\Utils\UrlUtils;
 
@@ -48,6 +49,8 @@ class QrController extends Controller
             }
         } catch (\Exception $exception) {
             \Log::error("二维码尺寸设置失败");
+            \Log::warning($exception);
+            throw new ResourceException("二维码尺寸设置失败");
         }
 
         header('Content-Type: '.$qrCode->getContentType());

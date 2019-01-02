@@ -84,7 +84,7 @@ class BatchSmsJob implements ShouldQueue
         $templateCode = $smsNotify->sms_template_code;
         $selects = $smsNotify->selects;
         $selects = json_decode($selects, true);
-        $subject=$smsNotify->subject;
+        $subject = $smsNotify->subject;
         $subjectId = $subject->id;
 
 
@@ -107,7 +107,7 @@ class BatchSmsJob implements ShouldQueue
 
 //        \Log::debug($userSelects);
 
-        $sign = SubjectUtils::getDynamicKeyConfigByOwner("sms_sign",$subject,"墨兔");
+        $sign = SubjectUtils::getDynamicKeyConfigByOwner("sms_sign", $subject, "墨兔");
 
         //已经处理过的会员等级
         $handledMemberLevel = [];
@@ -154,7 +154,7 @@ class BatchSmsJob implements ShouldQueue
         // 发送失败通知, etc...
 
         \Log::error("批量发送短信失败");
-        \Log::error($e);
+        \Log::warning($e);
         $smsNotify = SmsNotify::find($this->id);
         $smsNotify->status = "failure";
         $smsNotify->save();
@@ -177,7 +177,8 @@ class BatchSmsJob implements ShouldQueue
                     ])
             );
         } catch (\Exception $exception) {
-            \Log::error($exception);
+            \Log::error("短信发送失败");
+            \Log::warning($exception);
         }
     }
 

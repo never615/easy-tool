@@ -76,8 +76,9 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
             }
 
         } catch (ClientException $exception) {
-            \Log::error($exception);
-            \Log::error($exception->getResponse()->getBody());
+            \Log::error("阿里云移动推送:ClientException");
+            \Log::warning($exception);
+            \Log::warning($exception->getResponse()->getBody());
 
             return false;
         }

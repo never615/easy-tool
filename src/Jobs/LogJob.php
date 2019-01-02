@@ -79,7 +79,7 @@ class LogJob implements ShouldQueue
     public function failed(Exception $e)
     {
         \Log::error("日志投递任务失败");
-        \Log::error($e);
+        \Log::warning($e);
     }
 
 

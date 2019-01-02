@@ -10,7 +10,6 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Mallto\Admin\SubjectUtils;
-use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\NotSettingException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Jobs\LogJob;
@@ -57,7 +56,7 @@ abstract class AbstractAPI
             throw new NotSettingException("未设置SETTING_KEY_BASE_URL");
         }
 
-        $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner( $this->SETTING_KEY_BASE_URL,$subject);
+        $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subject);
 
         return rtrim($this->baseUrl, '/').'/';
     }
@@ -142,19 +141,19 @@ abstract class AbstractAPI
     protected function logMiddleware()
     {
 
-        $requestId=AppUtils::create_uuid();
+        $requestId = AppUtils::create_uuid();
 
-        return Middleware::tap(function (RequestInterface $request, $options) use($requestId){
+        return Middleware::tap(function (RequestInterface $request, $options) use ($requestId) {
             try {
                 dispatch(new LogJob("logThirdPart", [
-                    'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
-                    "request_id"=>$requestId,
-                    "tag"     => $this->slug,
-                    "action"  => '请求',
-                    "method"  => $request->getMethod(),
-                    "url"     => $request->getUri(),
-                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"    => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
+                    'uuid'       => SubjectUtils::getUUIDNoException() ?: 0,
+                    "request_id" => $requestId,
+                    "tag"        => $this->slug,
+                    "action"     => '请求',
+                    "method"     => $request->getMethod(),
+                    "url"        => $request->getUri(),
+                    "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody()."",
                 ]));
             } catch (\Exception $exception) {
@@ -163,18 +162,18 @@ abstract class AbstractAPI
             }
 
 
-        }, function (RequestInterface $request, $options, Promise $response) use($requestId){
-            $response->then(function (ResponseInterface $response) use ($request,$requestId) {
+        }, function (RequestInterface $request, $options, Promise $response) use ($requestId) {
+            $response->then(function (ResponseInterface $response) use ($request, $requestId) {
                 dispatch(new LogJob("logThirdPart", [
-                    'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
-                    "request_id"=>$requestId,
-                    "tag"     => $this->slug,
-                    "action"  => '响应',
-                    "method"  => $request->getMethod(),
-                    "url"     => $request->getUri(),
-                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"    => $response->getBody()->getContents(),
-                    "status"  => $response->getStatusCode(),
+                    'uuid'       => SubjectUtils::getUUIDNoException() ?: 0,
+                    "request_id" => $requestId,
+                    "tag"        => $this->slug,
+                    "action"     => '响应',
+                    "method"     => $request->getMethod(),
+                    "url"        => $request->getUri(),
+                    "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"       => $response->getBody()->getContents(),
+                    "status"     => $response->getStatusCode(),
                 ]));
             });
 
@@ -245,9 +244,8 @@ abstract class AbstractAPI
                 return true;
             } else {
                 if ($exception) {
-                    \Log::warning("基础网络库:其他异常");
-                    \Log::warning($exception->getMessage());
-                    \Log::warning($exception->getTraceAsString());
+                    \Log::error("基础网络库:其他异常");
+                    \Log::warning($exception);
                 }
 
                 return false;
