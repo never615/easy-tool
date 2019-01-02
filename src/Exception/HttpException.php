@@ -35,7 +35,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         $content = null,
         \Exception $previous = null,
         array $headers = array (),
-        $code = 0 //todo 系统有定义异常码,我又自己定义了errCode,优化
+        $code = 0 //todo 系统有定义异常码,我又自己定义了errCode,优化,改用系统的
     )
     {
         $this->errCode = $errCode;
