@@ -19,7 +19,7 @@ class Tag extends BaseModel
         'shop'     => "店铺标签",
         'activity' => "活动标签",
         "user"     => "用户自选标签",
-        "coupon"   => "卡券标签",
+//        "coupon"   => "卡券标签",
         'discount' => "会员优惠模块标签",
 //        "common"   => "通用标签",
     ];
