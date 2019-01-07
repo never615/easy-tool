@@ -56,7 +56,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
     protected function gridOption(Grid $grid)
     {
         $grid->public_template_id("微信模板消息")->display(function ($value) {
-            return WechatTemplateMsg::WECHAT_TEMPLATE[$value] ?? "";
+            return config("other.wechat_template_id")[$value] ?? "";
         });
 
 //        $grid->template_id("公众号对应的id")->editable();
@@ -66,7 +66,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
     protected function formOption(Form $form)
     {
         $form->select("public_template_id", "微信模板消息")
-            ->options(WechatTemplateMsg::WECHAT_TEMPLATE)
+            ->options(config("other.wechat_template_id"))
             ->rules("required")
             ->help(("所有的模板消息均属于消费品行业下,如果公众号所在行业未设置或不是消费品行业,则无法使用模板消息(公众号所属行业在公众号后台模板消息中修改)"));
 
