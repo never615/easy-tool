@@ -7,6 +7,7 @@ namespace Mallto\Tool\Domain\Wechat;
 
 
 use GuzzleHttp\Exception\ClientException;
+use Mallto\Mall\SubjectConfigConstants;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\SignUtils;
@@ -26,11 +27,12 @@ class  WechatUsecase extends AbstractAPI
     /**
      * 发送模板消息
      *
-     * @param $content
-     * @param $subject
+     * @param      $content
+     * @param      $subject
+     * @param bool $isAdminNotify
      * @return bool
      */
-    public function templateMsg($content, $subject)
+    public function templateMsg($content, $subject, $isAdminNotify = false)
     {
         if (config("app.env") == 'production' || config("app.env") == 'staging') {
             $baseUrl = "https://wechat.mall-to.com";
@@ -38,15 +40,20 @@ class  WechatUsecase extends AbstractAPI
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
+        $uuid = $subject->uuid;
+        if ($isAdminNotify) {
+            $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
+        }
+
         try {
-            $content = $this->parseJSON('post', [
+            $this->parseJSON('post', [
                 $baseUrl.'/api/template_msg',
                 $content,
                 [
                     'headers' => [
                         'app-id'       => '1',
                         'REQUEST-TYPE' => 'SERVER',
-                        'UUID'         => $subject->uuid,
+                        'UUID'         => $uuid,
                         'Accept'       => 'application/json',
                     ],
                 ],
@@ -93,6 +100,14 @@ class  WechatUsecase extends AbstractAPI
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
+
+        $uuid = "";
+        if (WechatUtils::isUserSystemTemplate($shortId)) {
+            $uuid = $subject->uuid;
+        } elseif (WechatUtils::isAdminSystemTemplate($shortId)) {
+            $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
+        }
+
         $requestData = [
             "short_id" => $shortId,
         ];
@@ -108,7 +123,7 @@ class  WechatUsecase extends AbstractAPI
                     'headers' => [
                         'app-id'       => '1',
                         'REQUEST-TYPE' => 'SERVER',
-                        'UUID'         => $subject->uuid,
+                        'UUID'         => $uuid,
                         'Accept'       => 'application/json',
                     ],
                 ],
@@ -131,7 +146,6 @@ class  WechatUsecase extends AbstractAPI
 
             return false;
         }
-
     }
 
 
@@ -147,7 +161,7 @@ class  WechatUsecase extends AbstractAPI
     protected function checkAndThrow(
         array $contents
     ) {
-        if (isset($contents['code'])&&$contents['code'] != 0) {
+        if (isset($contents['code']) && $contents['code'] != 0) {
             throw new ResourceException($contents['msg']);
         }
     }
