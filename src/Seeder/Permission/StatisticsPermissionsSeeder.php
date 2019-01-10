@@ -29,6 +29,6 @@ class StatisticsPermissionsSeeder extends Seeder
     public function run()
     {
         $statisticsManagerPermissionId = $this->createPermissions("统计管理", "statistics_manager", false);
-        $this->createPermissions("页面热度", "pv", true, $statisticsManagerPermissionId,true,false,true);
+        $this->createPermissions("访问统计", "pv", true, $statisticsManagerPermissionId,true,false,true);
     }
 }

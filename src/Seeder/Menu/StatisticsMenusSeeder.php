@@ -33,7 +33,7 @@ class StatisticsMenusSeeder extends Seeder
             "statistics_manager", 0, $order++, "统计分析", "fa-area-chart");
 
         $this->updateOrCreate(
-            "pv.index", $statisticsManagerMenu->id, $order++, "页面热度", "fa-fire");
+            "pv.index", $statisticsManagerMenu->id, $order++, "访问统计", "fa-fire");
 
     }
 }

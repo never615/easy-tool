@@ -18,7 +18,7 @@ class PvController extends Controller
     public function index(Request $request)
     {
         return Admin::content(function (Content $content) use ($request) {
-            $content->header('页面访问热度');
+            $content->header('访问统计');
 
             $user = Admin::user();
             $subject = $user->subject;
@@ -34,7 +34,7 @@ class PvController extends Controller
 
             $this->tips($content, $subjectSelectData);
 
-
+            $this->uv($content, $subjectSelectData);
             $this->pagePvRank($content, $subjectSelectData);
             $this->pagePvTrend($content, $subjectSelectData);
         });
@@ -63,6 +63,24 @@ class PvController extends Controller
         $baseBox->removable();
         $baseBox->style("info");
         $content->row($baseBox);
+    }
+
+    /**
+     * uv
+     *
+     * @param $content
+     * @param $subjectSelectData
+     */
+    private function uv($content, $subjectSelectData)
+    {
+        //累计用户
+        $box = new Box('活跃用户(uv)',
+            view("tool::dashboard.uv")->with([
+                "subjects" => $subjectSelectData,
+            ]));
+        $box->collapsable();
+        $box->style("info");
+        $content->row($box);
     }
 
 

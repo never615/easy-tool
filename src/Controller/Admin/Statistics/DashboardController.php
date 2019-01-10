@@ -44,7 +44,6 @@ class DashboardController extends Controller
             $this->tips($content, $subjectSelectData);
 
 
-            $this->uv($content, $subjectSelectData);
             $this->newUser($content, $subjectSelectData);
             $this->cumulateUser($content, $subjectSelectData);
         });
@@ -117,23 +116,6 @@ class DashboardController extends Controller
     }
 
 
-    /**
-     * uv
-     *
-     * @param $content
-     * @param $subjectSelectData
-     */
-    private function uv($content, $subjectSelectData)
-    {
-        //累计用户
-        $box = new Box('活跃用户(uv)',
-            view("tool::dashboard.uv")->with([
-                "subjects" => $subjectSelectData,
-            ]));
-        $box->collapsable();
-        $box->style("info");
-        $content->row($box);
-    }
 
 
     /**
