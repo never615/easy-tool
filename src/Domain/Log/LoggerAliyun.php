@@ -42,6 +42,7 @@ class LoggerAliyun implements Logger
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n") ?: "cli";
         $this->localIp = $_SERVER['SERVER_ADDR'] ?? "";
+
     }
 
 
