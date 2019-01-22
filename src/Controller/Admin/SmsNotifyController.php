@@ -6,6 +6,7 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\SmsNotify;
+use Mallto\Tool\Data\SmsTemplate;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Jobs\BatchSmsJob;
 
@@ -36,7 +37,7 @@ class SmsNotifyController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->sms_template_name("模板名");
+        $grid->template()->name("模板名");
         $grid->remark();
         $grid->status()->display(function ($value) {
             return SmsNotify::STATUS[$value];
@@ -66,8 +67,7 @@ class SmsNotifyController extends AdminCommonController
                     "users"         => data_source_url("users"),
                     "member_levels" => data_source_url("member_levels"),
                 ]);
-            $form->display("sms_template_name", "模板名");
-            $form->display("content", "短信内容");
+            $form->display("template.name", "模板名");
             $form->display("status")->with(function ($value) {
                 return SmsNotify::STATUS[$value];
             });
@@ -84,21 +84,11 @@ class SmsNotifyController extends AdminCommonController
                     "member_levels" => data_source_url("member_levels"),
                 ]);
 
-            $config = app(\Mallto\Tool\Domain\Config\Config::class);
 
-            $templates = $config->getConfig("aliyun_sms_template_codes", []);
-            $templates = json_decode($templates, true);
-
-            $templates2 = array_map(function ($value) {
-                $value["name"] = $value["name"].":".$value["content"];
-                unset($value["content"]);
-
-                return $value;
-            }, $templates);
 
 
             $form->select("sms_template_code", "短信模板")
-                ->options(array_pluck($templates2, "name", "code"))
+                ->options(SmsTemplate::selectSourceDates())
                 ->help("模板标题:模板内容")
                 ->rules("required");
         }

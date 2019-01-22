@@ -97,6 +97,7 @@ Route::group($attributes, function ($router) {
                     //----------------------------  页面配置结束  -----------------------------------------------
                     Route::resource('configs', 'ConfigController');
                     Route::resource('sms_notifies', 'SmsNotifyController');
+Route::resource('sms_templates', 'SmsTemplateController');
 //DummyRoutePlaceholder
 
                 });

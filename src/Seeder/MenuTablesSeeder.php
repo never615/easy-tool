@@ -29,6 +29,7 @@ class MenuTablesSeeder extends Seeder
         $this->call(ApiPvManagerMenuSeeder::class);
         $this->call(PagePvManagerMenuSeeder::class);
         $this->call(StatisticsMenusSeeder::class);
+$this->call(\Mallto\Tool\Seeder\Menu\SmsTemplateMenuSeeder::class);
 //DummySeeder
 
     }
