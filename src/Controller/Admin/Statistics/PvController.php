@@ -46,7 +46,7 @@ class PvController extends Controller
      * @param $content
      * @param $subjectSelectData
      */
-    private function tips($content, $subjectSelectData)
+    protected function tips($content, $subjectSelectData)
     {
         $helps = [
             "统计数据截止到上一日",
@@ -71,7 +71,7 @@ class PvController extends Controller
      * @param $content
      * @param $subjectSelectData
      */
-    private function uv($content, $subjectSelectData)
+    protected function uv($content, $subjectSelectData)
     {
         //累计用户
         $box = new Box('活跃用户(uv)',
@@ -90,7 +90,7 @@ class PvController extends Controller
      * @param $content
      * @param $subjectSelectData
      */
-    private function pagePvRank($content, $subjectSelectData)
+    protected function pagePvRank($content, $subjectSelectData)
     {
         $box = new Box('页面访问排名',
             view("tool::statistics.page_pv_rank")->with([
@@ -108,7 +108,7 @@ class PvController extends Controller
      * @param $content
      * @param $subjectSelectData
      */
-    private function pagePvTrend($content, $subjectSelectData)
+    protected function pagePvTrend($content, $subjectSelectData)
     {
         $box = new Box('页面访问趋势',
             view("tool::statistics.page_pv_trend")->with([
