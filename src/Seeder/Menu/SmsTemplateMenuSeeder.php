@@ -4,6 +4,7 @@ namespace Mallto\Tool\Seeder\Menu;
 
 use Mallto\Admin\Data\Menu;
 use Illuminate\Database\Seeder;
+use Mallto\Admin\Seeder\MenuSeederMaker;
 
 
 class SmsTemplateMenuSeeder extends Seeder
