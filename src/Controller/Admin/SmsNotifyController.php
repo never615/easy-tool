@@ -89,7 +89,7 @@ class SmsNotifyController extends AdminCommonController
 
             $form->select("sms_template_code", "短信模板")
                 ->options(SmsTemplate::selectSourceDates())
-                ->help("模板标题:模板内容")
+                ->help('<a target="_blank" href="admin/sms_templates">短信模板管理</a>')
                 ->rules("required");
         }
 
