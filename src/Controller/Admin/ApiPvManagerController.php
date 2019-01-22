@@ -28,6 +28,12 @@ class ApiPvManagerController extends AdminCommonController
         return "api pv管理";
     }
 
+    protected function getIndexDesc()
+    {
+        return "主要用于模块统计";
+    }
+
+
     /**
      * 获取这个模块的Model
      *
@@ -62,14 +68,11 @@ class ApiPvManagerController extends AdminCommonController
             ->options(ApiPv::selectSourceDatas2()->pluck("path", "path"))
             ->rules("required");
         $form->text("name")->rules("required");
-        $form->text("slug");
+        $form->text("slug")->required();
 //        $form->switch("switch", "统计页是否显示");
+        $form->hidden("switch")->default(true);
         $form->textarea("remark");
 
-
-        $form->saving(function ($form) {
-//            $this->slugSavingCheck($form, $this->getModel());
-        });
 
     }
 }
