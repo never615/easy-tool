@@ -11,8 +11,10 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Input;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Tool\Domain\Traits\SlugAutoSave;
+use Mallto\Admin\SubjectConfigConstants;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\Tag;
+use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
 class TagController extends AdminCommonController
 {
@@ -39,6 +41,17 @@ class TagController extends AdminCommonController
         return Tag::class;
     }
 
+
+    private function getSelectTagTypes()
+    {
+        $tagTypes = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_TAG_TYPES, null);
+        if (!$tagTypes) {
+            return Tag::TYPE;
+        } else {
+            return array_only(Tag::TYPE, $tagTypes);
+        }
+    }
+
     /**
      * @param Grid $grid
      */
@@ -50,7 +63,9 @@ class TagController extends AdminCommonController
         }
 
         $grid->name()->editable()->sortable();
-        $grid->type()->select(Tag::TYPE)->sortable();
+        $grid->type()->select(
+            $this->getSelectTagTypes()
+        )->sortable();
 
         $grid->filter(function (Grid\Filter $filter) {
             $filter->equal('type')->select(Tag::TYPE);
@@ -72,12 +87,17 @@ class TagController extends AdminCommonController
         if ($type) {
             $form->select('type')
                 ->default($type)
-                ->options(Tag::TYPE)
+                ->options(
+                    $this->getSelectTagTypes()
+
+                )
                 ->rules("required");
         } else {
             $form->select('type')
                 ->default("common")
-                ->options(Tag::TYPE)
+                ->options(
+                    $this->getSelectTagTypes()
+                )
                 ->rules("required");
         }
 

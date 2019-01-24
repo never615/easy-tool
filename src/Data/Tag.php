@@ -15,6 +15,7 @@ use Mallto\User\Data\User;
 class Tag extends BaseModel
 {
 
+    //todo 主体可以设置的标签做成主体可配置的
     const TYPE = [
         'shop'     => "店铺标签",
         'activity' => "活动标签",
@@ -22,6 +23,7 @@ class Tag extends BaseModel
 //        "coupon"   => "卡券标签",
         'discount' => "会员优惠模块标签",
 //        "common"   => "通用标签",
+        'relic'    => "文物",
     ];
 
 
