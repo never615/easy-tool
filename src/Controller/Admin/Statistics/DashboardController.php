@@ -26,6 +26,8 @@ class DashboardController extends Controller
 
             $user = Admin::user();
             if (!$user->can("dashboard")) {
+                $content->description("敬请期待");
+
                 return;
             }
 
@@ -73,7 +75,7 @@ class DashboardController extends Controller
 
             $row->column(3, new InfoBox('微信订阅用户', 'users', 'olive', 'admin/users',
                 $wechatCount));
-            $row->column(3, new InfoBox('微信系统累计用户', 'users', 'yellow', 'admin/users',
+            $row->column(3, new InfoBox('累计用户', 'users', 'yellow', 'admin/users',
                 $userCount));
 
 
