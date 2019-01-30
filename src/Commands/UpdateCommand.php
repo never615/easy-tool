@@ -38,7 +38,7 @@ class UpdateCommand extends Command
      */
     public function handle()
     {
-        $this->call('db:seed', ['--class' => TablesSeeder::class]);
+        $this->call('db:seed', ['--class' => TablesSeeder::class, '--force' => true]);
 
     }
 
