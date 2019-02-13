@@ -1,6 +1,6 @@
-@extends('errors.error_base')
+@extends('errors.error_base2')
 
-@section('title','请求错误')
+@section('title','很遗憾')
 
 @section("desc","")
 
