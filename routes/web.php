@@ -27,12 +27,15 @@ Route::group($attributes, function ($router) {
 //----------------------------------------  管理端开始  -----------------------------------------------
 
 
+    Route::get("error/{code}", 'ErrorController@index');
+
+
     Route::group(['prefix' => config('admin.route.prefix'), "middleware" => ['adminE_base']],
         function ($router) {
 
             Route::group(["namespace" => 'Admin'], function () {
 
-                Route::get("select_source/ad_types",'PagePvManagerController@getPageAdType');
+                Route::get("select_source/ad_types", 'PagePvManagerController@getPageAdType');
 
 
                 Route::group(["namespace" => "Statistics"], function ($router) {
@@ -97,7 +100,7 @@ Route::group($attributes, function ($router) {
                     //----------------------------  页面配置结束  -----------------------------------------------
                     Route::resource('configs', 'ConfigController');
                     Route::resource('sms_notifies', 'SmsNotifyController');
-Route::resource('sms_templates', 'SmsTemplateController');
+                    Route::resource('sms_templates', 'SmsTemplateController');
 //DummyRoutePlaceholder
 
                 });
