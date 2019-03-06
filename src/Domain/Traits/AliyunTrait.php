@@ -22,8 +22,8 @@ trait AliyunTrait
     protected function mergePublicParamsAndSign($params,$method="GET")
     {
         //必填: 请参阅 https://ak-console.aliyun.com/ 取得您的AK信息
-        $accessKeyId = config("app.aliyun_log_access_key_id");
-        $accessKeySecret = config("app.aliyun_log_access_key");
+        $accessKeyId = config("app.aliyun_access_key_id");
+        $accessKeySecret = config("app.aliyun_access_key");
 
         $apiParams = array_merge(array (
             "SignatureMethod"  => "HMAC-SHA1",

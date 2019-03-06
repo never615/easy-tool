@@ -20,6 +20,21 @@ use RuntimeException;
 class AppUtils
 {
 
+    /**
+     * 是否是测试环境
+     * 测试环境是除了production,staging以外的所有环境
+     *
+     * @return bool
+     */
+    public static function isTestEnv()
+    {
+        if (!in_array(config("app.env"), ["staging", "production"])) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     /**
      * 解析openid
@@ -45,7 +60,7 @@ class AppUtils
      * 结尾不包含/
      *
      * @deprecated
-     * 
+     *
      * @return string
      */
     public static function h5Url()

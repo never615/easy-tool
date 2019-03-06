@@ -37,8 +37,8 @@ class LoggerAliyun implements Logger
     public function __construct()
     {
         $this->switch = config("app.ali_log", true);
-        $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_log_access_key_id"),
-            config("app.aliyun_log_access_key"));
+        $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_access_key_id"),
+            config("app.aliyun_access_key"));
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n") ?: "cli";
         $this->localIp = $_SERVER['SERVER_ADDR'] ?? "";
