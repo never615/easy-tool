@@ -7,6 +7,7 @@ namespace Mallto\Tool\Providers;
 
 use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -24,6 +25,7 @@ use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\Sms\AliyunSms;
 use Mallto\Tool\Domain\Sms\Sms;
+use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -42,6 +44,7 @@ class ToolServiceProvider extends ServiceProvider
     protected $commands = [
         'Mallto\Tool\Commands\InstallCommand',
         'Mallto\Tool\Commands\UpdateCommand',
+        'Mallto\Tool\Commands\UpdateAppSecretCommand',
     ];
 
     /**
@@ -72,7 +75,6 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-
         $this->loadMigrationsFrom(__DIR__.'/../../migrations');
 
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'tool');
@@ -89,6 +91,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->appBoot();
         $this->routeBoot();
         $this->queueBoot();
+        $this->schedule();
     }
 
 
@@ -271,6 +274,30 @@ class ToolServiceProvider extends ServiceProvider
 
                 return new AliyunMailTransport($AccessKeyId, $AccessSecret, $ReplyToAddress, $AddressType);
             });
+        });
+    }
+
+    /**
+     * 调度任务
+     */
+    private function schedule()
+    {
+        $this->app->booted(function () {
+            $schedule = $this->app->make(Schedule::class);
+
+            //检查停车记录
+            $schedule->command('tool:update_app_secret')
+                ->onOneServer()
+//                ->daily()
+                ->everyMinute()
+                ->name("更新应用秘钥")
+                ->withoutOverlapping()
+                ->before(function () {
+                    dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "start"]));
+                })
+                ->after(function () {
+                    dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "finish"]));
+                });
         });
     }
 

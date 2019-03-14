@@ -51,7 +51,7 @@ class  WechatUsecase extends AbstractAPI
                 $content,
                 [
                     'headers' => [
-                        'app-id'       => '1',
+                        'app-id'       => config("other.mallto_app_id"),
                         'REQUEST-TYPE' => 'SERVER',
                         'UUID'         => $uuid,
                         'Accept'       => 'application/json',
@@ -111,7 +111,7 @@ class  WechatUsecase extends AbstractAPI
         $requestData = [
             "short_id" => $shortId,
         ];
-        $sign = SignUtils::sign($requestData, '81eaaa7cd5b8aafc51aa1e5392ae25f2');
+        $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
 
         try {
             $content = $this->parseJSON('post', [
@@ -121,7 +121,7 @@ class  WechatUsecase extends AbstractAPI
                 ]),
                 [
                     'headers' => [
-                        'app-id'       => '1',
+                        'app-id'       => config("other.mallto_app_id"),
                         'REQUEST-TYPE' => 'SERVER',
                         'UUID'         => $uuid,
                         'Accept'       => 'application/json',

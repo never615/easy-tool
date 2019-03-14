@@ -44,6 +44,8 @@ class AppSecretController extends AdminCommonController
         $grid->app_id();
         $grid->app_secret();
 
+        $grid->switch()->switch();
+
         $grid->filter(function (Grid\Filter $filter) {
             $filter->ilike("app_id");
             $filter->ilike("name");
@@ -57,6 +59,7 @@ class AppSecretController extends AdminCommonController
         $form->text('app_id');
         $form->text('app_secret')
             ->help("﻿openssl rand -hex 16");
+        $form->switch("switch");
     }
 
 }

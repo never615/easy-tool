@@ -50,7 +50,10 @@ class AuthenticateSign2
 
 //        \Log::info("header app_id:".$appId);
         $appSecret = AppSecret::where("app_id", $appId)->first();
-        if (!$appSecret) {
+
+
+        if (!$appSecret || !$appSecret->switch) {
+            \Log::warning("app_id 无效");
             throw new SignException("app_id 无效");
         }
 
