@@ -38,24 +38,7 @@ Route::group($attributes, function ($router) {
                 Route::get("select_source/ad_types", 'PagePvManagerController@getPageAdType');
 
 
-                Route::group(["namespace" => "Statistics"], function ($router) {
-                    //todo 主页不能没,动态权限显示内容处理
-                    //统计
-                    Route::get('/', 'DashboardController@dashboard')->name("dashboard");
-                    //------------------- 数据源提供 开始 --------------------
-                    //微信用户uv
-                    Route::post('/statistics/users/user_uv', 'DataService\UserStatisticsController@userUv');
 
-                    //页面pv排名
-                    Route::post('/statistics/page/pv/rank', 'DataService\PagePvStatisticsController@pagePvRank');
-                    //前端页面pv变化趋势
-                    Route::post('/statistics/page/pv/trend', 'DataService\PagePvStatisticsController@pagePvTrend');
-                    //开放的page paths,page pv统计展示用
-                    Route::post('/statistics/page/pv/page_paths', 'DataService\PagePvStatisticsController@pagePaths');
-
-                    //------------------- 数据源提供 结束 --------------------
-
-                });
 
 
                 Route::group(['middleware' => ['adminE.auto_permission']], function ($router) {  //指定auth的guard为mall
