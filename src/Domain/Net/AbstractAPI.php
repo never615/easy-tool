@@ -254,6 +254,8 @@ abstract class AbstractAPI
     }
 
     /**
+     * 检查响应,并返回
+     * 
      * 不同的实现需要重写此方法 标准的json请求使用
      * Check the array data errors, and Throw exception when the contents contains error.
      *

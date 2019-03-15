@@ -285,11 +285,10 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
 
-            //检查停车记录
             $schedule->command('tool:update_app_secret')
                 ->onOneServer()
-//                ->daily()
-                ->everyMinute()
+//                ->everyMinute()
+                ->daily()
                 ->name("更新应用秘钥")
                 ->withoutOverlapping()
                 ->before(function () {

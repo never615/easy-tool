@@ -31,21 +31,23 @@ class AppSecretUsecase extends AbstractAPI
 
         $sign = SignUtils::sign($requestData, config("other.mallto_app_secret"));
 
+        try {
 
-        $contents = $this->parseJson('get', [
-            $baseUrl.'/api/app_secret',
-            array_merge($requestData, [
-                "sign" => $sign,
-            ]),
-            [
-                'headers' => [
-                    'app-id' => config("other.mallto_app_id"),
-                    'Accept' => 'application/json',
+            $contents = $this->parseJson('get', [
+                $baseUrl.'/api/app_secret',
+                array_merge($requestData, [
+                    "sign" => $sign,
+                ]),
+                [
+                    'headers' => [
+                        'app-id' => config("other.mallto_app_id"),
+                        'Accept' => 'application/json',
+                    ],
                 ],
-            ],
-        ]);
-
-        \Log::debug($contents);
+            ]);
+        } catch (\Exception $exception) {
+            \Log::error($exception);
+        }
 
         ConfigUtils::set("app_secret", $contents["app_secret"]);
     }
