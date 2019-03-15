@@ -26,7 +26,7 @@ class LoggerAliyun implements Logger
     private $logstore_queue = "queue";
 
     private $client;
-    private $serverName;app_id 无效
+    private $serverName;
     private $localIp;
 
     private $switch = false;
