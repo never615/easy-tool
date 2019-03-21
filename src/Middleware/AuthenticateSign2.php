@@ -54,6 +54,7 @@ class AuthenticateSign2
 
         if (!$appSecret || !$appSecret->switch) {
             \Log::warning("app_id 无效:".$appId);
+            \Log::warning($request->url());
             throw new SignException("app_id 无效");
         }
 
