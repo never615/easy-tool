@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use Mallto\Tool\Exception\PermissionDeniedException;
+
 
 /**
  * 工具类
@@ -99,5 +101,41 @@ class UrlUtils
         }
     }
 
+
+    /**
+     * 检查域名是否符合要求
+     *
+     * @param string $url     请求来的地址
+     * @param array  $domains 授权回调可信域名
+     */
+    public static function isAuthDomain($url, $domains = null)
+    {
+        if (!$domains) {
+            $callbackDomain = config("app.oauth_callback_domain");
+            $domains = explode(",", $callbackDomain);
+        }
+
+        $requestDomain = UrlUtils::getDomain($url);
+        $isAuth = false;
+
+        //先检查有没有*号开头的域名
+        foreach ($domains as $domain) {
+            if (starts_with($domain, "*.")) {
+                $domain = str_replace("*.", "", $domain);
+                if (ends_with($requestDomain, $domain)) {
+                    $isAuth = true;
+                    break;
+                }
+            }
+        }
+
+        if ($isAuth & in_array($requestDomain, $domains)) {
+            $isAuth = true;
+        }
+
+        if (!$isAuth) {
+            throw new PermissionDeniedException("回调域名不可信:".$requestDomain);
+        }
+    }
 
 }
