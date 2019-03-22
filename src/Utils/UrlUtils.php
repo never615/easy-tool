@@ -108,7 +108,7 @@ class UrlUtils
      * @param string $url     请求来的地址
      * @param array  $domains 授权回调可信域名
      */
-    public static function isAuthDomain($url, $domains = null)
+    public static function checkDomainOAuth($url, $domains = null)
     {
         if (!$domains) {
             $callbackDomain = config("app.oauth_callback_domain");
