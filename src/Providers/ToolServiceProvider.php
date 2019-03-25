@@ -34,7 +34,6 @@ use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
-use Mallto\Tool\Utils\ConfigUtils;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -286,10 +285,9 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
 
-            if (ConfigUtils::get(\Mallto\Tool\Data\Config::UPDATE_APP_SECRET, false)) {
+            if (\config("other.update_app_secret")) {
                 $schedule->command('tool:update_app_secret')
                     ->onOneServer()
-//                    ->everyMinute()
                     ->daily()
                     ->name("update_app_secret")
                     ->withoutOverlapping()
