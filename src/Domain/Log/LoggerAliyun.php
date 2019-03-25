@@ -166,10 +166,10 @@ class LoggerAliyun implements Logger
         $logitems = array ();
         $logItem = new LogItem();
         $logItem->setTime(time());
-        $logItem->setContents($content, [
+        $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
             "env"         => config("app.env"),
-        ]);
+        ]));
         array_push($logitems, $logItem);
         $req2 = new PutLogsRequest($this->project, $this->logstore_schedule, $topic, $source, $logitems);
         try {
