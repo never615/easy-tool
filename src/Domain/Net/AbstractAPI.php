@@ -10,10 +10,12 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Mallto\Admin\SubjectUtils;
+use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\NotSettingException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
+use Mallto\Tool\Utils\LogUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -40,8 +42,17 @@ abstract class AbstractAPI
 
     protected $slug;
 
-
     protected $baseUrl;
+
+    /**
+     * AbstractAPI constructor.
+     */
+    public function __construct()
+    {
+        if (!$this->slug) {
+            throw new InternalHttpException("AbstractAPI 没有设置slug:".LogUtils::getCurrentCodeLocation());
+        }
+    }
 
 
     /**
@@ -255,7 +266,7 @@ abstract class AbstractAPI
 
     /**
      * 检查响应,并返回
-     * 
+     *
      * 不同的实现需要重写此方法 标准的json请求使用
      * Check the array data errors, and Throw exception when the contents contains error.
      *

@@ -19,6 +19,9 @@ use Mallto\Tool\Utils\SignUtils;
 class AppSecretUsecase extends AbstractAPI
 {
 
+    protected $slug = "wechat-public";
+
+
     public function update()
     {
         if (config("app.env") == 'production' || config("app.env") == 'staging') {
@@ -49,7 +52,13 @@ class AppSecretUsecase extends AbstractAPI
             \Log::error($exception);
         }
 
-        ConfigUtils::set("app_secret", $contents["app_secret"]);
+        if ($contents && isset($contents["app_secret"])) {
+            ConfigUtils::set("app_secret", $contents["app_secret"]);
+
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**

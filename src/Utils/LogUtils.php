@@ -38,4 +38,15 @@ class LogUtils
         \Log::warning("subjecter_config:".$msg);
     }
 
+
+    /**
+     * 获取当前代码执行到的类和行数
+     *
+     * @return string
+     */
+    public static function getCurrentCodeLocation()
+    {
+        return __CLASS__.":".__LINE__;
+    }
+
 }
