@@ -34,6 +34,7 @@ use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
+use Mallto\Tool\Utils\ConfigUtils;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -285,18 +286,20 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
 
-            $schedule->command('tool:update_app_secret')
-                ->onOneServer()
-//                ->everyMinute()
-                ->daily()
-                ->name("更新应用秘钥")
-                ->withoutOverlapping()
-                ->before(function () {
-                    dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "start"]));
-                })
-                ->after(function () {
-                    dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "finish"]));
-                });
+            if (ConfigUtils::get(\Mallto\Tool\Data\Config::UPDATE_APP_SECRET, false)) {
+                $schedule->command('tool:update_app_secret')
+                    ->onOneServer()
+//                    ->everyMinute()
+                    ->daily()
+                    ->name("update_app_secret")
+                    ->withoutOverlapping()
+                    ->before(function () {
+                        dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "start"]));
+                    })
+                    ->after(function () {
+                        dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "finish"]));
+                    });
+            }
         });
     }
 

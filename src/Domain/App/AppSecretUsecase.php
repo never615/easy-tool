@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Domain\App;
 
+use Mallto\Tool\Data\Config;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Utils\ConfigUtils;
@@ -35,7 +36,6 @@ class AppSecretUsecase extends AbstractAPI
         $sign = SignUtils::sign($requestData, config("other.mallto_app_secret"));
 
         try {
-
             $contents = $this->parseJson('get', [
                 $baseUrl.'/api/app_secret',
                 array_merge($requestData, [
@@ -53,7 +53,7 @@ class AppSecretUsecase extends AbstractAPI
         }
 
         if ($contents && isset($contents["app_secret"])) {
-            ConfigUtils::set("app_secret", $contents["app_secret"]);
+            ConfigUtils::set(Config::APP_SECRET, $contents["app_secret"]);
 
             return true;
         } else {

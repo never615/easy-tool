@@ -48,7 +48,7 @@ class SubjectUtils
             ->where("key", $key)
             ->first();
         if (!$subjectConfig) {
-            if ($default) {
+            if (isset($default)) {
                 return $default;
             } else {
                 throw new SubjectConfigException($key."未配置");
@@ -176,6 +176,8 @@ class SubjectUtils
     }
 
     /**
+     *
+     * 获取当前账号可以管理查看的subject ids
      *
      * @param                    $tableName
      * @param                    $subjectId

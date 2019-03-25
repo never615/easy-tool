@@ -22,6 +22,8 @@ class ConfigUtils
     /**
      * 读取配置
      *
+     * 读取config表中配置项
+     *
      * @param      $key
      * @param null $default
      * @param null $type
@@ -37,7 +39,7 @@ class ConfigUtils
         if ($config) {
             return $config->value;
         } else {
-            if ($default) {
+            if (isset($default)) {
                 return $default;
             } else {
                 throw new ResourceException($key."未配置");
