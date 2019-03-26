@@ -15,7 +15,6 @@ use Mallto\Tool\Exception\NotSettingException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
-use Mallto\Tool\Utils\LogUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -50,7 +49,7 @@ abstract class AbstractAPI
     public function __construct()
     {
         if (!$this->slug) {
-            throw new InternalHttpException("AbstractAPI 没有设置slug:".LogUtils::getCurrentCodeLocation());
+            throw new InternalHttpException("继承自AbstractAPI的类 没有设置slug");
         }
     }
 
