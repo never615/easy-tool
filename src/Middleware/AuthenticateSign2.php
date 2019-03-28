@@ -17,7 +17,10 @@ namespace Mallto\Tool\Middleware;
 
 use Carbon\Carbon;
 use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\AppSecret;
+use Mallto\Tool\Exception\BadRequestHttpException;
 use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
@@ -44,7 +47,7 @@ class AuthenticateSign2
      * @param Closure $next
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
         $appId = $request->header("app_id");
 
@@ -110,6 +113,10 @@ class AuthenticateSign2
                 $uuid = $request->header("uuid");
                 $appId = $request->header("app_id");
 
+                if (!$timestamp | !$uuid | !$appId) {
+                    throw new BadRequestHttpException("请求头缺失");
+                }
+
 
                 //时间戳格式检查
                 if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
@@ -125,6 +132,52 @@ class AuthenticateSign2
                         "app_id"    => $appId,
                     ]), $secret)) {
                         //pass
+                        return $next($request);
+                    } else {
+                        throw new SignException(trans("errors.sign_error"));
+                    }
+                } else {
+                    throw new ResourceException("InvalidTimeStamp.Expired");
+                }
+                break;
+            case "4":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
+                $timestamp = $request->header("timestamp");
+                $uuid = $request->header("uuid");
+                $appId = $request->header("app_id");
+                $signatureNonce = $request->header("signature_nonce");
+
+                if (!$timestamp | !$uuid | !$appId | !$signatureNonce) {
+                    throw new BadRequestHttpException("请求头缺失");
+                }
+
+
+                //时间戳格式检查
+                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                    throw new ResourceException("InvalidTimeStamp.Format");
+                }
+
+                //随机字符串15分钟内是否使用过,同一个uuid,app_id,同一个接口,同一个随机字符串是否重复
+
+                $requestPath = $request->path();
+
+                $nonce = $uuid.$appId.$requestPath.$signatureNonce;
+                if (Cache::get($nonce)) {
+                    throw new ResourceException("请求已被接受,signature_nonce:".$signatureNonce);
+                }
+
+
+                if (Carbon::now()->subMinutes(15) < $timestamp) {
+                    //和当前时间间隔比较在15分钟内
+                    //检查签名
+                    if (SignUtils::verifySign2(array_merge($inputs, [
+                        "timestamp"       => $timestamp,
+                        "uuid"            => $uuid,
+                        "app_id"          => $appId,
+                        "signature_nonce" => $signatureNonce,
+                    ]), $secret)) {
+                        //pass
+                        Cache::put($nonce, 1, 15);
+
                         return $next($request);
                     } else {
                         throw new SignException(trans("errors.sign_error"));
