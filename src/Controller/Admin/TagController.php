@@ -102,7 +102,7 @@ class TagController extends AdminCommonController
         }
 
 
-        if ($this->currentId && Admin::user()->isOwner()) {
+        if ($this->currentId && \Mallto\Admin\AdminUtils::isOwner()) {
             $form->display("slug");
         }
 

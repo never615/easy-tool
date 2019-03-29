@@ -55,7 +55,7 @@ class Tag extends BaseModel
      */
     public function scopeOfType($query, $type)
     {
-        if (Admin::user()->isOwner()) {
+        if (\Mallto\Admin\AdminUtils::isOwner()) {
             return static::dynamicData()
                 ->where(function ($query) use ($type) {
                     $query->where("type", $type)

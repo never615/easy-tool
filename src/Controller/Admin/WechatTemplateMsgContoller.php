@@ -69,7 +69,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
             ->rules("required")
             ->help(("所有的模板消息均属于消费品行业下,如果公众号所在行业未设置或不是消费品行业,则无法使用模板消息(公众号所属行业在公众号后台模板消息中修改)"));
 
-        if (Admin::user()->isOwner()) {
+        if (\Mallto\Admin\AdminUtils::isOwner()) {
             $form->display("template_id", "公众号对应的模板id");
         }
 

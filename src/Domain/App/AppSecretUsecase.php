@@ -20,7 +20,7 @@ use Mallto\Tool\Utils\SignUtils;
 class AppSecretUsecase extends AbstractAPI
 {
 
-    protected $slug = "wechat-public";
+    protected $slug = "open_platform";
 
 
     public function update()

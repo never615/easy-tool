@@ -24,7 +24,7 @@ class ApiPv extends BaseModel
 
     public function scopeSelectSourceDatas()
     {
-        if (Admin::user()->isOwner() && Schema::hasColumn($this->getTable(), 'subject_id')) {
+        if (\Mallto\Admin\AdminUtils::isOwner() && Schema::hasColumn($this->getTable(), 'subject_id')) {
             return static::dynamicData()
                 ->select(DB::raw("path||'-'||subject_id as path,path"))->pluck("path", "path");
         } else {
@@ -36,7 +36,7 @@ class ApiPv extends BaseModel
 
     public function scopeSelectSourceDatas2()
     {
-        if (Admin::user()->isOwner()) {
+        if (\Mallto\Admin\AdminUtils::isOwner()) {
             if (Schema::hasColumn($this->getTable(), 'subject_id')) {
                 return static::dynamicData()
                     ->select(DB::raw("path||'-'||subject_id as path,path"));

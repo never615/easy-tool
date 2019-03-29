@@ -75,7 +75,7 @@ class ThirdLogController extends AdminCommonController
     {
         $tableName = $grid->model()->getTable();
 
-        if (!Admin::user()->isOwner()) {
+        if (!\Mallto\Admin\AdminUtils::isOwner()) {
             if (method_exists($this->getModel(), "scopeDynamicData")) {
                 $grid->model()->dynamicData();
             }
