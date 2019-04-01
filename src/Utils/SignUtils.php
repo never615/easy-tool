@@ -171,7 +171,7 @@ class SignUtils
     /**
      * 签名2.0
      *
-     * https://wiki.mall-to.com/web/#/19?page_id=183
+     * https://wiki.mall-to.com/web/#/27?page_id=232
      * @param $arr
      * @param $secret
      * @return string

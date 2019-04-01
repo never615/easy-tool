@@ -145,9 +145,10 @@ class AuthenticateSign2
                 $uuid = $request->header("uuid");
                 $appId = $request->header("app_id");
                 $signatureNonce = $request->header("signature_nonce");
+                $signature = $request->header("signature");
 
-                if (!$timestamp | !$uuid | !$appId | !$signatureNonce) {
-                    throw new BadRequestHttpException("请求头缺失");
+                if (!$timestamp | !$uuid | !$appId | !$signatureNonce | $signature) {
+                    throw new BadRequestHttpException("请求头缺失字段");
                 }
 
 
@@ -174,6 +175,7 @@ class AuthenticateSign2
                         "uuid"            => $uuid,
                         "app_id"          => $appId,
                         "signature_nonce" => $signatureNonce,
+                        "signature"       => $signature,
                     ]), $secret)) {
                         //pass
                         Cache::put($nonce, 1, 15);
