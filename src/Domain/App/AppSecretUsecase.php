@@ -8,8 +8,10 @@ namespace Mallto\Tool\Domain\App;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ThirdPartException;
+use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\ConfigUtils;
 use Mallto\Tool\Utils\SignUtils;
+use Mallto\Tool\Utils\TimeUtils;
 
 /**
  * Created by PhpStorm.
@@ -31,20 +33,39 @@ class AppSecretUsecase extends AbstractAPI
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
-        $requestData = [];
 
-        $sign = SignUtils::sign($requestData, config("other.mallto_app_secret"));
+        $nonceStr = AppUtils::getRandomString();
+        $now = TimeUtils::getNowTime();
+        $signHeaders = [
+            'uuid'            => 0,
+            'app_id'          => config("other.mallto_app_id"),
+            'timestamp'       => $now,
+            'signature_nonce' => $nonceStr,
+        ];
 
+
+        $requestData = [
+
+        ];
+
+        $signData = array_merge($signHeaders, $requestData);
+
+        $sign = SignUtils::signVersion2($signData, config("other.mallto_app_secret"));
+
+        $contents = null;
         try {
             $contents = $this->parseJson('get', [
                 $baseUrl.'/api/app_secret',
-                array_merge($requestData, [
-                    "sign" => $sign,
-                ]),
+                $requestData,
                 [
                     'headers' => [
-                        'app-id' => config("other.mallto_app_id"),
-                        'Accept' => 'application/json',
+                        'uuid'              => 0,
+                        'app-id'            => config("other.mallto_app_id"),
+                        'Timestamp'         => $now,
+                        'Accept'            => 'application/json',
+                        'Signature-Nonce'   => $nonceStr,
+                        'Signature-Version' => 4,
+                        'Signature'         => $sign,
                     ],
                 ],
             ]);
