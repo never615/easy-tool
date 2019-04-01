@@ -151,7 +151,9 @@ class AuthenticateSign2
                 $signatureNonce = $request->header("signature_nonce");
                 $signature = $request->header("signature");
 
-                if (!$timestamp | !$uuid | !$appId | !$signatureNonce | $signature) {
+
+                if (is_null($timestamp) || is_null($uuid) || is_null($appId) ||
+                    is_null($signatureNonce) || is_null($signature)) {
                     throw new BadRequestHttpException("请求头缺失字段");
                 }
 
