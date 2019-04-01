@@ -69,7 +69,11 @@ class AuthenticateSign2
 
         $inputs = $request->all();
 
-        $signVersion = $request->header('sign_version', "1");
+        $signVersion = $request->header('signature_version');
+        if ($signVersion === null) {
+            $signVersion = $request->header('sign_version', "1");
+        }
+
 
         switch ($signVersion) {
             case "999":  //用户测试环境,直接通过校验
