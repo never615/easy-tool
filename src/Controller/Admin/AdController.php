@@ -10,7 +10,6 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Controller\Admin\Traits\GetAdTypes;
 use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Data\PagePvManager;
@@ -74,25 +73,28 @@ class AdController extends AdminCommonController
 
         $form->select("ad_type", "广告类型")
             ->addElementClass2("mt-ad-ad-type")
+            ->default("text")
             ->rules("required")
             ->help("浮层广告建议尺寸:420 * 520")
-            ->options(function ($value) use ($that) {
-                $type = $this->type;
-                if ($type) {
-                    $subjectId = $this->subject_id;
-                    if (!$subjectId) {
-                        $subjectId = SubjectUtils::getSubjectId();
-                    }
-                    $pagePvManager = PagePvManager::where("subject_id", $subjectId)
-                        ->where("path", $type)
-                        ->first();
-
+            ->options(Ad::AD_TYPE)
+//            ->options(function ($value) use ($that) {
+//                $type = $this->type;
+//                if ($type) {
+//                    $subjectId = $this->subject_id;
+//                    if (!$subjectId) {
+//                        $subjectId = SubjectUtils::getSubjectId();
+//                    }
+//                    $pagePvManager = PagePvManager::where("subject_id", $subjectId)
+//                        ->where("path", $type)
+//                        ->first();
 //
-                    return $that->getAdTypes($pagePvManager, true);
-                }
-
-                return [];
-            });
+////
+//                    return $that->getAdTypes($pagePvManager, true);
+//                }
+//
+//                return [];
+//            })
+        ;
 
         $form->switch("switch");
 

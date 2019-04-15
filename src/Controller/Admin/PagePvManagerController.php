@@ -67,7 +67,7 @@ class PagePvManagerController extends AdminCommonController
             ->options(PagePv::selectSourceDatas2()->pluck("path", "path"))
             ->rules("required");
         $form->text("name")->rules("required");
-        $form->text("slug");
+        $form->text("slug")->rules("required");
 
         $form->multipleSelect("ad_types", "支持的广告类型")
             ->default("float_image")
