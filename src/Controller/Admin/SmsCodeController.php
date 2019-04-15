@@ -4,6 +4,7 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\SmsCode;
 
@@ -40,6 +41,11 @@ class SmsCodeController extends AdminCommonController
         $grid->filter(function (Grid\Filter $filter) {
             $filter->ilike("mobile");
         });
+
+        if (!AdminUtils::isOwner()) {
+            $grid->disableActions();
+        }
+        $grid->disableCreateButton();
 
     }
 
