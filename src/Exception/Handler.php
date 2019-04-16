@@ -148,16 +148,15 @@ class Handler extends ExceptionHandler
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json($exception->getResponseContent(), $exception->getStatusCode(), [],
+                return response()->json($exception->getResponseContent(),
+                    $exception->getStatusCode(), [],
                     JSON_UNESCAPED_UNICODE);
             } else {
+                //其他系统定义的异常
                 $data = [
                     "error" => $exception->getMessage(),
+                    "code"  => $exception->getCode() ?? 0,
                 ];
-
-                if ($exception->getCode()) {
-                    $data["code"] = $exception->getCode();
-                }
 
                 return response()
                     ->json($data, $exception->getStatusCode(), [],

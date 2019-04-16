@@ -9,7 +9,7 @@ namespace Mallto\Tool\Exception;
 /**
  * 自定义的http异常,一般在需要返回自定义响应码的时候使用
  *
- * @package App\Exceptions
+ * @package    App\Exceptions
  */
 class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpException
 {
@@ -20,10 +20,10 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
     /**
      * HttpException constructor.
      *
-     * @param                 $statusCode
+     * @param int             $statusCode http响应码
      * @param null            $message
-     * @param null            $errCode
-     * @param array           $content 不能包含error和code的key
+     * @param int             $errCode    自定义的错误响应码
+     * @param array           $content    不能包含error和code的key
      * @param \Exception|null $previous
      * @param array           $headers
      * @param int             $code
@@ -35,12 +35,12 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         $content = null,
         \Exception $previous = null,
         array $headers = array (),
-        $code = 0 //todo 系统有定义异常码,我又自己定义了errCode,优化,改用系统的
+        $code = 0
     )
     {
         $this->errCode = $errCode;
         $this->content = $content;
-        parent::__construct($statusCode, $message, $previous, $headers, $code);
+        parent::__construct($statusCode, $message, $previous, $headers, $errCode);
     }
 
     /**
