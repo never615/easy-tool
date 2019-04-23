@@ -186,11 +186,15 @@ class Handler extends ExceptionHandler
                 //解密失败
                 throw new ValidationHttpException("解密失败");
             } elseif ($exception instanceof MissingScopeException) {
-                if (in_array("mobile-token", $exception->scopes())) {
-                    throw new NeedBindMobileException();
-                }
+                \Log::info($exception);
+                \Log::info($exception->scopes());
+
+                return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
+//                if (in_array("mobile-token", $exception->scopes())) {
+//                    throw new NeedBindMobileException();
+//                }
                 //没有对应作用域的授权
-                throw new PermissionDeniedException("没有权限访问该的接口");
+//                throw new PermissionDeniedException("没有权限访问该的接口");
             } elseif ($exception instanceof TokenMismatchException) {
                 return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
             } elseif ($exception instanceof QueryException) {
