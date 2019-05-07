@@ -13,9 +13,9 @@
 namespace Mallto\Tool\Controller\Admin;
 
 
-use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Admin\Data\Subject;
 use Mallto\Tool\Data\WechatTemplateMsg;
@@ -59,6 +59,16 @@ class WechatTemplateMsgContoller extends AdminCommonController
         $grid->public_template_id("微信模板消息")->display(function ($value) {
             return WechatUtils::getTemplateIds()[$value] ?? "";
         });
+
+
+        if (!AdminUtils::isOwner()) {
+            $grid->disableCreateButton();
+            $grid->actions(function (Grid\Displayers\Actions $actions) {
+                $actions->disableDelete();
+                $actions->disableView();
+            });
+        }
+
 
     }
 
