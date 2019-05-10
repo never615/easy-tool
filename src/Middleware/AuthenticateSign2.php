@@ -51,7 +51,6 @@ class AuthenticateSign2
     {
         $appId = $request->header("app_id");
 
-//        \Log::info("header app_id:".$appId);
         $appSecret = AppSecret::where("app_id", $appId)->first();
 
 

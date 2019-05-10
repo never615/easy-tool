@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Domain\App;
 
+use GuzzleHttp\Exception\ClientException;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ThirdPartException;
@@ -69,6 +70,10 @@ class AppSecretUsecase extends AbstractAPI
                     ],
                 ],
             ]);
+
+        } catch (ClientException $clientException) {
+            \Log::error($clientException->getResponse()->getBody());
+
         } catch (\Exception $exception) {
             \Log::error($exception);
         }
