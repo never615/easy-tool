@@ -19,16 +19,15 @@ class StatisticsPermissionsSeeder extends Seeder
 
     use SeederMaker;
 
-    protected $order = 4000;
-
     /**
      * Run the database seeds.
      *
      * @return void
+     * @throws \Exception
      */
     public function run()
     {
         $statisticsManagerPermissionId = $this->createPermissions("统计管理", "statistics_manager", false);
-        $this->createPermissions("访问统计", "pv", true, $statisticsManagerPermissionId,true,false,true);
+        $this->createPermissions("访问统计", "pv", true, $statisticsManagerPermissionId, true, false, true);
     }
 }

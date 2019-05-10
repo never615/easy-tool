@@ -15,6 +15,7 @@ class SmsNotifyPermissionSeeder extends Seeder
      * Run the database seeds.
      *
      * @return void
+     * @throws \Exception
      */
     public function run()
     {

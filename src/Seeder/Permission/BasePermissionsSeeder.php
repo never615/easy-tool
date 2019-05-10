@@ -14,12 +14,12 @@ class BasePermissionsSeeder extends Seeder
 
     use SeederMaker;
 
-    protected $order = 2000;
 
     /**
      * Run the database seeds.
      *
      * @return void
+     * @throws \Exception
      */
     public function run()
     {
