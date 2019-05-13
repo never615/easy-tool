@@ -74,20 +74,26 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
     protected function formOption(Form $form)
     {
-        $form->select("public_template_id", "微信模板消息")
-            ->options(WechatUtils::getTemplateIds())
-            ->rules("required")
-            ->help(("所有的模板消息均属于消费品行业下,如果公众号所在行业未设置或不是消费品行业,则无法使用模板消息(公众号所属行业在公众号后台模板消息中修改)"));
 
         if (\Mallto\Admin\AdminUtils::isOwner()) {
             $form->display("template_id", "公众号对应的模板id");
+
+            $form->select("public_template_id", "微信消息模板")
+                ->options(WechatUtils::getTemplateIds())
+                ->rules("required")
+                ->help(("所有的模板消息均属于消费品行业下,如果公众号所在行业未设置或不是消费品行业,则无法使用模板消息(公众号所属行业在公众号后台模板消息中修改)"));
+
+        } else {
+            $form->display("public_template_id", "微信消息模板")->with(function ($value) {
+                return WechatUtils::getTemplateIds()[$value] ?? $value;
+            });
         }
 
-        $form->text("template_remark", "模板消息备注")
+        $form->text("template_remark", "消息模板备注")
             ->help('此填写内容会出现在模板消息的备注位置<br>
-注意模板消息不能乱配置,否则会被处罚.详情规则参见<a href="https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1433751288" target="_blank">模板消息运营规范</a>');
+注意模板消息不能乱配置,否则会被处罚.详情规则参见<a href="https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1433751288" target="_blank">微信模板消息运营规范</a>');
 
-        $form->text("template_link", "模板消息的跳转链接")
+        $form->text("template_link", "消息模板的跳转链接")
             ->help("配置此链接后,用户收到的模板消息会出现可以点击的跳转链接");
 
         $form->saving(function ($form) {
@@ -100,7 +106,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
                 $wechatUsecase = app(WechatUsecase::class);
                 $templateId = $wechatUsecase->addTemplateId($form->public_template_id, $subject);
                 if (!$templateId) {
-                    throw new ResourceException("模板消息设置失败");
+                    throw new ResourceException("消息模板设置失败");
                 }
                 $form->model()->template_id = $templateId;
             }
