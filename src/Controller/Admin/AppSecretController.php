@@ -44,7 +44,7 @@ class AppSecretController extends AdminCommonController
         $grid->app_id();
         $grid->app_secret();
 
-        $grid->switch()->switch();
+        $grid->switch()->switchE();
 
         $grid->filter(function (Grid\Filter $filter) {
             $filter->ilike("app_id");

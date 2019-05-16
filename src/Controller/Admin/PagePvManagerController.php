@@ -47,7 +47,7 @@ class PagePvManagerController extends AdminCommonController
     {
         $grid->path("页面路径");
         $grid->name();
-        $grid->switch("统计页是否显示")->switch();
+        $grid->switch("统计页是否显示")->switchE();
         $grid->slug();
         $grid->weight()->editable();
     }

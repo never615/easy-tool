@@ -9,6 +9,7 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Controller\Admin\Traits\GetAdTypes;
 use Mallto\Tool\Data\Ad;
@@ -51,10 +52,15 @@ class AdController extends AdminCommonController
             ->display(function ($value) {
                 $page = PagePvManager::where("path", $value)->first();
 
-                return $page ? $page->name.":".$page->path : $value;
+                if (AdminUtils::isOwner()) {
+                    return $page ? $page->name.":".$page->path : $value;
+                } else {
+                    return $page ? $page->name : $value;
+                }
+
             });
 
-        $grid->switch()->switch();
+        $grid->switch()->switchE();
     }
 
 
@@ -69,32 +75,12 @@ class AdController extends AdminCommonController
             ->help("如果一个模块同时配置了同一类型多个开启状态下广告,则会使用最新创建的")
             ->load("ad_type", "/admin/select_source/ad_types");
 
-        $that = $this;
-
         $form->select("ad_type", "广告类型")
             ->addElementClass2("mt-ad-ad-type")
             ->default("text")
             ->rules("required")
             ->help("浮层广告建议尺寸:420 * 520")
-            ->options(Ad::AD_TYPE)
-//            ->options(function ($value) use ($that) {
-//                $type = $this->type;
-//                if ($type) {
-//                    $subjectId = $this->subject_id;
-//                    if (!$subjectId) {
-//                        $subjectId = SubjectUtils::getSubjectId();
-//                    }
-//                    $pagePvManager = PagePvManager::where("subject_id", $subjectId)
-//                        ->where("path", $type)
-//                        ->first();
-//
-////
-//                    return $that->getAdTypes($pagePvManager, true);
-//                }
-//
-//                return [];
-//            })
-        ;
+            ->options(Ad::AD_TYPE);
 
         $form->switch("switch");
 
