@@ -38,12 +38,12 @@ class UrlUtils
 
 
     /**
-     * 获取
+     * 获取 host
      *
      * @param $url
      * @return bool
      */
-    public static function getDomain($url)
+    public static function getHost($url)
     {
         $tempu = parse_url($url);
 
@@ -58,6 +58,31 @@ class UrlUtils
 //
 //        return isset($urlArr[0]) ? $urlArr[0] : false;
     }
+
+
+    /**
+     * 获取 domian 包含端口和http协议
+     *
+     * @param $url
+     * @return bool
+     */
+    public static function getDomain($url)
+    {
+        $urlArr1 = explode("//", $url);
+        $scheme="";
+        if (count($urlArr1) > 1) {
+            $urlArr = explode("/", $urlArr1[1]);
+            $scheme=$urlArr1[0]."//";
+        } else {
+            $urlArr = explode("/", $url);
+        }
+
+        return isset($urlArr[0]) ? $scheme.$urlArr[0] : false;
+    }
+
+
+
+
 
 
     /**
