@@ -15,6 +15,11 @@ use Mallto\Tool\Utils\SignUtils;
 use Mallto\Tool\Utils\TimeUtils;
 
 /**
+ * 
+ * 请求微信开放平台,更新当前应用的秘钥
+ *
+ * 秘钥用做请求定位接口,如果没有按期更新秘钥,则会无权限请求相应的接口
+ * 
  * Created by PhpStorm.
  * User: never615 <never615.com>
  * Date: 2019/3/14
