@@ -21,6 +21,9 @@
     "autoload": {
         "psr-4": {
             "Mallto\\Tool\\": "src/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     }
 }
