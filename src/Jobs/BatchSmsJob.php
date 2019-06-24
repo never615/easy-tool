@@ -20,6 +20,8 @@ use Mallto\User\Data\User;
 /**
  * 群发短信任务
  *
+ * todo 移动到easy-mall
+ *
  * 暂不处理可能出现的发送接口不可用的异常
  *
  * Class BatchSmsJob
