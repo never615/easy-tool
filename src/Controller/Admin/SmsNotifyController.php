@@ -67,12 +67,12 @@ class SmsNotifyController extends AdminCommonController
                     "users"         => data_source_url("users"),
                     "member_levels" => data_source_url("member_levels"),
                 ]);
-            $form->display("template.name", "模板名");
-            $form->display("status")->with(function ($value) {
+            $form->displayE("template.name", "模板名");
+            $form->displayE("status")->with(function ($value) {
                 return SmsNotify::STATUS[$value];
             });
 
-            //$form->display("failure_lists","发送失败用户");
+            //$form->displayE("failure_lists","发送失败用户");
         } else {
             //创建页面PermissionCreator
             $form->choice("selects", "范围")

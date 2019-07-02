@@ -76,7 +76,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
     {
 
         if (\Mallto\Admin\AdminUtils::isOwner()) {
-            $form->display("template_id", "公众号对应的模板id");
+            $form->displayE("template_id", "公众号对应的模板id");
 
             $form->select("public_template_id", "微信消息模板")
                 ->options(WechatUtils::getTemplateIds())
@@ -84,7 +84,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
                 ->help(("所有的模板消息均属于消费品行业下,如果公众号所在行业未设置或不是消费品行业,则无法使用模板消息(公众号所属行业在公众号后台模板消息中修改)"));
 
         } else {
-            $form->display("public_template_id", "微信消息模板")->with(function ($value) {
+            $form->displayE("public_template_id", "微信消息模板")->with(function ($value) {
                 return WechatUtils::getTemplateIds()[$value] ?? $value;
             });
         }

@@ -54,8 +54,8 @@ class FeedBackController extends AdminCommonController
 
     protected function formOption(Form $form)
     {
-        $form->display("mobile");
-        $form->display("content", "反馈内容");
+        $form->displayE("mobile");
+        $form->displayE("content", "反馈内容");
     }
 
 }

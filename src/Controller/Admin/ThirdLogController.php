@@ -62,9 +62,9 @@ class ThirdLogController extends AdminCommonController
 
     protected function formOption(Form $form)
     {
-        $form->display("code", "通讯对象");
-        $form->display("tag");
-        $form->display("content")->with(function ($value) {
+        $form->displayE("code", "通讯对象");
+        $form->displayE("tag");
+        $form->displayE("content")->with(function ($value) {
             $value=AppUtils::dateTransform($value);
 
             return json_encode(json_decode($value), JSON_PRETTY_PRINT);
