@@ -38,7 +38,9 @@ class UrlUtils
 
 
     /**
-     * 获取 host
+     * 获取 host 只返回域名
+     *
+     * 如:https://xxx.mall-to.com:8080 返回xxx.mall-to.com
      *
      * @param $url
      * @return bool
@@ -140,7 +142,7 @@ class UrlUtils
             $domains = explode(",", $callbackDomain);
         }
 
-        $requestDomain = UrlUtils::getDomain($url);
+        $requestDomain = UrlUtils::getHost($url);
         $isAuth = false;
 
         //先检查有没有*号开头的域名
