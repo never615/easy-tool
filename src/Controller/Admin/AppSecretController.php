@@ -40,7 +40,8 @@ class AppSecretController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->name();
+        $grid->name()->editable();
+        $grid->remark()->editable();
         $grid->app_id();
         $grid->app_secret();
 
@@ -56,6 +57,7 @@ class AppSecretController extends AdminCommonController
     protected function formOption(Form $form)
     {
         $form->text("name");
+        $form->textarea("remark");
         $form->text('app_id');
         $form->text('app_secret')
             ->help("﻿openssl rand -hex 16");

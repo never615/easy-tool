@@ -155,8 +155,11 @@ class Handler extends ExceptionHandler
                 //其他系统定义的异常
                 $data = [
                     "error" => $exception->getMessage(),
-                    "code"  => $exception->getCode() ?? 0,
+//                    "code"  => $exception->getCode() ?? 0,
                 ];
+                if ($code = $exception->getCode()) {
+                    $data["code"] = $code;
+                }
 
                 return response()
                     ->json($data, $exception->getStatusCode(), [],
