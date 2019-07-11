@@ -64,6 +64,8 @@ class SignUtils
     /**
      * 签名
      *
+     * @deprecated
+     *
      * @param array $arr
      * @param       $key
      * @return string
@@ -86,6 +88,8 @@ class SignUtils
 
     /**
      * 签名校验
+     *
+     *      * @deprecated
      *
      * @param array $arr
      * @param null  $key
@@ -139,9 +143,9 @@ class SignUtils
     /**
      * 签名校验
      *
-     * 签名2.0版本
+     * 签名2.0/3.0 版本
      *
-     * https://wiki.mall-to.com/web/#/19?page_id=183
+     * https://wiki.mall-to.com/web/#/27?page_id=234
      *
      * @param array $arr
      * @param null  $secret
@@ -156,11 +160,10 @@ class SignUtils
         $waiteSign = $arr['signature'];
         unset($arr['signature']);
         ksort($arr, SORT_STRING);
+
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
-        $stringToSign = urlencode($stringToSign);
-        $stringToSign = str_replace(['+', '*', '~'], ['%20', '%2A', '%7E'], $stringToSign);
-
+        $stringToSign = rawurlencode($stringToSign);
 
         $sign = base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
 
@@ -169,24 +172,74 @@ class SignUtils
 
 
     /**
-     * 签名2.0
+     * 签名2.0/3.0
      *
-     * https://wiki.mall-to.com/web/#/27?page_id=232
-     * @param $arr
-     * @param $secret
+     * https://wiki.mall-to.com/web/#/27?page_id=234
+     * @param array  $arr    待签名数据
+     * @param string $secret 签名秘钥
      * @return string
      */
     public static function signVersion2($arr, $secret)
     {
         ksort($arr, SORT_STRING);
+
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
-        $stringToSign = urlencode($stringToSign);
-        $stringToSign = str_replace(['+', '*', '~'], ['%20', '%2A', '%7E'], $stringToSign);
+        $stringToSign = rawurlencode($stringToSign);
 
         return base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
     }
 
+
+    /**
+     * 签名校验
+     *
+     * 签名4.0版本
+     *
+     * https://wiki.mall-to.com/web/#/27?page_id=232
+     *
+     * @param array $arr
+     * @param null  $secret
+     * @return string
+     */
+    public static function verifySign4(array $arr, $secret)
+    {
+        if (!isset($arr['signature'])) {
+            throw new SignException("缺少signature字段");
+        }
+
+        $waiteSign = $arr['signature'];
+        unset($arr['signature']);
+        ksort($arr, SORT_STRING);
+
+        $stringToSign = http_build_query($arr);
+        $stringToSign = urldecode($stringToSign);
+        $stringToSign = rawurlencode($stringToSign);
+
+        $sign = rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
+
+        return $sign == $waiteSign ? true : false;
+    }
+
+
+    /**
+     * 签名4.0
+     *
+     * https://wiki.mall-to.com/web/#/27?page_id=232
+     * @param array  $arr    待签名数据
+     * @param string $secret 签名秘钥
+     * @return string
+     */
+    public static function signVersion4($arr, $secret)
+    {
+        ksort($arr, SORT_STRING);
+
+        $stringToSign = http_build_query($arr);
+        $stringToSign = urldecode($stringToSign);
+        $stringToSign = rawurlencode($stringToSign);
+
+        return rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
+    }
 
 
 }

@@ -175,7 +175,7 @@ class AuthenticateSign2
                 if (Carbon::now()->subMinutes(15) < $timestamp) {
                     //和当前时间间隔比较在15分钟内
                     //检查签名
-                    if (SignUtils::verifySign2(array_merge($inputs, [
+                    if (SignUtils::verifySign4(array_merge($inputs, [
                         "timestamp"       => $timestamp,
                         "uuid"            => $uuid,
                         "app_id"          => $appId,
