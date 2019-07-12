@@ -37,10 +37,12 @@ class SmsNotifyController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->template()->name("模板名");
+        $grid->template()->name("模板名")->display(function ($value) {
+            return $value ?? "关联模板已删除";
+        });
         $grid->remark();
         $grid->status()->display(function ($value) {
-            return SmsNotify::STATUS[$value]??$value;
+            return SmsNotify::STATUS[$value] ?? $value;
         });
 
 
@@ -59,6 +61,17 @@ class SmsNotifyController extends AdminCommonController
     {
         $templates = [];
         if ($this->currentId) {
+
+            $form->displayE("template.name", "模板名")
+                ->with(function ($value) {
+                    return $value ?? "关联模板已删除";
+                });
+
+            $form->displayE("status")->with(function ($value) {
+                return SmsNotify::STATUS[$value] ?? $value;
+            });
+
+
             $form->choice("selects", "范围")
                 ->selects([
                     "member_levels" => "会员等级",
@@ -67,13 +80,12 @@ class SmsNotifyController extends AdminCommonController
                     "users"         => data_source_url("users"),
                     "member_levels" => data_source_url("member_levels"),
                 ]);
-            $form->displayE("template.name", "模板名");
-            $form->displayE("status")->with(function ($value) {
-                return SmsNotify::STATUS[$value];
-            });
-
             //$form->displayE("failure_lists","发送失败用户");
         } else {
+            $form->select("sms_template_code", "短信模板")
+                ->options(SmsTemplate::selectSourceDates())
+                ->help('<a target="_blank" href="admin/sms_templates">短信模板管理</a>')
+                ->rules("required");
             //创建页面PermissionCreator
             $form->choice("selects", "范围")
                 ->selects([
@@ -84,13 +96,6 @@ class SmsNotifyController extends AdminCommonController
                     "member_levels" => data_source_url("member_levels"),
                 ]);
 
-
-
-
-            $form->select("sms_template_code", "短信模板")
-                ->options(SmsTemplate::selectSourceDates())
-                ->help('<a target="_blank" href="admin/sms_templates">短信模板管理</a>')
-                ->rules("required");
         }
 
         $form->textarea("remark");
