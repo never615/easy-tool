@@ -40,7 +40,7 @@ class SmsNotifyController extends AdminCommonController
         $grid->template()->name("模板名");
         $grid->remark();
         $grid->status()->display(function ($value) {
-            return SmsNotify::STATUS[$value];
+            return SmsNotify::STATUS[$value]??$value;
         });
 
 
