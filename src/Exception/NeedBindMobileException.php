@@ -21,7 +21,6 @@ class NeedBindMobileException extends HttpException
         $message = "需要绑定手机",
         $statusCode = "422"
     ) {
-        $this->errCode = "4105";
-        parent::__construct($statusCode, $message);
+        parent::__construct($statusCode, $message,4105);
     }
 }
