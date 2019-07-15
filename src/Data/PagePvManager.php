@@ -5,9 +5,6 @@
 
 namespace Mallto\Tool\Data;
 
-use Encore\Admin\Facades\Admin;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Mallto\Admin\Data\Traits\BaseModel;
 
 class PagePvManager extends BaseModel
@@ -18,35 +15,8 @@ class PagePvManager extends BaseModel
         "ad_types" => "array",
     ];
 
+    public $selectName = "name";
+    public $selectId = "path";
 
-    public function scopeSelectSourceDatas()
-    {
-        if (\Mallto\Admin\AdminUtils::isOwner() && Schema::hasColumn($this->getTable(), 'subject_id')) {
-            return static::dynamicData()
-                ->select(DB::raw("name||'-'||subject_id as name,path"))->pluck("name", "path");
-        } else {
-            return static::dynamicData()->pluck("name", "path");
-        }
-    }
-
-    /**
-     * 与scopeSelectSourceDatas()相比,返回的是一个查询对象,不是查询结果
-     *
-     * @return mixed
-     */
-    public function scopeSelectSourceDatas2()
-    {
-        if (\Mallto\Admin\AdminUtils::isOwner()) {
-            if (Schema::hasColumn($this->getTable(), 'subject_id')) {
-                return static::dynamicData()
-                    ->select(DB::raw("name||'-'||subject_id as name,path"));
-            } else {
-                return static::dynamicData()
-                    ->select(DB::raw("name as name,path"));
-            }
-        } else {
-            return static::dynamicData();
-        }
-    }
 
 }
