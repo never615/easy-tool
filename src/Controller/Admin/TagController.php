@@ -44,7 +44,7 @@ class TagController extends AdminCommonController
 
     private function getSelectTagTypes()
     {
-        $tagTypes = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_TAG_TYPES, null);
+        $tagTypes = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_TAG_TYPES);
         if (!$tagTypes) {
             return Tag::TYPE;
         } else {
