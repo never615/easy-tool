@@ -127,7 +127,7 @@ class AppUtils
 
         if (strpos($url, "http") === 0) {
             //            $httpProtocol = config("app.http_protocol", 'https');
-            $secure = config("admin.secure");
+            $secure = config("admin.https");
             if ($secure) {
                 $httpProtocol = "https";
             } else {
