@@ -57,16 +57,16 @@ abstract class AbstractAPI
     /**
      * 获取请求的基础url,url后已经拼接好/
      *
-     * @param $subject
+     * @param int $subjectId
      * @return mixed
      */
-    protected function getBaseUrl($subject)
+    protected function getBaseUrl(int $subjectId)
     {
         if (empty($this->SETTING_KEY_BASE_URL)) {
             throw new NotSettingException("未设置SETTING_KEY_BASE_URL");
         }
 
-        $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subject);
+        $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subjectId);
 
         return rtrim($this->baseUrl, '/').'/';
     }
