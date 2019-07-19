@@ -31,13 +31,12 @@ class ThirdRequestCheck
     {
         $headKeys = $request->headers->keys();
 
-
         $waitCheckHeaders = [
             "uuid",
             "app-id",
             "accept",
             "timestamp",
-            "sign-version",
+//            "sign-version",
         ];
 
         if (count(array_diff($headKeys, $waitCheckHeaders)) != (count($headKeys) - count($waitCheckHeaders))) {

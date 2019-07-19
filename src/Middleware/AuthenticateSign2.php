@@ -20,11 +20,11 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\AppSecret;
-use Mallto\Tool\Exception\BadRequestHttpException;
 use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\SignUtils;
+use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
  * 管理端权限过滤
@@ -97,7 +97,6 @@ class AuthenticateSign2
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
-
                 if (Carbon::now()->subMinutes(15) < $timestamp) {
                     //和当前时间间隔比较在15分钟内
                     //检查签名
@@ -117,7 +116,7 @@ class AuthenticateSign2
                 $appId = $request->header("app_id");
 
                 if (!$timestamp | !$uuid | !$appId) {
-                    throw new BadRequestHttpException("请求头缺失");
+                    throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
                 }
 
 
@@ -150,10 +149,9 @@ class AuthenticateSign2
                 $signatureNonce = $request->header("signature_nonce");
                 $signature = $request->header("signature");
 
-
                 if (is_null($timestamp) || is_null($uuid) || is_null($appId) ||
                     is_null($signatureNonce) || is_null($signature)) {
-                    throw new BadRequestHttpException("请求头缺失字段");
+                    throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
                 }
 
 

@@ -39,10 +39,11 @@ class RequestCheck
     public function handle(Request $request, Closure $next)
     {
         $uuid = SubjectUtils::getUUID();
-        $requestType = $request->header('REQUEST_TYPE');
         if (!$uuid) {
             throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
         }
+
+        $requestType = $request->header('REQUEST_TYPE');
 
         $user = Auth::guard("api")->user();
         //如果user存在,检查user和uuid是否一致

@@ -25,6 +25,6 @@ class BadRequestHttpException extends \Symfony\Component\HttpKernel\Exception\Ba
         int $code = 0,
         array $headers = []
     ) {
-        parent::__construct(400, $message, $previous, $headers, $code);
+        parent::__construct( $message, $previous, $headers, $code);
     }
 }
