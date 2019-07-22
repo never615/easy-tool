@@ -153,7 +153,13 @@ abstract class AbstractAPI
 
         $requestId = AppUtils::create_uuid();
 
-        return Middleware::tap(function (RequestInterface $request, $options) use ($requestId) {
+        $startTime = 0;
+        $endTime = 0;
+
+        return Middleware::tap(function (RequestInterface $request, $options) use ($requestId, &$startTime) {
+            if (AppUtils::isTestEnv()) {
+                $startTime = microtime(true);
+            }
             try {
                 dispatch(new LogJob("logThirdPart", [
                     'uuid'       => SubjectUtils::getUUIDNoException() ?: 0,
@@ -172,18 +178,25 @@ abstract class AbstractAPI
             }
 
 
-        }, function (RequestInterface $request, $options, Promise $response) use ($requestId) {
-            $response->then(function (ResponseInterface $response) use ($request, $requestId) {
+        }, function (RequestInterface $request, $options, Promise $response) use ($requestId, &$startTime, $endTime) {
+            $response->then(function (ResponseInterface $response) use ($request, $requestId, &$startTime) {
+                $requestTime = 0;
+                if (AppUtils::isTestEnv()) {
+                    $endTime = microtime(true);
+                    $requestTime = round($endTime - $startTime, 3);
+                }
+
                 dispatch(new LogJob("logThirdPart", [
-                    'uuid'       => SubjectUtils::getUUIDNoException() ?: 0,
-                    "request_id" => $requestId,
-                    "tag"        => $this->slug,
-                    "action"     => '响应',
-                    "method"     => $request->getMethod(),
-                    "url"        => $request->getUri(),
-                    "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"       => $response->getBody()->getContents(),
-                    "status"     => $response->getStatusCode(),
+                    'uuid'         => SubjectUtils::getUUIDNoException() ?: 0,
+                    "request_id"   => $requestId,
+                    "tag"          => $this->slug,
+                    "action"       => '响应',
+                    "method"       => $request->getMethod(),
+                    "url"          => $request->getUri(),
+                    "headers"      => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"         => $response->getBody()->getContents(),
+                    "status"       => $response->getStatusCode(),
+                    "request_time" => $requestTime,
                 ]));
             });
 
