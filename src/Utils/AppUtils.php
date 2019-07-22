@@ -21,6 +21,16 @@ class AppUtils
 {
 
     /**
+     * 获取13位时间戳
+     *
+     * @return float
+     */
+    public static function getMicroTime()
+    {
+        return ceil(microtime(true) * 1000);
+    }
+
+    /**
      * 是否是测试环境
      * 测试环境是除了production,staging以外的所有环境
      *
