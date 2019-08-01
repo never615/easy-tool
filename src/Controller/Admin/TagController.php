@@ -68,7 +68,7 @@ class TagController extends AdminCommonController
         )->sortable();
 
         $grid->filter(function (Grid\Filter $filter) {
-            $filter->equal('type')->select(Tag::TYPE);
+            $filter->equal('type')->select($this->getSelectTagTypes());
             $filter->ilike("name");
         });
     }
