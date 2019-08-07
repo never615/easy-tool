@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Horizon\Horizon;
+//use Laravel\Horizon\Horizon;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
@@ -34,6 +34,7 @@ use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
+use Mallto\Tool\Utils\AppUtils;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -53,10 +54,10 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-        "requestCheck"    => RequestCheck::class,
-        'authSign'        => AuthenticateSign::class,
-        'authSign2'       => AuthenticateSign2::class,
-        "owner_api"       => OwnerApiLog::class,
+        "requestCheck" => RequestCheck::class,
+        'authSign' => AuthenticateSign::class,
+        'authSign2' => AuthenticateSign2::class,
+        "owner_api" => OwnerApiLog::class,
         "third_api_check" => ThirdRequestCheck::class,
     ];
 
@@ -75,16 +76,16 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__.'/../../migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
 
-        $this->loadViewsFrom(__DIR__.'/../../resources/views', 'tool');
+        $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'tool');
 
-        $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
-        $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
 
         if ($this->app->runningInConsole()) {
             //发布view覆盖error页面
-            $this->publishes([__DIR__.'/../../resources/errors_view' => resource_path('views/errors')],
+            $this->publishes([__DIR__ . '/../../resources/errors_view' => resource_path('views/errors')],
                 'error-views');
         }
 
@@ -145,16 +146,19 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
-        //吹horizon队列管理看板的进入权限
-        Horizon::auth(function ($request) {
+        if (\config("app.env") != 'local') {    
+            //horizon队列管理看板的进入权限
+            Horizon::auth(function ($request) {
 
-            $user = Admin::user();
-            if ($user && $user->isOwner()) {
-                return true;
-            } else {
-                return false;
-            }
-        });
+                $user = Admin::user();
+                if ($user && $user->isOwner()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+        }
+
 
         //任务循环前
         Queue::looping(function () {
@@ -169,9 +173,9 @@ class ToolServiceProvider extends ServiceProvider
             $logger = app(Logger::class);
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
-                "status"          => "before",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
+                "status" => "before",
+                "queue" => $event->job->getQueue(),
+                "name" => $event->job->resolveName(),
             ]);
         });
 
@@ -179,9 +183,9 @@ class ToolServiceProvider extends ServiceProvider
             $logger = app(Logger::class);
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
-                "status"          => "after",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
+                "status" => "after",
+                "queue" => $event->job->getQueue(),
+                "name" => $event->job->resolveName(),
             ]);
         });
 
@@ -192,10 +196,10 @@ class ToolServiceProvider extends ServiceProvider
             $logger = app(Logger::class);
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
-                "status"          => "failure",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
-                "payload"         => $event->job->getRawBody(),
+                "status" => "failure",
+                "queue" => $event->job->getQueue(),
+                "name" => $event->job->resolveName(),
+                "payload" => $event->job->getRawBody(),
             ]);
 
         });
@@ -208,10 +212,10 @@ class ToolServiceProvider extends ServiceProvider
             $logger = app(Logger::class);
             $logger->logQueue([
                 "connection_name" => $event->connectionName,
-                "status"          => "exception",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
-                "payload"         => $event->job->getRawBody(),
+                "status" => "exception",
+                "queue" => $event->job->getQueue(),
+                "name" => $event->job->resolveName(),
+                "payload" => $event->job->getRawBody(),
             ]);
 
         });
@@ -262,7 +266,7 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected function registerMail()
     {
-        $this->mergeConfigFrom(__DIR__.'/../../config/services.php'
+        $this->mergeConfigFrom(__DIR__ . '/../../config/services.php'
             , 'services'
         );
         $this->app->resolving('swift.transport', function (TransportManager $tm) {
