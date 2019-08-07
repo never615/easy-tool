@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
-//use Laravel\Horizon\Horizon;
+use Laravel\Horizon\Horizon;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
@@ -146,7 +146,7 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
-        if (\config("app.env") != 'local') {    
+        if (\config("app.env") != 'local') {
             //horizon队列管理看板的进入权限
             Horizon::auth(function ($request) {
 
