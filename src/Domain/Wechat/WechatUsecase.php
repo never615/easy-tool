@@ -27,6 +27,8 @@ class  WechatUsecase extends AbstractAPI
     /**
      * 发送模板消息
      *
+     * @link https://www.easywechat.com/docs/4.1/official-account/template_message#heading-h2-5
+     *
      * @param      $content
      * @param      $subject
      * @param bool $isAdminNotify
