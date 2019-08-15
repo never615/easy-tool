@@ -24,14 +24,6 @@ class PageMenusSeeder extends Seeder
     {
         $order = Menu::max('order');
 
-        $pageManagerMenu = $this->updateOrCreate(
-            "page_manager", 0, $order++, "页面配置", "fa-pagelines");
 
-
-        $this->updateOrCreate(
-            "page_banners.index", $pageManagerMenu->id, $order++, "轮播图", "fa-image");
-
-        $this->updateOrCreate(
-            "ads.index", $pageManagerMenu->id, $order++, "页面广告", "fa-headphones");
     }
 }

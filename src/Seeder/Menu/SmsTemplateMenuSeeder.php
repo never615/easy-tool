@@ -27,7 +27,5 @@ class SmsTemplateMenuSeeder extends Seeder
             $parentId=$menu->id;
         }
 
-        $this->updateOrCreate(
-                    'sms_templates.index', $parentId, $order++, '短信模板管理', 'fa-paper-plane-o');
     }
 }
