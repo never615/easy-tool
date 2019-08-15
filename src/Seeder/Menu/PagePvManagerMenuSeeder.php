@@ -33,7 +33,5 @@ class PagePvManagerMenuSeeder extends Seeder
 
         $this->updateOrCreate(
             "page_pv_manager.index", $parentId, $order++, "微信页面管理", "fa-line-chart");
-
-        Menu::where("uri", "system_manager")->first();
     }
 }
