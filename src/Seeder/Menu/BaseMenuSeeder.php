@@ -28,7 +28,7 @@ class BaseMenuSeeder extends Seeder
 
 
         $this->updateOrCreate(
-            "wechat_template_ids.index", $adminManagerMenu->id, $order++, "模板消息管理", "fa-wechat");
+            "wechat_template_ids.index", $adminManagerMenu->id, 6, "微信模板消息管理", "fa-wechat");
 
         $order = 3;
 

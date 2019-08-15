@@ -20,15 +20,26 @@ class SmsNotifyMenuSeeder extends Seeder
     {
 
         $order = Menu::max('order');
-        $parentId = 0;
+        $parentId = 1;
 
         $menu = Menu::where("uri", "user_manager")->first();
 
         if ($menu) {
             $parentId = $menu->id;
         }
+        $parent = $this->updateOrCreate(
+            "sms_administ", $parentId, 6, "短信管理", "fa-500px");
+        $parentId = $parent->id;
+
+        $this->updateOrCreate(
+            'sms_codes.index', $parentId, $order++, '短信验证码查询', 'fa-qrcode');
 
         $this->updateOrCreate(
             "sms_notifies.index", $parentId, $order++, "短信群发", "fa-500px");
+
+        $this->updateOrCreate(
+            'sms_templates.index', $parentId, $order++,
+            '短信模板管理', 'fa-paper-plane-o');
+
     }
 }

@@ -26,7 +26,5 @@ class SmsCodeMenuSeeder extends Seeder
             $parentId=$menu->id;
         }
 
-        $this->updateOrCreate(
-                    'sms_codes.index', $parentId, $order++, '短信验证码', 'fa-qrcode');
     }
 }
