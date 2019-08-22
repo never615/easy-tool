@@ -71,20 +71,16 @@ class UrlUtils
     public static function getDomain($url)
     {
         $urlArr1 = explode("//", $url);
-        $scheme="";
+        $scheme = "";
         if (count($urlArr1) > 1) {
             $urlArr = explode("/", $urlArr1[1]);
-            $scheme=$urlArr1[0]."//";
+            $scheme = $urlArr1[0]."//";
         } else {
             $urlArr = explode("/", $url);
         }
 
         return isset($urlArr[0]) ? $scheme.$urlArr[0] : false;
     }
-
-
-
-
 
 
     /**
@@ -164,5 +160,29 @@ class UrlUtils
             throw new PermissionDeniedException("回调域名不可信:".$requestDomain);
         }
     }
+
+    /**
+     * url拼接参数
+     *
+     * @param string $url
+     * @param array  $data
+     * @return mixed|string
+     */
+    public static function urlWithQuery($url, $data)
+    {
+        $ancho = "";
+        if (str_contains($url, "#")) {
+            $ancho = mb_substr($url, strrpos($url, "#"));
+            $url = str_replace($ancho, "", $url);
+        }
+        if (str_contains($url, "?")) {
+            $url = $url."&".http_build_query($data).$ancho;
+        } else {
+            $url = $url.'?'.http_build_query($data).$ancho;
+        }
+
+        return $url;
+    }
+
 
 }

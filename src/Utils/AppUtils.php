@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Utils;
 
 use Illuminate\Contracts\Encryption\DecryptException;
+use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
 use RuntimeException;
 
@@ -420,6 +421,26 @@ class AppUtils
         }
 
         return $dayArr;
+    }
+
+
+    /**
+     * 获取秘钥信息
+     *
+     * @return AppSecret
+     */
+    public static function getAppSecret()
+    {
+        $appId = request()->header("app_id");
+
+        $appSecret = AppSecret::where("app_id",
+            $appId)->first();
+
+        if (!$appSecret) {
+            throw new ResourceException("无效的app id:".$appId);
+        }
+
+        return $appSecret;
     }
 
 

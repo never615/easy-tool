@@ -27,9 +27,10 @@ class SmsNotifyMenuSeeder extends Seeder
         if ($menu) {
             $parentId = $menu->id;
         }
-        $parent = $this->updateOrCreate(
+        $smsManagerMenu = $this->updateOrCreate(
             "sms_administ", $parentId, 6, "短信管理", "fa-500px");
-        $parentId = $parent->id;
+
+        $parentId = $smsManagerMenu->id;
 
         $this->updateOrCreate(
             'sms_codes.index', $parentId, $order++, '短信验证码查询', 'fa-qrcode');
