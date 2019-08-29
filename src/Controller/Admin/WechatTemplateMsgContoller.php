@@ -98,8 +98,8 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
         $form->saving(function ($form) {
             //创建公众号对应模板id
-            if ($form->public_template_id &&
-                $form->public_template_id != $form->model()->public_template_id) {
+            if (($form->public_template_id &&
+                    $form->public_template_id != $form->model()->public_template_id) || (AdminUtils::isOwner())) {
 
                 $subject = Subject::find($form->subject_id ?? $form->model()->subject_id);
 
