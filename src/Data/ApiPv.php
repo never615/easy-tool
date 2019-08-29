@@ -5,9 +5,6 @@
 
 namespace Mallto\Tool\Data;
 
-use Encore\Admin\Facades\Admin;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Mallto\Admin\Data\Traits\BaseModel;
 
 /**
@@ -25,7 +22,10 @@ class ApiPv extends BaseModel
     public $selectId = "path";
 
 
-
+    public function apiPvManager()
+    {
+        return $this->belongsTo(ApiPvManager::class, "path", "path");
+    }
 
 
 }
