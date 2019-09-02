@@ -181,7 +181,7 @@ class AuthenticateSign2
                         "signature"       => $signature,
                     ]), $secret)) {
                         //pass
-                        Cache::put($nonce, 1, 15);
+                        Cache::put($nonce, 1, 15*60);
 
                         return $next($request);
                     } else {

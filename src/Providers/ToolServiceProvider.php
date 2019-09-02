@@ -146,7 +146,7 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
-        if (\config("app.env") != 'local') {
+        if (!$this->app->isLocal()) {
             //horizon队列管理看板的进入权限
             Horizon::auth(function ($request) {
 
