@@ -34,7 +34,6 @@ use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
-use Mallto\Tool\Utils\AppUtils;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -160,8 +159,6 @@ class ToolServiceProvider extends ServiceProvider
         }
 
 
-
-
         //任务循环前
         Queue::looping(function () {
             while (DB::transactionLevel() > 0) {
@@ -234,10 +231,6 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booting(function () {
         });
 
-        if ($this->app->isLocal()) {
-            $this->app->register(TelescopeServiceProvider::class);
-        }
-
         $this->commands($this->commands);
 
         $this->registerRouteMiddleware();
@@ -308,10 +301,6 @@ class ToolServiceProvider extends ServiceProvider
                     ->after(function () {
                         dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "finish"]));
                     });
-            }
-
-            if ($this->app->isLocal()) {
-                $schedule->command('telescope:prune')->daily();
             }
         });
     }
