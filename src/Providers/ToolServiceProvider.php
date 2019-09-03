@@ -234,7 +234,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booting(function () {
         });
 
-        if (AppUtils::isTestEnv()) {
+        if ($this->app->isLocal()) {
             $this->app->register(TelescopeServiceProvider::class);
         }
 
@@ -310,7 +310,7 @@ class ToolServiceProvider extends ServiceProvider
                     });
             }
 
-            if (AppUtils::isTestEnv()) {
+            if ($this->app->isLocal()) {
                 $schedule->command('telescope:prune')->daily();
             }
         });
