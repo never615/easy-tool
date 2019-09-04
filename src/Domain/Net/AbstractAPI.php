@@ -10,16 +10,13 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Mallto\Admin\SubjectUtils;
-use Mallto\Tool\Data\WechatTemplateMsg;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\NotSettingException;
-use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Mallto\Tool\Domain\Wechat\WechatUsecase;
 
 /**
  * Class AbstractAPI.
