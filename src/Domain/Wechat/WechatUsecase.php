@@ -76,6 +76,9 @@ class  WechatUsecase extends AbstractAPI
                     $sign = SignUtils::sign($content, config('other.mallto_app_secret'));
                     $content['sign'] = $sign;
                     $this->templateMsg($content,$subject);
+                } else {
+                    \Log::error("微信模板消息发送失败 ResourceException");
+                    \Log::warning($exception);
                 }
             }
 
@@ -179,7 +182,7 @@ class  WechatUsecase extends AbstractAPI
         }
     }
 
-    public function  wechatTemplateMsg($public_template_id,$data,$openId,$subject,$callback){
+    public function  wechatTemplateMsg($public_template_id,$data,$openId,$subject,$callback=null){
 
         $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
             ->where("subject_id", $subject->id)
@@ -190,7 +193,9 @@ class  WechatUsecase extends AbstractAPI
 
         if ($wechatTemplateMsg) {
             $templateId = $wechatTemplateMsg->template_id;
-            $data = array_merge($data,['remark'=>$remark]);
+            if(isset($remark)) {
+                $data = array_merge($data, ['remark' => $remark]);
+            }
             $requestData = [
                 'openid'      => $openId,
                 'template_id' => $templateId,
