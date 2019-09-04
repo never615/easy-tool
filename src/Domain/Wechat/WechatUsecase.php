@@ -6,8 +6,10 @@
 namespace Mallto\Tool\Domain\Wechat;
 
 
+use Closure;
 use GuzzleHttp\Exception\ClientException;
 use Mallto\Mall\SubjectConfigConstants;
+use Mallto\Tool\Data\WechatTemplateMsg;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\SignUtils;
@@ -64,8 +66,17 @@ class  WechatUsecase extends AbstractAPI
             return true;
         } catch (ResourceException $exception) {
             if (!starts_with($exception->getMessage(), "require subscribe")) {
-                \Log::error("微信模板消息发送失败 ResourceException");
-                \Log::warning($exception);
+                if(strstr($exception->getMessage(),'invalid template_id hint')){
+                    $wechatTemplateMsg = WechatTemplateMsg::where('template_id', $content['template_id'])->first();
+                    $new_templateId = $this->addTemplateId($wechatTemplateMsg->public_template_id, $subject);
+                    $wechatTemplateMsg->template_id = $new_templateId;
+                    $wechatTemplateMsg->save();
+                    $content['template_id'] = $new_templateId;
+                    unset($content['sign']);
+                    $sign = SignUtils::sign($content, config('other.mallto_app_secret'));
+                    $content['sign'] = $sign;
+                    $this->templateMsg($content,$subject);
+                }
             }
 
             return false;
@@ -165,6 +176,47 @@ class  WechatUsecase extends AbstractAPI
     ) {
         if (isset($contents['code']) && $contents['code'] != 0) {
             throw new ResourceException($contents['msg']);
+        }
+    }
+
+    public function  wechatTemplateMsg($public_template_id,$data,$openId,$subject,$callback){
+
+        $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
+            ->where("subject_id", $subject->id)
+            ->first();
+        if($callback instanceof Closure){
+            $remark = call_user_func($callback,$wechatTemplateMsg);
+        }
+
+        if ($wechatTemplateMsg) {
+            $templateId = $wechatTemplateMsg->template_id;
+            $data = array_merge($data,['remark'=>$remark]);
+            $requestData = [
+                'openid'      => $openId,
+                'template_id' => $templateId,
+                'url'         => $wechatTemplateMsg->template_link ?? null,
+                'data'        => json_encode($data),
+            ];
+
+            $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
+
+            return $this->templateMsg(
+                array_merge($requestData, [
+                    "sign" => $sign,
+                ])
+                , $subject);
+
+        } else {
+            $templateId = $this->addTemplateId($public_template_id, $subject);
+            $wechatTemplateMsg = new WechatTemplateMsg();
+            $wechatTemplateMsg->template_id = $templateId;
+            $wechatTemplateMsg->subject_id = $subject->id;
+            $wechatTemplateMsg->public_template_id = $public_template_id;
+            $wechatTemplateMsg->save();
+            $this->wechatTemplateMsg($public_template_id,$data,$openId,$subject,$callback);
+            if (!$templateId) {
+                throw new ResourceException("消息模板设置失败");
+            }
         }
     }
 }
