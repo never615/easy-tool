@@ -44,7 +44,6 @@ class OwnerApiLog
 
         $requestId = AppUtils::create_uuid();
 
-
         $log = [
             'action'     => "请求",
             'method'     => $request->method(),
@@ -66,16 +65,17 @@ class OwnerApiLog
             $input = json_encode($response->getContent());
         } else {
             if (is_string($response->getContent())) {
-                try {
-                    $input = json_decode($response->getContent());
-                    if (is_null($input)) {
-                        $input = "非json数据";
-                    } else {
-                        $input = $response->getContent();
-                    }
-                } catch (\Exception $exception) {
-                    $input = "异常数据";
-                }
+                $input = $response->getContent();
+//                try {
+//                    $input = json_decode($response->getContent());
+//                    if (is_null($input)) {
+//                        $input = "非json数据";
+//                    } else {
+//                        $input = $response->getContent();
+//                    }
+//                } catch (\Exception $exception) {
+//                    $input = "异常数据";
+//                }
             } else {
                 $input = "其他数据";
             }
