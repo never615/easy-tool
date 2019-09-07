@@ -56,7 +56,7 @@ class AppSecretUsecase extends AbstractAPI
 
         $signData = array_merge($signHeaders, $requestData);
 
-        $sign = SignUtils::signVersion2($signData, config("other.mallto_app_secret"));
+        $sign = SignUtils::signVersion4($signData, config("other.mallto_app_secret"));
 
         $contents = null;
         try {
