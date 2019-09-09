@@ -45,6 +45,7 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\InstallCommand',
         'Mallto\Tool\Commands\UpdateCommand',
         'Mallto\Tool\Commands\UpdateAppSecretCommand',
+        'Mallto\Tool\Commands\ResetTableIdSeqCommand',
     ];
 
     /**
