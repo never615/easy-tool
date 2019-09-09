@@ -15,11 +15,11 @@ use Mallto\Tool\Utils\SignUtils;
 use Mallto\Tool\Utils\TimeUtils;
 
 /**
- * 
+ *
  * 请求微信开放平台,更新当前应用的秘钥
  *
  * 秘钥用做请求定位接口,如果没有按期更新秘钥,则会无权限请求相应的接口
- * 
+ *
  * Created by PhpStorm.
  * User: never615 <never615.com>
  * Date: 2019/3/14
@@ -40,23 +40,29 @@ class AppSecretUsecase extends AbstractAPI
         }
 
 
-        $nonceStr = AppUtils::getRandomString();
-        $now = TimeUtils::getNowTime();
-        $signHeaders = [
-            'uuid'            => 0,
-            'app_id'          => config("other.mallto_app_id"),
-            'timestamp'       => $now,
-            'signature_nonce' => $nonceStr,
-        ];
+//        $nonceStr = AppUtils::getRandomString();
+//        $now = TimeUtils::getNowTime();
+//
+//        $signHeaders = [
+//            'uuid'            => 0,
+//            'app_id'          => config("other.mallto_app_id"),
+//            'timestamp'       => $now,
+//            'signature_nonce' => $nonceStr,
+//        ];
 
 
         $requestData = [
 
         ];
 
-        $signData = array_merge($signHeaders, $requestData);
+//        $requestData = array_merge($signHeaders, $requestData);
 
-        $sign = SignUtils::signVersion4($signData, config("other.mallto_app_secret"));
+        $sign = SignUtils::sign($requestData, config("other.mallto_app_secret"));
+
+
+        $requestData = array_merge($requestData, [
+            "sign" => $sign,
+        ]);
 
         $contents = null;
         try {
@@ -65,13 +71,13 @@ class AppSecretUsecase extends AbstractAPI
                 $requestData,
                 [
                     'headers' => [
-                        'uuid'              => 0,
-                        'app-id'            => config("other.mallto_app_id"),
-                        'Timestamp'         => $now,
-                        'Accept'            => 'application/json',
-                        'Signature-Nonce'   => $nonceStr,
-                        'Signature-Version' => 4,
-                        'Signature'         => $sign,
+                        'uuid'      => 0,
+                        'app-id'    => config("other.mallto_app_id"),
+//                        'Timestamp' => $now,
+                        'Accept'    => 'application/json',
+//                        'Signature-Nonce'   => $nonceStr,
+//                        'Signature-Version' => 4,
+//                        'Signature'         => $sign,
                     ],
                 ],
             ]);
