@@ -195,9 +195,14 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof TokenMismatchException) {
                 return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
             } elseif ($exception instanceof QueryException) {
-                \Log::error("QueryException");
-                \Log::warning($exception);
-                throw new InternalHttpException("无效的查询");
+                if (str_contains($exception->getMessage(), "Invalid text representation:")) {
+                    $requestId = $exception->getBindings()[0] ?? "";
+                    throw new ResourceException("查询参数错误,无效的id:".$requestId);
+                } else {
+                    \Log::error("QueryException");
+                    \Log::warning($exception);
+                    throw new InternalHttpException("无效的查询");
+                }
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 \Log::error("PDOException");
