@@ -66,16 +66,17 @@ class OwnerApiLog
         } else {
             if (is_string($response->getContent())) {
                 $input = $response->getContent();
-//                try {
-//                    $input = json_decode($response->getContent());
-//                    if (is_null($input)) {
-//                        $input = "非json数据";
-//                    } else {
-//                        $input = $response->getContent();
-//                    }
-//                } catch (\Exception $exception) {
-//                    $input = "异常数据";
-//                }
+                try {
+                    //也是为了防止图片响应异常
+                    $input = json_decode($response->getContent());
+                    if (is_null($input)) {
+                        $input = "非json数据";
+                    } else {
+                        $input = $response->getContent();
+                    }
+                } catch (\Exception $exception) {
+                    $input = "异常数据";
+                }
             } else {
                 $input = "其他数据";
             }
@@ -92,7 +93,6 @@ class OwnerApiLog
             "uuid"       => $uuid,
             "request_id" => $requestId,
         ];
-
 
         dispatch(new LogJob("logOwnerApi", $log));
 
