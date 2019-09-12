@@ -174,7 +174,7 @@ class Handler extends ExceptionHandler
 //                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404', [],
 //                    JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof OAuthServerException) {
-                throw new HttpException($exception->getCode(), $exception->getMessage());
+                throw new HttpException($exception->getHttpStatusCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
                 return response()->json(["error" => $exception->getMessage()], $exception->getCode(), [],
                     JSON_UNESCAPED_UNICODE);
