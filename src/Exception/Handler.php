@@ -57,7 +57,7 @@ class Handler extends ExceptionHandler
      *
      * This is a great spot to send exceptions to Sentry, Bugsnag, etc.
      *
-     * @param  \Exception $exception
+     * @param \Exception $exception
      * @return void
      * @throws Exception
      */
@@ -69,8 +69,8 @@ class Handler extends ExceptionHandler
     /**
      * Render an exception into an HTTP response.
      *
-     * @param  \Illuminate\Http\Request $request
-     * @param  \Exception               $exception
+     * @param \Illuminate\Http\Request $request
+     * @param \Exception               $exception
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
      */
     public function render($request, Exception $exception)
@@ -78,7 +78,11 @@ class Handler extends ExceptionHandler
         DB::rollBack();
         if ($request->expectsJson()) {
             if (Admin::user()) {
-                return $this->interJsonHandler($exception, $request, true);
+                return response()->json([
+                    'status'  => false,
+                    'message' => $exception->getMessage(),
+                ]);
+//                return $this->interJsonHandler($exception, $request, true);
             } else {
                 return $this->interJsonHandler($exception, $request);
             }
@@ -104,8 +108,8 @@ class Handler extends ExceptionHandler
     /**
      * Convert an authentication exception into an unauthenticated response.
      *
-     * @param  \Illuminate\Http\Request $request
-     * @param AuthenticationException   $exception
+     * @param \Illuminate\Http\Request $request
+     * @param AuthenticationException  $exception
      * @return \Illuminate\Http\Response
      */
     protected function unauthenticated($request, AuthenticationException $exception)
@@ -221,8 +225,8 @@ class Handler extends ExceptionHandler
     /**
      * Convert a validation exception into a JSON response.
      *
-     * @param  \Illuminate\Http\Request                   $request
-     * @param  \Illuminate\Validation\ValidationException $exception
+     * @param \Illuminate\Http\Request                   $request
+     * @param \Illuminate\Validation\ValidationException $exception
      * @return \Illuminate\Http\JsonResponse
      */
     protected function invalidJson($request, ValidationException $exception)
