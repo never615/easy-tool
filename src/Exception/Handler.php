@@ -77,19 +77,13 @@ class Handler extends ExceptionHandler
     {
         DB::rollBack();
         if ($request->expectsJson()) {
-            if ($exception instanceof TokenMismatchException) {
-                return response()->json([
-                    'status'  => false,
-                    'message' => "登录失效,请重新登录",
-                ]);
-            }
 
             if (Admin::user()) {
                 return response()->json([
                     'status'  => false,
                     'message' => $exception->getMessage(),
+                    'error'   => $exception->getMessage(),
                 ]);
-//                return $this->interJsonHandler($exception, $request, true);
             } else {
                 return $this->interJsonHandler($exception, $request);
             }
@@ -113,31 +107,6 @@ class Handler extends ExceptionHandler
 
 
     /**
-     * Convert an authentication exception into an unauthenticated response.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param AuthenticationException  $exception
-     * @return \Illuminate\Http\Response
-     */
-    protected function unauthenticated($request, AuthenticationException $exception)
-    {
-        if ($request->expectsJson()) {
-            return response()
-                ->json(['error' => trans("errors.unauthenticated").','.$exception->getMessage()],
-                    401, [], JSON_UNESCAPED_UNICODE);
-        }
-
-        if (Admin::user()) {
-            return redirect()->guest(config('app.url').config("admin.admin_login"));
-        } else {
-            $e = new \Mallto\Tool\Exception\AuthorizeFailedException();
-
-            return $this->toIlluminateResponse($this->renderHttpException($e), $e);
-        }
-    }
-
-
-    /**
      * 返回的是json的错误响应
      *
      * @param      $exception
@@ -154,12 +123,17 @@ class Handler extends ExceptionHandler
 
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
-                return response()->json(["error" => "系统维护中"], $exception->getStatusCode(), [],
+                return response()->json(
+                    $this->responseData([
+                        "error" => "系统维护中",
+                    ], $exception),
+                    $exception->getStatusCode(), [],
                     JSON_UNESCAPED_UNICODE);
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json($exception->getResponseContent(),
+                return response()->json(
+                    $exception->getResponseContent(),
                     $exception->getStatusCode(), [],
                     JSON_UNESCAPED_UNICODE);
             } else {
@@ -173,24 +147,32 @@ class Handler extends ExceptionHandler
                 }
 
                 return response()
-                    ->json($data, $exception->getStatusCode(), [],
-                        JSON_UNESCAPED_UNICODE);
+                    ->json($this->responseData($data, $exception->getMessage()),
+                        $exception->getStatusCode(), [], JSON_UNESCAPED_UNICODE);
             }
         } else {
             if ($exception instanceof ModelNotFoundException) {
 //                $arr = explode('\\', $exception->getModel());
 
-                return response()->json(["error" => trans("errors.not_found")], '404', [],
+                return response()->json(
+                    $this->responseData([
+                        "error" => trans("errors.not_found"),
+                    ], $exception), '404', [],
                     JSON_UNESCAPED_UNICODE);
 //                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404', [],
 //                    JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getHttpStatusCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
-                return response()->json(["error" => $exception->getMessage()], $exception->getCode(), [],
+                return response()->json(
+                    $this->responseData([
+                        "error" => $exception->getMessage(),
+                    ], $exception), $exception->getCode(), [],
                     JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof ServerException) {
-                return response()->json(["error" => $exception->getMessage()], $exception->getCode(), [],
+                return response()->json($this->responseData([
+                    "error" => $exception->getMessage(),
+                ], $exception), $exception->getCode(), [],
                     JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof AuthenticationException) {
                 return $this->unauthenticated($request, $exception);
@@ -230,6 +212,34 @@ class Handler extends ExceptionHandler
 
 
     /**
+     * Convert an authentication exception into an unauthenticated response.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param AuthenticationException  $exception
+     * @return \Illuminate\Http\Response
+     */
+    protected function unauthenticated($request, AuthenticationException $exception)
+    {
+        if ($request->expectsJson()) {
+            return response()
+                ->json(
+                    $this->responseData([
+//                        'error' => trans("errors.unauthenticated").','.$exception->getMessage(),
+                        'error' => "登录失效,请求重新登录",
+                    ], $exception),
+                    401, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (Admin::user()) {
+            return redirect()->guest(config('app.url').config("admin.admin_login"));
+        } else {
+            $e = new \Mallto\Tool\Exception\AuthorizeFailedException();
+
+            return $this->toIlluminateResponse($this->renderHttpException($e), $e);
+        }
+    }
+
+    /**
      * Convert a validation exception into a JSON response.
      *
      * @param \Illuminate\Http\Request                   $request
@@ -238,7 +248,6 @@ class Handler extends ExceptionHandler
      */
     protected function invalidJson($request, ValidationException $exception)
     {
-
         $protocolVersion = $request->header("protocol_version", 1);
         if ($protocolVersion == 2) {
             return response()->json(
@@ -248,11 +257,21 @@ class Handler extends ExceptionHandler
                 ], $exception->status, [], JSON_UNESCAPED_UNICODE);
         } else {
 //            return response()->json($exception->errors(), $exception->status, [], JSON_UNESCAPED_UNICODE);
-            return response()->json([
-                "error" => array_first($exception->errors())[0] ?? $exception->getMessage(),
-            ], $exception->status, [], JSON_UNESCAPED_UNICODE);
+            return response()->json(
+                $this->responseData([
+                    "error" => array_first($exception->errors())[0] ?? $exception->getMessage(),
+                ], $exception),
+                $exception->status, [], JSON_UNESCAPED_UNICODE);
 
         }
+    }
+
+
+    protected function responseData($data, $exception)
+    {
+        return array_merge($data, [
+            "message" => $data["error"] ?? $exception->getMessage(),
+        ]);
     }
 
 
