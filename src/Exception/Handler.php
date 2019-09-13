@@ -77,6 +77,13 @@ class Handler extends ExceptionHandler
     {
         DB::rollBack();
         if ($request->expectsJson()) {
+            if ($exception instanceof TokenMismatchException) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => "登录失效,请重新登录",
+                ]);
+            }
+
             if (Admin::user()) {
                 return response()->json([
                     'status'  => false,
