@@ -77,7 +77,7 @@ class PagePvManagerController extends AdminCommonController
 
         $form->switch("switch", "统计页是否显示");
         $form->textarea("remark");
-        $form->text("weight");
+        $form->text("weight")->default(0);
 
         $form->saving(function ($form) {
 //            $this->slugSavingCheck($form, $this->getModel());
