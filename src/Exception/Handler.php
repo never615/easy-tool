@@ -184,9 +184,19 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof MissingScopeException) {
 //                \Log::info($exception);
 //                \Log::info($exception->scopes());
-                return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
+                return response()
+                    ->json(
+                        $this->responseData([
+                            'error' => $exception->getMessage(),
+                        ], $exception),
+                        401, [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof TokenMismatchException) {
-                return $this->unauthenticated($request, new AuthenticationException($exception->getMessage()));
+                return response()
+                    ->json(
+                        $this->responseData([
+                            'error' => $exception->getMessage(),
+                        ], $exception),
+                        401, [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof QueryException) {
                 if (str_contains($exception->getMessage(), "Invalid text representation:")) {
                     $requestId = $exception->getBindings()[0] ?? "";
@@ -225,7 +235,7 @@ class Handler extends ExceptionHandler
                 ->json(
                     $this->responseData([
 //                        'error' => trans("errors.unauthenticated").','.$exception->getMessage(),
-                        'error' => "登录失效,请求重新登录",
+                        'error' => "登录失效,请重新登录",
                     ], $exception),
                     401, [], JSON_UNESCAPED_UNICODE);
         }
