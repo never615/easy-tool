@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
@@ -48,31 +49,12 @@ class AppUtils
 
 
     /**
-     * 解析openid
-     *
-     * @param $openid
-     * @return mixed|string
-     */
-    public static function decryptOpenid($openid)
-    {
-        try {
-            $openid = urldecode($openid);
-            $openid = decrypt($openid);
-
-            return $openid;
-        } catch (DecryptException $e) {
-            \Log::error("openid解密失败:".$openid);
-            throw new ResourceException("openid无效");
-        }
-    }
-
-    /**
      * 获取前端项目使用的url
      * 结尾不包含/
      *
+     * @return string
      * @deprecated
      *
-     * @return string
      */
     public static function h5Url()
     {
@@ -129,9 +111,9 @@ class AppUtils
     /**
      * 检查链接中的http协议,根据配置中的协议动态替换
      *
-     * @deprecated
      * @param $url
      * @return string
+     * @deprecated
      */
     public static function checkHttpProtocol($url)
     {
@@ -293,10 +275,10 @@ class AppUtils
      *
      * 比如:http://mall.mall-to.com/test/test1/test2  number=0,获取test
      *
-     * @deprecated
      * @param $request
      * @param $number ,获取路径的第几段信息
      * @return mixed
+     * @deprecated
      */
     public static function getPathKey($request, $number = 0)
     {
@@ -310,10 +292,10 @@ class AppUtils
     /**
      * 获取指定的header
      *
-     * @deprecated
      * @param      $headerKey
      * @param bool $low
      * @return mixed|null
+     * @deprecated
      */
     public static function getHeader($headerKey, $low = false)
     {
@@ -441,6 +423,55 @@ class AppUtils
         }
 
         return $appSecret;
+    }
+
+
+    /**
+     * 解析openid
+     *
+     * @param $openid
+     * @return mixed|string
+     */
+    public static function decryptOpenid($openid)
+    {
+        try {
+            $openid = urldecode($openid);
+            $openid = decrypt($openid);
+
+            return $openid;
+        } catch (DecryptException $e) {
+            \Log::error("openid解密失败:".$openid);
+            throw new ResourceException("openid无效");
+        }
+    }
+
+
+    /**
+     * 获取openid从原始数据
+     *
+     * @param $orginalOpenid
+     * @return mixed
+     * @throws AuthenticationException
+     */
+    public static function getOpenidFromOriginalOpenid($orginalOpenid)
+    {
+        try {
+            $openid = decrypt($orginalOpenid);
+        } catch (DecryptException $decryptException) {
+            //解析失败尝试url解码在进行解析
+            $orginalOpenid = urldecode($orginalOpenid);
+            try {
+                $openid = decrypt($orginalOpenid);
+            } catch (DecryptException $decryptException) {
+                \Log::warning("解析openid失败1");
+                \Log::warning($orginalOpenid);
+                throw new AuthenticationException("授权失败,openid解析失败");
+            }
+        }
+
+        $openids = explode("|||", $openid);
+
+        return $openids[0];
     }
 
 

@@ -44,6 +44,10 @@ Route::group($attributes, function ($router) {
 
                     //第三方接口请求日志
                     Route::resource("third_logs", "ThirdLogController");
+
+                    //自己日志上报接口的日志
+                    Route::resource("owner_logs", 'LogController');
+
                     //接口管理
                     Route::resource('api_pv_managers', 'ApiPvManagerController');
                     //前端页面管理
@@ -75,7 +79,7 @@ Route::group($attributes, function ($router) {
                     Route::resource('configs', 'ConfigController');
                     Route::resource('sms_notifies', 'SmsNotifyController');
                     Route::resource('sms_templates', 'SmsTemplateController');
-Route::resource('sms_codes', 'SmsCodeController');
+                    Route::resource('sms_codes', 'SmsCodeController');
 //DummyRoutePlaceholder
 
                 });

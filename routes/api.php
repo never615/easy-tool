@@ -25,6 +25,9 @@ $attributes = [
 Route::group($attributes, function ($router) {
 
 
+
+    Route::post("log",'LogController@store');
+
     Route::group(['middleware' => ['owner_api']], function () {
         Route::get("qr_image", 'QrController@index');
     });
@@ -33,8 +36,6 @@ Route::group($attributes, function ($router) {
      * 需要经过验证
      */
     Route::group(['middleware' => ['requestCheck', 'owner_api']], function () {
-
-
         //意见反馈
         Route::post("feedback", "FeedbackController@store");
 
