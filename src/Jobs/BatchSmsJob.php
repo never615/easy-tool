@@ -159,6 +159,7 @@ class BatchSmsJob implements ShouldQueue
         \Log::warning($e);
         $smsNotify = SmsNotify::find($this->id);
         $smsNotify->status = "failure";
+        $smsNotify->result = $e->getMessage();
         $smsNotify->save();
     }
 

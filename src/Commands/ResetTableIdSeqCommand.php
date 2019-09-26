@@ -53,11 +53,12 @@ class ResetTableIdSeqCommand extends Command
             try {
                 \DB::select("select setval('".$tableName."_id_seq',(select max(id) from $tableName))");
             } catch (\Exception $exception) {
-                \Log::debug($exception->getMessage());
+//                \Log::debug($exception->getMessage());
             }
         }
 
-        return;
+        $this->info("finish");
+
     }
 
 }

@@ -10,7 +10,12 @@ use Mallto\Tool\Data\SmsTemplate;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Jobs\BatchSmsJob;
 
-
+/**
+ * todo 废弃优化
+ * Class SmsNotifyController
+ *
+ * @package Mallto\Tool\Controller\Admin
+ */
 class SmsNotifyController extends AdminCommonController
 {
 
