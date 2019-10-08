@@ -182,7 +182,7 @@ class  WechatUsecase extends AbstractAPI
         }
     }
 
-    public function  wechatTemplateMsg($public_template_id,$data,$openId,$subject,$callback=null){
+    public function  wechatTemplateMsg($public_template_id,$data,$openId,$subject,$callback=null,$url=null){
 
         $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
             ->where("subject_id", $subject->id)
@@ -199,7 +199,7 @@ class  WechatUsecase extends AbstractAPI
             $requestData = [
                 'openid'      => $openId,
                 'template_id' => $templateId,
-                'url'         => $wechatTemplateMsg->template_link ?? null,
+                'url'         => $url ?? $wechatTemplateMsg->template_link ?? null,
                 'data'        => json_encode($data),
             ];
 
