@@ -79,10 +79,14 @@ class Handler extends ExceptionHandler
         if ($request->expectsJson()) {
 
             if (Admin::user()) {
+                $response = $this->interJsonHandler($exception, $request);
+
+                $content = json_decode($response->getContent(), true);
+
                 return response()->json([
                     'status'  => false,
-                    'message' => $exception->getMessage(),
-                    'error'   => $exception->getMessage(),
+                    'message' => $content['error'] ?? $exception->getMessage(),
+                    'error'   => $content['error'] ?? $exception->getMessage(),
                 ]);
             } else {
                 return $this->interJsonHandler($exception, $request);
@@ -159,8 +163,7 @@ class Handler extends ExceptionHandler
                         "error" => trans("errors.not_found"),
                     ], $exception), '404', [],
                     JSON_UNESCAPED_UNICODE);
-//                return response()->json(["error" => trans("errors.not_found").",".array_last($arr)], '404', [],
-//                    JSON_UNESCAPED_UNICODE);
+
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getHttpStatusCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
