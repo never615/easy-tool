@@ -14,7 +14,7 @@ use Illuminate\Support\MessageBag;
  *
  * @package App\Exceptions
  */
-class ResourceException extends \Symfony\Component\HttpKernel\Exception\HttpException implements MessageBagErrors
+class ResourceException extends HttpException implements MessageBagErrors
 {
     /**
      * MessageBag errors.
@@ -47,12 +47,11 @@ class ResourceException extends \Symfony\Component\HttpKernel\Exception\HttpExce
                 $message = current($errors);
                 $this->errors = new MessageBag($errors);
             } else {
-
                 $message = $errors;
                 $this->errors = $errors;
             }
         }
-        parent::__construct(422, $message, $previous, $headers, $code);
+        parent::__construct(422, $message, $code, null, $previous, $headers);
     }
 
     /**
