@@ -46,7 +46,7 @@ class ApiPvManagerController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->path("页面路径");
+        $grid->path("接口");
         $grid->name();
         $grid->slug();
 //        $grid->switch("统计页是否显示")->switch();
@@ -64,7 +64,7 @@ class ApiPvManagerController extends AdminCommonController
      */
     protected function formOption(Form $form)
     {
-        $form->select("path", "页面路径")
+        $form->select("path", "接口")
             ->options(ApiPv::selectSourceDatas2()->pluck("path", "path"))
             ->rules("required");
         $form->text("name")->rules("required");
