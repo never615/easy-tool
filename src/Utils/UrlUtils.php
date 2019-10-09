@@ -185,4 +185,25 @@ class UrlUtils
     }
 
 
+    /**
+     * 给文件路径添加前缀
+     *
+     * @param      $url
+     * @param null $urlPrefix
+     * @return string
+     */
+    public static function addFileUrlPrefix($url, $urlPrefix = null)
+    {
+        if (starts_with($url, "http")) {
+            return $url;
+        }
+
+        if (!$urlPrefix) {
+            $urlPrefix = config("app.file_url_prefix");
+        }
+
+        return $urlPrefix.$url;
+    }
+
+
 }
