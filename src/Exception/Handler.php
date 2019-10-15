@@ -98,8 +98,13 @@ class Handler extends ExceptionHandler
 
             //如果是管理端请求
             if (Admin::user()) {
+
+                $response = $this->interJsonHandler($exception, $request);
+
+                $content = json_decode($response->getContent(), true);
+
                 $error = new MessageBag([
-                    'title' => $exception->getMessage(),
+                    'title' => $content['error'] ?? $exception->getMessage(),
                 ]);
 
                 return back()->with(compact('error'))->withInput();
@@ -124,7 +129,6 @@ class Handler extends ExceptionHandler
 //            \Log::error("系统内部异常");
 //            \Log::warning($exception);
 //        }
-
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
                 return response()->json(

@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 重设表的自增序列
@@ -45,15 +46,18 @@ class ResetTableIdSeqCommand extends Command
     public function handle()
     {
         $tableNames = \DB::select("select tablename from pg_tables where schemaname='public'");
-        $tableNames = json_decode(json_encode($tableNames), true);
-        foreach ($tableNames as $tableName) {
-//            \Log::debug($tableName);
-            $tableName = $tableName['tablename'];
 
+        $tableNames = json_decode(json_encode($tableNames), true);
+
+        foreach ($tableNames as $tableName) {
+            $tableName = $tableName['tablename'];
             try {
-                \DB::select("select setval('".$tableName."_id_seq',(select max(id) from $tableName))");
+                if (Schema::hasColumn($tableName, "id")) {
+                    \DB::select("select setval('".$tableName."_id_seq',(select max(id) from $tableName))");
+                }
             } catch (\Exception $exception) {
-//                \Log::debug($exception->getMessage());
+                \Log::info($tableName);
+                \Log::info($exception->getMessage());
             }
         }
 
