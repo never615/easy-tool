@@ -189,8 +189,9 @@ class AliyunSms extends AbstractAPI implements Sms
 
             return true;
         } catch (ClientException $exception) {
-            \Log::error($exception);
-            \Log::error($exception->getResponse()->getBody());
+            \Log::error("阿里云短信:ClientException;");
+            \Log::warning($exception);
+            \Log::warning($exception->getResponse()->getBody());
         }
 
         return false;

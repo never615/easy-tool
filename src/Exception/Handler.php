@@ -209,9 +209,9 @@ class Handler extends ExceptionHandler
                     $requestId = $exception->getBindings()[0] ?? "";
                     throw new ResourceException("查询参数错误,无效的id:".$requestId);
                 } else {
-                    \Log::error("QueryException");
+                    \Log::warning("QueryException");
                     \Log::warning($exception);
-                    throw new InternalHttpException("无效的查询");
+                    throw new ResourceException("无效的查询");
                 }
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());

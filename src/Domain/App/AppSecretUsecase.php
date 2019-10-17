@@ -9,10 +9,8 @@ use GuzzleHttp\Exception\ClientException;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ThirdPartException;
-use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\ConfigUtils;
 use Mallto\Tool\Utils\SignUtils;
-use Mallto\Tool\Utils\TimeUtils;
 
 /**
  *
@@ -71,10 +69,10 @@ class AppSecretUsecase extends AbstractAPI
                 $requestData,
                 [
                     'headers' => [
-                        'uuid'      => 0,
-                        'app-id'    => config("other.mallto_app_id"),
+                        'uuid'   => 0,
+                        'app-id' => config("other.mallto_app_id"),
 //                        'Timestamp' => $now,
-                        'Accept'    => 'application/json',
+                        'Accept' => 'application/json',
 //                        'Signature-Nonce'   => $nonceStr,
 //                        'Signature-Version' => 4,
 //                        'Signature'         => $sign,
@@ -83,10 +81,11 @@ class AppSecretUsecase extends AbstractAPI
             ]);
 
         } catch (ClientException $clientException) {
-            \Log::error($clientException->getResponse()->getBody());
-
+            \Log::error("请求微信开放平台,更新当前应用的秘钥ClientException异常");
+            \Log::warning($clientException->getResponse()->getBody());
         } catch (\Exception $exception) {
-            \Log::error($exception);
+            \Log::error("请求微信开放平台,更新当前应用的秘钥异常");
+            \Log::warning($exception);
         }
 
         if ($contents && isset($contents["app_secret"])) {
