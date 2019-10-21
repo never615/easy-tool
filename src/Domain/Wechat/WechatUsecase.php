@@ -26,6 +26,51 @@ class  WechatUsecase extends AbstractAPI
     protected $slug = 'open_platform';
 
 
+    public function wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback = null, $url = null)
+    {
+
+        $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
+            ->where("subject_id", $subject->id)
+            ->first();
+
+
+        if ($wechatTemplateMsg) {
+            if ($callback instanceof Closure) {
+                $remark = call_user_func($callback, $wechatTemplateMsg);
+            }
+
+            $templateId = $wechatTemplateMsg->template_id;
+            if (isset($remark)) {
+                $data = array_merge($data, ['remark' => $remark]);
+            }
+            $requestData = [
+                'openid'      => $openId,
+                'template_id' => $templateId,
+                'url'         => $url ?? $wechatTemplateMsg->template_link ?? null,
+                'data'        => json_encode($data),
+            ];
+
+            $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
+
+
+            return $this->templateMsg(
+                array_merge($requestData, [
+                    "sign" => $sign,
+                ])
+                , $subject, $public_template_id);
+
+        } else {
+            \Log::warning("模板消息不存在,新设置:".$public_template_id.",subject_id:".$subject->id);
+
+            $templateId = $this->addTemplateId($public_template_id, $subject);
+            if ($templateId) {
+                $this->wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback);
+            } else {
+                throw new ResourceException("消息模板设置失败");
+            }
+        }
+    }
+
     /**
      * 发送模板消息
      *
@@ -33,19 +78,20 @@ class  WechatUsecase extends AbstractAPI
      *
      * @param      $content
      * @param      $subject
-     * @param bool $isAdminNotify
+     * @param      $public_template_id
      * @return bool
      */
-    public function templateMsg($content, $subject, $isAdminNotify = false)
+    protected function templateMsg($content, $subject, $public_template_id)
     {
-        if (config("app.env") == 'production' || config("app.env") == 'staging') {
+        if (config("app.env") === 'production' || config('app.env') === 'staging') {
             $baseUrl = "https://wechat.mall-to.com";
         } else {
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
-        $uuid = $subject->uuid;
-        if ($isAdminNotify) {
+        if (WechatUtils::isUserSystemTemplate($public_template_id)) {
+            $uuid = $subject->uuid;
+        } elseif (WechatUtils::isAdminSystemTemplate($public_template_id)) {
             $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
         }
 
@@ -66,17 +112,14 @@ class  WechatUsecase extends AbstractAPI
             return true;
         } catch (ResourceException $exception) {
             if (!starts_with($exception->getMessage(), "require subscribe")) {
-                if (strstr($exception->getMessage(), 'invalid template_id hint')) {
-                    $wechatTemplateMsg = WechatTemplateMsg::where('template_id', $content['template_id'])->first();
-                    $new_templateId = $this->addTemplateId($wechatTemplateMsg->public_template_id, $subject);
+                if (strpos($exception->getMessage(), 'invalid template_id hint') !== false) {
+                    $new_templateId = $this->addTemplateId($public_template_id, $subject);
                     if ($new_templateId) {
-                        $wechatTemplateMsg->template_id = $new_templateId;
-                        $wechatTemplateMsg->save();
                         $content['template_id'] = $new_templateId;
                         unset($content['sign']);
                         $sign = SignUtils::sign($content, config('other.mallto_app_secret'));
                         $content['sign'] = $sign;
-                        $this->templateMsg($content, $subject);
+                        $this->templateMsg($content, $subject, $public_template_id);
                     }
                 } else {
                     \Log::error("微信模板消息发送失败 ResourceException");
@@ -112,7 +155,10 @@ class  WechatUsecase extends AbstractAPI
      */
     public function addTemplateId($shortId, $subject)
     {
-        if (config("app.env") == 'production' || config("app.env") == 'staging') {
+        \Log::warning("模板消息的模板不存在不存在,准备新建:".$shortId);
+        \Log::warning(new \Exception());
+
+        if (config("app.env") === 'production' || config('app.env') === 'staging') {
             $baseUrl = "https://wechat.mall-to.com";
         } else {
             $baseUrl = "https://test-wechat.mall-to.com";
@@ -125,6 +171,7 @@ class  WechatUsecase extends AbstractAPI
         } elseif (WechatUtils::isAdminSystemTemplate($shortId)) {
             $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
         }
+
 
         $requestData = [
             "short_id" => $shortId,
@@ -147,7 +194,19 @@ class  WechatUsecase extends AbstractAPI
                 ],
             ]);
 
-            return $content["template_id"];
+
+            if (isset($content["template_id"]) && $content["template_id"]) {
+                WechatTemplateMsg::updateOrCreate([
+                    "subject_id"         => $subject->id,
+                    "public_template_id" => $shortId,
+                ], [
+                    "template_id" => $content["template_id"],
+                ]);
+
+                return $content["template_id"];
+            }
+
+            return false;
         } catch (ResourceException $resourceException) {
             throw $resourceException;
         } catch (ClientException $clientException) {
@@ -157,7 +216,6 @@ class  WechatUsecase extends AbstractAPI
             \Log::warning($response->getBody()->getContents());
 
             return false;
-
         } catch (\Exception $exception) {
             \Log::error("获取/设置模板消息id exception");
             \Log::warning($exception);
@@ -184,51 +242,4 @@ class  WechatUsecase extends AbstractAPI
         }
     }
 
-    public function wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback = null, $url = null)
-    {
-
-        $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
-            ->where("subject_id", $subject->id)
-            ->first();
-
-
-        if ($wechatTemplateMsg) {
-            if ($callback instanceof Closure) {
-                $remark = call_user_func($callback, $wechatTemplateMsg);
-            }
-
-            $templateId = $wechatTemplateMsg->template_id;
-            if (isset($remark)) {
-                $data = array_merge($data, ['remark' => $remark]);
-            }
-            $requestData = [
-                'openid'      => $openId,
-                'template_id' => $templateId,
-                'url'         => $url ?? $wechatTemplateMsg->template_link ?? null,
-                'data'        => json_encode($data),
-            ];
-
-            $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
-
-            return $this->templateMsg(
-                array_merge($requestData, [
-                    "sign" => $sign,
-                ])
-                , $subject);
-
-        } else {
-            $templateId = $this->addTemplateId($public_template_id, $subject);
-            $wechatTemplateMsg = new WechatTemplateMsg();
-            $wechatTemplateMsg->template_id = $templateId;
-            $wechatTemplateMsg->subject_id = $subject->id;
-            $wechatTemplateMsg->public_template_id = $public_template_id;
-            $wechatTemplateMsg->save();
-            $this->wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback);
-            if (!$templateId) {
-                throw new ResourceException("消息模板设置失败");
-            }
-
-            \Log::warning("模板消息不存在,新设置:".$public_template_id.",subject_id:".$subject->id);
-        }
-    }
 }
