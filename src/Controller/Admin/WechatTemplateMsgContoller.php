@@ -34,6 +34,8 @@ use Mallto\Tool\Exception\ResourceException;
 class WechatTemplateMsgContoller extends AdminCommonController
 {
 
+    protected $closeGridUpdatedAt = false;
+
     /**
      * 获取这个模块的标题
      *
@@ -56,9 +58,16 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->public_template_id("微信模板消息")->display(function ($value) {
-            return WechatUtils::getTemplateIds()[$value] ?? "";
+
+        $grid->public_template_id1("微信模板消息")->display(function ($value) {
+            return WechatUtils::getTemplateIds()[$this->public_template_id] ?? "";
         });
+
+        if (AdminUtils::isOwner()) {
+            $grid->public_template_id();
+
+            $grid->template_id();
+        }
 
 
         if (!AdminUtils::isOwner()) {
@@ -68,8 +77,6 @@ class WechatTemplateMsgContoller extends AdminCommonController
                 $actions->disableView();
             });
         }
-
-
     }
 
     protected function formOption(Form $form)
