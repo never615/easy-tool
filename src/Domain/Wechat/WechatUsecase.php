@@ -113,7 +113,7 @@ class  WechatUsecase extends AbstractAPI
         } catch (ResourceException $exception) {
             if (!starts_with($exception->getMessage(), "require subscribe")) {
                 if (strpos($exception->getMessage(), 'invalid template_id hint') !== false) {
-                    $new_templateId = $this->addTemplateId($public_template_id, $subject);
+                    $new_templateId = $this->addTemplateId($public_template_id, $subject, $content['template_id']);
                     if ($new_templateId) {
                         $content['template_id'] = $new_templateId;
                         unset($content['sign']);
@@ -149,11 +149,12 @@ class  WechatUsecase extends AbstractAPI
     /**
      * 获取/设置模板消息id
      *
-     * @param $shortId
-     * @param $subject
+     * @param      $shortId
+     * @param      $subject
+     * @param null $oldTemplateId 旧的模板id失效时,传旧的进来也
      * @return bool
      */
-    public function addTemplateId($shortId, $subject)
+    public function addTemplateId($shortId, $subject, $oldTemplateId = null)
     {
         \Log::warning("模板消息的模板不存在不存在,准备新建:".$shortId);
         \Log::warning(new \Exception());
@@ -174,7 +175,8 @@ class  WechatUsecase extends AbstractAPI
 
 
         $requestData = [
-            "short_id" => $shortId,
+            "short_id"    => $shortId,
+            "template_id" => $oldTemplateId,
         ];
         $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
 
