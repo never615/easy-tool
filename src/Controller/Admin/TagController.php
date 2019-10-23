@@ -57,7 +57,7 @@ class TagController extends AdminCommonController
      */
     protected function gridOption(Grid $grid)
     {
-        $type = Input::get("type");
+        $type = \Request::input("type");
         if ($type) {
             $grid->model()->where("type", $type);
         }
@@ -79,7 +79,7 @@ class TagController extends AdminCommonController
      */
     protected function formOption(Form $form)
     {
-        $type = Input::get("type");
+        $type = \Request::input("type");
 
 
         $form->text('name')->rules('required');
