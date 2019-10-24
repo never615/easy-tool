@@ -201,7 +201,7 @@ class Handler extends ExceptionHandler
                 return response()
                     ->json(
                         $this->responseData([
-                            'error' => $exception->getMessage(),
+                            'error' => '登录失效请重新登录,'.$exception->getMessage(),
                         ], $exception),
                         401, [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof QueryException) {
