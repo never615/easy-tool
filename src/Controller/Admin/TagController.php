@@ -10,6 +10,7 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Input;
+use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
@@ -63,6 +64,9 @@ class TagController extends AdminCommonController
         }
 
         $grid->name()->editable()->sortable();
+        if(AdminUtils::isOwner()){
+            $grid->slug();
+        }
         $grid->type()->select(
             $this->getSelectTagTypes()
         )->sortable();
