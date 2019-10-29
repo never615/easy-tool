@@ -67,9 +67,9 @@ class WechatTemplateMsgContoller extends AdminCommonController
         $grid->switch()->switch()->help("关闭后就会暂停发送该模板消息");
 
         if (AdminUtils::isOwner()) {
-            $grid->public_template_id()->editable();
+            $grid->public_template_id();
 
-            $grid->template_id();
+            $grid->template_id()->editable();
         }
 
 
