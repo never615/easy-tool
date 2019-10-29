@@ -109,18 +109,33 @@ class WechatTemplateMsgContoller extends AdminCommonController
             ->help("配置此链接后,用户收到的模板消息会出现可以点击的跳转链接");
 
         $form->saving(function ($form) {
-            //创建公众号对应模板id
-            if (($form->public_template_id &&
-                    $form->public_template_id != $form->model()->public_template_id) || (AdminUtils::isOwner())) {
+            $submitSwitch = $form->switch;
+            $oldSwitch = $form->model()->switch;
 
-                $subject = Subject::find($form->subject_id ?? $form->model()->subject_id);
+            $switchArr = [
+                'on'  => 1,
+                'off' => 0,
+            ];
 
-                $wechatUsecase = app(WechatUsecase::class);
-                $templateId = $wechatUsecase->addTemplateId($form->public_template_id, $subject);
-                if (!$templateId) {
-                    throw new ResourceException("消息模板设置失败");
+
+            $submitSwitch = $switchArr[$submitSwitch];
+
+            if ($form->switch && $submitSwitch != $oldSwitch) {
+
+            } else {
+                //创建公众号对应模板id
+                if (($form->public_template_id &&
+                        $form->public_template_id != $form->model()->public_template_id) || (AdminUtils::isOwner())) {
+
+                    $subject = Subject::find($form->subject_id ?? $form->model()->subject_id);
+
+                    $wechatUsecase = app(WechatUsecase::class);
+                    $templateId = $wechatUsecase->addTemplateId($form->public_template_id, $subject);
+                    if (!$templateId) {
+                        throw new ResourceException("消息模板设置失败");
+                    }
+                    $form->model()->template_id = $templateId;
                 }
-                $form->model()->template_id = $templateId;
             }
         });
     }
