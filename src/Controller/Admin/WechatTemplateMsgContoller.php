@@ -64,7 +64,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
         });
 
         if (AdminUtils::isOwner()) {
-            $grid->public_template_id();
+            $grid->public_template_id()->editable();
 
             $grid->template_id();
         }
@@ -83,7 +83,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
     {
 
         if (\Mallto\Admin\AdminUtils::isOwner()) {
-            $form->displayE("template_id", "公众号对应的模板id");
+            $form->text("template_id", "公众号对应的模板id");
 
             $form->select("public_template_id", "微信消息模板")
                 ->options(WechatUtils::getTemplateIds())
