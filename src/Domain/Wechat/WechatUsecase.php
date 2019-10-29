@@ -212,7 +212,7 @@ class  WechatUsecase extends AbstractAPI
         } catch (ResourceException $resourceException) {
             throw $resourceException;
         } catch (ClientException $clientException) {
-            \Log::error("获取/设置模板消息id client exception");
+            \Log::warning("获取/设置模板消息id client exception");
             $response = $clientException->getResponse();
             \Log::warning($clientException->getMessage());
             \Log::warning($response->getBody()->getContents());
