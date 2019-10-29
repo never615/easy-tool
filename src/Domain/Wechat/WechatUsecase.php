@@ -26,6 +26,17 @@ class  WechatUsecase extends AbstractAPI
     protected $slug = 'open_platform';
 
 
+    /**
+     * 对外开放的发送微信模板消息方法
+     *
+     * @param      $public_template_id
+     * @param      $data
+     * @param      $openId
+     * @param      $subject
+     * @param null $callback
+     * @param null $url
+     * @return bool
+     */
     public function wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback = null, $url = null)
     {
 
@@ -35,30 +46,31 @@ class  WechatUsecase extends AbstractAPI
 
 
         if ($wechatTemplateMsg) {
-            if ($callback instanceof Closure) {
-                $remark = call_user_func($callback, $wechatTemplateMsg);
+            if ($wechatTemplateMsg->switch) {
+                if ($callback instanceof Closure) {
+                    $remark = call_user_func($callback, $wechatTemplateMsg);
+                }
+
+                $templateId = $wechatTemplateMsg->template_id;
+                if (isset($remark)) {
+                    $data = array_merge($data, ['remark' => $remark]);
+                }
+                $requestData = [
+                    'openid'      => $openId,
+                    'template_id' => $templateId,
+                    'url'         => $url ?? $wechatTemplateMsg->template_link ?? null,
+                    'data'        => json_encode($data),
+                ];
+
+                $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
+
+
+                return $this->templateMsg(
+                    array_merge($requestData, [
+                        "sign" => $sign,
+                    ])
+                    , $subject, $public_template_id);
             }
-
-            $templateId = $wechatTemplateMsg->template_id;
-            if (isset($remark)) {
-                $data = array_merge($data, ['remark' => $remark]);
-            }
-            $requestData = [
-                'openid'      => $openId,
-                'template_id' => $templateId,
-                'url'         => $url ?? $wechatTemplateMsg->template_link ?? null,
-                'data'        => json_encode($data),
-            ];
-
-            $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
-
-
-            return $this->templateMsg(
-                array_merge($requestData, [
-                    "sign" => $sign,
-                ])
-                , $subject, $public_template_id);
-
         } else {
             \Log::warning("模板消息不存在,新设置:".$public_template_id.",subject_id:".$subject->id);
 

@@ -63,6 +63,9 @@ class WechatTemplateMsgContoller extends AdminCommonController
             return WechatUtils::getTemplateIds()[$this->public_template_id] ?? "";
         });
 
+
+        $grid->switch()->switch()->help("关闭后就会暂停发送该模板消息");
+
         if (AdminUtils::isOwner()) {
             $grid->public_template_id()->editable();
 
@@ -95,6 +98,8 @@ class WechatTemplateMsgContoller extends AdminCommonController
                 return WechatUtils::getTemplateIds()[$value] ?? $value;
             });
         }
+
+        $form->switch('switch')->default(true)->help('关闭后就会暂停发送该模板消息');
 
         $form->text("template_remark", "消息模板备注")
             ->help('此填写内容会出现在模板消息的备注位置<br>
