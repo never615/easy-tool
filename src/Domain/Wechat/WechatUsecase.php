@@ -219,7 +219,7 @@ class  WechatUsecase extends AbstractAPI
 
             return false;
         } catch (\Exception $exception) {
-            \Log::error("获取/设置模板消息id exception");
+            \Log::warning("获取/设置模板消息id exception");
             \Log::warning($exception);
 
             return false;
