@@ -4,6 +4,7 @@
 namespace Mallto\Tool\Domain\Net;
 
 
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Middleware;
@@ -36,11 +37,27 @@ abstract class AbstractAPI
     const JSON = 'json';
 
 
+    /**
+     * 主体动态配置中配置的项目的key  SubjectConfig
+     *
+     * @var string
+     */
     protected $SETTING_KEY_BASE_URL;
+
     const MAX_RETRIES = 2;
 
+    /**
+     * 请求的日志标识
+     *
+     * @var
+     */
     protected $slug;
 
+    /**
+     * 默认的请求基地址
+     *
+     * @var
+     */
     protected $baseUrl;
 
     /**
@@ -49,7 +66,7 @@ abstract class AbstractAPI
     public function __construct()
     {
         if (!$this->slug) {
-            throw new InternalHttpException("继承自AbstractAPI的类 没有设置slug");
+            throw new InternalHttpException('继承自AbstractAPI的类 没有设置slug');
         }
     }
 
@@ -62,8 +79,12 @@ abstract class AbstractAPI
      */
     protected function getBaseUrl(int $subjectId)
     {
+        if ($this->baseUrl) {
+            return $this->baseUrl;
+        }
+
         if (empty($this->SETTING_KEY_BASE_URL)) {
-            throw new NotSettingException("未设置SETTING_KEY_BASE_URL");
+            throw new NotSettingException('未设置SETTING_KEY_BASE_URL');
         }
 
         $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subjectId);
@@ -87,7 +108,7 @@ abstract class AbstractAPI
      */
     protected function getHttp()
     {
-        if (is_null($this->http)) {
+        if ($this->http === null) {
             $this->http = new Http();
         }
 
@@ -163,15 +184,15 @@ abstract class AbstractAPI
                 $startTime = microtime(true);
             }
             try {
-                dispatch(new LogJob("logThirdPart", [
+                dispatch(new LogJob('logThirdPart', [
                     'uuid'       => SubjectUtils::getUUIDNoException() ?: 0,
-                    "request_id" => $requestId,
-                    "tag"        => $this->slug,
-                    "action"     => '请求',
-                    "method"     => $request->getMethod(),
-                    "url"        => $request->getUri(),
-                    "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
+                    'request_id' => $requestId,
+                    'tag'        => $this->slug,
+                    'action'     => '请求',
+                    'method'     => $request->getMethod(),
+                    'url'        => $request->getUri(),
+                    'headers'    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody()."",
                 ]));
             } catch (\Exception $exception) {
@@ -188,17 +209,17 @@ abstract class AbstractAPI
                     $requestTime = round($endTime - $startTime, 3);
                 }
 
-                dispatch(new LogJob("logThirdPart", [
+                dispatch(new LogJob('logThirdPart', [
                     'uuid'         => SubjectUtils::getUUIDNoException() ?: 0,
-                    "request_id"   => $requestId,
-                    "tag"          => $this->slug,
-                    "action"       => '响应',
-                    "method"       => $request->getMethod(),
-                    "url"          => $request->getUri(),
-                    "headers"      => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"         => $response->getBody()->getContents(),
-                    "status"       => $response->getStatusCode(),
-                    "request_time" => $requestTime,
+                    'request_id'   => $requestId,
+                    'tag'          => $this->slug,
+                    'action'       => '响应',
+                    'method'       => $request->getMethod(),
+                    'url'          => $request->getUri(),
+                    'headers'      => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    'body'         => $response->getBody()->getContents(),
+                    'status'       => $response->getStatusCode(),
+                    'request_time' => $requestTime,
                 ]));
             });
 
@@ -264,24 +285,28 @@ abstract class AbstractAPI
     {
         if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer'))) {
             return true;
-        } else {
-            if ($exception instanceof ConnectException) {
-                return true;
-            } else {
-                if ($exception) {
-                    \Log::error("基础网络库:其他异常");
-                    \Log::warning($exception);
-                }
-
-                return false;
-            }
         }
+
+        if ($exception instanceof ConnectException) {
+            return true;
+        }
+
+        if ($exception) {
+            \Log::error('基础网络库:其他异常');
+            \Log::warning($exception);
+        }
+
+        return false;
     }
 
     /**
+     *
+     *
+     * 标准的json请求使用,即parseJSON()方法使用
+     *
      * 检查响应,并返回
      *
-     * 不同的实现需要重写此方法 标准的json请求使用
+     * 不同的实现需要重写此方法
      * Check the array data errors, and Throw exception when the contents contains error.
      *
      * @param array $contents
@@ -289,8 +314,25 @@ abstract class AbstractAPI
      * @return array
      * @throws ThirdPartException
      */
-    protected abstract function checkAndThrow(
+    abstract protected function checkAndThrow(
         array $contents
     );
+
+
+    /**
+     * 客户端异常日志
+     *
+     * @param ClientException $clientException
+     */
+    protected function clientExceptionLog(ClientException $clientException)
+    {
+        try {
+            \Log::error(__METHOD__.',$clientException');
+            \Log::warning($clientException);
+            \Log::warning($clientException->getResponse()->getBody()->getContents());
+        } catch (\Exception $exception) {
+            \Log::error($exception);
+        }
+    }
 
 }
