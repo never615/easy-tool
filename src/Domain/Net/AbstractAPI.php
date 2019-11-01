@@ -4,6 +4,7 @@
 namespace Mallto\Tool\Domain\Net;
 
 
+use Exception;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -65,6 +66,9 @@ abstract class AbstractAPI
      */
     public function __construct()
     {
+
+
+
         if (!$this->slug) {
             throw new InternalHttpException('继承自AbstractAPI的类 没有设置slug');
         }
@@ -327,11 +331,13 @@ abstract class AbstractAPI
     protected function clientExceptionLog(ClientException $clientException)
     {
         try {
-            \Log::error(__METHOD__.',$clientException');
+            \Log::error('clientException:'.static::class);
+            \Log::warning(new Exception());
             \Log::warning($clientException);
             \Log::warning($clientException->getResponse()->getBody()->getContents());
         } catch (\Exception $exception) {
-            \Log::error($exception);
+            \Log::error('clientExceptionLog');
+            \Log::warning($exception);
         }
     }
 
