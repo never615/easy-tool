@@ -68,7 +68,6 @@ abstract class AbstractAPI
     {
 
 
-
         if (!$this->slug) {
             throw new InternalHttpException('继承自AbstractAPI的类 没有设置slug');
         }
@@ -91,9 +90,9 @@ abstract class AbstractAPI
             throw new NotSettingException('未设置SETTING_KEY_BASE_URL');
         }
 
-        $this->baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subjectId);
+        $baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subjectId);
 
-        return rtrim($this->baseUrl, '/').'/';
+        return $this->baseUrl = rtrim($baseUrl, '/').'/';
     }
 
     /**
