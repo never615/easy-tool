@@ -39,7 +39,6 @@ class  WechatUsecase extends AbstractAPI
      */
     public function wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback = null, $url = null)
     {
-
         $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
             ->where("subject_id", $subject->id)
             ->first();
@@ -124,7 +123,7 @@ class  WechatUsecase extends AbstractAPI
             return true;
         } catch (ResourceException $exception) {
             if (!starts_with($exception->getMessage(), "require subscribe")) {
-                if (strpos($exception->getMessage(), 'invalid template_id hint') !== false) {
+                if (starts_with($exception->getMessage(), 'invalid template_id hint')) {
                     $new_templateId = $this->addTemplateId($public_template_id, $subject, $content['template_id']);
                     if ($new_templateId) {
                         $content['template_id'] = $new_templateId;
@@ -222,6 +221,8 @@ class  WechatUsecase extends AbstractAPI
 
             return false;
         } catch (ResourceException $resourceException) {
+            \Log::warning("获取/设置模板消息id resourceException");
+            \Log::warning($resourceException);
             throw $resourceException;
         } catch (ClientException $clientException) {
             \Log::warning("获取/设置模板消息id client exception");
