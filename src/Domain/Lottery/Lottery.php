@@ -30,6 +30,14 @@ class Lottery
     public function run($lotteries, $weightColumn = "weight", $idColumn = "id")
     {
 
+        $length = count($lotteries);
+        if ($length < 1) {
+            return false;
+        }
+
+        if ($length == 1) {
+            return $lotteries[0][$idColumn];
+        }
         //1. 累加权重,分配区间
         $sumWeight = 0;
         foreach ($lotteries as $key => $lottery) {
@@ -39,7 +47,6 @@ class Lottery
         }
         //2. 在权重和中随机一个数字,判断落在那个区间
         if ($sumWeight > 0) {
-
             $lotteryResult = mt_rand(1, $sumWeight);
 
 
@@ -50,8 +57,10 @@ class Lottery
                 }
             }
             throw new InternalHttpException("抽奖失败");
-        } else {
-            return null;
         }
+
+        $number = mt_rand(0, $length - 1);
+
+        return $lotteries[$number][$idColumn];
     }
 }
