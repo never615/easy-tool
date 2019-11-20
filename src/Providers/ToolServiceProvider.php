@@ -8,6 +8,7 @@ namespace Mallto\Tool\Providers;
 use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -34,6 +35,7 @@ use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
+use Mallto\User\Data\User;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -93,6 +95,11 @@ class ToolServiceProvider extends ServiceProvider
         $this->routeBoot();
         $this->queueBoot();
         $this->scheduleBoot();
+
+
+        Relation::morphMap([
+            'user'            => User::class,
+        ]);
     }
 
 
