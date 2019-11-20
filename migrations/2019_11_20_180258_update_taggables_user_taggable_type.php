@@ -16,7 +16,8 @@ class UpdateTaggablesUserTaggableType extends Migration
      */
     public function up()
     {
-        \Illuminate\Support\Facades\DB::update("update taggables set taggable_type = 'user' where taggable_type = 'users'");
+        \Illuminate\Support\Facades\DB::update("update taggables set taggable_type = 'user' where taggable_type = 'Mallto\User\Data\User'");
+        \Illuminate\Support\Facades\DB::update("update taggables set taggable_type = 'user' where taggable_type = 'Mallto\Mall\Data\User'");
     }
 
     /**
