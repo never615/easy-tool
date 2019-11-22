@@ -25,9 +25,11 @@ class QrController extends Controller
 
     public function index(Request $request)
     {
+
         $referer = $request->header("referer");
+
         if (!$referer) {
-            throw new PermissionDeniedException("没有权限调用");
+            throw new PermissionDeniedException("没有权限调用:referer为空");
         }
 
         $refererDomin = UrlUtils::getDomain($referer);
@@ -35,6 +37,7 @@ class QrController extends Controller
         $data = $request->get("data");
 
         $size = $request->get("size");
+
 
         if (!HttpUtils::isAllowReferer($refererDomin)) {
             throw new PermissionDeniedException("没有权限调用:".$refererDomin);
