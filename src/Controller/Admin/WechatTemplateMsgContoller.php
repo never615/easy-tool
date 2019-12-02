@@ -110,17 +110,21 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
         $form->saving(function ($form) {
             $submitSwitch = $form->switch;
-            $oldSwitch = $form->model()->switch;
+            if ($submitSwitch) {
+                $oldSwitch = $form->model()->switch;
 
-            $switchArr = [
-                'on'  => 1,
-                'off' => 0,
-            ];
+                $switchArr = [
+                    'on'  => 1,
+                    'off' => 0,
+                ];
 
 
-            $submitSwitch = $switchArr[$submitSwitch];
+                $submitSwitch = $switchArr[$submitSwitch];
+            }
 
-            if ($form->switch && $submitSwitch != $oldSwitch) {
+            if (($submitSwitch && $submitSwitch != $oldSwitch) ||
+                ($form->template_id && $form->template_id != $form->model()->template_id)) {
+
 
             } else {
                 //创建公众号对应模板id
