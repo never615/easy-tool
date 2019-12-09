@@ -65,7 +65,7 @@
         <div class="row">
             <div class="col-md-6">
                 <h2>发生了什么?</h2>
-                <p>{{$exception?$exception->getMessage():""}}</p>
+                <p class="lead">{{$exception?$exception->getMessage():""}}</p>
                 <p class="lead">@yield("error_msg")</p>
             </div>
             <div class="col-md-6">
