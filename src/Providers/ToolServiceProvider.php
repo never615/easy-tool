@@ -302,6 +302,7 @@ class ToolServiceProvider extends ServiceProvider
                     ->onOneServer()
                     ->daily()
                     ->name("update_app_secret")
+                    ->runInBackground()
                     ->withoutOverlapping()
                     ->before(function () {
                         dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "start"]));
