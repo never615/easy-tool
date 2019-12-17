@@ -36,8 +36,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         \Exception $previous = null,
         array $headers = array (),
         $code = 0
-    )
-    {
+    ) {
         $this->errCode = $errCode;
         $this->content = $content;
         parent::__construct($statusCode, $message, $previous, $headers, $errCode);
@@ -79,9 +78,15 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
 
     public function getResponseContent()
     {
+        if ($this->errCode) {
+            return array_merge([
+                "error" => $this->message,
+                "code"  => $this->errCode,
+            ], (array) $this->content);
+        }
+
         return array_merge([
             "error" => $this->message,
-            "code"  => $this->errCode,
         ], (array) $this->content);
     }
 
