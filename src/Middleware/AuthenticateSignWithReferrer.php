@@ -28,15 +28,12 @@ use Mallto\Tool\Utils\SignUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
- * 管理端权限过滤
+ * 签名校验
+ * Class AuthenticateSignWithReferrer
  *
- * 使用appid和secret
- *
- * Class AuthenticateAdmin
- *
- * @package App\Http\Middleware
+ * @package Mallto\Tool\Middleware
  */
-class AuthenticateSign2
+class AuthenticateSignWithReferrer
 {
     protected $except = [
     ];
@@ -50,7 +47,13 @@ class AuthenticateSign2
      */
     public function handle(Request $request, Closure $next)
     {
-        return $this->check($request, $next);
+        //如果请求方的Referer是自己的域名,则跳过检查
+        $referer = $request->header('Referer');
+        if (!HttpUtils::isAllowReferer($referer)) {
+            return $this->check($request, $next);
+        }
+
+        return $next($request);
     }
 
     protected function check(Request $request, Closure $next)

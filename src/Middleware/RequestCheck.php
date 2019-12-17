@@ -43,7 +43,7 @@ class RequestCheck
         //检查资源路由器上的id,
         //如:Route::resource("shop", 'ShopController'); ,请求shop/111时,如果111是非数字字符,则会走此校验
         $actionMethod = $route->getActionMethod();
-        if ($actionMethod == "show") {
+        if ($actionMethod === 'show') {
             $firstRouterParam = Arr::first(($route->parameters()));
             if ($firstRouterParam) {
                 if (!preg_match('/\d/', $firstRouterParam)) {

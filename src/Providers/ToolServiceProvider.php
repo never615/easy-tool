@@ -30,6 +30,7 @@ use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
+use Mallto\Tool\Middleware\AuthenticateSignWithReferrer;
 use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
@@ -56,11 +57,12 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-        "requestCheck"    => RequestCheck::class,
-        'authSign'        => AuthenticateSign::class,
-        'authSign2'       => AuthenticateSign2::class,
-        "owner_api"       => OwnerApiLog::class,
-        "third_api_check" => ThirdRequestCheck::class,
+        "requestCheck"      => RequestCheck::class,
+        'authSign'          => AuthenticateSign::class,
+        'authSign2'         => AuthenticateSign2::class,
+        'authSign_referrer' => AuthenticateSignWithReferrer::class,
+        "owner_api"         => OwnerApiLog::class,
+        "third_api_check"   => ThirdRequestCheck::class,
     ];
 
     /**
@@ -98,7 +100,7 @@ class ToolServiceProvider extends ServiceProvider
 
 
         Relation::morphMap([
-            'user'            => User::class,
+            'user' => User::class,
         ]);
     }
 
