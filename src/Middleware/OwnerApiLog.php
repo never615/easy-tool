@@ -96,6 +96,8 @@ class OwnerApiLog
 
         dispatch(new LogJob("logOwnerApi", $log));
 
+        $response->headers->set('request-id',$requestId);
+
         return $response;
     }
 }

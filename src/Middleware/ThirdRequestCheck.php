@@ -13,6 +13,8 @@ use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
+ *
+ * @deprecated 废弃
  * 第三方 api 接口请求专用
  *
  * Class RequestCheck
@@ -54,6 +56,12 @@ class ThirdRequestCheck
 
         return $next($request);
     }
+
+
+
+
+
+
 
 
 }
