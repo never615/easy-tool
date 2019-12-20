@@ -49,6 +49,8 @@ class AuthenticateSignWithReferrer
     {
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
+
+
         if (!HttpUtils::isAllowReferer($referer)) {
             return $this->check($request, $next);
         }

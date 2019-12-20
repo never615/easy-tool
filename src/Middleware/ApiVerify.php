@@ -24,6 +24,9 @@ use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\SignUtils;
 
 /**
+ *
+ * 未启用
+ *
  * api 接口校验
  * 签名校验(HMAC)和时间戳校验
  *

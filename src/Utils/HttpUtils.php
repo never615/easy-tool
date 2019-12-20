@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Utils;
 
-
 /**
  * Created by PhpStorm.
  * User: never615 <never615.com>
@@ -14,27 +13,30 @@ namespace Mallto\Tool\Utils;
  */
 class  HttpUtils
 {
+
     /**
      * 判断refere是否有权限访问
      *
      * @param $referer
+     *
      * @return bool
      */
     public static function isAllowReferer($referer)
     {
+        $refererHost = UrlUtils::getHost($referer);
+
         $allowDomainStr = config("app.allow_access_api_domain");
         $allowDomains = explode(",", $allowDomainStr);
 
         foreach ($allowDomains as $allowDomain) {
             if (starts_with($allowDomain, '*')) {
-                if (ends_with($referer, substr($allowDomain, 2))) {
+                if (ends_with($refererHost, substr($allowDomain, 2))) {
                     return true;
                 }
             }
         }
 
-
-        if (in_array($referer, $allowDomains)) {
+        if (in_array($refererHost, $allowDomains)) {
             true;
         }
 
