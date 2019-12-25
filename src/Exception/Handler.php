@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Exception;
 
-
 use Encore\Admin\Facades\Admin;
 use Exception;
 use GuzzleHttp\Exception\ClientException;
@@ -37,6 +36,7 @@ use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
  */
 class Handler extends ExceptionHandler
 {
+
     /**
      * A list of the exception types that should not be reported.
      *
@@ -50,7 +50,9 @@ class Handler extends ExceptionHandler
         \Illuminate\Session\TokenMismatchException::class,
         \Illuminate\Validation\ValidationException::class,
         \League\OAuth2\Server\Exception\OAuthServerException::class,
+        QueryException::class,
     ];
+
 
     /**
      * Report or log an exception.
@@ -58,6 +60,7 @@ class Handler extends ExceptionHandler
      * This is a great spot to send exceptions to Sentry, Bugsnag, etc.
      *
      * @param \Exception $exception
+     *
      * @return void
      * @throws Exception
      */
@@ -66,11 +69,13 @@ class Handler extends ExceptionHandler
         parent::report($exception);
     }
 
+
     /**
      * Render an exception into an HTTP response.
      *
      * @param \Illuminate\Http\Request $request
      * @param \Exception               $exception
+     *
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
      */
     public function render($request, Exception $exception)
@@ -93,7 +98,7 @@ class Handler extends ExceptionHandler
             }
         } else {
             if ($exception instanceof TokenMismatchException) {
-                return redirect()->guest(config('app.url').config("admin.admin_login"));
+                return redirect()->guest(config('app.url') . config("admin.admin_login"));
             }
 
             //如果是管理端请求
@@ -121,6 +126,7 @@ class Handler extends ExceptionHandler
      * @param      $exception
      * @param      $request
      * @param bool $isAdmin
+     *
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
      */
     protected function interJsonHandler(Exception $exception, $request, $isAdmin = false)
@@ -201,25 +207,31 @@ class Handler extends ExceptionHandler
                 return response()
                     ->json(
                         $this->responseData([
-                            'error' => '登录失效请重新登录,'.$exception->getMessage(),
+                            'error' => '登录失效请重新登录,' . $exception->getMessage(),
                         ], $exception),
                         401, [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof QueryException) {
                 if (str_contains($exception->getMessage(), "Invalid text representation:")) {
                     $requestId = $exception->getBindings()[0] ?? "";
-                    throw new ResourceException("查询参数错误,无效的id:".$requestId);
-                } else {
-                    \Log::warning("QueryException");
-                    \Log::warning($exception);
-                    throw new ResourceException("无效的查询");
+                    throw new ResourceException("查询参数错误,无效的id:" . $requestId);
                 }
+
+                if ($exception->getCode() == '23505') {
+                    \Log::warning("QueryException:23505");
+                    \Log::warning($exception);
+                    throw new ResourceException('数据已提交或创建成功,请刷新查看');
+                }
+
+                \Log::warning("QueryException");
+                \Log::warning($exception);
+                throw new ResourceException("无效的查询");
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
                 \Log::error("PDOException");
                 \Log::warning($exception);
                 throw new ResourceException($msg);
             } elseif ($exception instanceof RequestException) {
-                return response()->json(["error" => "网络繁忙,请重试:".$exception->getMessage()], 422, [],
+                return response()->json([ "error" => "网络繁忙,请重试:" . $exception->getMessage() ], 422, [],
                     JSON_UNESCAPED_UNICODE);
             } else {
                 throw new InternalHttpException(trans("errors.internal_error"));
@@ -233,6 +245,7 @@ class Handler extends ExceptionHandler
      *
      * @param \Illuminate\Http\Request $request
      * @param AuthenticationException  $exception
+     *
      * @return \Illuminate\Http\Response
      */
     protected function unauthenticated($request, AuthenticationException $exception)
@@ -242,13 +255,13 @@ class Handler extends ExceptionHandler
                 ->json(
                     $this->responseData([
 //                        'error' => trans("errors.unauthenticated").','.$exception->getMessage(),
-                        'error' => "登录失效,请重新登录或重新打开页面:".$exception->getMessage(),
+                        'error' => "登录失效,请重新登录或重新打开页面:" . $exception->getMessage(),
                     ], $exception),
                     401, [], JSON_UNESCAPED_UNICODE);
         }
 
         if (Admin::user()) {
-            return redirect()->guest(config('app.url').config("admin.admin_login"));
+            return redirect()->guest(config('app.url') . config("admin.admin_login"));
         } else {
             $e = new \Mallto\Tool\Exception\AuthorizeFailedException();
 
@@ -256,11 +269,13 @@ class Handler extends ExceptionHandler
         }
     }
 
+
     /**
      * Convert a validation exception into a JSON response.
      *
      * @param \Illuminate\Http\Request                   $request
      * @param \Illuminate\Validation\ValidationException $exception
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     protected function invalidJson($request, ValidationException $exception)
@@ -290,6 +305,5 @@ class Handler extends ExceptionHandler
             "message" => $data["error"] ?? $exception->getMessage(),
         ]);
     }
-
 
 }
