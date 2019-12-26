@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Exception;
 
-
 use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 

@@ -10,7 +10,9 @@ use Mallto\Admin\Seeder\MenuSeederMaker;
 
 class BaseMenuSeeder extends Seeder
 {
+
     use MenuSeederMaker;
+
 
     /**
      * Run the database seeds.
@@ -25,7 +27,6 @@ class BaseMenuSeeder extends Seeder
             "admin_manager", 0, $order++, "管理", "fa-tasks");
 
         $order = $adminManagerMenu->order;
-
 
         $this->updateOrCreate(
             "wechat_template_ids.index", $adminManagerMenu->id, 6, "微信模板消息管理", "fa-wechat");

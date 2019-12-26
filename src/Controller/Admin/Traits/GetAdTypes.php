@@ -15,11 +15,12 @@ use Mallto\Tool\Data\Ad;
  */
 trait GetAdTypes
 {
+
     private function getAdTypes($pagePvManager, $isOption = false)
     {
         $adTypes = $pagePvManager->ad_types;
 
-        $adTypes = array_unique(array_merge($adTypes, ["float_image"]));
+        $adTypes = array_unique(array_merge($adTypes, [ "float_image" ]));
 
         $adTypes = array_only(Ad::AD_TYPE, $adTypes);
 

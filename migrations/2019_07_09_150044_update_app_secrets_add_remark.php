@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateAppSecretsAddRemark extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -20,6 +21,7 @@ class UpdateAppSecretsAddRemark extends Migration
             $table->text("remark")->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

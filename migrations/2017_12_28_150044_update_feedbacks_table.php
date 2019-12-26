@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateFeedbacksTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -21,6 +22,7 @@ class UpdateFeedbacksTable extends Migration
             $table->string('mobile')->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

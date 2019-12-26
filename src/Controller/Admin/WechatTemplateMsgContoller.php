@@ -12,7 +12,6 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\AdminUtils;
@@ -36,6 +35,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
     protected $closeGridUpdatedAt = false;
 
+
     /**
      * 获取这个模块的标题
      *
@@ -45,6 +45,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
     {
         return "微信模板消息id管理";
     }
+
 
     /**
      * 获取这个模块的Model
@@ -56,13 +57,13 @@ class WechatTemplateMsgContoller extends AdminCommonController
         return WechatTemplateMsg::class;
     }
 
+
     protected function gridOption(Grid $grid)
     {
 
         $grid->public_template_id1("微信模板消息")->display(function ($value) {
             return WechatUtils::getTemplateIds()[$this->public_template_id] ?? "";
         });
-
 
         $grid->switch()->switch()->help("关闭后就会暂停发送该模板消息");
 
@@ -72,8 +73,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
             $grid->template_id()->editable();
         }
 
-
-        if (!AdminUtils::isOwner()) {
+        if ( ! AdminUtils::isOwner()) {
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
@@ -81,6 +81,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
             });
         }
     }
+
 
     protected function formOption(Form $form)
     {
@@ -118,7 +119,6 @@ class WechatTemplateMsgContoller extends AdminCommonController
                     'off' => 0,
                 ];
 
-
                 $submitSwitch = $switchArr[$submitSwitch];
             }
 
@@ -135,7 +135,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
                     $wechatUsecase = app(WechatUsecase::class);
                     $templateId = $wechatUsecase->addTemplateId($form->public_template_id, $subject);
-                    if (!$templateId) {
+                    if ( ! $templateId) {
                         throw new ResourceException("消息模板设置失败");
                     }
                     $form->model()->template_id = $templateId;

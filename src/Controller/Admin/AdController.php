@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -16,10 +15,11 @@ use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Exception\ResourceException;
 
-
 class AdController extends AdminCommonController
 {
+
     use GetAdTypes;
+
 
     /**
      * 获取这个模块的标题
@@ -30,6 +30,7 @@ class AdController extends AdminCommonController
     {
         return "页面广告";
     }
+
 
     /**
      * 获取这个模块的Model
@@ -53,7 +54,7 @@ class AdController extends AdminCommonController
                 $page = PagePvManager::where("path", $value)->first();
 
                 if (AdminUtils::isOwner()) {
-                    return $page ? $page->name.":".$page->path : $value;
+                    return $page ? $page->name . ":" . $page->path : $value;
                 } else {
                     return $page ? $page->name : $value;
                 }
@@ -88,7 +89,6 @@ class AdController extends AdminCommonController
         $this->textFormOption($form);
         $this->imagesFormOption($form);
 
-
         $form->text("link", "跳转链接")
             ->addElementClass2("mt-ad-link")
             ->help("如:https://baidu.com");
@@ -103,7 +103,7 @@ class AdController extends AdminCommonController
                 ->where("path", $type)
                 ->first();
 
-            if (!in_array($adType, $page->ad_types)) {
+            if ( ! in_array($adType, $page->ad_types)) {
                 throw new ResourceException("该模块不支持设置该广告类型");
             }
         });
@@ -121,8 +121,9 @@ class AdController extends AdminCommonController
             ->removable()
             ->uniqueName()
             ->addElementClass2("mt-ad-image")
-            ->move('ads/image'.$this->currentId ?: 0);
+            ->move('ads/image' . $this->currentId ?: 0);
     }
+
 
     /**
      * 文字广告
@@ -134,6 +135,7 @@ class AdController extends AdminCommonController
         $form->text("content")
             ->addElementClass2("mt-ad-text");
     }
+
 
     /**
      * 多图广告
@@ -147,7 +149,7 @@ class AdController extends AdminCommonController
                 ->removable()
                 ->uniqueName()
                 ->addElementClass2("mt-ad-images")
-                ->move('ads/images'.$this->currentId ?: 0);
+                ->move('ads/images' . $this->currentId ?: 0);
 
             $form->text("link", "跳转链接")
                 ->addElementClass2("mt-ad-images")
@@ -201,9 +203,7 @@ class AdController extends AdminCommonController
     });    
 EOT;
 
-
         Admin::script($defaultScript);
     }
-
 
 }

@@ -2,7 +2,6 @@
 
 namespace Mallto\Tool\Domain\Net;
 
-
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\HandlerStack;
 use Mallto\Tool\Exception\ThirdPartException;
@@ -13,6 +12,7 @@ use Psr\Http\Message\ResponseInterface;
  */
 class Http
 {
+
     /**
      * Used to identify handler defined by client code
      * Maybe useful in the future.
@@ -56,6 +56,7 @@ class Http
         self::$defaults = $defaults;
     }
 
+
     /**
      * Return current guzzle default settings.
      *
@@ -66,6 +67,7 @@ class Http
         return self::$defaults;
     }
 
+
     /**
      * GET request.
      *
@@ -73,13 +75,15 @@ class Http
      * @param array  $options
      *
      * @param        $otherOptions
+     *
      * @return ResponseInterface
      *
      */
-    public function get($url, array $options = [],$otherOptions=[])
+    public function get($url, array $options = [], $otherOptions = [])
     {
-        return $this->request($url, 'GET', array_merge(['query' => $options],$otherOptions));
+        return $this->request($url, 'GET', array_merge([ 'query' => $options ], $otherOptions));
     }
+
 
     /**
      * POST request.
@@ -88,6 +92,7 @@ class Http
      * @param array|string $options
      *
      * @param              $other
+     *
      * @return ResponseInterface
      */
     public function post($url, $options = [], $other = [])
@@ -95,9 +100,10 @@ class Http
         $key = is_array($options) ? 'form_params' : 'body';
 
         return $this->request($url, 'POST', array_merge(
-            [$key => $options],
+            [ $key => $options ],
             $other));
     }
+
 
     /**
      * JSON request.
@@ -109,10 +115,17 @@ class Http
      * @param array        $queries
      * @param array        $other
      * @param string       $mothod
+     *
      * @return ResponseInterface
      */
-    public function json($url, $options = [], $encodeOption = JSON_UNESCAPED_UNICODE, $queries = [], $other = [],$mothod='POST')
-    {
+    public function json(
+        $url,
+        $options = [],
+        $encodeOption = JSON_UNESCAPED_UNICODE,
+        $queries = [],
+        $other = [],
+        $mothod = 'POST'
+    ) {
         is_array($options) && $options = json_encode($options, $encodeOption);
 
         return $this->request($url, $mothod,
@@ -120,10 +133,11 @@ class Http
                 [
                     'query'   => $queries,
                     'body'    => $options,
-                    'headers' => ['content-type' => 'application/json'],
+                    'headers' => [ 'content-type' => 'application/json' ],
                 ],
                 $other));
     }
+
 
     /**
      * Upload file.
@@ -151,8 +165,9 @@ class Http
             $multipart[] = compact('name', 'contents');
         }
 
-        return $this->request($url, 'POST', ['query' => $queries, 'multipart' => $multipart]);
+        return $this->request($url, 'POST', [ 'query' => $queries, 'multipart' => $multipart ]);
     }
+
 
     /**
      * Set GuzzleHttp\Client.
@@ -168,6 +183,7 @@ class Http
         return $this;
     }
 
+
     /**
      * Return GuzzleHttp\Client instance.
      *
@@ -175,12 +191,13 @@ class Http
      */
     public function getClient()
     {
-        if (!($this->client instanceof HttpClient)) {
+        if ( ! ($this->client instanceof HttpClient)) {
             $this->client = new HttpClient();
         }
 
         return $this->client;
     }
+
 
     /**
      * Add a middleware.
@@ -196,6 +213,7 @@ class Http
         return $this;
     }
 
+
     /**
      * Return all middlewares.
      *
@@ -205,6 +223,7 @@ class Http
     {
         return $this->middlewares;
     }
+
 
     /**
      * Make a request.
@@ -227,6 +246,7 @@ class Http
 
         return $this->getClient()->request($method, $url, $options);
     }
+
 
     /**
      * @param \Psr\Http\Message\ResponseInterface|string $body
@@ -251,7 +271,7 @@ class Http
         $contents = json_decode($body, true);
 
         if (JSON_ERROR_NONE !== json_last_error()) {
-            throw new ThirdPartException('Failed to parse JSON: '.json_last_error_msg());
+            throw new ThirdPartException('Failed to parse JSON: ' . json_last_error_msg());
         }
 
         return $contents;
@@ -269,6 +289,7 @@ class Http
     {
         return preg_replace('/[\x00-\x1F\x80-\x9F]/u', '', trim($invalidJSON));
     }
+
 
     /**
      * Build a handler.

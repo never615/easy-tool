@@ -7,10 +7,8 @@ use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\SmsTemplate;
 
-
 class SmsTemplateController extends AdminCommonController
 {
-
 
     /**
      * 获取这个模块的标题
@@ -22,6 +20,7 @@ class SmsTemplateController extends AdminCommonController
         return "群发短信模板管理";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -32,6 +31,7 @@ class SmsTemplateController extends AdminCommonController
         return SmsTemplate::class;
     }
 
+
     protected function gridOption(Grid $grid)
     {
         $grid->code("模版CODE");
@@ -40,6 +40,7 @@ class SmsTemplateController extends AdminCommonController
         $grid->switch()->switch();
     }
 
+
     /**
      * 需要实现的form设置
      *
@@ -47,6 +48,7 @@ class SmsTemplateController extends AdminCommonController
      * 然后formOption留空即可
      *
      * @param Form $form
+     *
      * @return mixed
      */
     protected function formOption(Form $form)

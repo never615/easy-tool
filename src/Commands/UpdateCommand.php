@@ -10,6 +10,7 @@ use Mallto\Tool\Seeder\TablesSeeder;
 
 class UpdateCommand extends Command
 {
+
     /**
      * The console command name.
      *
@@ -31,6 +32,7 @@ class UpdateCommand extends Command
      */
     protected $directory = '';
 
+
     /**
      * Execute the console command.
      *
@@ -38,7 +40,7 @@ class UpdateCommand extends Command
      */
     public function handle()
     {
-        $this->call('db:seed', ['--class' => TablesSeeder::class, '--force' => true]);
+        $this->call('db:seed', [ '--class' => TablesSeeder::class, '--force' => true ]);
 
     }
 

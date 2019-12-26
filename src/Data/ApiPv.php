@@ -19,6 +19,7 @@ class ApiPv extends BaseModel
     protected $table = "api_pv";
 
     public $selectName = "path";
+
     public $selectId = "path";
 
 
@@ -26,6 +27,5 @@ class ApiPv extends BaseModel
     {
         return $this->belongsTo(ApiPvManager::class, "path", "path");
     }
-
 
 }

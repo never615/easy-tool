@@ -13,6 +13,7 @@ namespace Mallto\Tool\Exception;
  */
 class BadRequestHttpException extends \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
 {
+
     /**
      * @param string     $message  The internal exception message
      * @param \Exception $previous The previous exception
@@ -25,6 +26,6 @@ class BadRequestHttpException extends \Symfony\Component\HttpKernel\Exception\Ba
         int $code = 0,
         array $headers = []
     ) {
-        parent::__construct( $message, $previous, $headers, $code);
+        parent::__construct($message, $previous, $headers, $code);
     }
 }

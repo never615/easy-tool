@@ -5,13 +5,10 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
-
-use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\PageBanner;
-
 
 class PageBannerController extends AdminCommonController
 {
@@ -25,6 +22,7 @@ class PageBannerController extends AdminCommonController
     {
         return "轮播图";
     }
+
 
     /**
      * 获取这个模块的Model
@@ -53,7 +51,7 @@ class PageBannerController extends AdminCommonController
         $form->image('image')
             ->uniqueName()
             ->removable()
-            ->move('page_banner/image'.$this->currentId)
+            ->move('page_banner/image' . $this->currentId)
             ->rules("required");
         $form->text("weight")->default(0)->rules("numeric");
     }

@@ -37,7 +37,6 @@ class AppSecretUsecase extends AbstractAPI
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
-
 //        $nonceStr = AppUtils::getRandomString();
 //        $now = TimeUtils::getNowTime();
 //
@@ -48,7 +47,6 @@ class AppSecretUsecase extends AbstractAPI
 //            'signature_nonce' => $nonceStr,
 //        ];
 
-
         $requestData = [
 
         ];
@@ -57,7 +55,6 @@ class AppSecretUsecase extends AbstractAPI
 
         $sign = SignUtils::sign($requestData, config("other.mallto_app_secret"));
 
-
         $requestData = array_merge($requestData, [
             "sign" => $sign,
         ]);
@@ -65,7 +62,7 @@ class AppSecretUsecase extends AbstractAPI
         $contents = null;
         try {
             $contents = $this->parseJson('get', [
-                $baseUrl.'/api/app_secret',
+                $baseUrl . '/api/app_secret',
                 $requestData,
                 [
                     'headers' => [
@@ -96,6 +93,7 @@ class AppSecretUsecase extends AbstractAPI
             return false;
         }
     }
+
 
     /**
      * 不同的实现需要重写此方法 标准的json请求使用

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreatePageConfigsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -27,7 +28,6 @@ class CreatePageConfigsTable extends Migration
 
             $table->json("banner")->nullable()->comment("轮播图配置");
 
-
             $table->softDeletes();
             $table->timestamps();
 
@@ -36,6 +36,7 @@ class CreatePageConfigsTable extends Migration
             ]);
         });
     }
+
 
     /**7
      * Reverse the migrations.

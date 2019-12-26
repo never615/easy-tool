@@ -22,6 +22,7 @@ class MtConfig
      * @param      $key
      * @param null $default
      * @param null $type
+     *
      * @return mixed
      */
     public function getConfig($key, $default = null, $type = null)
@@ -37,7 +38,7 @@ class MtConfig
             if ($default) {
                 return $default;
             } else {
-                throw new ResourceException($key."未配置");
+                throw new ResourceException($key . "未配置");
             }
         }
     }

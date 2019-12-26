@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdateHeadImagesEnhance extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -47,6 +48,7 @@ class UpdateHeadImagesEnhance extends Migration
 
 
     }
+
 
     /**
      * Reverse the migrations.

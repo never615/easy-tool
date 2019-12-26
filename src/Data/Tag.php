@@ -5,12 +5,10 @@
 
 namespace Mallto\Tool\Data;
 
-use Encore\Admin\Facades\Admin;
 use Illuminate\Support\Facades\DB;
 use Mallto\Admin\Data\Traits\BaseModel;
 use Mallto\Mall\Data\Shop;
 use Mallto\User\Data\User;
-
 
 class Tag extends BaseModel
 {
@@ -34,9 +32,10 @@ class Tag extends BaseModel
             ->pluck("name", "id");
     }
 
+
     /**
-     * @deprecated
      * @return mixed
+     * @deprecated
      */
     public static function selectNotUserTags()
     {
@@ -51,6 +50,7 @@ class Tag extends BaseModel
      *
      * @param $query
      * @param $type
+     *
      * @return
      */
     public function scopeOfType($query, $type)
@@ -79,10 +79,10 @@ class Tag extends BaseModel
         return $this->morphedByMany(Shop::class, "taggable");
     }
 
+
     public function users()
     {
         return $this->morphedByMany(User::class, "taggable");
     }
-
 
 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateAppSecretsAddSwitch extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -20,6 +21,7 @@ class UpdateAppSecretsAddSwitch extends Migration
             $table->boolean("switch")->default(true);
         });
     }
+
 
     /**
      * Reverse the migrations.

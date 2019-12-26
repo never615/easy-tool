@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Mallto\Tool\Domain\Net;
-
 
 use Exception;
 use GuzzleHttp\Exception\ClientException;
@@ -25,6 +23,7 @@ use Psr\Http\Message\ResponseInterface;
  */
 abstract class AbstractAPI
 {
+
     /**
      * Http instance.
      *
@@ -32,11 +31,9 @@ abstract class AbstractAPI
      */
     protected $http;
 
-
     const GET = 'get';
     const POST = 'post';
     const JSON = 'json';
-
 
     /**
      * 主体动态配置中配置的项目的key  SubjectConfig
@@ -61,6 +58,7 @@ abstract class AbstractAPI
      */
     protected $baseUrl;
 
+
     /**
      * AbstractAPI constructor.
      */
@@ -68,7 +66,7 @@ abstract class AbstractAPI
     {
 
 
-        if (!$this->slug) {
+        if ( ! $this->slug) {
             throw new InternalHttpException('继承自AbstractAPI的类 没有设置slug');
         }
     }
@@ -78,6 +76,7 @@ abstract class AbstractAPI
      * 获取请求的基础url,url后已经拼接好/
      *
      * @param int $subjectId
+     *
      * @return mixed
      */
     protected function getBaseUrl(int $subjectId)
@@ -92,8 +91,9 @@ abstract class AbstractAPI
 
         $baseUrl = SubjectUtils::getDynamicKeyConfigByOwner($this->SETTING_KEY_BASE_URL, $subjectId);
 
-        return $this->baseUrl = rtrim($baseUrl, '/').'/';
+        return $this->baseUrl = rtrim($baseUrl, '/') . '/';
     }
+
 
     /**
      * @param mixed $baseUrl
@@ -122,6 +122,7 @@ abstract class AbstractAPI
         return $this->http;
     }
 
+
     /**
      * Set the http instance.
      *
@@ -136,6 +137,7 @@ abstract class AbstractAPI
         return $this;
     }
 
+
     /**
      * Parse JSON from response and check error.
      *
@@ -148,7 +150,7 @@ abstract class AbstractAPI
     {
         $http = $this->getHttp();
 
-        $contents = $http->parseJSON(call_user_func_array([$http, $method], $args));
+        $contents = $http->parseJSON(call_user_func_array([ $http, $method ], $args));
 
         if (is_array($contents)) {
             $this->checkAndThrow($contents);
@@ -168,6 +170,7 @@ abstract class AbstractAPI
         // retry
         $this->http->addMiddleware($this->retryMiddleware());
     }
+
 
     /**
      * Log the request.
@@ -196,7 +199,7 @@ abstract class AbstractAPI
                     'url'        => $request->getUri(),
                     'headers'    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
-                        JSON_UNESCAPED_UNICODE) : $request->getBody()."",
+                        JSON_UNESCAPED_UNICODE) : $request->getBody() . "",
                 ]));
             } catch (\Exception $exception) {
                 \Log::error("记录第三方方请求日志错误");
@@ -204,7 +207,11 @@ abstract class AbstractAPI
             }
 
 
-        }, function (RequestInterface $request, $options, Promise $response) use ($requestId, &$startTime, $endTime) {
+        }, function (RequestInterface $request, $options, Promise $response) use (
+            $requestId,
+            &$startTime,
+            $endTime
+        ) {
             $response->then(function (ResponseInterface $response) use ($request, $requestId, &$startTime) {
                 $requestTime = 0;
                 if (AppUtils::isTestEnv()) {
@@ -230,6 +237,7 @@ abstract class AbstractAPI
         });
     }
 
+
     /**
      * Return retry middleware.
      *
@@ -248,7 +256,6 @@ abstract class AbstractAPI
                 return false;
             }
 
-
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
                 dispatch(new LogJob("logThirdPart", [
                     'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
@@ -259,7 +266,7 @@ abstract class AbstractAPI
                     "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     "body"    => \GuzzleHttp\json_encode([
                         "request"  => $request->getBody()->getContents(),
-                        "response" => $response ? 'status code: '.$response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
+                        "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
                     ], JSON_UNESCAPED_UNICODE),
                 ]));
 
@@ -273,6 +280,7 @@ abstract class AbstractAPI
 
     /**
      * @param ResponseInterface $response
+     *
      * @return bool
      */
     protected function isServerError(ResponseInterface $response = null)
@@ -280,8 +288,10 @@ abstract class AbstractAPI
         return $response && $response->getStatusCode() >= 500;
     }
 
+
     /**
      * @param RequestException $exception
+     *
      * @return bool
      */
     protected function isConnectError(RequestException $exception = null)
@@ -301,6 +311,7 @@ abstract class AbstractAPI
 
         return false;
     }
+
 
     /**
      *
@@ -330,7 +341,7 @@ abstract class AbstractAPI
     protected function clientExceptionLog(ClientException $clientException)
     {
         try {
-            \Log::error('clientException:'.static::class);
+            \Log::error('clientException:' . static::class);
             \Log::warning(new Exception());
             \Log::warning($clientException);
             \Log::warning($clientException->getResponse()->getBody()->getContents());

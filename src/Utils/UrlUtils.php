@@ -7,7 +7,6 @@ namespace Mallto\Tool\Utils;
 
 use Mallto\Tool\Exception\PermissionDeniedException;
 
-
 /**
  * 工具类
  * Created by PhpStorm.
@@ -18,7 +17,6 @@ use Mallto\Tool\Exception\PermissionDeniedException;
 class UrlUtils
 {
 
-
     /**
      * 获取域名后的第一段路径
      *
@@ -26,6 +24,7 @@ class UrlUtils
      *
      * @param $request
      * @param $number ,获取路径的第几段信息
+     *
      * @return mixed
      */
     public static function getPathKey($request, $number = 0)
@@ -43,6 +42,7 @@ class UrlUtils
      * 如:https://xxx.mall-to.com:8080 返回xxx.mall-to.com
      *
      * @param $url
+     *
      * @return bool
      */
     public static function getHost($url)
@@ -66,6 +66,7 @@ class UrlUtils
      * 获取 domian 包含端口和http协议
      *
      * @param $url
+     *
      * @return bool
      */
     public static function getDomain($url)
@@ -74,12 +75,12 @@ class UrlUtils
         $scheme = "";
         if (count($urlArr1) > 1) {
             $urlArr = explode("/", $urlArr1[1]);
-            $scheme = $urlArr1[0]."//";
+            $scheme = $urlArr1[0] . "//";
         } else {
             $urlArr = explode("/", $url);
         }
 
-        return isset($urlArr[0]) ? $scheme.$urlArr[0] : false;
+        return isset($urlArr[0]) ? $scheme . $urlArr[0] : false;
     }
 
 
@@ -87,6 +88,7 @@ class UrlUtils
      * 检查链接中的http协议,根据配置中的协议动态替换
      *
      * @param $url
+     *
      * @return string
      */
     public static function checkHttpProtocol($url)
@@ -103,7 +105,7 @@ class UrlUtils
             if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉
                 $url = substr($url, 4);
-                $url = "https".$url;
+                $url = "https" . $url;
 
                 return $url;
             }
@@ -111,7 +113,7 @@ class UrlUtils
             if ($httpProtocol === "http" && strpos($url, "https") === 0) {
                 //如果要替换成的协议是http,而url是以https开头,替换掉
                 $url = substr($url, 5);
-                $url = "http".$url;
+                $url = "http" . $url;
 
                 return $url;
             }
@@ -133,7 +135,7 @@ class UrlUtils
      */
     public static function checkDomainOAuth($url, $domains = null)
     {
-        if (!$domains) {
+        if ( ! $domains) {
             $callbackDomain = config("app.oauth_callback_domain");
             $domains = explode(",", $callbackDomain);
         }
@@ -156,16 +158,18 @@ class UrlUtils
             $isAuth = true;
         }
 
-        if (!$isAuth) {
-            throw new PermissionDeniedException("回调域名不可信:".$requestDomain);
+        if ( ! $isAuth) {
+            throw new PermissionDeniedException("回调域名不可信:" . $requestDomain);
         }
     }
+
 
     /**
      * url拼接参数
      *
      * @param string $url
      * @param array  $data
+     *
      * @return mixed|string
      */
     public static function urlWithQuery($url, $data)
@@ -176,9 +180,9 @@ class UrlUtils
             $url = str_replace($ancho, "", $url);
         }
         if (str_contains($url, "?")) {
-            $url = $url."&".http_build_query($data).$ancho;
+            $url = $url . "&" . http_build_query($data) . $ancho;
         } else {
-            $url = $url.'?'.http_build_query($data).$ancho;
+            $url = $url . '?' . http_build_query($data) . $ancho;
         }
 
         return $url;
@@ -190,6 +194,7 @@ class UrlUtils
      *
      * @param      $url
      * @param null $urlPrefix
+     *
      * @return string
      */
     public static function addFileUrlPrefix($url, $urlPrefix = null)
@@ -198,12 +203,11 @@ class UrlUtils
             return $url;
         }
 
-        if (!$urlPrefix) {
+        if ( ! $urlPrefix) {
             $urlPrefix = config("app.file_url_prefix");
         }
 
-        return $urlPrefix.$url;
+        return $urlPrefix . $url;
     }
-
 
 }

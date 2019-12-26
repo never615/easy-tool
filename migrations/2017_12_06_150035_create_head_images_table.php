@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateHeadImagesTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -33,6 +34,7 @@ class CreateHeadImagesTable extends Migration
 
         });
     }
+
 
     /**
      * Reverse the migrations.

@@ -12,11 +12,11 @@ use Mallto\Tool\Data\ApiPv;
 use Mallto\Tool\Data\ApiPvManager;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
-
 class ApiPvManagerController extends AdminCommonController
 {
 
     use SlugAutoSave;
+
 
     /**
      * 获取这个模块的标题
@@ -27,6 +27,7 @@ class ApiPvManagerController extends AdminCommonController
     {
         return "api pv管理";
     }
+
 
     protected function getIndexDesc()
     {
@@ -44,6 +45,7 @@ class ApiPvManagerController extends AdminCommonController
         return ApiPvManager::class;
     }
 
+
     protected function gridOption(Grid $grid)
     {
         $grid->path("接口");
@@ -53,6 +55,7 @@ class ApiPvManagerController extends AdminCommonController
 
     }
 
+
     /**
      * 需要实现的form设置
      *
@@ -60,6 +63,7 @@ class ApiPvManagerController extends AdminCommonController
      * 然后formOption留空即可
      *
      * @param Form $form
+     *
      * @return mixed
      */
     protected function formOption(Form $form)

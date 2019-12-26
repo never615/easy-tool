@@ -24,7 +24,6 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
     const TARGET_TAG = 'TAG';
     const TARGET_ALL = 'ALL';
 
-
     protected $baseUrl = "http://cloudpush.aliyuncs.com/";
 
 
@@ -37,6 +36,7 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
      * @param      $title
      * @param null $body
      * @param null $appKey
+     *
      * @return mixed
      */
     public function pushMessageToAndroid($subject, $target, $targetValue, $title, $body, $appKey = null)
@@ -49,19 +49,17 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
             'TargetValue' => $targetValue,
             'Title'       => $title,
             'Body'        => $body,
-        ], array (
+        ], [
             "RegionId" => "cn-hangzhou",
             "Action"   => "PushMessageToAndroid",
             "Version"  => "2016-08-01",
-        ));
-
+        ]);
 
         $query = $this->mergePublicParamsAndSign($params);
 
         $http = $this->getHttp();
         try {
-            $response = $http->request($this->baseUrl."?$query", 'GET');
-
+            $response = $http->request($this->baseUrl . "?$query", 'GET');
 
             try {
                 $contents = $http->parseJson($response);

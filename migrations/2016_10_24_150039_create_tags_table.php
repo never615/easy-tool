@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateTagsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -26,9 +27,10 @@ class CreateTagsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['type', 'weight']);
+            $table->index([ 'type', 'weight' ]);
         });
     }
+
 
     /**
      * Reverse the migrations.

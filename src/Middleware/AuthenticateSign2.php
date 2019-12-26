@@ -14,7 +14,6 @@
 
 namespace Mallto\Tool\Middleware;
 
-
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
@@ -23,7 +22,6 @@ use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
-use Mallto\Tool\Utils\HttpUtils;
 use Mallto\Tool\Utils\SignUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
@@ -38,14 +36,17 @@ use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
  */
 class AuthenticateSign2
 {
+
     protected $except = [
     ];
+
 
     /**
      * Handle an incoming request.
      *
      * @param         $request
      * @param Closure $next
+     *
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
@@ -53,13 +54,14 @@ class AuthenticateSign2
         return $this->check($request, $next);
     }
 
+
     protected function check(Request $request, Closure $next)
     {
         $appId = $request->header("app_id");
         $appSecret = AppSecret::where("app_id", $appId)->first();
 
-        if (!$appSecret || !$appSecret->switch) {
-            \Log::warning("app_id 无效:".$appId);
+        if ( ! $appSecret || ! $appSecret->switch) {
+            \Log::warning("app_id 无效:" . $appId);
             \Log::warning($request->url());
             throw new SignException("app_id 无效");
         }
@@ -96,7 +98,7 @@ class AuthenticateSign2
             case "2":  //签名校验+时间戳校验
                 $timestamp = $request->header("timestamp");
                 //时间戳格式检查
-                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
@@ -118,13 +120,12 @@ class AuthenticateSign2
                 $uuid = $request->header("uuid");
                 $appId = $request->header("app_id");
 
-                if (!$timestamp | !$uuid | !$appId) {
+                if ( ! $timestamp | ! $uuid | ! $appId) {
                     throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
                 }
 
-
                 //时间戳格式检查
-                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
@@ -157,9 +158,8 @@ class AuthenticateSign2
                     throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
                 }
 
-
                 //时间戳格式检查
-                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
@@ -167,11 +167,10 @@ class AuthenticateSign2
 
                 $requestPath = $request->path();
 
-                $nonce = $uuid.$appId.$requestPath.$signatureNonce;
+                $nonce = $uuid . $appId . $requestPath . $signatureNonce;
                 if (Cache::get($nonce)) {
-                    throw new ResourceException("请求已被接受,signature_nonce:".$signatureNonce);
+                    throw new ResourceException("请求已被接受,signature_nonce:" . $signatureNonce);
                 }
-
 
                 if (Carbon::now()->subMinutes(15) < $timestamp) {
                     //和当前时间间隔比较在15分钟内

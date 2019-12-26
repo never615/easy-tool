@@ -12,7 +12,6 @@ namespace Mallto\Tool\Msg;
 interface MobileDevicePush
 {
 
-
     /**
      * 推送消息给安卓
      *
@@ -22,9 +21,9 @@ interface MobileDevicePush
      * @param $title
      * @param $body
      * @param $appKey
+     *
      * @return mixed
      */
-    public function pushMessageToAndroid($subject,$target, $targetValue, $title, $body, $appKey = null);
-
+    public function pushMessageToAndroid($subject, $target, $targetValue, $title, $body, $appKey = null);
 
 }

@@ -16,6 +16,7 @@ use Mallto\Tool\Domain\App\AppSecretUsecase;
  */
 class UpdateAppSecretCommand extends Command
 {
+
     /**
      * The console command name.
      *
@@ -36,10 +37,12 @@ class UpdateAppSecretCommand extends Command
      * @var string
      */
     protected $directory = '';
+
     /**
      * @var AppSecretUsecase
      */
     private $appSecretUsecase;
+
 
     /**
      * UpdateAppSecret constructor.

@@ -6,10 +6,11 @@ use Illuminate\Database\Seeder;
 use Mallto\Admin\Data\Menu;
 use Mallto\Admin\Seeder\MenuSeederMaker;
 
-
 class SmsNotifyMenuSeeder extends Seeder
 {
+
     use MenuSeederMaker;
+
 
     /**
      * Run the database seeds.

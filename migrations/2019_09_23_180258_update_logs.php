@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateLogs extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -26,6 +27,7 @@ class UpdateLogs extends Migration
             $table->text("content")->nullable()->change();
         });
     }
+
 
     /**
      * Reverse the migrations.

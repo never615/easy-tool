@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateSmsNotifiesAddTemplateId extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -23,6 +24,7 @@ class UpdateSmsNotifiesAddTemplateId extends Migration
             $table->string("content")->nullable()->change();
         });
     }
+
 
     /**
      * Reverse the migrations.

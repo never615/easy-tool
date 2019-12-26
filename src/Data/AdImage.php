@@ -5,9 +5,7 @@
 
 namespace Mallto\Tool\Data;
 
-
 use Mallto\Admin\Data\Traits\BaseModel;
-
 
 class AdImage extends BaseModel
 {
@@ -16,6 +14,5 @@ class AdImage extends BaseModel
     {
         return $this->belongsTo(Ad::class);
     }
-
 
 }

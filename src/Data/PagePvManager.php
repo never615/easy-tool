@@ -9,6 +9,7 @@ use Mallto\Admin\Data\Traits\BaseModel;
 
 class PagePvManager extends BaseModel
 {
+
     protected $table = 'page_pv_manager';
 
     protected $casts = [
@@ -16,7 +17,7 @@ class PagePvManager extends BaseModel
     ];
 
     public $selectName = "name";
-    public $selectId = "path";
 
+    public $selectId = "path";
 
 }

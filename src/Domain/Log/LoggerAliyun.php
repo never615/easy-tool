@@ -9,7 +9,6 @@ use Aliyun\SLS\Client;
 use Aliyun\SLS\Models\LogItem;
 use Aliyun\SLS\Models\PutLogsRequest;
 
-
 /**
  * Created by PhpStorm.
  * User: never615
@@ -18,18 +17,27 @@ use Aliyun\SLS\Models\PutLogsRequest;
  */
 class LoggerAliyun implements Logger
 {
+
     private $project;
+
     private $logstore_third_part_api = "third_part_api";
+
     private $logstore_admin_operation = "admin_operation";
+
     private $logstore_own_api = "own_api";
+
     private $logstore_schedule = "schedule";
+
     private $logstore_queue = "queue";
 
     private $client;
+
     private $serverName;
+
     private $localIp;
 
     private $switch = false;
+
 
     /**
      * LoggerAliyun constructor.
@@ -56,13 +64,13 @@ class LoggerAliyun implements Logger
      */
     public function logThirdPart($content)
     {
-        if (!$this->switch) {
+        if ( ! $this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
-        $logitems = array ();
+        $logitems = [];
         $logItem = new LogItem();
         $logItem->setTime(time());
 
@@ -73,7 +81,8 @@ class LoggerAliyun implements Logger
             ])
         );
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_third_part_api, $topic, $source, $logitems);
+        $req2 = new PutLogsRequest($this->project, $this->logstore_third_part_api, $topic, $source,
+            $logitems);
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
@@ -83,21 +92,23 @@ class LoggerAliyun implements Logger
         }
     }
 
+
     /**
      * 记录自己api的通讯日志
      *
      * @param $content
+     *
      * @return mixed|void
      */
     public function logOwnerApi($content)
     {
-        if (!$this->switch) {
+        if ( ! $this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
-        $logitems = array ();
+        $logitems = [];
         $logItem = new LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
@@ -116,21 +127,23 @@ class LoggerAliyun implements Logger
         }
     }
 
+
     /**
      * 记录管理端的操作日志
      *
-     * @param  array $log
+     * @param array $log
+     *
      * @return mixed
      */
     public function logAdminOperation($log)
     {
-        if (!$this->switch) {
+        if ( ! $this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
-        $logitems = array ();
+        $logitems = [];
         $logItem = new LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($log, [
@@ -139,7 +152,8 @@ class LoggerAliyun implements Logger
             "env"         => config("app.env"),
         ]));
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source, $logitems);
+        $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source,
+            $logitems);
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
@@ -149,21 +163,23 @@ class LoggerAliyun implements Logger
         }
     }
 
+
     /**
      * 调度任务执行记录
      *
      * @param $content
+     *
      * @return mixed
      */
     public function logSchedule($content)
     {
-        if (!$this->switch) {
+        if ( ! $this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
-        $logitems = array ();
+        $logitems = [];
         $logItem = new LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
@@ -187,17 +203,18 @@ class LoggerAliyun implements Logger
      * 队列任务执行记录
      *
      * @param      $content
+     *
      * @return mixed
      */
     public function logQueue($content)
     {
-        if (!$this->switch) {
+        if ( ! $this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
-        $logitems = array ();
+        $logitems = [];
         $logItem = new LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [

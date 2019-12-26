@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateTagsAddLogo extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -20,6 +21,7 @@ class UpdateTagsAddLogo extends Migration
             $table->string("logo")->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

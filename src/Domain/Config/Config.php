@@ -20,6 +20,7 @@ interface Config
      * @param      $key
      * @param null $default
      * @param null $type
+     *
      * @return mixed
      */
     public function getConfig($key, $default = null, $type = null);

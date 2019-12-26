@@ -14,6 +14,5 @@ namespace Mallto\Tool\Domain\SensitiveWord;
 class SensitiveWord
 {
 
-
     //test
 }

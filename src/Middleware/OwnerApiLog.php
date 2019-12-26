@@ -20,11 +20,13 @@ use Mallto\Tool\Utils\AppUtils;
  */
 class OwnerApiLog
 {
+
     /**
      * Handle an incoming request.
      *
      * @param \Illuminate\Http\Request $request
      * @param \Closure                 $next
+     *
      * @return mixed
      */
     public function handle(Request $request, \Closure $next)
@@ -35,12 +37,10 @@ class OwnerApiLog
             $ip = $tempIp;
         }
 
-
         $user = Auth::guard("api")->user();
         $userId = $user ? $user->id : 0;
 
         $uuid = SubjectUtils::getUUIDNoException() ?: 0;
-
 
         $requestId = AppUtils::create_uuid();
 
@@ -55,7 +55,6 @@ class OwnerApiLog
             "uuid"       => $uuid,
             "request_id" => $requestId,
         ];
-
 
         dispatch(new LogJob("logOwnerApi", $log));
 
@@ -96,7 +95,7 @@ class OwnerApiLog
 
         dispatch(new LogJob("logOwnerApi", $log));
 
-        $response->headers->set('request-id',$requestId);
+        $response->headers->set('request-id', $requestId);
 
         return $response;
     }

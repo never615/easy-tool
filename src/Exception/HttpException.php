@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Exception;
 
-
 /**
  * 自定义的http异常,一般在需要返回自定义响应码的时候使用
  *
@@ -13,9 +12,11 @@ namespace Mallto\Tool\Exception;
  */
 class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpException
 {
+
     protected $errCode;
 
     protected $content;
+
 
     /**
      * HttpException constructor.
@@ -34,13 +35,14 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         $errCode = null,
         $content = null,
         \Exception $previous = null,
-        array $headers = array (),
+        array $headers = [],
         $code = 0
     ) {
         $this->errCode = $errCode;
         $this->content = $content;
         parent::__construct($statusCode, $message, $previous, $headers, $errCode);
     }
+
 
     /**
      * @return null
@@ -51,6 +53,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         return $this->errCode ?: $this->getStatusCode();
     }
 
+
     /**
      * @param null $errCode
      */
@@ -59,6 +62,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         $this->errCode = $errCode;
     }
 
+
     /**
      * @return null
      */
@@ -66,6 +70,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
     {
         return $this->content;
     }
+
 
     /**
      * @param null $content
@@ -89,6 +94,5 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
             "error" => $this->message,
         ], (array) $this->content);
     }
-
 
 }

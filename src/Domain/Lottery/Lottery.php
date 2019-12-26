@@ -25,6 +25,7 @@ class Lottery
      * @param        $lotteries
      * @param string $weightColumn
      * @param string $idColumn
+     *
      * @return mixed
      */
     public function run($lotteries, $weightColumn = "weight", $idColumn = "id")
@@ -42,13 +43,12 @@ class Lottery
         $sumWeight = 0;
         foreach ($lotteries as $key => $lottery) {
             //区间包含头尾
-            $lotteries[$key]["interval"] = [$sumWeight + 1, $sumWeight + $lottery[$weightColumn]];
+            $lotteries[$key]["interval"] = [ $sumWeight + 1, $sumWeight + $lottery[$weightColumn] ];
             $sumWeight += $lottery[$weightColumn];
         }
         //2. 在权重和中随机一个数字,判断落在那个区间
         if ($sumWeight > 0) {
             $lotteryResult = mt_rand(1, $sumWeight);
-
 
             //3. 找到该区间对应的对象,返回
             foreach ($lotteries as $key => $lottery) {

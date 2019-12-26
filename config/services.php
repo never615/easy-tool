@@ -9,7 +9,7 @@ return [
     'aliyun_mail' => [
         'AccessKeyId'    => env('ALIYUN_MAIL_KEY'),
         'AccessSecret'   => env('ALIYUN_MAIL_SECRET'),
-        'ReplyToAddress' => env('ALIYUN_MAIL_REPLY','true'),
-        'AddressType' => env('ALIYUN_MAIL_ADDRESS_TYPE','0'),
+        'ReplyToAddress' => env('ALIYUN_MAIL_REPLY', 'true'),
+        'AddressType'    => env('ALIYUN_MAIL_ADDRESS_TYPE', '0'),
     ],
 ];

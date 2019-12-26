@@ -9,11 +9,10 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Mallto\Tool\Domain\Sms\AliyunSms;
 use Tests\CreatesApplication;
 
-
 class AliyunSmsTest extends BaseTestCase
 {
-    use CreatesApplication;
 
+    use CreatesApplication;
 
 //    public function testSendSms()
 //    {
@@ -24,7 +23,6 @@ class AliyunSmsTest extends BaseTestCase
 //
 //        $this->assertTrue($result);
 //    }
-
 
     public function testSendBatchSms()
     {

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdatePagePvManagerAddAdTypes extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -24,6 +25,7 @@ class UpdatePagePvManagerAddAdTypes extends Migration
             $table->json("ad_types")->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

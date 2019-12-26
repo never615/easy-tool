@@ -16,6 +16,7 @@ use Mallto\Admin\Seeder\MenuSeederMaker;
  */
 class StatisticsMenusSeeder extends Seeder
 {
+
     use MenuSeederMaker;
 
 

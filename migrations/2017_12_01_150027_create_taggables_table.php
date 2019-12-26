@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreateTaggablesTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -32,6 +33,7 @@ class CreateTaggablesTable extends Migration
 
         });
     }
+
 
     /**
      * Reverse the migrations.

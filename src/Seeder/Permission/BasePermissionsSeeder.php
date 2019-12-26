@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Seeder\Permission;
 
-
 use Illuminate\Database\Seeder;
 use Mallto\Admin\Seeder\SeederMaker;
 

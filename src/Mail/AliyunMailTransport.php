@@ -8,6 +8,7 @@ namespace Mallto\Tool\Mail;
  * Date: 18/01/2018
  * Time: 5:38 PM
  */
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Mail\Transport\Transport;
@@ -16,13 +17,21 @@ use Swift_Mime_Message;
 
 class AliyunMailTransport extends Transport
 {
+
     const API_URL = 'https://dm.aliyuncs.com/';
+
     private $AddressType;
+
     private $ReplyToAddress;
+
     private $AccessKeyId;
+
     private $AccessSecret;
+
     private $CommonParameters;
+
     private $SingleParameters;
+
 
     /**
      * DirectMailTransport 构造函数
@@ -49,11 +58,13 @@ class AliyunMailTransport extends Transport
         $this->CommonParameters['RegionId'] = 'cn-hangzhou';
     }
 
+
     /**
      * 调用单一发信接口或者批量发信接口发信
      *
      * @param Swift_Mime_Message $message
      * @param null               $failedRecipients
+     *
      * @return mixed
      */
     public function send(Swift_Mime_Message $message, &$failedRecipients = null)
@@ -62,7 +73,6 @@ class AliyunMailTransport extends Transport
         $this->beforeSendPerformed($message);
 
         $result = $this->SingleSendMail($message);
-
 
         $this->sendPerformed($message);
 
@@ -78,10 +88,12 @@ class AliyunMailTransport extends Transport
 //        return $result;
     }
 
+
     /**
      * 使用单一发信接口发信
      *
      * @param Swift_Mime_Message $message
+     *
      * @return bool
      */
     private function SingleSendMail(Swift_Mime_Message $message)
@@ -110,27 +122,31 @@ class AliyunMailTransport extends Transport
         return $this->response($Response);
     }
 
+
     /**
      * 获取发信地址或目标地址
      * 该地址需要先在阿里云管理控制台中配置。
      *
      * @param $data
+     *
      * @return null|string
      */
     private function getAddress($data)
     {
-        if (!$data) {
+        if ( ! $data) {
             return;
         }
 
         return array_get(array_keys($data), 0, null);
     }
 
+
     /**
      * 获取发信人昵称
      * 发信人昵称长度小于15个字符
      *
      * @param Swift_Mime_Message $message
+     *
      * @return mixed
      */
     private function getFromName(Swift_Mime_Message $message)
@@ -138,10 +154,12 @@ class AliyunMailTransport extends Transport
         return array_get(array_values($message->getFrom()), 0);
     }
 
+
     /**
      * 生成请求签名（Signature）信息
      *
      * @param $Parameters
+     *
      * @return string
      */
     private function makeSign($Parameters)
@@ -149,19 +167,21 @@ class AliyunMailTransport extends Transport
         ksort($Parameters);
         $CanonicalizedQueryString = '';
         foreach ($Parameters as $key => $value) {
-            $CanonicalizedQueryString .= '&'.$this->percentEncode($key).'='.$this->percentEncode($value);
+            $CanonicalizedQueryString .= '&' . $this->percentEncode($key) . '=' . $this->percentEncode($value);
         }
-        $StringToSign = 'POST&%2F&'.$this->percentEncode(substr($CanonicalizedQueryString, 1));
-        $Signature = hash_hmac('sha1', $StringToSign, $this->AccessSecret."&", true);
+        $StringToSign = 'POST&%2F&' . $this->percentEncode(substr($CanonicalizedQueryString, 1));
+        $Signature = hash_hmac('sha1', $StringToSign, $this->AccessSecret . "&", true);
         $Signature = base64_encode($Signature);
 
         return $Signature;
     }
 
+
     /**
      * 构造规范化字符串用于计算签名（Signature）
      *
      * @param $str
+     *
      * @return mixed|string
      */
     private function percentEncode($str)
@@ -174,10 +194,12 @@ class AliyunMailTransport extends Transport
         return $res;
     }
 
+
     /**
      * 解析 DirectMail 返回值，失败抛出异常
      *
      * @param ResponseInterface $response
+     *
      * @return bool
      * @throws AliyunMailException
      */

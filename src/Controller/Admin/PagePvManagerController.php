@@ -17,11 +17,11 @@ use Mallto\Tool\Data\PagePv;
 use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
-
 class PagePvManagerController extends AdminCommonController
 {
 
-    use SlugAutoSave,GetAdTypes;
+    use SlugAutoSave, GetAdTypes;
+
 
     /**
      * 获取这个模块的标题
@@ -33,6 +33,7 @@ class PagePvManagerController extends AdminCommonController
         return "微信页面管理";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -43,6 +44,7 @@ class PagePvManagerController extends AdminCommonController
         return PagePvManager::class;
     }
 
+
     protected function gridOption(Grid $grid)
     {
         $grid->path("页面路径");
@@ -52,6 +54,7 @@ class PagePvManagerController extends AdminCommonController
         $grid->weight()->editable();
     }
 
+
     /**
      * 需要实现的form设置
      *
@@ -59,6 +62,7 @@ class PagePvManagerController extends AdminCommonController
      * 然后formOption留空即可
      *
      * @param Form $form
+     *
      * @return mixed
      */
     protected function formOption(Form $form)
@@ -92,7 +96,7 @@ class PagePvManagerController extends AdminCommonController
         $adminUser = Admin::user();
 
         $subject = SubjectUtils::getSubject();
-        if (!$subject) {
+        if ( ! $subject) {
             $subject = $adminUser->subject;
         }
 
@@ -105,8 +109,5 @@ class PagePvManagerController extends AdminCommonController
 
         return $this->getAdTypes($pagePvManager);
     }
-
-
-
 
 }

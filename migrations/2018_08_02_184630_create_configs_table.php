@@ -1,11 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateConfigsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -22,6 +23,7 @@ class CreateConfigsTable extends Migration
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

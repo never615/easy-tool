@@ -14,6 +14,7 @@ namespace Mallto\Tool\Utils;
  */
 class CastUtils
 {
+
     /**
      * 转化布尔值为是否
      */
@@ -22,18 +23,23 @@ class CastUtils
         return $value == true ? "是" : "否";
     }
 
+
     /**
      * 转换是否为布尔值
+     *
      * @param $value
+     *
      * @return bool
      */
     public static function castYesOrNo2Bool($value)
     {
         return $value == "是" ? true : false;
     }
-    
-    public static function castOnOrOff2Bool($value){
-        return $value=="on"?true:false;
+
+
+    public static function castOnOrOff2Bool($value)
+    {
+        return $value == "on" ? true : false;
     }
 
 }

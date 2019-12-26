@@ -5,9 +5,8 @@
 
 namespace Mallto\Tool\Data;
 
-use Mallto\Admin\Data\Traits\DynamicData;
 use Illuminate\Database\Eloquent\Model;
-
+use Mallto\Admin\Data\Traits\DynamicData;
 
 /**
  * 意见反馈
@@ -16,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Feedback extends Model
 {
+
     use DynamicData;
 
     protected $table = "feedbacks";

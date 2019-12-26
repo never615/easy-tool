@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateTagsAddSlug extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -22,6 +23,7 @@ class UpdateTagsAddSlug extends Migration
 
 
     }
+
 
     /**
      * Reverse the migrations.

@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Controller\Api;
 
-
 use Illuminate\Routing\Controller;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\PageBanner;
@@ -18,6 +17,7 @@ use Mallto\Tool\Data\PageBanner;
  */
 class PageBannerController extends Controller
 {
+
     public function index()
     {
         $subjectId = SubjectUtils::getSubjectId();

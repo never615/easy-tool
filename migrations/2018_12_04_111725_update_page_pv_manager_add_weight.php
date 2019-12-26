@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdatePagePvManagerAddWeight extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -21,6 +22,7 @@ class UpdatePagePvManagerAddWeight extends Migration
 
         });
     }
+
 
     /**
      * Reverse the migrations.

@@ -6,9 +6,7 @@
 namespace Mallto\Tool\Domain\Net;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Request;
 use Mallto\Tool\Domain\Log\Logger;
-use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\ThirdPartConnectException;
 use Mallto\Tool\Exception\ThirdPartException;
 
@@ -21,32 +19,33 @@ use Mallto\Tool\Exception\ThirdPartException;
  */
 trait BasicClientTrait
 {
+
     /**
      * 基本
      *
-     * @deprecated
      * @param        $url
      * @param        $data
      * @param string $requestType
+     *
      * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @deprecated
      */
     protected function basicClient($url, $data, $requestType = 'post')
     {
         $logger = app(Logger::class);
 
-        $logger->logThirdPart(self::SLUG, '请求:'.$url, json_encode($data, JSON_UNESCAPED_UNICODE));
+        $logger->logThirdPart(self::SLUG, '请求:' . $url, json_encode($data, JSON_UNESCAPED_UNICODE));
         $client = new Client([
             'base_uri' => $this->baseUrl,
         ]);
         $resultArr = null;
 
         try {
-            $response=$client->request($requestType,$url,$data);
+            $response = $client->request($requestType, $url, $data);
             $body = $response->getBody();
 
-
-            $logger->logThirdPart(self::SLUG, '返回:'.$url, $body);
+            $logger->logThirdPart(self::SLUG, '返回:' . $url, $body);
 
             return $this->resultHandler($body);
         } catch (ThirdPartException $e) {
@@ -55,16 +54,18 @@ trait BasicClientTrait
             //RequestException
 
             $logger->logThirdPart(self::SLUG, 'http异常',
-                'code:'.$e->getCode().'--msg:'.$e->getMessage());
+                'code:' . $e->getCode() . '--msg:' . $e->getMessage());
 //            \Log::warning($e);
-            throw new ThirdPartConnectException(self::SLUG.":服务连接异常");
+            throw new ThirdPartConnectException(self::SLUG . ":服务连接异常");
         }
     }
+
 
     /**
      * 自定义处理响应结果
      *
      * @param $body
+     *
      * @return mixed
      */
     protected abstract function resultHandler($body);

@@ -16,6 +16,7 @@ use Mallto\Tool\Data\SmsCode;
  */
 class  SmsCodeUsecase
 {
+
     /**
      * @param      $mobile
      * @param      $code
@@ -24,7 +25,7 @@ class  SmsCodeUsecase
      */
     public function create($mobile, $code, $subjectId, $appId = null)
     {
-        if (!$appId) {
+        if ( ! $appId) {
             $appId = Request::header("app_id");
         }
         SmsCode::create([
@@ -34,6 +35,5 @@ class  SmsCodeUsecase
             'app_id'     => $appId,
         ]);
     }
-
 
 }

@@ -14,7 +14,6 @@
 
 namespace Mallto\Tool\Middleware;
 
-
 use Carbon\Carbon;
 use Closure;
 use Mallto\Tool\Data\AppSecret;
@@ -38,14 +37,17 @@ use Mallto\Tool\Utils\SignUtils;
  */
 class ApiVerify
 {
+
     protected $except = [
     ];
+
 
     /**
      * Handle an incoming request.
      *
      * @param         $request
      * @param Closure $next
+     *
      * @return mixed
      */
     public function handle($request, Closure $next)
@@ -54,7 +56,7 @@ class ApiVerify
 
 //        \Log::info("header app_id:".$appId);
         $appSecret = AppSecret::where("app_id", $appId)->first();
-        if (!$appSecret) {
+        if ( ! $appSecret) {
             throw new SignException("app_id 无效");
         }
 
@@ -82,7 +84,7 @@ class ApiVerify
             case "2":  //签名校验+时间戳校验
                 $timestamp = $request->header("timestamp");
                 //时间戳格式检查
-                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 

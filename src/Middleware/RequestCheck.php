@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Middleware;
 
-
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -23,6 +22,7 @@ use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
  */
 class RequestCheck
 {
+
     protected $requestTypes = [
         'wechat'  => 'WECHAT',
         'android' => 'ANDROID',
@@ -31,9 +31,11 @@ class RequestCheck
         'server'  => 'SERVER',
     ];
 
+
     /**
      * @param         $request
      * @param Closure $next
+     *
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
@@ -46,28 +48,27 @@ class RequestCheck
         if ($actionMethod === 'show') {
             $firstRouterParam = Arr::first(($route->parameters()));
             if ($firstRouterParam) {
-                if (!preg_match('/\d/', $firstRouterParam)) {
-                    throw new ResourceException("无效的查询参数:".$firstRouterParam);
+                if ( ! preg_match('/\d/', $firstRouterParam)) {
+                    throw new ResourceException("无效的查询参数:" . $firstRouterParam);
                 }
             }
         }
 
         $uuid = SubjectUtils::getUUID();
-        if (!$uuid) {
+        if ( ! $uuid) {
             throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
         }
-
 
         $user = Auth::guard("api")->user();
         //如果user存在,检查user和uuid是否一致
         if ($user) {
             $subject = $user->subject;
-            if (!$subject->base) {
+            if ( ! $subject->base) {
                 $subject = $subject->baseSubject();
             }
 
             if ($subject->uuid != $uuid) {
-                \Log::warning("当前请求用户不属于该uuid:".$subject->uuid.",".$uuid);
+                \Log::warning("当前请求用户不属于该uuid:" . $subject->uuid . "," . $uuid);
                 throw new ResourceException("当前请求用户不属于该uuid");
             }
         }
@@ -82,6 +83,5 @@ class RequestCheck
 
         return $next($request);
     }
-
 
 }

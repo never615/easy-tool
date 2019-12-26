@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateSmsCodesAddAppId extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -20,6 +21,7 @@ class UpdateSmsCodesAddAppId extends Migration
             $table->string('app_id')->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

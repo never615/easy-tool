@@ -28,7 +28,7 @@ class QrController extends Controller
 
         $referer = $request->header("referer");
 
-        if (!$referer) {
+        if ( ! $referer) {
             throw new PermissionDeniedException("没有权限调用:referer为空");
         }
 
@@ -38,9 +38,8 @@ class QrController extends Controller
 
         $size = $request->get("size");
 
-
-        if (!HttpUtils::isAllowReferer($refererDomin)) {
-            throw new PermissionDeniedException("没有权限调用:".$refererDomin);
+        if ( ! HttpUtils::isAllowReferer($refererDomin)) {
+            throw new PermissionDeniedException("没有权限调用:" . $refererDomin);
         }
 
         $qrCode = new QrCode($data);
@@ -56,7 +55,7 @@ class QrController extends Controller
             throw new ResourceException("二维码尺寸设置失败");
         }
 
-        header('Content-Type: '.$qrCode->getContentType());
+        header('Content-Type: ' . $qrCode->getContentType());
 
         return $response = new QrCodeResponse($qrCode);
     }

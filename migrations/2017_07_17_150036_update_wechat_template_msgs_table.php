@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdateWechatTemplateMsgsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -24,6 +25,7 @@ class UpdateWechatTemplateMsgsTable extends Migration
             $table->string("remark")->nullable()->comment("备注");
         });
     }
+
 
     /**
      * Reverse the migrations.

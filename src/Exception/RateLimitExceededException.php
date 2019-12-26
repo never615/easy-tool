@@ -5,13 +5,12 @@
 
 namespace Mallto\Tool\Exception;
 
-
-
 use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class RateLimitExceededException extends HttpException
 {
+
     /**
      * Create a new rate limit exceeded exception instance.
      *

@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Utils;
 
-
 /**
  * Created by PhpStorm.
  * User: never615 <never615.com>
@@ -19,6 +18,7 @@ class DESUtils
      * 加密
      *
      * @param $str
+     *
      * @return string
      */
     public static function encrypt($str, $key)
@@ -39,9 +39,9 @@ class DESUtils
 
 //        $sign = bin2hex($sign);
 
-
         return $sign;
     }
+
 
     public static function unpadZero($data)
     {
@@ -77,13 +77,14 @@ class DESUtils
      *
      * @param $str
      * @param $blocksize
+     *
      * @return string
      */
     public static function pkcsPadding($str, $blocksize)
     {
         $pad = $blocksize - (strlen($str) % $blocksize);
 
-        return $str.str_repeat(chr($pad), $pad);
+        return $str . str_repeat(chr($pad), $pad);
     }
 
 
@@ -123,6 +124,5 @@ class DESUtils
 //        $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 //        return mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, base64_decode($crypttext), MCRYPT_MODE_ECB, $iv);//解密后的内容
 //    }
-
 
 }

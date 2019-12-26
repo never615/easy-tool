@@ -5,14 +5,13 @@
 
 namespace Mallto\Tool\Exception;
 
-
-
 use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * 第三方服务连接异常
  * Class ThirdPartException
+ *
  * @package App\Exceptions
  */
 class ThirdPartConnectException extends HttpException

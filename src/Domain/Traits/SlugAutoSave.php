@@ -16,6 +16,7 @@ use Mallto\Tool\Utils\AppUtils;
  */
 trait SlugAutoSave
 {
+
     /**
      * 自动生成slug
      *
@@ -32,7 +33,7 @@ trait SlugAutoSave
         $anotherWhereColumn = null,
         $antherWhereValue = null
     ) {
-        if (!$modelClass) {
+        if ( ! $modelClass) {
             $modelClass = $this->getModel();
         }
 
@@ -44,7 +45,7 @@ trait SlugAutoSave
                 //检查slug是否已经存在
                 if ($modelClass::where("subject_id", $subjectId)
                     ->where($slugColumn, $form->slug)->exists()) {
-                    throw new ResourceException("该标识已经存在:".$form->slug);
+                    throw new ResourceException("该标识已经存在:" . $form->slug);
                 }
             }
         } else {
@@ -59,15 +60,14 @@ trait SlugAutoSave
                 }
 
                 if ($query->exists()) {
-                    throw new ResourceException($form->name." 已存在,请更换名称");
+                    throw new ResourceException($form->name . " 已存在,请更换名称");
                 }
-
 
                 //处理slug
                 //自动生成slug,同一个主体下不能重复
                 $slug = pinyin_permalink($form->name);
                 $slug = $this->generatorSlug($slug, $subjectId, $modelClass);
-                if (!$form->slug) {
+                if ( ! $form->slug) {
                     $form->slug = $slug;
                 }
                 $form->model()->$slugColumn = $slug;
@@ -87,6 +87,7 @@ trait SlugAutoSave
      * @param string $slugColumn
      * @param null   $anotherWhereColumn
      * @param null   $antherWhereValue
+     *
      * @return string
      */
     private function generatorSlug(
@@ -100,7 +101,6 @@ trait SlugAutoSave
 
         $slug = pinyin_permalink($name);
 
-
         $query = $modelClass::where("subject_id", $subjectId)
             ->where($slugColumn, $slug);
 
@@ -109,7 +109,7 @@ trait SlugAutoSave
         }
 
         if ($query->exists()) {
-            $slug = $slug."_".AppUtils::getRandomString(3);
+            $slug = $slug . "_" . AppUtils::getRandomString(3);
 
             return $this->generatorSlug($slug, $subjectId, $modelClass);
         } else {

@@ -12,9 +12,6 @@
 
 namespace Mallto\Tool\Utils;
 
-
-use Carbon\Carbon;
-
 class TimeUtils
 {
 
@@ -23,6 +20,7 @@ class TimeUtils
      *
      * @param $time1
      * @param $time2
+     *
      * @return bool
      */
     public static function inTimes($time1, $time2)
@@ -46,6 +44,7 @@ class TimeUtils
         return date('Y-m-d H:i:s');
     }
 
+
     /**
      * 获取当前时间
      *
@@ -62,6 +61,7 @@ class TimeUtils
      *
      * @param $date1 $date1[格式如：2011-11-5]
      * @param $date2 $date2[格式如：2012-12-01]
+     *
      * @return mixed
      */
     public static function diffDate($date1, $date2)
@@ -85,8 +85,9 @@ class TimeUtils
             $Y--;
         }
 
-        return array ('year' => $Y, 'month' => $m, 'day' => $d);
+        return [ 'year' => $Y, 'month' => $m, 'day' => $d ];
     }
+
 
     /**
      * 返回字符串的毫秒数时间戳
@@ -94,12 +95,11 @@ class TimeUtils
     public static function millisecond()
     {
         $time = explode(" ", microtime());
-        $time = $time [1].($time [0] * 1000);
+        $time = $time [1] . ($time [0] * 1000);
         $time2 = explode(".", $time);
         $time = $time2 [0];
 
         return $time;
     }
-
 
 }

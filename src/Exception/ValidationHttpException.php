@@ -5,12 +5,11 @@
 
 namespace Mallto\Tool\Exception;
 
-
-
 use Exception;
 
 class ValidationHttpException extends ResourceException
 {
+
     /**
      * Create a new validation HTTP exception instance.
      *
@@ -23,8 +22,8 @@ class ValidationHttpException extends ResourceException
      */
     public function __construct($errors = null, Exception $previous = null, $headers = [], $code = 0)
     {
-        
-        
+
+
         parent::__construct(null, $errors, $previous, $headers, $code);
     }
 }

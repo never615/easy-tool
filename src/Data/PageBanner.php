@@ -5,18 +5,16 @@
 
 namespace Mallto\Tool\Data;
 
-
 use Mallto\Admin\Data\Traits\BaseModel;
 use Mallto\Admin\Data\Traits\DynamicData;
 
-
 class PageBanner extends BaseModel
 {
+
     use DynamicData;
 
     protected $guarded = [
 
     ];
-
 
 }

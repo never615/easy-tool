@@ -13,16 +13,19 @@ namespace Mallto\Tool\Domain\Sms;
  */
 interface Sms
 {
+
     /**
      * 发送单条短信
      *
-     * @param $mobile string 手机号
-     * @param $smsSign string 短信签名
+     * @param $mobile          string 手机号
+     * @param $smsSign         string 短信签名
      * @param $smsTemplateCode string 模板号
-     * @param $templateParam array 模板参数
+     * @param $templateParam   array 模板参数
+     *
      * @return mixed
      */
     public function sendSms($mobile, $smsSign, $smsTemplateCode, $templateParam);
+
 
     /**
      * 群发短信
@@ -30,13 +33,15 @@ interface Sms
      * 一次手机号上限是100
      *
      *
-     * @param $mobiles array 手机号
-     * @param $smsSigns array 短信签名
+     * @param $mobiles         array 手机号
+     * @param $smsSigns        array 短信签名
      * @param $smsTemplateCode string 模板号
-     * @param $templateParams string 模板参数
+     * @param $templateParams  string 模板参数
+     *
      * @return mixed
      */
-    public function sendBatchSms($mobiles,$smsSigns,$smsTemplateCode,$templateParams);
+    public function sendBatchSms($mobiles, $smsSigns, $smsTemplateCode, $templateParams);
+
 
     /**
      * 查询发送状态

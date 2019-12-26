@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreateWechatTemplateMsgsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -37,6 +38,7 @@ class CreateWechatTemplateMsgsTable extends Migration
 
         });
     }
+
 
     /**
      * Reverse the migrations.

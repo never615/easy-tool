@@ -10,6 +10,7 @@ use Mallto\Tool\Seeder\TablesSeeder;
 
 class InstallCommand extends Command
 {
+
     /**
      * The console command name.
      *
@@ -31,6 +32,7 @@ class InstallCommand extends Command
      */
     protected $directory = '';
 
+
     /**
      * Execute the console command.
      *
@@ -42,6 +44,7 @@ class InstallCommand extends Command
 
     }
 
+
     /**
      * Create tables and seed it.
      *
@@ -49,8 +52,8 @@ class InstallCommand extends Command
      */
     public function publishDatabase()
     {
-        $this->call('migrate', ['--path' => str_replace(base_path(), '', __DIR__).'/../../migrations/']);
+        $this->call('migrate', [ '--path' => str_replace(base_path(), '', __DIR__) . '/../../migrations/' ]);
 
-        $this->call('db:seed', ['--class' => TablesSeeder::class]);
+        $this->call('db:seed', [ '--class' => TablesSeeder::class ]);
     }
 }

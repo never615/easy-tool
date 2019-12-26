@@ -5,12 +5,11 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
-use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Schema;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Log;
 use Mallto\Tool\Utils\AppUtils;
 
@@ -23,6 +22,7 @@ use Mallto\Tool\Utils\AppUtils;
  */
 class ThirdLogController extends AdminCommonController
 {
+
     /**
      * 获取这个模块的标题
      *
@@ -33,6 +33,7 @@ class ThirdLogController extends AdminCommonController
         return "第三方接口通讯日志";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -42,6 +43,7 @@ class ThirdLogController extends AdminCommonController
     {
         return Log::class;
     }
+
 
     protected function gridOption(Grid $grid)
     {
@@ -60,32 +62,33 @@ class ThirdLogController extends AdminCommonController
 
     }
 
+
     protected function formOption(Form $form)
     {
         $form->displayE("code", "通讯对象");
         $form->displayE("tag");
         $form->displayE("content")->with(function ($value) {
-            $value=AppUtils::dateTransform($value);
+            $value = AppUtils::dateTransform($value);
 
             return json_encode(json_decode($value), JSON_PRETTY_PRINT);
         });
     }
 
+
     protected function defaultGridOption(Grid $grid)
     {
         $tableName = $grid->model()->getTable();
 
-        if (!\Mallto\Admin\AdminUtils::isOwner()) {
+        if ( ! \Mallto\Admin\AdminUtils::isOwner()) {
             if (method_exists($this->getModel(), "scopeDynamicData")) {
                 $grid->model()->dynamicData();
             }
         }
-        $grid->model()->orderBy('id',"desc");
+        $grid->model()->orderBy('id', "desc");
 
         $grid->disableExport();
 
         $grid->id('ID')->sortable();
-
 
         $this->gridOption($grid);
 

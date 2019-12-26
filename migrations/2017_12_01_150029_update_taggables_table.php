@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdateTaggablesTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -25,6 +26,7 @@ class UpdateTaggablesTable extends Migration
             $table->unsignedInteger("tag_id");
         });
     }
+
 
     /**
      * Reverse the migrations.

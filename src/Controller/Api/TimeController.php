@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Controller\Api;
 
-
 use Illuminate\Routing\Controller;
 
 /**

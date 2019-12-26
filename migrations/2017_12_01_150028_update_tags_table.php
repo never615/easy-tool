@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdateTagsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -26,6 +27,7 @@ class UpdateTagsTable extends Migration
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('CASCADE');
         });
     }
+
 
     /**
      * Reverse the migrations.

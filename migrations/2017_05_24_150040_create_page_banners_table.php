@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreatePageBannersTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -41,6 +42,7 @@ class CreatePageBannersTable extends Migration
         });
 
     }
+
 
     /**7
      * Reverse the migrations.

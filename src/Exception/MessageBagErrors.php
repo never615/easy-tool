@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Exception;
 
-
 /**
  * Created by PhpStorm.
  * User: never615
@@ -14,12 +13,15 @@ namespace Mallto\Tool\Exception;
  */
 interface MessageBagErrors
 {
+
     /**
      * Get the errors message bag.
      *
      * @return \Illuminate\Support\MessageBag
      */
     public function getErrors();
+
+
     /**
      * Determine if message bag has any errors.
      *

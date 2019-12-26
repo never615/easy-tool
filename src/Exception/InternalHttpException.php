@@ -5,18 +5,19 @@
 
 namespace Mallto\Tool\Exception;
 
-
 use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class InternalHttpException extends HttpException
 {
+
     /**
      * The response.
      *
      * @var \Illuminate\Http\Response
      */
     protected $response;
+
 
     /**
      * Create a new internal HTTP exception instance.
@@ -31,7 +32,7 @@ class InternalHttpException extends HttpException
      */
     public function __construct($message = null, Exception $previous = null, array $headers = [], $code = 0)
     {
-        \Log::error("InternalHttpException:".$message);
+        \Log::error("InternalHttpException:" . $message);
 
         parent::__construct(500, $message, $previous, $headers, $code);
     }

@@ -18,5 +18,4 @@ class UserUv extends BaseModel
 
     protected $table = "user_uv";
 
-
 }

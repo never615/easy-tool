@@ -47,7 +47,6 @@ class LogController extends Controller
             }
         }
 
-
         Log::create([
             "subject_id" => $subjectId,
             "tag"        => $request->tag,

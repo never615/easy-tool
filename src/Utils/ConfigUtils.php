@@ -19,6 +19,7 @@ use Mallto\Tool\Exception\ResourceException;
  */
 class ConfigUtils
 {
+
     /**
      * 读取配置
      *
@@ -27,6 +28,7 @@ class ConfigUtils
      * @param      $key
      * @param null $default
      * @param null $type
+     *
      * @return null
      */
     public static function get($key, $default = null, $type = null)
@@ -42,7 +44,7 @@ class ConfigUtils
             if (isset($default)) {
                 return $default;
             } else {
-                throw new ResourceException($key."未配置");
+                throw new ResourceException($key . "未配置");
             }
         }
     }
@@ -53,6 +55,7 @@ class ConfigUtils
      *
      * @param $key
      * @param $value
+     *
      * @return null
      */
     public static function set($key, $value)

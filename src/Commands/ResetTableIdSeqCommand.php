@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class ResetTableIdSeqCommand extends Command
 {
+
     /**
      * The console command name.
      *
@@ -53,7 +54,7 @@ class ResetTableIdSeqCommand extends Command
             $tableName = $tableName['tablename'];
             try {
                 if (Schema::hasColumn($tableName, "id")) {
-                    \DB::select("select setval('".$tableName."_id_seq',(select max(id) from $tableName))");
+                    \DB::select("select setval('" . $tableName . "_id_seq',(select max(id) from $tableName))");
                 }
             } catch (\Exception $exception) {
                 \Log::info($tableName);

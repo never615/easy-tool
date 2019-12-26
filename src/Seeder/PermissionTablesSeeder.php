@@ -12,6 +12,7 @@ use Mallto\Tool\Seeder\Permission\StatisticsPermissionsSeeder;
 
 class PermissionTablesSeeder extends Seeder
 {
+
     /**
      * Run the database seeds.
      *
@@ -24,9 +25,8 @@ class PermissionTablesSeeder extends Seeder
         $this->call(BasePermissionsSeeder::class);
         $this->call(StatisticsPermissionsSeeder::class);
 
-
-$this->call(\Mallto\Tool\Seeder\Permission\SmsTemplatePermissionSeeder::class);
-$this->call(\Mallto\Tool\Seeder\Permission\SmsCodePermissionSeeder::class);
+        $this->call(\Mallto\Tool\Seeder\Permission\SmsTemplatePermissionSeeder::class);
+        $this->call(\Mallto\Tool\Seeder\Permission\SmsCodePermissionSeeder::class);
 //DummySeeder
 
     }

@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Domain\Wechat;
 
-
 use Closure;
 use GuzzleHttp\Exception\ClientException;
 use Mallto\Mall\SubjectConfigConstants;
@@ -35,14 +34,20 @@ class  WechatUsecase extends AbstractAPI
      * @param      $subject
      * @param null $callback
      * @param null $url
+     *
      * @return bool
      */
-    public function wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback = null, $url = null)
-    {
+    public function wechatTemplateMsg(
+        $public_template_id,
+        $data,
+        $openId,
+        $subject,
+        $callback = null,
+        $url = null
+    ) {
         $wechatTemplateMsg = WechatTemplateMsg::where("public_template_id", $public_template_id)
             ->where("subject_id", $subject->id)
             ->first();
-
 
         if ($wechatTemplateMsg) {
             if ($wechatTemplateMsg->switch) {
@@ -52,7 +57,7 @@ class  WechatUsecase extends AbstractAPI
 
                 $templateId = $wechatTemplateMsg->template_id;
                 if (isset($remark)) {
-                    $data = array_merge($data, ['remark' => $remark]);
+                    $data = array_merge($data, [ 'remark' => $remark ]);
                 }
                 $requestData = [
                     'openid'      => $openId,
@@ -63,7 +68,6 @@ class  WechatUsecase extends AbstractAPI
 
                 $sign = SignUtils::sign($requestData, config('other.mallto_app_secret'));
 
-
                 return $this->templateMsg(
                     array_merge($requestData, [
                         "sign" => $sign,
@@ -71,7 +75,7 @@ class  WechatUsecase extends AbstractAPI
                     , $subject, $public_template_id);
             }
         } else {
-            \Log::warning("模板消息不存在,新设置:".$public_template_id.",subject_id:".$subject->id);
+            \Log::warning("模板消息不存在,新设置:" . $public_template_id . ",subject_id:" . $subject->id);
 
             $templateId = $this->addTemplateId($public_template_id, $subject);
             if ($templateId) {
@@ -82,6 +86,7 @@ class  WechatUsecase extends AbstractAPI
         }
     }
 
+
     /**
      * 发送模板消息
      *
@@ -90,6 +95,7 @@ class  WechatUsecase extends AbstractAPI
      * @param      $content
      * @param      $subject
      * @param      $public_template_id
+     *
      * @return bool
      */
     protected function templateMsg($content, $subject, $public_template_id)
@@ -108,7 +114,7 @@ class  WechatUsecase extends AbstractAPI
 
         try {
             $this->parseJSON('post', [
-                $baseUrl.'/api/template_msg',
+                $baseUrl . '/api/template_msg',
                 $content,
                 [
                     'headers' => [
@@ -122,9 +128,10 @@ class  WechatUsecase extends AbstractAPI
 
             return true;
         } catch (ResourceException $exception) {
-            if (!starts_with($exception->getMessage(), "require subscribe")) {
+            if ( ! starts_with($exception->getMessage(), "require subscribe")) {
                 if (starts_with($exception->getMessage(), 'invalid template_id hint')) {
-                    $new_templateId = $this->addTemplateId($public_template_id, $subject, $content['template_id']);
+                    $new_templateId = $this->addTemplateId($public_template_id, $subject,
+                        $content['template_id']);
                     if ($new_templateId) {
                         $content['template_id'] = $new_templateId;
                         unset($content['sign']);
@@ -163,11 +170,12 @@ class  WechatUsecase extends AbstractAPI
      * @param      $shortId
      * @param      $subject
      * @param null $oldTemplateId 旧的模板id失效时,传旧的进来也
+     *
      * @return bool
      */
     public function addTemplateId($shortId, $subject, $oldTemplateId = null)
     {
-        \Log::warning("模板消息的模板不存在不存在,准备新建:".$shortId);
+        \Log::warning("模板消息的模板不存在不存在,准备新建:" . $shortId);
         \Log::warning(new \Exception());
 
         if (config("app.env") === 'production' || config('app.env') === 'staging') {
@@ -176,14 +184,12 @@ class  WechatUsecase extends AbstractAPI
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
-
         $uuid = "";
         if (WechatUtils::isUserSystemTemplate($shortId)) {
             $uuid = $subject->uuid;
         } elseif (WechatUtils::isAdminSystemTemplate($shortId)) {
             $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
         }
-
 
         $requestData = [
             "short_id"    => $shortId,
@@ -193,7 +199,7 @@ class  WechatUsecase extends AbstractAPI
 
         try {
             $content = $this->parseJSON('post', [
-                $baseUrl.'/api/add_template_id',
+                $baseUrl . '/api/add_template_id',
                 array_merge($requestData, [
                     "sign" => $sign,
                 ]),
@@ -206,7 +212,6 @@ class  WechatUsecase extends AbstractAPI
                     ],
                 ],
             ]);
-
 
             if (isset($content["template_id"]) && $content["template_id"]) {
                 WechatTemplateMsg::updateOrCreate([

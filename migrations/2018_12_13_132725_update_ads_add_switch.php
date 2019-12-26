@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdateAdsAddSwitch extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -24,6 +25,7 @@ class UpdateAdsAddSwitch extends Migration
             $table->boolean("switch")->default(true);
         });
     }
+
 
     /**
      * Reverse the migrations.

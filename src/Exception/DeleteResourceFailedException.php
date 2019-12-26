@@ -5,14 +5,18 @@
 
 namespace Mallto\Tool\Exception;
 
-
-
 use Exception;
 
 class DeleteResourceFailedException extends ResourceException
 {
-    public function __construct($message = null, $errors = null, Exception $previous = null, $headers = [], $code = 0)
-    {
+
+    public function __construct(
+        $message = null,
+        $errors = null,
+        Exception $previous = null,
+        $headers = [],
+        $code = 0
+    ) {
 //        if (is_null($errors)) {
 //            $this->errors = new MessageBag;
 //        } else {
@@ -22,6 +26,6 @@ class DeleteResourceFailedException extends ResourceException
 //        if($message==null){
 //            $message=trans("errors.delete_error");
 //        }
-        parent::__construct($message ?:trans("errors.delete_error"), $errors, $previous, $headers, $code);
+        parent::__construct($message ?: trans("errors.delete_error"), $errors, $previous, $headers, $code);
     }
 }

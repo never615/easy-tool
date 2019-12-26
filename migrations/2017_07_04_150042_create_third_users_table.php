@@ -3,9 +3,9 @@
  * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
  */
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 第三方用户,oauth2.0授权使用
@@ -13,6 +13,7 @@ use Illuminate\Database\Migrations\Migration;
  */
 class CreateThirdUsersTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -27,6 +28,7 @@ class CreateThirdUsersTable extends Migration
             $table->string("mobile")->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

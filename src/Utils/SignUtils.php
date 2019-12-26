@@ -19,12 +19,10 @@
 
 namespace Mallto\Tool\Utils;
 
-
 use Mallto\Tool\Exception\SignException;
 
 class SignUtils
 {
-
 
     //墨兔提供的接口的key
     private static $mallto_key = 'f334bd635eaf5bcaf135e30171bb11em';
@@ -36,6 +34,7 @@ class SignUtils
      *
      * @param array $arr
      * @param       $key
+     *
      * @return string
      */
     public static function sign(array $arr, $key)
@@ -47,9 +46,9 @@ class SignUtils
         $tmpHttp = urldecode($tmpHttp);
 
         if ($tmpHttp) {
-            $stringSignTemp = $tmpHttp.'&key='.$key;
+            $stringSignTemp = $tmpHttp . '&key=' . $key;
         } else {
-            $stringSignTemp = 'key='.$key;
+            $stringSignTemp = 'key=' . $key;
         }
 //        \Log::info($stringSignTemp);
         $stringSignTemp = base64_encode($stringSignTemp);
@@ -64,11 +63,12 @@ class SignUtils
     /**
      * 签名
      *
-     * @deprecated
-     *
      * @param array $arr
      * @param       $key
+     *
      * @return string
+     * @deprecated
+     *
      */
     public static function signByLower(array $arr, $key)
     {
@@ -76,7 +76,7 @@ class SignUtils
 
         ksort($arr, SORT_STRING);
         $tmpHttp = http_build_query($arr);
-        $stringSignTemp = $tmpHttp.'&secret='.$key;
+        $stringSignTemp = $tmpHttp . '&secret=' . $key;
 
         $stringSignTemp = urldecode($stringSignTemp);
 
@@ -89,11 +89,12 @@ class SignUtils
     /**
      * 签名校验
      *
-     *      * @deprecated
+     *      * @param array $arr
+     * @param null $key
      *
-     * @param array $arr
-     * @param null  $key
      * @return bool
+     * @deprecated
+     *
      */
     public static function verifySign(array $arr, $key = null)
     {
@@ -101,7 +102,7 @@ class SignUtils
             $key = self::$mallto_key;
         }
 
-        if (!isset($arr['sign'])) {
+        if ( ! isset($arr['sign'])) {
             throw new SignException("缺少sign字段");
         }
 
@@ -114,9 +115,9 @@ class SignUtils
         $tmpHttp = urldecode($tmpHttp);
 
         if ($tmpHttp) {
-            $stringSignTemp = $tmpHttp.'&key='.$key;
+            $stringSignTemp = $tmpHttp . '&key=' . $key;
         } else {
-            $stringSignTemp = 'key='.$key;
+            $stringSignTemp = 'key=' . $key;
         }
 
 //        \Log::info($stringSignTemp);
@@ -149,11 +150,12 @@ class SignUtils
      *
      * @param array $arr
      * @param null  $secret
+     *
      * @return string
      */
     public static function verifySign2(array $arr, $secret)
     {
-        if (!isset($arr['signature'])) {
+        if ( ! isset($arr['signature'])) {
             throw new SignException("缺少signature字段");
         }
 
@@ -177,6 +179,7 @@ class SignUtils
      * https://wiki.mall-to.com/web/#/27?page_id=234
      * @param array  $arr    待签名数据
      * @param string $secret 签名秘钥
+     *
      * @return string
      */
     public static function signVersion2($arr, $secret)
@@ -203,11 +206,12 @@ class SignUtils
      *
      * @param array $arr
      * @param null  $secret
+     *
      * @return string
      */
     public static function verifySign4(array $arr, $secret)
     {
-        if (!isset($arr['signature'])) {
+        if ( ! isset($arr['signature'])) {
             throw new SignException("缺少signature字段");
         }
 
@@ -231,6 +235,7 @@ class SignUtils
      * https://wiki.mall-to.com/web/#/27?page_id=232
      * @param array  $arr    待签名数据
      * @param string $secret 签名秘钥
+     *
      * @return string
      */
     public static function signVersion4($arr, $secret)
@@ -243,6 +248,5 @@ class SignUtils
 
         return rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
     }
-
 
 }

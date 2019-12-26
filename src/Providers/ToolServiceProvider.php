@@ -73,6 +73,7 @@ class ToolServiceProvider extends ServiceProvider
     protected $middlewareGroups = [
     ];
 
+
     /**
      * Boot the service provider.
      *
@@ -80,16 +81,16 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__.'/../../migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
 
 //        $this->loadViewsFrom(__DIR__.'/../../resources/views', 'tool');
 
-        $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
-        $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
 
         if ($this->app->runningInConsole()) {
             //发布view覆盖error页面
-            $this->publishes([__DIR__.'/../../resources/errors_view' => resource_path('views/errors')],
+            $this->publishes([ __DIR__ . '/../../resources/errors_view' => resource_path('views/errors') ],
                 'error-views');
         }
 
@@ -97,7 +98,6 @@ class ToolServiceProvider extends ServiceProvider
         $this->routeBoot();
         $this->queueBoot();
         $this->scheduleBoot();
-
 
         Relation::morphMap([
             'user' => User::class,
@@ -124,7 +124,7 @@ class ToolServiceProvider extends ServiceProvider
 
             $decimalNum = $parameters[0] ?: 1;
 
-            if (!is_numeric($value)) {
+            if ( ! is_numeric($value)) {
                 return false;
             }
 
@@ -136,13 +136,12 @@ class ToolServiceProvider extends ServiceProvider
             return true;
         });
 
-
         //自定义响应方法
         Response::macro('nocontent', function () {
             return Response::make('', 204);
         });
         Response::macro('redirect', function ($value) {
-            return Response::json(['redirectUrl' => $value]);
+            return Response::json([ 'redirectUrl' => $value ]);
         });
     }
 
@@ -155,7 +154,7 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
-        if (!$this->app->isLocal()) {
+        if ( ! $this->app->isLocal()) {
             //horizon队列管理看板的进入权限
             Horizon::auth(function ($request) {
 
@@ -167,7 +166,6 @@ class ToolServiceProvider extends ServiceProvider
                 }
             });
         }
-
 
         //任务循环前
         Queue::looping(function () {
@@ -253,6 +251,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(Config::class, MtConfig::class);
     }
 
+
     /**
      * Register the route middleware.
      *
@@ -271,12 +270,13 @@ class ToolServiceProvider extends ServiceProvider
         }
     }
 
+
     /**
      * Register aliyun mail service
      */
     protected function registerMail()
     {
-        $this->mergeConfigFrom(__DIR__.'/../../config/services.php'
+        $this->mergeConfigFrom(__DIR__ . '/../../config/services.php'
             , 'services'
         );
         $this->app->resolving('swift.transport', function (TransportManager $tm) {
@@ -290,6 +290,7 @@ class ToolServiceProvider extends ServiceProvider
             });
         });
     }
+
 
     /**
      * 调度任务
@@ -307,10 +308,12 @@ class ToolServiceProvider extends ServiceProvider
                     ->runInBackground()
                     ->withoutOverlapping()
                     ->before(function () {
-                        dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "start"]));
+                        dispatch(new LogJob("logSchedule",
+                            [ "slug" => "update_app_secret", "status" => "start" ]));
                     })
                     ->after(function () {
-                        dispatch(new LogJob("logSchedule", ["slug" => "update_app_secret", "status" => "finish"]));
+                        dispatch(new LogJob("logSchedule",
+                            [ "slug" => "update_app_secret", "status" => "finish" ]));
                     });
             }
         });

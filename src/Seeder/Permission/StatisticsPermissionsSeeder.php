@@ -19,6 +19,7 @@ class StatisticsPermissionsSeeder extends Seeder
 
     use SeederMaker;
 
+
     /**
      * Run the database seeds.
      *

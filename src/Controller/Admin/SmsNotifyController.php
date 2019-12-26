@@ -19,7 +19,6 @@ use Mallto\Tool\Jobs\BatchSmsJob;
 class SmsNotifyController extends AdminCommonController
 {
 
-
     /**
      * 获取这个模块的标题
      *
@@ -30,6 +29,7 @@ class SmsNotifyController extends AdminCommonController
         return "短信群发";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -39,6 +39,7 @@ class SmsNotifyController extends AdminCommonController
     {
         return SmsNotify::class;
     }
+
 
     protected function gridOption(Grid $grid)
     {
@@ -53,6 +54,7 @@ class SmsNotifyController extends AdminCommonController
 
     }
 
+
     /**
      * 需要实现的form设置
      *
@@ -60,6 +62,7 @@ class SmsNotifyController extends AdminCommonController
      * 然后formOption留空即可
      *
      * @param Form $form
+     *
      * @return mixed
      */
     protected function formOption(Form $form)
@@ -75,7 +78,6 @@ class SmsNotifyController extends AdminCommonController
             $form->displayE("status")->with(function ($value) {
                 return SmsNotify::STATUS[$value] ?? $value;
             });
-
 
             $form->choice("selects", "范围")
                 ->selects([
@@ -106,12 +108,11 @@ class SmsNotifyController extends AdminCommonController
         $form->textarea("remark");
 
         $form->saving(function ($form) use ($templates) {
-            if (!empty($templates)) {
+            if ( ! empty($templates)) {
                 $smsTemplateCode = $form->sms_template_code;
                 $templates = array_where($templates, function ($value, $key) use ($smsTemplateCode) {
                     return $value["code"] == $smsTemplateCode;
                 });
-
 
                 if (count($templates) > 0) {
                     $template = $templates[0];
@@ -124,14 +125,13 @@ class SmsNotifyController extends AdminCommonController
             }
         });
 
-
         //array (
         //'choice_users' => '[{"id":"6","type":"member_levels","text":"黑卡"},{"id":"91832","type":"users","text":"云心:18666202809"}]',
         //  'templates' => 'SMS_141195417',
         //  '_token' => 'OUKat9VS8oNniprHVUON3lmMzuW8zhOXUphxS10A',
         //)
         $form->saved(function ($form) {
-            if (!$this->currentId) {
+            if ( ! $this->currentId) {
                 dispatch(new BatchSmsJob($form->model()->id))->onQueue("mid");
             }
         });

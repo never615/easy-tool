@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Exception;
 
-
 use Exception;
 use Illuminate\Support\MessageBag;
 
@@ -16,12 +15,14 @@ use Illuminate\Support\MessageBag;
  */
 class ResourceWithCodeException extends HttpException implements MessageBagErrors
 {
+
     /**
      * MessageBag errors.
      *
      * @var \Illuminate\Support\MessageBag
      */
     protected $errors;
+
 
     /**
      * Create a new resource exception instance.
@@ -55,6 +56,7 @@ class ResourceWithCodeException extends HttpException implements MessageBagError
         parent::__construct(422, $message, $code, null, $previous, $headers);
     }
 
+
     /**
      * Get the errors message bag.
      *
@@ -65,6 +67,7 @@ class ResourceWithCodeException extends HttpException implements MessageBagError
         return $this->errors;
     }
 
+
     /**
      * Determine if message bag has any errors.
      *
@@ -72,6 +75,6 @@ class ResourceWithCodeException extends HttpException implements MessageBagError
      */
     public function hasErrors()
     {
-        return !$this->errors->isEmpty();
+        return ! $this->errors->isEmpty();
     }
 }

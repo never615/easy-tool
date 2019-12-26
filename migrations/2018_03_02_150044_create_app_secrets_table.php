@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateAppSecretsTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -25,6 +26,7 @@ class CreateAppSecretsTable extends Migration
             $table->softDeletes();
         });
     }
+
 
     /**
      * Reverse the migrations.

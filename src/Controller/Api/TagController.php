@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Controller\Api;
 
-
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Mallto\Admin\SubjectUtils;
@@ -20,7 +19,6 @@ class TagController extends Controller
         $this->validate($request, [
             "type" => "required",
         ]);
-
 
         return Tag::where("type", $request->type)
             ->where("subject_id", SubjectUtils::getSubjectId())

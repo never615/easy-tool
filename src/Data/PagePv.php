@@ -19,7 +19,7 @@ class PagePv extends BaseModel
     protected $table = "page_pv";
 
     public $selectName = "path";
-    public $selectId = "path";
 
+    public $selectId = "path";
 
 }

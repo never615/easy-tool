@@ -15,24 +15,25 @@ use Illuminate\Http\UploadedFile;
  */
 class FileUtils
 {
+
     /**
      * create Illuminate\Http\UploadedFile
      *
      * @param      $url
      * @param bool $uniqid
+     *
      * @return UploadedFile
      */
     public static function createFile($url, $uniqid = false)
     {
         if ($uniqid) {
-            $fileName = md5(uniqid()).md5($url);
+            $fileName = md5(uniqid()) . md5($url);
         } else {
             $fileName = md5($url);
         }
 
-
         $contents = file_get_contents($url);
-        $file = '/tmp/'.$fileName;
+        $file = '/tmp/' . $fileName;
         file_put_contents($file, $contents);
         $uploaded_file = new UploadedFile($file, $fileName);
 

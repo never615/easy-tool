@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Controller\Api;
 
-
 use Illuminate\Http\Request;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\Ad;
@@ -18,6 +17,7 @@ use Mallto\Tool\Data\Ad;
  */
 class AdController extends \App\Http\Controllers\Controller
 {
+
     public function index(Request $request)
     {
         $subjectId = SubjectUtils::getSubjectId();

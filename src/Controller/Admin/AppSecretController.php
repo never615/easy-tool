@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
@@ -18,6 +17,7 @@ use Mallto\Tool\Data\AppSecret;
  */
 class AppSecretController extends AdminCommonController
 {
+
     /**
      * 获取这个模块的标题
      *
@@ -28,6 +28,7 @@ class AppSecretController extends AdminCommonController
         return "app secret管理";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -37,6 +38,7 @@ class AppSecretController extends AdminCommonController
     {
         return AppSecret::class;
     }
+
 
     protected function gridOption(Grid $grid)
     {
@@ -53,6 +55,7 @@ class AppSecretController extends AdminCommonController
         });
 
     }
+
 
     protected function formOption(Form $form)
     {

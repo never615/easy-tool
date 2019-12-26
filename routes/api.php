@@ -19,23 +19,22 @@ use Illuminate\Support\Facades\Route;
 $attributes = [
     'namespace'  => 'Mallto\Tool\Controller\Api',
     'prefix'     => 'api',
-    'middleware' => ['api'],
+    'middleware' => [ 'api' ],
 ];
 
 Route::group($attributes, function ($router) {
 
 
+    Route::post("log", 'LogController@store');
 
-    Route::post("log",'LogController@store');
-
-    Route::group(['middleware' => ['owner_api']], function () {
+    Route::group([ 'middleware' => [ 'owner_api' ] ], function () {
         Route::get("qr_image", 'QrController@index');
     });
 
     /**
      * 需要经过验证
      */
-    Route::group(['middleware' => ['requestCheck', 'owner_api']], function () {
+    Route::group([ 'middleware' => [ 'requestCheck', 'owner_api' ] ], function () {
         //意见反馈
         Route::post("feedback", "FeedbackController@store");
 
@@ -47,33 +46,32 @@ Route::group($attributes, function ($router) {
 
         //-------------------  页面配置开始 ------------------------
         //轮播图
-        Route::resource("page/banner", "PageBannerController", ["only" => ['index']]);
+        Route::resource("page/banner", "PageBannerController", [ "only" => [ 'index' ] ]);
         //页面广告
-        Route::resource("page/ad", "AdController", ["only" => ['index']]);
+        Route::resource("page/ad", "AdController", [ "only" => [ 'index' ] ]);
         //模块头图
-        Route::resource("page/head_image", "AdController", ["only" => ['index']]);
+        Route::resource("page/head_image", "AdController", [ "only" => [ 'index' ] ]);
 
         //-------------------  页面配置结束 ------------------------
 
         /**
          * 需要经过签名校验
          */
-        Route::group(['middleware' => ['authSign']], function () {
+        Route::group([ 'middleware' => [ 'authSign' ] ], function () {
 
         });
-
 
         /**
          * 需要经过授权
          */
-        Route::group(['middleware' => ['auth:api']], function () {
+        Route::group([ 'middleware' => [ 'auth:api' ] ], function () {
 
 
-            Route::group(["middleware" => ["scopes:mobile-token"]], function () {
+            Route::group([ "middleware" => [ "scopes:mobile-token" ] ], function () {
 
             });
 
-            Route::group(["middleware" => ["scope:mobile-token,wechat-token"]], function () {
+            Route::group([ "middleware" => [ "scope:mobile-token,wechat-token" ] ], function () {
 
             });
         });

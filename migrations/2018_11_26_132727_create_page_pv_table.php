@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreatePagePvTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -28,6 +29,7 @@ class CreatePagePvTable extends Migration
             $table->string("date_type");
         });
     }
+
 
     /**
      * Reverse the migrations.

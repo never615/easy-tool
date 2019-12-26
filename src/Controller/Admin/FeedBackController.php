@@ -5,10 +5,9 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
-use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Feedback;
 
 /**
@@ -18,6 +17,7 @@ use Mallto\Tool\Data\Feedback;
  */
 class FeedBackController extends AdminCommonController
 {
+
     /**
      * 获取这个模块的标题
      *
@@ -28,6 +28,7 @@ class FeedBackController extends AdminCommonController
         return "app意见反馈";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -37,6 +38,7 @@ class FeedBackController extends AdminCommonController
     {
         return Feedback::class;
     }
+
 
     protected function gridOption(Grid $grid)
     {
@@ -51,6 +53,7 @@ class FeedBackController extends AdminCommonController
 
 
     }
+
 
     protected function formOption(Form $form)
     {

@@ -7,10 +7,8 @@ use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Config;
 
-
 class ConfigController extends AdminCommonController
 {
-
 
     /**
      * 获取这个模块的标题
@@ -22,6 +20,7 @@ class ConfigController extends AdminCommonController
         return "configs";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -31,6 +30,7 @@ class ConfigController extends AdminCommonController
     {
         return Config::class;
     }
+
 
     protected function gridOption(Grid $grid)
     {
@@ -42,6 +42,7 @@ class ConfigController extends AdminCommonController
 
     }
 
+
     /**
      * 需要实现的form设置
      *
@@ -49,6 +50,7 @@ class ConfigController extends AdminCommonController
      * 然后formOption留空即可
      *
      * @param Form $form
+     *
      * @return mixed
      */
     protected function formOption(Form $form)

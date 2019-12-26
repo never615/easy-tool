@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdatePageBannersTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -26,11 +27,11 @@ class UpdatePageBannersTable extends Migration
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('CASCADE');
         });
 
-
         Schema::dropIfExists('page_configs');
 
 
     }
+
 
     /**7
      * Reverse the migrations.
@@ -51,7 +52,6 @@ class UpdatePageBannersTable extends Migration
             $table->increments('id');
             $table->integer('subject_id')->comment('主体id');
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('CASCADE');
-
 
             $table->softDeletes();
             $table->timestamps();

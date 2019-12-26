@@ -13,6 +13,7 @@ namespace Mallto\Tool\Utils;
  */
 class LogUtils
 {
+
     /**
      * 系统参数未配置
      *
@@ -22,7 +23,7 @@ class LogUtils
      */
     public static function notConfigLogByOwner($msg)
     {
-        \Log::warning("owner_config:".$msg);
+        \Log::warning("owner_config:" . $msg);
     }
 
 
@@ -35,9 +36,7 @@ class LogUtils
      */
     public static function notConfigLogBySubjecter($msg)
     {
-        \Log::warning("subjecter_config:".$msg);
+        \Log::warning("subjecter_config:" . $msg);
     }
-
-
 
 }

@@ -5,23 +5,16 @@
 
 namespace Mallto\Tool\Data;
 
-
 use Mallto\Admin\Data\Traits\BaseModel;
 use Mallto\Admin\Data\Traits\DynamicData;
 
-
 class WechatTemplateMsg extends BaseModel
 {
-    use DynamicData;
 
+    use DynamicData;
 
     protected $guarded = [
 
     ];
-
-
-
-
-
 
 }

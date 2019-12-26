@@ -5,8 +5,8 @@
 
 namespace Mallto\Tool\Data;
 
-use Mallto\Admin\Data\Traits\DynamicData;
 use Illuminate\Database\Eloquent\Model;
+use Mallto\Admin\Data\Traits\DynamicData;
 
 /**
  * 系统日志
@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Log extends Model
 {
+
     use DynamicData;
 
     protected $guarded = [

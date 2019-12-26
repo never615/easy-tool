@@ -1,11 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateApiPvManagersTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -26,9 +27,10 @@ class CreateApiPvManagersTable extends Migration
 
             $table->integer('subject_id')->comment('主体id');
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('CASCADE');
-            $table->index(['subject_id']);
+            $table->index([ 'subject_id' ]);
         });
     }
+
 
     /**
      * Reverse the migrations.

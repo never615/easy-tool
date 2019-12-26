@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 class UpdateWechatTemplateMsgsAddSwitch extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -20,6 +21,7 @@ class UpdateWechatTemplateMsgsAddSwitch extends Migration
             $table->boolean('switch')->default(true)->comment("是否启用该模板消息");
         });
     }
+
 
     /**
      * Reverse the migrations.

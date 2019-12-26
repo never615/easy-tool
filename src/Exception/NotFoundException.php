@@ -5,15 +5,13 @@
 
 namespace Mallto\Tool\Exception;
 
-
-
 use Exception;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  *
  * Class ThirdPartException
+ *
  * @package App\Exceptions
  */
 class NotFoundException extends HttpException

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreateApiPvTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -29,6 +30,7 @@ class CreateApiPvTable extends Migration
             $table->string("date_type");
         });
     }
+
 
     /**
      * Reverse the migrations.

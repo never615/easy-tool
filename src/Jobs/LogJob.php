@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Jobs;
 
-
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,8 +21,8 @@ use Mallto\Tool\Domain\Log\Logger;
  */
 class LogJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The number of seconds the job can run before timing out.
@@ -38,12 +37,14 @@ class LogJob implements ShouldQueue
      * @var int
      */
     public $tries = 3;
+
     /**
      * 日志的方法名
      *
      * @var
      */
     private $type;
+
     private $content;
 
 
@@ -59,6 +60,7 @@ class LogJob implements ShouldQueue
         $this->content = $content;
     }
 
+
     /**
      * Execute the job.
      *
@@ -68,8 +70,9 @@ class LogJob implements ShouldQueue
     {
         $logger = app(Logger::class);
 
-        call_user_func([$logger, $this->type], $this->content);
+        call_user_func([ $logger, $this->type ], $this->content);
     }
+
 
     /**
      * The job failed to process.
@@ -81,6 +84,5 @@ class LogJob implements ShouldQueue
         \Log::error("日志投递任务失败");
         \Log::warning($e);
     }
-
 
 }

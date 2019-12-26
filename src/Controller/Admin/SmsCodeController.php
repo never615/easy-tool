@@ -8,10 +8,8 @@ use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\SmsCode;
 
-
 class SmsCodeController extends AdminCommonController
 {
-
 
     /**
      * 获取这个模块的标题
@@ -23,6 +21,7 @@ class SmsCodeController extends AdminCommonController
         return "短信验证码";
     }
 
+
     /**
      * 获取这个模块的Model
      *
@@ -33,6 +32,7 @@ class SmsCodeController extends AdminCommonController
         return SmsCode::class;
     }
 
+
     protected function gridOption(Grid $grid)
     {
         $grid->mobile();
@@ -42,12 +42,13 @@ class SmsCodeController extends AdminCommonController
             $filter->ilike("mobile");
         });
 
-        if (!AdminUtils::isOwner()) {
+        if ( ! AdminUtils::isOwner()) {
             $grid->disableActions();
         }
         $grid->disableCreateButton();
 
     }
+
 
     /**
      * 需要实现的form设置
@@ -56,6 +57,7 @@ class SmsCodeController extends AdminCommonController
      * 然后formOption留空即可
      *
      * @param Form $form
+     *
      * @return mixed
      */
     protected function formOption(Form $form)

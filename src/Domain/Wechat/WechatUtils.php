@@ -13,6 +13,7 @@ namespace Mallto\Tool\Domain\Wechat;
  */
 class WechatUtils
 {
+
     /**
      * 获取微信模板id
      *
@@ -29,6 +30,7 @@ class WechatUtils
      * 是否是用户系统的模板id
      *
      * @param $templateId
+     *
      * @return bool
      */
     public static function isUserSystemTemplate($templateId)
@@ -41,12 +43,12 @@ class WechatUtils
      * 是否是管理系统的模板id
      *
      * @param $templateId
+     *
      * @return bool
      */
     public static function isAdminSystemTemplate($templateId)
     {
         return array_key_exists($templateId, config("other.wechat_template_id.admin_system"));
     }
-
 
 }

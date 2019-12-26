@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdatePageBanners1Table extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -24,6 +25,7 @@ class UpdatePageBanners1Table extends Migration
             $table->double("weight")->default(0);
         });
     }
+
 
     /**7
      * Reverse the migrations.

@@ -5,8 +5,6 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-
-use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Input;
@@ -22,6 +20,7 @@ class TagController extends AdminCommonController
 
     use  SlugAutoSave;
 
+
     /**
      * 获取这个模块的标题
      *
@@ -31,6 +30,7 @@ class TagController extends AdminCommonController
     {
         return "标签/类型管理";
     }
+
 
     /**
      * 获取这个模块的Model
@@ -46,12 +46,13 @@ class TagController extends AdminCommonController
     private function getSelectTagTypes()
     {
         $tagTypes = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_TAG_TYPES);
-        if (!$tagTypes) {
+        if ( ! $tagTypes) {
             return Tag::TYPE;
         } else {
             return array_only(Tag::TYPE, $tagTypes);
         }
     }
+
 
     /**
      * @param Grid $grid
@@ -64,7 +65,7 @@ class TagController extends AdminCommonController
         }
 
         $grid->name()->editable()->sortable();
-        if(AdminUtils::isOwner()){
+        if (AdminUtils::isOwner()) {
             $grid->slug();
         }
         $grid->type()->select(
@@ -77,14 +78,15 @@ class TagController extends AdminCommonController
         });
     }
 
+
     /**
      * @param Form $form
+     *
      * @return mixed|void
      */
     protected function formOption(Form $form)
     {
         $type = \Request::input("type");
-
 
         $form->text('name')->rules('required');
 
@@ -105,7 +107,6 @@ class TagController extends AdminCommonController
                 ->rules("required");
         }
 
-
         if ($this->currentId && \Mallto\Admin\AdminUtils::isOwner()) {
             $form->displayE("slug");
         }
@@ -113,7 +114,7 @@ class TagController extends AdminCommonController
         $form->image("logo")
             ->uniqueName()
             ->removable()
-            ->move('tag/logo/'.$this->currentId);
+            ->move('tag/logo/' . $this->currentId);
 
         $form->saving(function ($form) {
             $type = $form->type ?: $form->model()->type;

@@ -14,7 +14,6 @@
 
 namespace Mallto\Tool\Middleware;
 
-
 use Closure;
 use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\SignUtils;
@@ -28,14 +27,17 @@ use Mallto\Tool\Utils\SignUtils;
  */
 class AuthenticateSign
 {
+
     protected $except = [
     ];
+
 
     /**
      * Handle an incoming request.
      *
      * @param         $request
      * @param Closure $next
+     *
      * @return mixed
      */
     public function handle($request, Closure $next)

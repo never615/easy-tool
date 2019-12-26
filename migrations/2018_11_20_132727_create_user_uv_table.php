@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreateUserUvTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -27,6 +28,7 @@ class CreateUserUvTable extends Migration
             $table->string("type");
         });
     }
+
 
     /**
      * Reverse the migrations.

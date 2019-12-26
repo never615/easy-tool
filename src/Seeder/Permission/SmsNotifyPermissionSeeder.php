@@ -5,11 +5,11 @@ namespace Mallto\Tool\Seeder\Permission;
 use Illuminate\Database\Seeder;
 use Mallto\Admin\Seeder\SeederMaker;
 
-
 class SmsNotifyPermissionSeeder extends Seeder
 {
 
     use SeederMaker;
+
 
     /**
      * Run the database seeds.

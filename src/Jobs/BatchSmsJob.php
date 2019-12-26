@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Jobs;
 
-
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,8 +29,8 @@ use Mallto\User\Data\User;
  */
 class BatchSmsJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The number of seconds the job can run before timing out.
@@ -46,6 +45,7 @@ class BatchSmsJob implements ShouldQueue
      * @var int
      */
     public $tries = 3;
+
     /**
      * @var
      */
@@ -61,6 +61,7 @@ class BatchSmsJob implements ShouldQueue
     {
         $this->id = $id;
     }
+
 
     /**
      * Execute the job.
@@ -80,7 +81,6 @@ class BatchSmsJob implements ShouldQueue
             return;
         }
 
-
         $sms = app(Sms::class);
 
         $templateCode = $smsNotify->sms_template_code;
@@ -89,13 +89,11 @@ class BatchSmsJob implements ShouldQueue
         $subject = $smsNotify->subject;
         $subjectId = $subject->id;
 
-
         //array (
         //'choice_users' => '[{"id":"6","type":"member_levels","text":"黑卡"},{"id":"91832","type":"users","text":"云心:18666202809"}]',
         //  'templates' => 'SMS_141195417',
         //  '_token' => 'OUKat9VS8oNniprHVUON3lmMzuW8zhOXUphxS10A',
         //)
-
 
         $memberLevelSelects = array_where($selects, function ($value, $key) {
             return $value["type"] == "member_levels";
@@ -141,10 +139,10 @@ class BatchSmsJob implements ShouldQueue
                 $this->send($sms, $users, $sign, $templateCode);
             });
 
-
         $smsNotify->status = "finish";
         $smsNotify->save();
     }
+
 
     /**
      * The job failed to process.
@@ -184,6 +182,5 @@ class BatchSmsJob implements ShouldQueue
             \Log::warning($exception);
         }
     }
-
 
 }

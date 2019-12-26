@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CreateFeedbacksTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -30,9 +31,10 @@ class CreateFeedbacksTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['subject_id', 'user_id']);
+            $table->index([ 'subject_id', 'user_id' ]);
         });
     }
+
 
     /**
      * Reverse the migrations.

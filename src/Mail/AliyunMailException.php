@@ -13,7 +13,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AliyunMailException extends HttpException
 {
+
     protected $message;
+
 
     /**
      * DirectMailException constructor.
@@ -26,10 +28,12 @@ class AliyunMailException extends HttpException
         parent::__construct($StatusCode, $this->setMessage($message));
     }
 
+
     /**
      * 翻译错误提示代码
      *
      * @param $message
+     *
      * @return string
      */
     private function setMessage($message)

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class UpdateWechatTemplateMsgsAddDiy extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -28,6 +29,7 @@ class UpdateWechatTemplateMsgsAddDiy extends Migration
             $table->string("template_link")->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.

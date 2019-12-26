@@ -13,14 +13,17 @@ namespace Mallto\Tool\Utils;
  */
 class StringUtils
 {
+
     //    const KeyCode = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$';
     const KeyCode = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
 
     /**
      * 将64进制的数字字符串转为10进制的数字字符串
      *
      * @param $m   string 64进制的数字字符串
      * @param $len integer 返回字符串长度，如果长度不够用0填充，0为不填充
+     *
      * @return string
      * @author
      */
@@ -52,11 +55,13 @@ class StringUtils
         return $return;
     }
 
+
     /**
      * 将10进制的数字字符串转为64进制的数字字符串
      *
      * @param $m   string 10进制的数字字符串
      * @param $len integer 返回字符串长度，如果长度不够用0填充，0为不填充
+     *
      * @return string
      * @author
      */
@@ -65,7 +70,7 @@ class StringUtils
         $KeyCode = self::KeyCode;
         $hex2 = decbin($m);
         $hex2 = self::str_rsplit($hex2, 6);
-        $hex64 = array ();
+        $hex64 = [];
         foreach ($hex2 as $one) {
             $t = bindec($one);
             $hex64[] = $KeyCode[$t];
@@ -89,6 +94,7 @@ class StringUtils
      *
      * @param $str string 需要切割的字符串
      * @param $len integer 每段字符串的长度
+     *
      * @return array|bool
      * @author
      */
@@ -99,13 +105,13 @@ class StringUtils
         }
         $strlen = strlen($str);
         if ($strlen <= $len) {
-            return array ($str);
+            return [ $str ];
         }
         $headlen = $strlen % $len;
         if ($headlen == 0) {
             return str_split($str, $len);
         }
-        $return = array (substr($str, 0, $headlen));
+        $return = [ substr($str, 0, $headlen) ];
 
         return array_merge($return, str_split(substr($str, $headlen), $len));
     }
