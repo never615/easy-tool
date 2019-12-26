@@ -11,7 +11,6 @@ use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
 use RuntimeException;
 
-
 /**
  * 工具类
  * Created by PhpStorm.
@@ -32,6 +31,7 @@ class AppUtils
         return ceil(microtime(true) * 1000);
     }
 
+
     /**
      * 是否是测试环境
      * 测试环境是除了production,staging以外的所有环境
@@ -40,7 +40,7 @@ class AppUtils
      */
     public static function isTestEnv()
     {
-        if (!in_array(config("app.env"), ["staging", "production"])) {
+        if ( ! in_array(config("app.env"), [ "staging", "production" ])) {
             return true;
         } else {
             return false;
@@ -65,7 +65,7 @@ class AppUtils
             $url = "https://h5-test.mall-to.com/";
         }
 
-        return $url.config("app.env");
+        return $url . config("app.env");
     }
 
 
@@ -74,11 +74,11 @@ class AppUtils
      *
      * @param $originArr
      * @param $remove ,待移除的元素,可以是一个数据或者一个值
+     *
      * @return mixed
      */
     public static function array_remove_value($originArr, $remove)
     {
-
         foreach ($originArr as $key => $value) {
             if (is_array($remove)) {
                 if (in_array($value, $remove)) {
@@ -112,6 +112,7 @@ class AppUtils
      * 检查链接中的http协议,根据配置中的协议动态替换
      *
      * @param $url
+     *
      * @return string
      * @deprecated
      */
@@ -129,7 +130,7 @@ class AppUtils
             if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉
                 $url = substr($url, 4);
-                $url = "https".$url;
+                $url = "https" . $url;
 
                 return $url;
             }
@@ -137,23 +138,25 @@ class AppUtils
             if ($httpProtocol === "http" && strpos($url, "https") === 0) {
                 //如果要替换成的协议是http,而url是以https开头,替换掉
                 $url = substr($url, 5);
-                $url = "http".$url;
+                $url = "http" . $url;
 
                 return $url;
             }
 
             return $url;
 
-        } else {
-            //如果url不是以http开头的不处理
-            return $url;
         }
+
+        //如果url不是以http开头的不处理
+        return $url;
     }
+
 
     /**
      * 转换格式
      *
      * @param $string
+     *
      * @return mixed
      */
     public static function dateTransform($string)
@@ -169,6 +172,7 @@ class AppUtils
      * 检查字符串是否有中文
      *
      * @param $str
+     *
      * @return bool
      */
     public static function hasChinese($str)
@@ -183,34 +187,40 @@ class AppUtils
 
     }
 
+
     /**
      * PHP - 通用唯一识别码（UUID）的生成
      *
      * 简单的说 UUID 就是一串全球唯一的(16进制)数字串。
-     * UUID 的全拼为“Universally Unique Identifier”，可以译为“通用唯一识别码”。UUID 由开源软件基金会 (Open Software Foundation, OSF) 定义，是分布式计算环境 (Distributed Computing Environment, DCE) 的一个组成部分。
-     * UUID 的标准格式为“xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx”，五个部分分别为8个字符、4个字符、4个字符、4个字符、12个字符，中间用“-”号间隔。常见的 GUID(Globally Unique Identifier)是微软对 UUID 标准的一种实现。
+     * UUID 的全拼为“Universally Unique Identifier”，可以译为“通用唯一识别码”。UUID 由开源软件基金会 (Open Software Foundation, OSF)
+     * 定义，是分布式计算环境 (Distributed Computing Environment, DCE) 的一个组成部分。 UUID
+     * 的标准格式为“xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx”，五个部分分别为8个字符、4个字符、4个字符、4个字符、12个字符，中间用“-”号间隔。常见的
+     * GUID(Globally Unique Identifier)是微软对 UUID 标准的一种实现。
      *
      * 原文出自：www.hangge.com  转载请保留原文链接：http://www.hangge.com/blog/cache/detail_1528.html
      *
      * @param string $prefix
+     *
      * @return string
      */
     public static function create_uuid($prefix = "")
     {
         $str = md5(uniqid(mt_rand(), true));
-        $uuid = substr($str, 0, 8).'-';
-        $uuid .= substr($str, 8, 4).'-';
-        $uuid .= substr($str, 12, 4).'-';
-        $uuid .= substr($str, 16, 4).'-';
+        $uuid = substr($str, 0, 8) . '-';
+        $uuid .= substr($str, 8, 4) . '-';
+        $uuid .= substr($str, 12, 4) . '-';
+        $uuid .= substr($str, 16, 4) . '-';
         $uuid .= substr($str, 20, 12);
 
-        return $prefix.$uuid;
+        return $prefix . $uuid;
     }
+
 
     /**
      * 获取随机字符串
      *
      * @param int $length
+     *
      * @return bool|string
      */
     public static function getRandomString($length = 42)
@@ -225,7 +235,7 @@ class AppUtils
                 throw new RuntimeException('Unable to generate a random string');
             }
 
-            return substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $length);
+            return substr(str_replace([ '/', '+', '=' ], '', base64_encode($bytes)), 0, $length);
         }
 
         $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -233,10 +243,12 @@ class AppUtils
         return substr(str_shuffle(str_repeat($pool, 5)), 0, $length);
     }
 
+
     /**
      * 将stdClass Object转换成array格式
      *
      * @param  $array ,需要转换的对象
+     *
      * @return array
      */
     public static function object2array($array)
@@ -258,6 +270,7 @@ class AppUtils
      * 提取富文本中的文字字符
      *
      * @param $text
+     *
      * @return string
      */
     public static function htmlFilter($text)
@@ -277,6 +290,7 @@ class AppUtils
      *
      * @param $request
      * @param $number ,获取路径的第几段信息
+     *
      * @return mixed
      * @deprecated
      */
@@ -294,34 +308,21 @@ class AppUtils
      *
      * @param      $headerKey
      * @param bool $low
+     *
      * @return mixed|null
      * @deprecated
      */
     public static function getHeader($headerKey, $low = false)
     {
         return \Illuminate\Support\Facades\Request::header($headerKey);
-//        $headers = array ();
-//        foreach ($_SERVER as $key => $value) {
-//            if ('HTTP_' == substr($key, 0, 5)) {
-//                if ($low) {
-//                    $key = strtolower($key);
-//                    $value = strtolower($value);
-//                }
-//                $headers[str_replace('_', '-', substr($key, 5))] = $value;
-//            }
-//        }
-//
-//        if (isset($headers[$headerKey])) {
-//            return $headers[$headerKey];
-//        } else {
-//            return null;
-//        }
     }
+
 
     /**
      * http_build_query()函数的反操作
      *
      * @param $data
+     *
      * @return array
      */
     public static function httpQueryBuildReverse($data)
@@ -351,11 +352,13 @@ class AppUtils
         }
     }
 
+
     /**
      *   将数组转换为xml
      *
      * @param array $data 要转换的数组
      * @param bool  $root 是否要根节点
+     *
      * @return string         xml字符串
      * @author Dragondean
      * @url    http://www.cnblogs.com/dragondean
@@ -392,6 +395,7 @@ class AppUtils
      * ]
      *
      * @param $numbers
+     *
      * @return array
      */
     public static function daysGenerator($numbers)
@@ -399,7 +403,7 @@ class AppUtils
         $dayArr = [];
 
         for ($i = 1; $i <= $numbers; $i++) {
-            $dayArr[] = "第".$i."天";
+            $dayArr[] = "第" . $i . "天";
         }
 
         return $dayArr;
@@ -418,8 +422,8 @@ class AppUtils
         $appSecret = AppSecret::where("app_id",
             $appId)->first();
 
-        if (!$appSecret) {
-            throw new ResourceException("无效的app id:".$appId);
+        if ( ! $appSecret) {
+            throw new ResourceException("无效的app id:" . $appId);
         }
 
         return $appSecret;
@@ -430,49 +434,60 @@ class AppUtils
      * 解析openid
      *
      * @param $openid
+     *
      * @return mixed|string
+     * @throws AuthenticationException
      */
     public static function decryptOpenid($openid)
     {
+        if (empty($openid)) {
+            throw new AuthenticationException('openid为空,请检查微信授权或刷新重试');
+        }
+
         try {
             $openid = urldecode($openid);
             $openid = decrypt($openid);
 
             return $openid;
         } catch (DecryptException $e) {
-            \Log::error("openid解密失败:".$openid);
-            throw new ResourceException("openid无效");
+            \Log::warning("解析openid失败");
+            \Log::warning($openid);
+            throw new AuthenticationException('openid解析失败,请检查微信授权或刷新重试');
+            //throw new ResourceException("openid无效");
         }
     }
 
 
     /**
-     * 获取openid从原始数据
+     * 从原始数据中获取openid
      *
      * @param $orginalOpenid
+     *
      * @return mixed
      * @throws AuthenticationException
      */
     public static function getOpenidFromOriginalOpenid($orginalOpenid)
     {
-        try {
-            $openid = decrypt($orginalOpenid);
-        } catch (DecryptException $decryptException) {
-            //解析失败尝试url解码在进行解析
-            $orginalOpenid = urldecode($orginalOpenid);
-            try {
-                $openid = decrypt($orginalOpenid);
-            } catch (DecryptException $decryptException) {
-                \Log::warning("解析openid失败1");
-                \Log::warning($orginalOpenid);
-                throw new AuthenticationException("授权失败,openid解析失败");
-            }
-        }
-
-        $openids = explode("|||", $openid);
+        $openids = self::getOpenidFromOriginalOpenids($orginalOpenid);
 
         return $openids[0];
     }
 
+
+    /**
+     * 从原始数据中获取openid数据和时间戳
+     *
+     * @param $orginalOpenid
+     *
+     * @return array
+     * @throws AuthenticationException
+     */
+    public static function getOpenidFromOriginalOpenids($orginalOpenid)
+    {
+        $openid = self::decryptOpenid($orginalOpenid);
+
+        //数组有两个元素,第一个就是原始openid;第二个就是时间戳
+        return explode('|||', $openid);
+    }
 
 }
