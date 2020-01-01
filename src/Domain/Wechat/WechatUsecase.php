@@ -7,7 +7,7 @@ namespace Mallto\Tool\Domain\Wechat;
 
 use Closure;
 use GuzzleHttp\Exception\ClientException;
-use Mallto\Mall\SubjectConfigConstants;
+use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Tool\Data\WechatTemplateMsg;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
