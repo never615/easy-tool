@@ -112,6 +112,8 @@ trait StatisticsTraits
 
     private function getAddApipv($date_type, $apipvs, $start_at, $end_at, $method)
     {
+        $data = [];
+
         if ($date_type == 'year') {
             $type = "Y";
         } else {
