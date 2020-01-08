@@ -11,6 +11,7 @@ use Endroid\QrCode\Response\QrCodeResponse;
 use Illuminate\Http\Request;
 use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
+use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\HttpUtils;
 use Mallto\Tool\Utils\UrlUtils;
 
@@ -28,7 +29,7 @@ class QrController extends Controller
 
         $referer = $request->header("referer");
 
-        if ( ! $referer) {
+        if ( ! $referer && ! AppUtils::isTestEnv()) {
             throw new PermissionDeniedException("没有权限调用:referer为空");
         }
 
@@ -38,7 +39,7 @@ class QrController extends Controller
 
         $size = $request->get("size");
 
-        if ( ! HttpUtils::isAllowReferer($refererDomin)) {
+        if ( ! HttpUtils::isAllowReferer($refererDomin) && ! AppUtils::isTestEnv()) {
             throw new PermissionDeniedException("没有权限调用:" . $refererDomin);
         }
 
