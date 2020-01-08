@@ -29,9 +29,10 @@ class QrController extends Controller
 
         $referer = $request->header("referer");
 
-        if ( ! $referer && ! AppUtils::isTestEnv()) {
-            throw new PermissionDeniedException("没有权限调用:referer为空");
-        }
+        //允许refere为空
+        //if ( ! $referer && ! AppUtils::isTestEnv()) {
+        //    throw new PermissionDeniedException("没有权限调用:referer为空");
+        //}
 
         $refererDomin = UrlUtils::getDomain($referer);
 
@@ -39,7 +40,7 @@ class QrController extends Controller
 
         $size = $request->get("size");
 
-        if ( ! HttpUtils::isAllowReferer($refererDomin) && ! AppUtils::isTestEnv()) {
+        if ($referer && ! HttpUtils::isAllowReferer($refererDomin) && ! AppUtils::isTestEnv()) {
             throw new PermissionDeniedException("没有权限调用:" . $refererDomin);
         }
 

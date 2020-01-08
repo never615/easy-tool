@@ -64,8 +64,6 @@ abstract class AbstractAPI
      */
     public function __construct()
     {
-
-
         if ( ! $this->slug) {
             throw new InternalHttpException('继承自AbstractAPI的类 没有设置slug');
         }
