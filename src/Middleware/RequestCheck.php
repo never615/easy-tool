@@ -11,6 +11,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\ResourceException;
+use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
@@ -24,11 +25,11 @@ class RequestCheck
 {
 
     protected $requestTypes = [
-        'wechat'  => 'WECHAT',
-        'android' => 'ANDROID',
-        'ios'     => 'IOS',
-        'web'     => 'WEB',
-        'server'  => 'SERVER',
+        'WECHAT',
+        'ANDROID',
+        'IOS',
+        'WEB',
+        'SERVER',
     ];
 
 
@@ -73,11 +74,11 @@ class RequestCheck
             }
         }
 
-//        $requestType = $request->header('REQUEST_TYPE');
-//
-//        if ($requestType && !in_array($requestType, $this->requestTypes)) {
-//            throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
-//        }
+        $requestType = $request->header('REQUEST_TYPE', 'SERVER');
+
+        if ($requestType && ! in_array($requestType, $this->requestTypes)) {
+            throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
+        }
 
         $request->headers->set("mode", "api");
 

@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Providers;
 
-use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -57,12 +56,12 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-        "requestCheck"      => RequestCheck::class,
+        'requestCheck'      => RequestCheck::class,
         'authSign'          => AuthenticateSign::class,
         'authSign2'         => AuthenticateSign2::class,
         'authSign_referrer' => AuthenticateSignWithReferrer::class,
-        "owner_api"         => OwnerApiLog::class,
-        "third_api_check"   => ThirdRequestCheck::class,
+        'owner_api'         => OwnerApiLog::class,
+        'third_api_check'   => ThirdRequestCheck::class,
     ];
 
     /**
@@ -107,8 +106,9 @@ class ToolServiceProvider extends ServiceProvider
 
     private function appBoot()
     {
-        //日历默认一个月30天,执行这个,回归真实
-        Carbon::useMonthsOverflow(false);
+        //日历默认一个月30天,执行这个,回归真实 carbon升级后模式处理了
+        //Carbon::addMonthsWithNoOverflow();
+        //Carbon::useMonthsOverflow(false);
 
         //自定义校验规则 手机号
         Validator::extend('mobile', function ($attribute, $value, $parameters) {
@@ -245,7 +245,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerMail();
 
-        $this->app->singleton(Logger::class, LoggerAliyun::class);
+        $this->app->singleton(Logger::class, config('mall.logger',LoggerAliyun::class));
         $this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);

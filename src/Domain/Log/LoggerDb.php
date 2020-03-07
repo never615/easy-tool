@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Domain\Log;
 
+use Encore\Admin\Auth\Database\OperationLog;
+
 /**
  * Created by PhpStorm.
  * User: never615
@@ -62,7 +64,21 @@ class LoggerDb implements Logger
      */
     public function logAdminOperation($log)
     {
-        // TODO: Implement logAdminOperation() method.
+        try {
+            OperationLog::create(
+                array_merge(
+                    array_only($log, [
+                        'user_id',
+                        'path',
+                        'method',
+                        'input',
+                        'subject_id',
+                    ]), [
+                    'ip' => $log['request_ip'],
+                ]));
+        } catch (\Exception $exception) {
+            // pass
+        }
     }
 
 
