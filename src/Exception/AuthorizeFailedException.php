@@ -10,9 +10,6 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * 授权失败
- * Class ThirdPartException
- *
- * @package App\Exceptions
  */
 class AuthorizeFailedException extends HttpException
 {

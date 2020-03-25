@@ -32,12 +32,12 @@ class OwnerApiLog
     public function handle(Request $request, \Closure $next)
     {
         $ip = 0;
-        $tempIp = $request->header("X-Forwarded-For");
+        $tempIp = $request->header('X-Forwarded-For');
         if ($tempIp) {
             $ip = $tempIp;
         }
 
-        $user = Auth::guard("api")->user();
+        $user = Auth::guard('api')->user();
         $userId = $user ? $user->id : 0;
 
         $uuid = SubjectUtils::getUUIDNoException() ?: 0;
@@ -45,18 +45,20 @@ class OwnerApiLog
         $requestId = AppUtils::create_uuid();
 
         $log = [
-            'action'     => "请求",
+            'action'     => '请求',
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
             'user_id'    => $userId,
             'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
             'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
-            "uuid"       => $uuid,
-            "request_id" => $requestId,
+            'uuid'       => $uuid,
+            'request_id' => $requestId,
         ];
 
-        dispatch(new LogJob("logOwnerApi", $log));
+        dispatch(new LogJob('logOwnerApi', $log));
+
+        $request->headers->set('request-id', $requestId);
 
         $response = $next($request);
 
@@ -69,31 +71,31 @@ class OwnerApiLog
                     //也是为了防止图片响应异常
                     $input = json_decode($response->getContent());
                     if (is_null($input)) {
-                        $input = "非json数据";
+                        $input = '非json数据';
                     } else {
                         $input = $response->getContent();
                     }
                 } catch (\Exception $exception) {
-                    $input = "异常数据";
+                    $input = '异常数据';
                 }
             } else {
-                $input = "其他数据";
+                $input = '其他数据';
             }
         }
 
         $log = [
-            'action'     => "响应",
+            'action'     => '响应',
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),
             'request_ip' => $ip,
             'user_id'    => $userId,
             'input'      => $input,
             'status'     => $response->getStatusCode(),
-            "uuid"       => $uuid,
-            "request_id" => $requestId,
+            'uuid'       => $uuid,
+            'request_id' => $requestId,
         ];
 
-        dispatch(new LogJob("logOwnerApi", $log));
+        dispatch(new LogJob('logOwnerApi', $log));
 
         $response->headers->set('request-id', $requestId);
 
