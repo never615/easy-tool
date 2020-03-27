@@ -9,6 +9,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\ResourceException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
@@ -68,7 +69,9 @@ class RequestCheck
                 $subject = $subject->baseSubject();
             }
 
-            if ($subject->uuid != $uuid) {
+            $adminUUID = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID);
+
+            if ($subject->uuid != $uuid && $adminUUID != $uuid) {
                 \Log::warning("当前请求用户不属于该uuid:" . $subject->uuid . "," . $uuid);
                 throw new ResourceException("当前请求用户不属于该uuid");
             }
