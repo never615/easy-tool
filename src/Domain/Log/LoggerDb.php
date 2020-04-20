@@ -44,6 +44,7 @@ class LoggerDb implements Logger
         try {
             ThirdApiLog::create($content);
         } catch (\Exception $exception) {
+            \Log::info($exception);
         }
 
     }
@@ -103,6 +104,7 @@ class LoggerDb implements Logger
             }
         } catch (\Exception $exception) {
             // pass
+            \Log::info($exception);
         }
     }
 
