@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Domain\Log;
 
 use Mallto\Admin\Data\OperationLog;
+use Mallto\Tool\Data\ThirdApiLog;
 
 /**
  * Created by PhpStorm.
@@ -16,6 +17,18 @@ use Mallto\Admin\Data\OperationLog;
 class LoggerDb implements Logger
 {
 
+    private $switch = false;
+
+
+    /**
+     * LoggerAliyun constructor.
+     */
+    public function __construct()
+    {
+        $this->switch = config("app.ali_log", true);
+    }
+
+
     /**
      * 记录第三方接口通讯日志
      *
@@ -25,7 +38,14 @@ class LoggerDb implements Logger
      */
     public function logThirdPart($content)
     {
-        // TODO: Implement logThirdPart() method.
+        if ( ! $this->switch) {
+            return;
+        }
+        try {
+            ThirdApiLog::create($content);
+        } catch (\Exception $exception) {
+        }
+
     }
 
 
@@ -64,6 +84,9 @@ class LoggerDb implements Logger
      */
     public function logAdminOperation($log)
     {
+        if ( ! $this->switch) {
+            return;
+        }
         try {
             if ($log['action'] === 'request') {
                 OperationLog::create(
