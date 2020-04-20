@@ -28,6 +28,7 @@ class CreateThirdApiLogsTable extends Migration
             $table->text('body')->nullable();
             $table->text('status')->nullable();
             $table->text('request_time')->nullable();
+            $table->text('request_id')->nullable();
 
             $table->timestamps();
 
@@ -41,6 +42,7 @@ class CreateThirdApiLogsTable extends Migration
             $table->index('method');
             $table->index('url');
             $table->index('status');
+            $table->index('request_id');
             $table->index('created_at');
         });
     }
