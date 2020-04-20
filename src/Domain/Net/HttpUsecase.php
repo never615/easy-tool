@@ -13,6 +13,7 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Mallto\Admin\SubjectUtils;
+use Mallto\Mall\Data\Subject;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
@@ -175,7 +176,7 @@ class HttpUsecase
                     'headers'    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody() . "",
-                    'subject_id' => SubjectUtils::getSubjectId() ?: 1,
+                    'subject_id' => Subject::min('id'),
                 ]));
             } catch (\Exception $exception) {
                 \Log::error("记录第三方方请求日志错误");
@@ -206,7 +207,7 @@ class HttpUsecase
                     'body'         => $response->getBody()->getContents(),
                     'status'       => $response->getStatusCode(),
                     'request_time' => $requestTime,
-                    'subject_id'   => SubjectUtils::getSubjectId() ?: 1,
+                    'subject_id'   => Subject::min('id'),
                 ]));
             });
 
