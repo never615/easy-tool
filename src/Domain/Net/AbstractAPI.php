@@ -183,13 +183,20 @@ abstract class AbstractAPI
         $startTime = 0;
         $endTime = 0;
 
-        return Middleware::tap(function (RequestInterface $request, $options) use ($requestId, &$startTime) {
+        $uuid = SubjectUtils::getUUIDNoException() ?: 0;
+
+        return Middleware::tap(function (RequestInterface $request, $options) use (
+            $requestId,
+            &$startTime,
+            $uuid
+        ) {
             if (AppUtils::isTestEnv()) {
                 $startTime = microtime(true);
             }
             try {
+
                 dispatch(new LogJob('logThirdPart', [
-                    'uuid'       => SubjectUtils::getUUIDNoException() ?: 0,
+                    'uuid'       => $uuid,
                     'request_id' => $requestId,
                     'tag'        => $this->slug,
                     'action'     => '请求',
@@ -198,7 +205,7 @@ abstract class AbstractAPI
                     'headers'    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
                     'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody() . "",
-                    'subject_id' => SubjectUtils::getSubjectId() ?: 1,
+                    'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
                 ]));
             } catch (\Exception $exception) {
                 \Log::error("记录第三方方请求日志错误");
@@ -209,9 +216,15 @@ abstract class AbstractAPI
         }, function (RequestInterface $request, $options, Promise $response) use (
             $requestId,
             &$startTime,
-            $endTime
+            $endTime,
+            $uuid
         ) {
-            $response->then(function (ResponseInterface $response) use ($request, $requestId, &$startTime) {
+            $response->then(function (ResponseInterface $response) use (
+                $request,
+                $requestId,
+                &$startTime,
+                $uuid
+            ) {
                 $requestTime = 0;
                 if (AppUtils::isTestEnv()) {
                     $endTime = microtime(true);
@@ -229,7 +242,7 @@ abstract class AbstractAPI
                     'body'         => $response->getBody()->getContents(),
                     'status'       => $response->getStatusCode(),
                     'request_time' => $requestTime,
-                    'subject_id'   => SubjectUtils::getSubjectId() ?: 1,
+                    'subject_id'   => $uuid ? SubjectUtils::getSubjectId() : 1,
                 ]));
             });
 
