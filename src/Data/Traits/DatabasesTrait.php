@@ -29,11 +29,11 @@ trait DatabasesTrait
      * @param $tableName '表名'
      * @param $indexName '索引名'
      *
-     * @return array
+     * @return bool
      */
     protected function existIndex($tableName, $indexName)
     {
-        return DB::select("select EXISTS (select * from pg_indexes where tablename = '{$tableName}' and  indexname = '{$indexName}')");
+        return (boolean) DB::select("select EXISTS (select * from pg_indexes where tablename = '{$tableName}' and  indexname = '{$indexName}')")[0]->exists;
     }
 
 
