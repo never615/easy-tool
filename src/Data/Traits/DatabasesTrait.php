@@ -89,7 +89,7 @@ trait DatabasesTrait
             $tableName = $tableInfo->table_name;
 
             foreach ($indexColumns as $indexColumn) {
-                // 拼接subject_id主键名称
+                // 拼接subject_id索引名称
                 $indexName = $tableName . '_' . $indexColumn . '_index';
                 $this->createAndcheck($tableName, $indexName, $indexColumn);
             }
