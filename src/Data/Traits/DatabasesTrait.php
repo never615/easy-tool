@@ -62,7 +62,16 @@ trait DatabasesTrait
      * @param $tableAndIndex
      *
      * 格式为：[添加索引的字段 => 数据表]
-     * 例如：  ['member_id', 'user_coupons']，
+     * 例如：  ['member_id', 'user_coupons']
+     *
+     * TODO: 主键插入封装优化
+     * 这里还可以优化成 [
+     *      数据表名称 => [
+     *          数据表字段
+     *      ]
+     * ]
+     *
+     * 这种格式ide不会报数据key值重复的错误
      */
     protected function addIndexForTable($tableAndIndex)
     {
