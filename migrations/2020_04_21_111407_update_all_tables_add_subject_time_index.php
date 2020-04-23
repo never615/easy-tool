@@ -21,7 +21,7 @@ class UpdateAllTablesAddSubjectTimeIndex extends Migration
     {
         $indexColumn = [ 'subject_id', 'create_at' ];
 
-        $this->addSubjectAndTimeIndexForAllTable($indexColumn);
+        $this->addIndexForAllTable($indexColumn);
     }
 
 
@@ -30,6 +30,5 @@ class UpdateAllTablesAddSubjectTimeIndex extends Migration
      */
     public function down()
     {
-        //todo 不知道要不要写回滚，如果需要则补上
     }
 }

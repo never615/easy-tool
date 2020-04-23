@@ -61,25 +61,21 @@ trait DatabasesTrait
      *
      * @param $tableAndIndex
      *
-     * 格式为：[添加索引的字段 => 数据表]
-     * 例如：  ['member_id', 'user_coupons']
-     *
-     * TODO: 主键插入封装优化
-     * 这里还可以优化成 [
-     *      数据表名称 => [
-     *          数据表字段
+     * 格式为：  [
+     *      table_name => [
+     *          column
      *      ]
      * ]
-     *
-     * 这种格式ide不会报数据key值重复的错误
      */
     protected function addIndexForTable($tableAndIndex)
     {
-        foreach ($tableAndIndex as $indexColumn => $tableName) {
-            // 拼接索引名称
-            $indexName = $tableName . '_' . $indexColumn . '_index';
+        foreach ($tableAndIndex as $tableName => $indexColumns) {
+            foreach ($indexColumns as $indexColumn) {
+                // 拼接索引名称
+                $indexName = $tableName . '_' . $indexColumn . '_index';
 
-            $this->createAndcheck($tableName, $indexName, $indexColumn);
+                $this->createAndcheck($tableName, $indexName, $indexColumn);
+            }
         }
     }
 
@@ -89,7 +85,7 @@ trait DatabasesTrait
      *
      * @param $indexColumns
      */
-    protected function addSubjectAndTimeIndexForAllTable($indexColumns)
+    protected function addIndexForAllTable($indexColumns)
     {
         $allTableInfo = $this->getAllTableName();
 
