@@ -27,6 +27,10 @@ Route::group($attributes, function ($router) {
 
     Route::get("error/{code}", 'ErrorController@index');
 
+    Route::get('admin/log',
+        '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
+
+
     Route::group([ 'prefix' => config('admin.route.prefix'), "middleware" => [ 'adminE_base' ] ],
         function ($router) {
 
@@ -34,10 +38,9 @@ Route::group($attributes, function ($router) {
 
                 Route::get("select_source/ad_types", 'PagePvManagerController@getPageAdType');
 
+
                 Route::group([ 'middleware' => [ 'adminE.auto_permission' ] ],
                     function ($router) {  //指定auth的guard为mall
-                        $router->get('log',
-                            '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
 
                         //第三方接口请求日志
                         Route::resource("third_logs", "ThirdLogController");
