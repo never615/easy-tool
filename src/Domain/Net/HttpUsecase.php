@@ -162,7 +162,7 @@ class HttpUsecase
         $endTime = 0;
 
         return Middleware::tap(function (RequestInterface $request, $options) use ($requestId, &$startTime) {
-            if (AppUtils::isTestEnv()) {
+            if ( ! AppUtils::isProduction()) {
                 $startTime = microtime(true);
             }
             try {
@@ -191,7 +191,7 @@ class HttpUsecase
         ) {
             $response->then(function (ResponseInterface $response) use ($request, $requestId, &$startTime) {
                 $requestTime = 0;
-                if (AppUtils::isTestEnv()) {
+                if ( ! AppUtils::isProduction()) {
                     $endTime = microtime(true);
                     $requestTime = round($endTime - $startTime, 3);
                 }

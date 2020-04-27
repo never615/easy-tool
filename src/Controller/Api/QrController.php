@@ -40,7 +40,7 @@ class QrController extends Controller
 
         $size = $request->get("size");
 
-        if ($referer && ! HttpUtils::isAllowReferer($refererDomin) && ! AppUtils::isTestEnv()) {
+        if ($referer && ! HttpUtils::isAllowReferer($refererDomin) && AppUtils::isProduction()) {
             throw new PermissionDeniedException("没有权限调用:" . $refererDomin);
         }
 

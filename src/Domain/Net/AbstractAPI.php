@@ -190,7 +190,7 @@ abstract class AbstractAPI
             &$startTime,
             $uuid
         ) {
-            if (AppUtils::isTestEnv()) {
+            if ( ! AppUtils::isProduction()) {
                 $startTime = microtime(true);
             }
             try {
@@ -226,7 +226,7 @@ abstract class AbstractAPI
                 $uuid
             ) {
                 $requestTime = 0;
-                if (AppUtils::isTestEnv()) {
+                if ( ! AppUtils::isProduction()) {
                     $endTime = microtime(true);
                     $requestTime = round($endTime - $startTime, 3);
                 }

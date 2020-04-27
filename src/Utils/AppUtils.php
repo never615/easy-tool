@@ -49,6 +49,16 @@ class AppUtils
 
 
     /**
+     * 是否是正式环境
+     * @return bool
+     */
+    public static function isProduction()
+    {
+        return config('app.env') === 'production';
+    }
+
+
+    /**
      * 获取前端项目使用的url
      * 结尾不包含/
      *
