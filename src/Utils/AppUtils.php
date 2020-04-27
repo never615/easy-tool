@@ -70,7 +70,7 @@ class AppUtils
     public static function h5Url()
     {
         $url = "";
-        if ( ! AppUtils::isTestEnv()) {
+        if ( AppUtils::isProduction()) {
             $url = "https://h5.mall-to.com/";
         } else {
             $url = "https://h5-test.mall-to.com/";
