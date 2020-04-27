@@ -11,6 +11,7 @@ use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Tool\Data\WechatTemplateMsg;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
+use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\SignUtils;
 
 /**
@@ -80,9 +81,7 @@ class  WechatUsecase extends AbstractAPI
             $templateId = $this->addTemplateId($public_template_id, $subject);
             if ($templateId) {
                 $this->wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback);
-            } else {
-                throw new ResourceException("消息模板设置失败");
-            }
+            } 
         }
     }
 
@@ -175,10 +174,9 @@ class  WechatUsecase extends AbstractAPI
      */
     public function addTemplateId($shortId, $subject, $oldTemplateId = null)
     {
-        \Log::warning("模板消息的模板不存在不存在,准备新建:" . $shortId);
         \Log::warning(new \Exception());
 
-        if (config("app.env") === 'production' || config('app.env') === 'staging') {
+        if ( ! AppUtils::isTestEnv()) {
             $baseUrl = "https://wechat.mall-to.com";
         } else {
             $baseUrl = "https://test-wechat.mall-to.com";
