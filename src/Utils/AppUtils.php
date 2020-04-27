@@ -50,6 +50,7 @@ class AppUtils
 
     /**
      * 是否是正式环境
+     *
      * @return bool
      */
     public static function isProduction()
@@ -69,7 +70,7 @@ class AppUtils
     public static function h5Url()
     {
         $url = "";
-        if (config("app.env") == "production" || config("app.env") == "staging") {
+        if ( ! AppUtils::isTestEnv()) {
             $url = "https://h5.mall-to.com/";
         } else {
             $url = "https://h5-test.mall-to.com/";

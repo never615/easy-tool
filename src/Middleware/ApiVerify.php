@@ -20,6 +20,7 @@ use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
+use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\SignUtils;
 
 /**
@@ -72,7 +73,7 @@ class ApiVerify
 
         switch ($apiVersion) {
             case "999": //用户测试环境,直接通过校验
-                if (config("app.env") == "production" || config("app.env") == "staging") {
+                if (AppUtils::isProduction()) {
                     throw new PermissionDeniedException("无效的api版本");
                 } else {
                     return $next($request);
