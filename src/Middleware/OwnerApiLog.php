@@ -66,7 +66,6 @@ class OwnerApiLog
             $input = json_encode($response->getContent());
         } else {
             if (is_string($response->getContent())) {
-                $input = $response->getContent();
                 try {
                     //也是为了防止图片响应异常
                     $input = json_decode($response->getContent());
@@ -76,6 +75,7 @@ class OwnerApiLog
                         $input = $response->getContent();
                     }
                 } catch (\Exception $exception) {
+                    \Log::info($exception);
                     $input = '异常数据';
                 }
             } else {

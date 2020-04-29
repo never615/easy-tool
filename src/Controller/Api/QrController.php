@@ -14,6 +14,7 @@ use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\HttpUtils;
 use Mallto\Tool\Utils\UrlUtils;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Created by PhpStorm.
@@ -57,8 +58,9 @@ class QrController extends Controller
             throw new ResourceException("二维码尺寸设置失败");
         }
 
-        header('Content-Type: ' . $qrCode->getContentType());
+        //header('Content-Type: ' . $qrCode->getContentType());
+        //echo $qrCode->writeString();
 
-        return $response = new QrCodeResponse($qrCode);
+        return new Response($qrCode->writeString(),Response::HTTP_OK, ['Content-Type' => $qrCode->getContentType()]);
     }
 }
