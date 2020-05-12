@@ -40,7 +40,7 @@ class AppUtils
      */
     public static function isTestEnv()
     {
-        if ( ! in_array(config("app.env"), [ "staging", "production" ])) {
+        if ( ! in_array(config('app.env'), [ 'staging', 'production' ])) {
             return true;
         } else {
             return false;
@@ -69,14 +69,14 @@ class AppUtils
      */
     public static function h5Url()
     {
-        $url = "";
+        $url = '';
         if ( AppUtils::isProduction()) {
-            $url = "https://h5.mall-to.com/";
+            $url = 'https://h5.mall-to.com/';
         } else {
-            $url = "https://h5-test.mall-to.com/";
+            $url = 'https://h5-test.mall-to.com/';
         }
 
-        return $url . config("app.env");
+        return $url . config('app.env');
     }
 
 
@@ -130,26 +130,26 @@ class AppUtils
     public static function checkHttpProtocol($url)
     {
 
-        if (strpos($url, "http") === 0) {
-            //            $httpProtocol = config("app.http_protocol", 'https');
-            $secure = config("admin.https");
+        if (strpos($url, 'http') === 0) {
+            //            $httpProtocol = config('app.http_protocol', 'https');
+            $secure = config('admin.https');
             if ($secure) {
-                $httpProtocol = "https";
+                $httpProtocol = 'https';
             } else {
-                $httpProtocol = "http";
+                $httpProtocol = 'http';
             }
-            if ($httpProtocol === "https" && strpos($url, "https") !== 0) {
+            if ($httpProtocol === 'https' && strpos($url, 'https') !== 0) {
                 //如果要换成的协议是https,而url不是以https开头,替换掉
                 $url = substr($url, 4);
-                $url = "https" . $url;
+                $url = 'https' . $url;
 
                 return $url;
             }
 
-            if ($httpProtocol === "http" && strpos($url, "https") === 0) {
+            if ($httpProtocol === 'http' && strpos($url, 'https') === 0) {
                 //如果要替换成的协议是http,而url是以https开头,替换掉
                 $url = substr($url, 5);
-                $url = "http" . $url;
+                $url = 'http' . $url;
 
                 return $url;
             }
@@ -188,9 +188,9 @@ class AppUtils
      */
     public static function hasChinese($str)
     {
-//        if (preg_match("/^[".chr(0xa1)."-".chr(0xff)."]+$/", $str)) { //只能在GB2312情况下使用
-//        if (preg_match("/^[\x7f-\xff]+$/", $str)) { //兼容gb2312,utf-8  //判断字符串是否全是中文
-        if (preg_match("/[\x7f-\xff]/", $str)) {  //判断字符串中是否有中文
+//        if (preg_match('/^['.chr(0xa1).'-'.chr(0xff).']+$/', $str)) { //只能在GB2312情况下使用
+//        if (preg_match('/^[\x7f-\xff]+$/', $str)) { //兼容gb2312,utf-8  //判断字符串是否全是中文
+        if (preg_match('/[\x7f-\xff]/', $str)) {  //判断字符串中是否有中文
             return true;
         } else {
             return false;
@@ -214,7 +214,7 @@ class AppUtils
      *
      * @return string
      */
-    public static function create_uuid($prefix = "")
+    public static function create_uuid($prefix = '')
     {
         $str = md5(uniqid(mt_rand(), true));
         $uuid = substr($str, 0, 8) . '-';
@@ -287,7 +287,7 @@ class AppUtils
     public static function htmlFilter($text)
     {
         $content_02 = htmlspecialchars_decode($text);//把一些预定义的 HTML 实体转换为字符
-        $content_03 = str_replace("&nbsp;", "", $content_02);//将空格替换成空
+        $content_03 = str_replace('&nbsp;', '', $content_02);//将空格替换成空
         $contents = strip_tags($content_03);//函数剥去字符串中的 HTML、XML 以及 PHP 的标签,获取纯文本内容
 
         return $contents;
@@ -308,7 +308,7 @@ class AppUtils
     public static function getPathKey($request, $number = 0)
     {
         $path = $request->path();
-        $pathArr = explode("/", $path);
+        $pathArr = explode('/', $path);
 
         return $pathArr[$number];
     }
@@ -342,9 +342,9 @@ class AppUtils
             if ($data) {
                 $decodeData = urldecode($data);
                 $result = [];
-                $queries = explode("&", $decodeData);
+                $queries = explode('&', $decodeData);
                 foreach ($queries as $query) {
-                    $subQuery = explode("=", $query);
+                    $subQuery = explode('=', $query);
                     if (count($subQuery) != 2) {
                         return [];
                     }
@@ -376,22 +376,22 @@ class AppUtils
      */
     public static function arr2xml($data, $root = true)
     {
-        $str = "";
+        $str = '';
         if ($root) {
-            $str .= "<xml>";
+            $str .= '<xml>';
         }
         foreach ($data as $key => $val) {
             //去掉key中的下标[]
             $key = preg_replace('/\[\d*\]/', '', $key);
             if (is_array($val)) {
                 $child = self::arr2xml($val, false);
-                $str .= "<$key>$child</$key>";
+                $str .= '<$key>$child</$key>';
             } else {
-                $str .= "<$key><![CDATA[$val]]></$key>";
+                $str .= '<$key><![CDATA[$val]]></$key>';
             }
         }
         if ($root) {
-            $str .= "</xml>";
+            $str .= '</xml>';
         }
 
         return $str;
@@ -402,7 +402,7 @@ class AppUtils
      * 根据numbers 返回天数数组,如:
      * $numbers 为 3,返回
      * [
-     *   "第一天","第二天","第三天"
+     *   '第一天','第二天','第三天'
      * ]
      *
      * @param $numbers
@@ -414,7 +414,7 @@ class AppUtils
         $dayArr = [];
 
         for ($i = 1; $i <= $numbers; $i++) {
-            $dayArr[] = "第" . $i . "天";
+            $dayArr[] = '第' . $i . '天';
         }
 
         return $dayArr;
@@ -428,13 +428,13 @@ class AppUtils
      */
     public static function getAppSecret()
     {
-        $appId = request()->header("app_id");
+        $appId = request()->header('app_id');
 
-        $appSecret = AppSecret::where("app_id",
+        $appSecret = AppSecret::where('app_id',
             $appId)->first();
 
         if ( ! $appSecret) {
-            throw new ResourceException("无效的app id:" . $appId);
+            throw new ResourceException('无效的app id:' . $appId);
         }
 
         return $appSecret;
@@ -461,10 +461,10 @@ class AppUtils
 
             return $openid;
         } catch (DecryptException $e) {
-            \Log::warning("解析openid失败");
+            \Log::warning('解析openid失败');
             \Log::warning($openid);
             throw new AuthenticationException('openid解析失败,请检查微信授权或刷新重试');
-            //throw new ResourceException("openid无效");
+            //throw new ResourceException('openid无效');
         }
     }
 
