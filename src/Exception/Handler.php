@@ -77,10 +77,13 @@ class Handler extends ExceptionHandler
      * @param \Exception               $exception
      *
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
+     * @throws Exception
      */
     public function render($request, Exception $exception)
     {
-        DB::rollBack();
+        while (DB::transactionLevel() > 0) {
+            DB::rollBack();
+        }
         if ($request->expectsJson()) {
 
             if (Admin::user()) {
