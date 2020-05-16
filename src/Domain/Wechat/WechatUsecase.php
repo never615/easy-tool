@@ -81,7 +81,7 @@ class  WechatUsecase extends AbstractAPI
             $templateId = $this->addTemplateId($public_template_id, $subject);
             if ($templateId) {
                 $this->wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback);
-            } 
+            }
         }
     }
 
@@ -182,9 +182,8 @@ class  WechatUsecase extends AbstractAPI
             $baseUrl = "https://test-wechat.mall-to.com";
         }
 
-        $uuid = "";
         if (WechatUtils::isUserSystemTemplate($shortId)) {
-            $uuid = $subject->uuid;
+            $uuid = $subject->wechat_uuid ?? $subject->uuid;
         } elseif (WechatUtils::isAdminSystemTemplate($shortId)) {
             $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
         }

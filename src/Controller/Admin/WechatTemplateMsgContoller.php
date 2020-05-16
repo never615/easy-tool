@@ -122,7 +122,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
                 $submitSwitch = $switchArr[$submitSwitch];
             }
 
-            if (($submitSwitch && $submitSwitch != $oldSwitch) ||
+            if (($submitSwitch != $oldSwitch && $form->model()->template_id) ||
                 ($form->template_id && $form->template_id != $form->model()->template_id)) {
 
 
