@@ -122,24 +122,18 @@ class WechatTemplateMsgContoller extends AdminCommonController
                 $submitSwitch = $switchArr[$submitSwitch];
             }
 
-            if (($submitSwitch != $oldSwitch && $form->model()->template_id) ||
-                ($form->template_id && $form->template_id != $form->model()->template_id)) {
+            //创建公众号对应模板id
+            if (($form->public_template_id &&
+                $form->public_template_id != $form->model()->public_template_id)) {
 
+                $subject = Subject::find($form->subject_id ?? $form->model()->subject_id);
 
-            } else {
-                //创建公众号对应模板id
-                if (($form->public_template_id &&
-                        $form->public_template_id != $form->model()->public_template_id) || (AdminUtils::isOwner())) {
-
-                    $subject = Subject::find($form->subject_id ?? $form->model()->subject_id);
-
-                    $wechatUsecase = app(WechatUsecase::class);
-                    $templateId = $wechatUsecase->addTemplateId($form->public_template_id, $subject);
-                    if ( ! $templateId) {
-                        throw new ResourceException("消息模板设置失败");
-                    }
-                    $form->model()->template_id = $templateId;
+                $wechatUsecase = app(WechatUsecase::class);
+                $templateId = $wechatUsecase->addTemplateId($form->public_template_id, $subject);
+                if ( ! $templateId) {
+                    throw new ResourceException('消息模板设置失败');
                 }
+                $form->model()->template_id = $templateId;
             }
         });
     }
