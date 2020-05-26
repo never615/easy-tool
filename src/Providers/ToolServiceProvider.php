@@ -82,7 +82,7 @@ class ToolServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
 
-//        $this->loadViewsFrom(__DIR__.'/../../resources/views', 'tool');
+        $this->loadViewsFrom(__DIR__.'/../../resources/errors_view', 'tooL_errors');
 
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');

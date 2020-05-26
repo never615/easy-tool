@@ -18,6 +18,6 @@ class ErrorController
 
     public function index($code, Request $request)
     {
-        return view('errors.' . $code);
+        return view("tooL_errors::$code");
     }
 }

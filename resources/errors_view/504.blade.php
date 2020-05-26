@@ -1,4 +1,4 @@
-@extends('errors.error_base')
+@extends('tooL_errors::error_base')
 
 @section('title','504 Gateway Timeout')
 

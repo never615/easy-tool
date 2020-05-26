@@ -22,6 +22,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
 /**
@@ -105,7 +106,7 @@ class Handler extends ExceptionHandler
             }
 
             //如果是管理端请求
-            if (Admin::user()) {
+            if (Admin::user() && $request->ajax() && ! $request->pjax()) {
 
                 $response = $this->interJsonHandler($exception, $request);
 
@@ -307,6 +308,17 @@ class Handler extends ExceptionHandler
         return array_merge($data, [
             "message" => $data["error"] ?? $exception->getMessage(),
         ]);
+    }
+
+    /**
+     * Get the view used to render HTTP exceptions.
+     *
+     * @param  \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface  $e
+     * @return string
+     */
+    protected function getHttpExceptionView(HttpExceptionInterface $e)
+    {
+        return "tooL_errors::{$e->getStatusCode()}";
     }
 
 }

@@ -71,7 +71,7 @@
             <div class="jumbotron">
                 <h1><i class="fa fa-frown-o red"></i> @yield('title')</h1>
                 <p class="lead">@yield('desc')</p>
-                @include('errors.button')
+                @include('tooL_errors::button')
             </div>
         </div>
         <div class="container">
@@ -79,7 +79,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <h2>发生了什么?</h2>
-                        <p class="lead">{{$exception?$exception->getMessage():""}}</p>
+                        <p class="lead">{{isset($exception)?$exception->getMessage():""}}</p>
                         <p class="lead">@yield("error_msg")</p>
                     </div>
                     <div class="col-md-6">

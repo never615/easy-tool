@@ -1,4 +1,4 @@
-@extends('errors.error_base2')
+@extends('tooL_errors::error_base2')
 
 @section('title','很遗憾')
 
