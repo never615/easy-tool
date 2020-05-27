@@ -82,7 +82,7 @@ class ToolServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../migrations');
 
-        $this->loadViewsFrom(__DIR__.'/../../resources/errors_view', 'tooL_errors');
+        $this->loadViewsFrom(__DIR__ . '/../../resources/errors_view', 'tooL_errors');
 
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
@@ -143,6 +143,18 @@ class ToolServiceProvider extends ServiceProvider
         Response::macro('redirect', function ($value) {
             return Response::json([ 'redirectUrl' => $value ]);
         });
+
+        if ( ! $this->app->isLocal()) {
+            //horizon队列管理看板的进入权限
+            Horizon::auth(function ($request) {
+                $user = Admin::user();
+                if ($user && $user->isOwner()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+        }
     }
 
 
@@ -154,18 +166,7 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
-        if ( ! $this->app->isLocal()) {
-            //horizon队列管理看板的进入权限
-            Horizon::auth(function ($request) {
 
-                $user = Admin::user();
-                if ($user && $user->isOwner()) {
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-        }
 
         //任务循环前
         Queue::looping(function () {
@@ -245,7 +246,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerMail();
 
-        $this->app->singleton(Logger::class, config('mall.logger',LoggerAliyun::class));
+        $this->app->singleton(Logger::class, config('mall.logger', LoggerAliyun::class));
         $this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
