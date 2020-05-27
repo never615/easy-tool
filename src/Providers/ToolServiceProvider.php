@@ -143,21 +143,6 @@ class ToolServiceProvider extends ServiceProvider
         Response::macro('redirect', function ($value) {
             return Response::json([ 'redirectUrl' => $value ]);
         });
-
-        if ( ! $this->app->isLocal()) {
-            \Log::info('catchtool not local');
-            //horizon队列管理看板的进入权限
-            Horizon::auth(function ($request) {
-                $user = Admin::user();
-                \Log::info($user);
-
-                if ($user && $user->isOwner()) {
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-        }
     }
 
 
@@ -169,8 +154,6 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
-
-
         //任务循环前
         Queue::looping(function () {
             while (DB::transactionLevel() > 0) {
