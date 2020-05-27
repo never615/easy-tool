@@ -25,11 +25,10 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      */
     protected function authorization()
     {
-        $this->gate();
-
         Horizon::auth(function ($request) {
+            $user=Admin::user();
             return app()->environment('local') ||
-                Gate::check('viewHorizon', [ Admin::user() ]);
+                ( $user && $user->isOwner());
         });
     }
 
@@ -43,11 +42,8 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      */
     protected function gate()
     {
-        Gate::define('viewHorizon', function ($user) {
-            //horizon队
-            //$user = Admin::user();
-
-            return $user && $user->isOwner();
-        });
+        //Gate::define('viewHorizon', function ($user) {
+        //    return $user && $user->isOwner();
+        //});
     }
 }
