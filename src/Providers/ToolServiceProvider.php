@@ -145,9 +145,12 @@ class ToolServiceProvider extends ServiceProvider
         });
 
         if ( ! $this->app->isLocal()) {
+            \Log::info('catchtool not local');
             //horizon队列管理看板的进入权限
             Horizon::auth(function ($request) {
                 $user = Admin::user();
+                \Log::info($user);
+
                 if ($user && $user->isOwner()) {
                     return true;
                 } else {
