@@ -80,7 +80,8 @@ class AdController extends AdminCommonController
             ->addElementClass2("mt-ad-ad-type")
             ->default("text")
             ->rules("required")
-            ->help("浮层广告建议尺寸:420 * 520")
+            ->help('浮层广告建议尺寸:420 * 520 </br>
+<a href="/admin/page_pv_manager">点此修改页面支持的广告类型</a>')
             ->options(Ad::AD_TYPE);
 
         $form->switch("switch");
@@ -164,18 +165,18 @@ class AdController extends AdminCommonController
     private function dynamicDisplay()
     {
         $defaultScript = <<<EOT
-    $(document).ready(function () {   
+    $(document).ready(function () {
         var type=$(".mt-ad-ad-type").val();
         typeValueUpdate(type);
 
-     
+
         $(document).on('change', ".mt-ad-ad-type", function () {
             var selectVal = $(this).val();
             console.log(selectVal);
             typeValueUpdate(selectVal);
-           
+
         });
-        
+
          function typeValueUpdate(selectVal){
              console.log(selectVal);
               switch (selectVal) {
@@ -200,7 +201,7 @@ class AdController extends AdminCommonController
                     break;
             }
          }
-    });    
+    });
 EOT;
 
         Admin::script($defaultScript);
