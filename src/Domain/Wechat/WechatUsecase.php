@@ -106,9 +106,16 @@ class  WechatUsecase extends AbstractAPI
         }
 
         if (WechatUtils::isUserSystemTemplate($public_template_id)) {
-            $uuid = $subject->uuid;
+            $uuid = $subject->wechat_uuid ?? $subject->uuid;
         } elseif (WechatUtils::isAdminSystemTemplate($public_template_id)) {
             $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
+        }
+
+        if ( ! $uuid) {
+            \Log::error("微信模板消息发送失败 uuid未设置");
+            \Log::warning($public_template_id);
+
+            return false;
         }
 
         try {
