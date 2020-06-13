@@ -123,6 +123,7 @@ class LoggerAliyun implements Logger
         } catch (\Exception $exception) {
             \Log::error("阿里日志 logOwnerApi");
             \Log::warning($exception);
+            \Log::warning($content['url'] ?? nullso);
             \Log::warning($content);
         }
     }
