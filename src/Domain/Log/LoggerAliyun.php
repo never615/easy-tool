@@ -121,10 +121,9 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::error("阿里日志 logOwnerApi");
+            \Log::warning("阿里日志 logOwnerApi");
             \Log::warning($exception);
-            \Log::warning($content['url'] ?? nullso);
-            \Log::warning($content);
+            \Log::warning($content['url'] ?? null);
         }
     }
 
@@ -158,9 +157,9 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::error("阿里日志 logAdminOperation");
+            \Log::warning("阿里日志 logAdminOperation");
             \Log::warning($exception);
-            \Log::warning($log);
+            \Log::warning($log['path']??null);
         }
     }
 
