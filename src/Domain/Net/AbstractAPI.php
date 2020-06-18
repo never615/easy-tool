@@ -320,6 +320,8 @@ abstract class AbstractAPI
         if ($exception) {
             \Log::error('基础网络库:其他异常');
             \Log::warning($exception);
+            \Log::warning($exception->getRequest()->getUri()->getHost());
+            \Log::warning($exception->getRequest()->getUri()->getPath());
         }
 
         return false;
