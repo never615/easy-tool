@@ -41,11 +41,5 @@
         "files": [
             "src/helpers.php"
         ]
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/never615/UEditor.git"
-        }
-    ]
+    }
 }
