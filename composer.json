@@ -32,7 +32,7 @@
         "predis/predis": "^1.1",
         "rap2hpoutre/laravel-log-viewer": "^1.1",
         "smartins/passport-multiauth": "^4.0",
-        "codingyu/ueditor": "^3.0"
+        "codingyu/ueditor": "dev-master"
     },
     "autoload": {
         "psr-4": {
@@ -41,5 +41,11 @@
         "files": [
             "src/helpers.php"
         ]
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/never615/UEditor.git"
+        }
+    ]
 }
