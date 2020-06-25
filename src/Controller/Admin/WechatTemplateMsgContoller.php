@@ -102,7 +102,7 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
         $form->switch('switch')->default(true)->help('关闭后就会暂停发送该模板消息');
 
-        $form->text("template_remark", "消息模板备注")
+        $form->textarea("template_remark", "消息模板备注")
             ->help('此填写内容会出现在模板消息的备注位置<br>
 注意模板消息不能乱配置,否则会被处罚.详情规则参见<a href="https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1433751288" target="_blank">微信模板消息运营规范</a>');
 
