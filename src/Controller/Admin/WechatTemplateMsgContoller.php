@@ -104,7 +104,8 @@ class WechatTemplateMsgContoller extends AdminCommonController
 
         $form->textarea("template_remark", "消息模板备注")
             ->help('此填写内容会出现在模板消息的备注位置<br>
-注意模板消息不能乱配置,否则会被处罚.详情规则参见<a href="https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1433751288" target="_blank">微信模板消息运营规范</a>');
+注意模板消息不能乱配置,否则会被处罚.详情规则参见<a href="https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1433751288" target="_blank">微信模板消息运营规范</a><br>
+<b>模板消息字数限制</b>：84字（超出会出现省略号）');
 
         $form->text("template_link", "消息模板的跳转链接")
             ->help("配置此链接后,用户收到的模板消息会出现可以点击的跳转链接");
