@@ -8,7 +8,6 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Tool\Data\Log;
 use Mallto\Tool\Data\ThirdApiLog;
 
 /**
@@ -49,10 +48,10 @@ class ThirdLogController extends AdminCommonController
         $grid->tag();
         $grid->action();
         $grid->method();
-        $grid->url();
         $grid->status();
-        $grid->headers();
-        $grid->body();
+        $grid->url()->limit(100);
+        $grid->headers()->limit(100);
+        $grid->body()->limit(100);
         $grid->request_time();
 
         $grid->disableCreation();
