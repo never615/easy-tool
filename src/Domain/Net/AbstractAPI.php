@@ -232,7 +232,7 @@ abstract class AbstractAPI
                 }
 
                 dispatch(new LogJob('logThirdPart', [
-                    'uuid'         => SubjectUtils::getUUIDNoException() ?: 0,
+                    'uuid'         => $uuid,
                     'request_id'   => $requestId,
                     'tag'          => $this->slug,
                     'action'       => '响应',
@@ -269,18 +269,21 @@ abstract class AbstractAPI
                 return false;
             }
 
+            $uuid = SubjectUtils::getUUIDNoException() ?: 0;
+
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
                 dispatch(new LogJob("logThirdPart", [
-                    'uuid'    => SubjectUtils::getUUIDNoException() ?: 0,
-                    "tag"     => $this->slug,
-                    "action"  => 'Retry请求',
-                    "method"  => $request->getMethod(),
-                    "url"     => $request->getUri(),
-                    "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"    => \GuzzleHttp\json_encode([
+                    'uuid'       => $uuid,
+                    "tag"        => $this->slug,
+                    "action"     => 'Retry请求',
+                    "method"     => $request->getMethod(),
+                    "url"        => $request->getUri(),
+                    "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    "body"       => \GuzzleHttp\json_encode([
                         "request"  => $request->getBody()->getContents(),
                         "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
                     ], JSON_UNESCAPED_UNICODE),
+                    'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
                 ]));
 
                 return true;
