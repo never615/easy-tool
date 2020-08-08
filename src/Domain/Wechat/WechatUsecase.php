@@ -76,11 +76,13 @@ class  WechatUsecase extends AbstractAPI
                     , $subject, $public_template_id);
             }
         } else {
-            \Log::warning("模板消息不存在,新设置:" . $public_template_id . ",subject_id:" . $subject->id);
+            if ($public_template_id != 'OPENTM202764141') {
+                \Log::warning("模板消息不存在,新设置:" . $public_template_id . ",subject_id:" . $subject->id);
 
-            $templateId = $this->addTemplateId($public_template_id, $subject);
-            if ($templateId) {
-                $this->wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback);
+                $templateId = $this->addTemplateId($public_template_id, $subject);
+                if ($templateId) {
+                    $this->wechatTemplateMsg($public_template_id, $data, $openId, $subject, $callback);
+                }
             }
         }
     }

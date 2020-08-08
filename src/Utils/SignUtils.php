@@ -188,10 +188,10 @@ class SignUtils
 
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
-//        \Log::debug("signVersion2 2:".$stringToSign);
+        //\Log::debug("signVersion2 2:" . $stringToSign);
         $stringToSign = rawurlencode($stringToSign);
 
-//        \Log::debug("signVersion2 3:".$stringToSign);
+        //\Log::debug("signVersion2 3:" . $stringToSign);
 
         return base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
     }

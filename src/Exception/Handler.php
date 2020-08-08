@@ -259,7 +259,7 @@ class Handler extends ExceptionHandler
                 ->json(
                     $this->responseData([
 //                        'error' => trans("errors.unauthenticated").','.$exception->getMessage(),
-                        'error' => "登录失效,请重新登录或重新打开页面:" . $exception->getMessage(),
+                        'error' => "登录失效,请重新登录或刷新:" . $exception->getMessage(),
                     ], $exception),
                     401, [], JSON_UNESCAPED_UNICODE);
         }
