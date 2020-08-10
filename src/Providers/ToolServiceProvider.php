@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
@@ -46,6 +47,7 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\UpdateCommand',
         'Mallto\Tool\Commands\UpdateAppSecretCommand',
         'Mallto\Tool\Commands\ResetTableIdSeqCommand',
+        RedisDelPrefixCommand::class,
     ];
 
     /**
