@@ -52,7 +52,7 @@ class RedisDelPrefixCommand extends Command
 
         // 需要在前面连接上应用的缓存前缀
         $keys = app('redis')->keys($prefix . '*');
-        \Log::debug($keys);
+        //\Log::debug($keys);
 
         app('redis')->del($keys);
 
