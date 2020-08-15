@@ -163,56 +163,59 @@ class ToolServiceProvider extends ServiceProvider
             }
         });
 
-        Queue::before(function (JobProcessing $event) {
-            $logger = app(Logger::class);
-            $logger->logQueue([
-                "connection_name" => $event->connectionName,
-                "status"          => "before",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
-            ]);
-        });
+        if (\config('app.log.queue')) {
 
-        Queue::after(function (JobProcessed $event) {
-            $logger = app(Logger::class);
-            $logger->logQueue([
-                "connection_name" => $event->connectionName,
-                "status"          => "after",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
-            ]);
-        });
+            Queue::before(function (JobProcessing $event) {
+                $logger = app(Logger::class);
+                $logger->logQueue([
+                    "connection_name" => $event->connectionName,
+                    "status"          => "before",
+                    "queue"           => $event->job->getQueue(),
+                    "name"            => $event->job->resolveName(),
+                ]);
+            });
 
-        //任务失败后
-        Queue::failing(function (JobFailed $event) {
-            \Log::error("队列任务失败");
-            \Log::warning($event->job->payload());
-            $logger = app(Logger::class);
-            $logger->logQueue([
-                "connection_name" => $event->connectionName,
-                "status"          => "failure",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
-                "payload"         => $event->job->getRawBody(),
-            ]);
+            Queue::after(function (JobProcessed $event) {
+                $logger = app(Logger::class);
+                $logger->logQueue([
+                    "connection_name" => $event->connectionName,
+                    "status"          => "after",
+                    "queue"           => $event->job->getQueue(),
+                    "name"            => $event->job->resolveName(),
+                ]);
+            });
 
-        });
+            //任务失败后
+            Queue::failing(function (JobFailed $event) {
+                \Log::error("队列任务失败");
+                \Log::warning($event->job->payload());
+                $logger = app(Logger::class);
+                $logger->logQueue([
+                    "connection_name" => $event->connectionName,
+                    "status"          => "failure",
+                    "queue"           => $event->job->getQueue(),
+                    "name"            => $event->job->resolveName(),
+                    "payload"         => $event->job->getRawBody(),
+                ]);
 
-        //异常发生后
-        Queue::exceptionOccurred(function ($event) {
-            \Log::error("队列任务异常");
-            \Log::warning($event->job->payload());
-            \Log::warning($event->exception);
-            $logger = app(Logger::class);
-            $logger->logQueue([
-                "connection_name" => $event->connectionName,
-                "status"          => "exception",
-                "queue"           => $event->job->getQueue(),
-                "name"            => $event->job->resolveName(),
-                "payload"         => $event->job->getRawBody(),
-            ]);
+            });
 
-        });
+            //异常发生后
+            Queue::exceptionOccurred(function ($event) {
+                \Log::error("队列任务异常");
+                \Log::warning($event->job->payload());
+                \Log::warning($event->exception);
+                $logger = app(Logger::class);
+                $logger->logQueue([
+                    "connection_name" => $event->connectionName,
+                    "status"          => "exception",
+                    "queue"           => $event->job->getQueue(),
+                    "name"            => $event->job->resolveName(),
+                    "payload"         => $event->job->getRawBody(),
+                ]);
+
+            });
+        }
     }
 
 

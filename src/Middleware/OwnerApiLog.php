@@ -31,73 +31,77 @@ class OwnerApiLog
      */
     public function handle(Request $request, \Closure $next)
     {
-        $ip = 0;
-        $tempIp = $request->header('X-Forwarded-For');
-        if ($tempIp) {
-            $ip = $tempIp;
-        }
-
-        $user = Auth::guard('api')->user();
-        $userId = $user ? $user->id : 0;
-
-        $uuid = SubjectUtils::getUUIDNoException() ?: 0;
-
-        $requestId = AppUtils::create_uuid();
-
-        $log = [
-            'action'     => '请求',
-            'method'     => $request->method(),
-            'url'        => $request->fullUrl(),
-            'request_ip' => $ip,
-            'user_id'    => $userId,
-            'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
-            'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
-            'uuid'       => $uuid,
-            'request_id' => $requestId,
-        ];
-
-        dispatch(new LogJob('logOwnerApi', $log));
-
-        $request->headers->set('request-id', $requestId);
-
-        $response = $next($request);
-
-        if (is_array($response->getContent())) {
-            $input = json_encode($response->getContent());
-        } else {
-            if (is_string($response->getContent())) {
-                try {
-                    //也是为了防止图片响应异常
-                    $input = json_decode($response->getContent());
-                    if (is_null($input)) {
-                        $input = '非json数据';
-                    } else {
-                        $input = $response->getContent();
-                    }
-                } catch (\Exception $exception) {
-                    \Log::info($exception);
-                    $input = '异常数据';
-                }
-            } else {
-                $input = '其他数据';
+        if (config('app.log.owner_api')) {
+            $ip = 0;
+            $tempIp = $request->header('X-Forwarded-For');
+            if ($tempIp) {
+                $ip = $tempIp;
             }
+
+            $user = Auth::guard('api')->user();
+            $userId = $user ? $user->id : 0;
+
+            $uuid = SubjectUtils::getUUIDNoException() ?: 0;
+
+            $requestId = AppUtils::create_uuid();
+
+            $log = [
+                'action'     => '请求',
+                'method'     => $request->method(),
+                'url'        => $request->fullUrl(),
+                'request_ip' => $ip,
+                'user_id'    => $userId,
+                'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
+                'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
+                'uuid'       => $uuid,
+                'request_id' => $requestId,
+            ];
+
+            dispatch(new LogJob('logOwnerApi', $log));
+
+            $request->headers->set('request-id', $requestId);
+
+            $response = $next($request);
+
+            if (is_array($response->getContent())) {
+                $input = json_encode($response->getContent());
+            } else {
+                if (is_string($response->getContent())) {
+                    try {
+                        //也是为了防止图片响应异常
+                        $input = json_decode($response->getContent());
+                        if (is_null($input)) {
+                            $input = '非json数据';
+                        } else {
+                            $input = $response->getContent();
+                        }
+                    } catch (\Exception $exception) {
+                        \Log::info($exception);
+                        $input = '异常数据';
+                    }
+                } else {
+                    $input = '其他数据';
+                }
+            }
+
+            $log = [
+                'action'     => '响应',
+                'method'     => $request->method(),
+                'url'        => $request->fullUrl(),
+                'request_ip' => $ip,
+                'user_id'    => $userId,
+                'input'      => $input,
+                'status'     => $response->getStatusCode(),
+                'uuid'       => $uuid,
+                'request_id' => $requestId,
+            ];
+
+            $response->headers->set('request-id', $requestId);
+
+            dispatch(new LogJob('logOwnerApi', $log));
+        } else {
+            $response = $next($request);
         }
-
-        $log = [
-            'action'     => '响应',
-            'method'     => $request->method(),
-            'url'        => $request->fullUrl(),
-            'request_ip' => $ip,
-            'user_id'    => $userId,
-            'input'      => $input,
-            'status'     => $response->getStatusCode(),
-            'uuid'       => $uuid,
-            'request_id' => $requestId,
-        ];
-
-        dispatch(new LogJob('logOwnerApi', $log));
-
-        $response->headers->set('request-id', $requestId);
 
         return $response;
     }

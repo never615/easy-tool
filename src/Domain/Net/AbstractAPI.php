@@ -164,7 +164,9 @@ abstract class AbstractAPI
     protected function registerHttpMiddlewares()
     {
         // log
-        $this->http->addMiddleware($this->logMiddleware());
+        if (config('app.log.third_api')) {
+            $this->http->addMiddleware($this->logMiddleware());
+        }
         // retry
         $this->http->addMiddleware($this->retryMiddleware());
     }
@@ -245,8 +247,6 @@ abstract class AbstractAPI
                     'subject_id'   => $uuid ? SubjectUtils::getSubjectId() : 1,
                 ]));
             });
-
-
         });
     }
 
