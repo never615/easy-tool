@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\ResourceException;
+use Mallto\Tool\Utils\AppUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
@@ -63,7 +64,7 @@ class RequestCheck
 
         $user = Auth::guard("api")->user();
         //如果user存在,检查user和uuid是否一致
-        if ($user) {
+        if ($user && AppUtils::isProduction()) {
             $subject = $user->subject;
             if ( ! $subject->base) {
                 $subject = $subject->baseSubject();
