@@ -146,4 +146,87 @@ trait StatisticsTraits
 
         return $data;
     }
+
+
+    /**
+     * 补数据，并且正序排序
+     *
+     * @param $results
+     * @param $dateType
+     * @param $startedCarbon
+     * @param $endedCarbon
+     *
+     * @return mixed
+     */
+    protected function addDataToResult($results, $dateType, $startedCarbon, $endedCarbon, $columnNmae)
+    {
+        //当前数据拥有的日期
+        $dateArray = [];
+        $dateArray1 = [];
+
+        foreach ($results->toArray() as $item) {
+            $dateArray[] = $item['ref_date'];
+        }
+
+        //检查日期范围
+        switch ($dateType) {
+            case 'day':
+                $time = $startedCarbon->format('Y-m-d');
+
+                while ($time <= $endedCarbon->format('Y-m-d')) {
+                    if ( ! in_array($time, $dateArray)) {
+                        $dateArray1[] = [ 'ref_date' => $time, $columnNmae => 0 ];
+                    }
+                    $time = $startedCarbon->addDays(1)->format('Y-m-d');
+                }
+
+                $results = $results->concat($dateArray1);
+                $results = $results->sortBy(function ($value, $key) {
+                    return $value['ref_date'];
+                }, SORT_ASC, false)->values()->all();
+
+                break;
+            case 'month':
+                $time = $startedCarbon->format('Y-m');
+
+                while ($time <= $endedCarbon->format('Y-m')) {
+                    if ( ! in_array($time, $dateArray)) {
+                        $dateArray1[] = [ 'ref_date' => $time, $columnNmae => 0 ];
+                    }
+                    $time = $startedCarbon->addMonth(1)->format('Y-m');
+                }
+
+                $results = $results->concat($dateArray1);
+
+                $results = $results->sortBy(function ($value, $key) {
+                    return $value['ref_date'];
+                }, SORT_ASC, false)->values()->all();
+
+                break;
+            case 'year':
+                if ( ! empty($dateArray)) {
+                    $time = $startedCarbon->lastOfYear()->format('Y-m') ?? Carbon::createFromFormat('Y-m',
+                            min($dateArray));
+                } else {
+                    $time = $startedCarbon->lastOfYear()->format('Y-m');
+                }
+
+                while ($time <= $endedCarbon->format('Y')) {
+                    if ( ! in_array($time, $dateArray)) {
+                        $dateArray1[] = [ 'ref_date' => $time, $columnNmae => 0 ];
+                    }
+                    $time = $startedCarbon->addYears(1)->format('Y-m');
+                }
+
+                $results = $results->concat($dateArray1);
+
+                $results = $results->sortBy(function ($value, $key) {
+                    return $value['ref_date'];
+                }, SORT_ASC, false)->values()->all();
+
+                break;
+        }
+
+        return $results;
+    }
 }
