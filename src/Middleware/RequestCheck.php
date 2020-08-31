@@ -62,7 +62,11 @@ class RequestCheck
             throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
         }
 
-        $user = Auth::guard("api")->user();
+        $user = null;
+        if (config('auth.guards.api.provider')) {
+            $user = Auth::guard('api')->user();
+        }
+        
         //如果user存在,检查user和uuid是否一致
         if ($user && AppUtils::isProduction()) {
             $subject = $user->subject;

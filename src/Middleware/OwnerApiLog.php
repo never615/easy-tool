@@ -44,8 +44,11 @@ class OwnerApiLog
             $ip = $tempIp;
         }
 
-        $user = Auth::guard('api')->user();
-        $userId = $user ? $user->id : 0;
+        $userId = 0;
+        if (config('auth.guards.api.provider')) {
+            $user = Auth::guard('api')->user();
+            $userId = $user ? $user->id : 0;
+        }
 
         $uuid = SubjectUtils::getUUIDNoException() ?: 0;
 
