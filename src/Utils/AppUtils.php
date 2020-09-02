@@ -70,7 +70,7 @@ class AppUtils
     public static function h5Url()
     {
         $url = '';
-        if ( AppUtils::isProduction()) {
+        if (AppUtils::isProduction()) {
             $url = 'https://h5.mall-to.com/';
         } else {
             $url = 'https://h5-test.mall-to.com/';
@@ -499,6 +499,29 @@ class AppUtils
 
         //数组有两个元素,第一个就是原始openid;第二个就是时间戳
         return explode('|||', $openid);
+    }
+
+
+    /**
+     * 输入一个十进制整数，输出该数二进制表示中1的个数。其中负数用补码表示。
+     *
+     * @param $n
+     *
+     * @return int
+     */
+    public static function numberOf1($n)
+    {
+        $count = 0;
+        if ($n < 0) { // 处理负数
+            $n = $n & 0x7FFFFFFF;
+            ++$count;
+        }
+        while ($n != 0) {
+            $count++;
+            $n = $n & ($n - 1);
+        }
+
+        return $count;
     }
 
 }
