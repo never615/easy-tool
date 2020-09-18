@@ -138,6 +138,7 @@ class  WechatUsecase extends AbstractAPI
         } catch (ResourceException $exception) {
             if ( ! starts_with($exception->getMessage(), "require subscribe")) {
                 if (starts_with($exception->getMessage(), 'invalid template_id hint')) {
+                    \Log::warning('addTemplateId', [ $public_template_id, $subject->id ]);
                     $new_templateId = $this->addTemplateId($public_template_id, $subject,
                         $content['template_id']);
                     if ($new_templateId) {
@@ -148,7 +149,7 @@ class  WechatUsecase extends AbstractAPI
                         $this->templateMsg($content, $subject, $public_template_id);
                     }
                 } else {
-                    \Log::error("微信模板消息发送失败 ResourceException");
+                    \Log::warning("微信模板消息发送失败", [ $exception->getMessage() ]);
                     \Log::warning($exception);
                 }
             }
