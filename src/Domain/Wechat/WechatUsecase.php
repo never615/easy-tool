@@ -149,7 +149,7 @@ class  WechatUsecase extends AbstractAPI
                         $this->templateMsg($content, $subject, $public_template_id);
                     }
                 } else {
-                    \Log::warning("微信模板消息发送失败", [ $exception->getMessage() ]);
+                    \Log::error("微信模板消息发送失败", [ $exception->getMessage() ]);
                     \Log::warning($exception);
                 }
             }
