@@ -54,7 +54,7 @@ class AuthenticateSignWithReferrer
         if (Str::startsWith($referer, 'https://servicewechat.com')) {
             //allow_referer_appid
             $allow_referer_appid = config('other.allow_referer_appid');
-            $allow_referer_appid = explode($allow_referer_appid, ',');
+            $allow_referer_appid = explode(',', $allow_referer_appid);
 
             //来自小程序的请求  wx71ea6eca62665ef9
             if ( ! empty($allow_referer_appid) && Str::contains($referer, $allow_referer_appid)) {
