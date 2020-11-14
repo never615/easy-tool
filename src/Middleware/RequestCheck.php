@@ -26,13 +26,13 @@ use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 class RequestCheck
 {
 
-    protected $requestTypes = [
-        'WECHAT',
-        'ANDROID',
-        'IOS',
-        'WEB',
-        'SERVER',
-    ];
+    //protected $requestTypes = [
+    //    'WECHAT',
+    //    'ANDROID',
+    //    'IOS',
+    //    'WEB',
+    //    'SERVER',
+    //];
 
 
     /**
@@ -66,7 +66,7 @@ class RequestCheck
         if (config('auth.guards.api.provider')) {
             $user = Auth::guard('api')->user();
         }
-        
+
         //如果user存在,检查user和uuid是否一致
         if ($user && AppUtils::isProduction()) {
             $subject = $user->subject;
@@ -82,11 +82,11 @@ class RequestCheck
             }
         }
 
-        $requestType = $request->header('REQUEST_TYPE', 'SERVER');
+        //$requestType = $request->header('REQUEST_TYPE', 'SERVER');
 
-        if ($requestType && ! in_array($requestType, $this->requestTypes)) {
-            throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
-        }
+        //if ($requestType && ! in_array($requestType, $this->requestTypes)) {
+        //    throw new PreconditionFailedHttpException(trans("errors.precondition_failed"));
+        //}
 
         $request->headers->set("mode", "api");
 
