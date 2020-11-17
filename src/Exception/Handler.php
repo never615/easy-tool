@@ -18,6 +18,7 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\MessageBag;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
@@ -86,7 +87,6 @@ class Handler extends ExceptionHandler
             DB::rollBack();
         }
         if ($request->expectsJson()) {
-
             if (Admin::user()) {
                 $response = $this->interJsonHandler($exception, $request);
 
@@ -101,6 +101,7 @@ class Handler extends ExceptionHandler
                 return $this->interJsonHandler($exception, $request);
             }
         } else {
+            //走到这大概率是管理端请求
             if ($exception instanceof TokenMismatchException) {
                 return redirect()->guest(config('app.url') . config("admin.admin_login"));
             }
@@ -118,7 +119,16 @@ class Handler extends ExceptionHandler
 
                 return back()->with(compact('error'))->withInput();
             } else {
-                return parent::render($request, $exception);
+                //没有请求json响应
+                $response = $this->interJsonHandler($exception, $request);
+                $content = json_decode($response->getContent(), true);
+
+                $newException = new \Mallto\Tool\Exception\HttpException(
+                    $response->getStatusCode(),
+                    $content['error'] ?? $exception->getMessage(),
+                );
+
+                return parent::render($request, $newException);
             }
         }
     }
@@ -217,6 +227,9 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof QueryException) {
                 if (str_contains($exception->getMessage(), "Invalid text representation:")) {
                     $requestId = $exception->getBindings()[0] ?? "";
+                    \Log::warning(Str::replaceArray('ERROR', [ 'xxx' ],
+                        $exception->getMessage())); //不替换error,会自动打一条日志
+                    \Log::warning($exception->getTraceAsString());
                     throw new ResourceException("查询参数错误,无效的id:" . $requestId);
                 }
 
@@ -238,6 +251,8 @@ class Handler extends ExceptionHandler
                 return response()->json([ "error" => "网络繁忙,请重试:" . $exception->getMessage() ], 422, [],
                     JSON_UNESCAPED_UNICODE);
             } else {
+                //\Log::error('服务器繁忙');
+                //\Log::warning($exception);
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }
@@ -310,10 +325,12 @@ class Handler extends ExceptionHandler
         ]);
     }
 
+
     /**
      * Get the view used to render HTTP exceptions.
      *
-     * @param  \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface  $e
+     * @param \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e
+     *
      * @return string
      */
     protected function getHttpExceptionView(HttpExceptionInterface $e)

@@ -85,7 +85,7 @@ class OwnerApiLog
                         $input = $response->getContent();
                     }
                 } catch (\Exception $exception) {
-                    \Log::info($exception);
+                    \Log::warning($exception);
                     $input = '异常数据';
                 }
             } else {
