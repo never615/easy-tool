@@ -32,7 +32,7 @@ class OwnerApiLog
      */
     public function handle(Request $request, \Closure $next)
     {
-        if ( ! $this->shouldLogOperation($request)) {
+        if ( ! $this->shouldLogOperation($request) && ! AppUtils::isTestEnv()) {
             return $next($request);
         }
 
@@ -66,7 +66,11 @@ class OwnerApiLog
             'request_id' => $requestId,
         ];
 
-        dispatch(new LogJob('logOwnerApi', $log));
+        if ( ! $this->shouldLogOperation($request)) {
+            dispatch(new LogJob('logOwnerApi', $log))->onConnection('sync');
+        } else {
+            dispatch(new LogJob('logOwnerApi', $log));
+        }
 
         $request->headers->set('request-id', $requestId);
 
@@ -107,7 +111,12 @@ class OwnerApiLog
 
         $response->headers->set('request-id', $requestId);
 
-        dispatch(new LogJob('logOwnerApi', $log));
+
+        if ( ! $this->shouldLogOperation($request)) {
+            dispatch(new LogJob('logOwnerApi', $log))->onConnection('sync');
+        } else {
+            dispatch(new LogJob('logOwnerApi', $log));
+        }
 
         return $response;
     }
