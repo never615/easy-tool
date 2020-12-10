@@ -83,8 +83,7 @@ class AuthenticateSignWithReferrer
             //}
 
             //临时兼容android部署工具 okhttp/3.14.4
-            \Log::warning($request->header('http_user_agent'));
-            if ($request->header('http_user_agent') === 'okhttp/3.14.4') {
+            if ($request->userAgent() === 'okhttp/3.14.4') {
                 return $next($request);
             }
 
