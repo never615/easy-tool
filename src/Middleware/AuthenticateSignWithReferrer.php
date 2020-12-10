@@ -17,7 +17,9 @@
 namespace Mallto\Tool\Middleware;
 
 use Closure;
+use Encore\Admin\Facades\Admin;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Mallto\Tool\Utils\HttpUtils;
 
@@ -48,6 +50,10 @@ class AuthenticateSignWithReferrer
      */
     public function handle(Request $request, Closure $next)
     {
+        //if(AppUtils::isTestEnv()){
+        //    return $next($request);
+        //}
+
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
 
@@ -63,6 +69,21 @@ class AuthenticateSignWithReferrer
         }
 
         if ( ! HttpUtils::isAllowReferer($referer)) {
+            //如果是来自管理端登录账号的请求,则跳过检查
+            $adminUser = null;
+
+            try {
+                $adminUser = Admin::user();
+                if ( ! $adminUser && ! empty(config('auth.guards.admin_api'))) {
+                    $adminUser = Auth::guard("admin_api")->user();
+                    if ($adminUser) {
+                        return $next($request);
+                    }
+                }
+            } catch (\Exception $exception) {
+
+            }
+
             return $this->check($request, $next);
         }
 
