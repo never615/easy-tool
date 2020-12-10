@@ -19,6 +19,7 @@ namespace Mallto\Tool\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\HttpUtils;
 
 /**
