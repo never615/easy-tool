@@ -17,9 +17,7 @@
 namespace Mallto\Tool\Middleware;
 
 use Closure;
-use Encore\Admin\Facades\Admin;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Mallto\Tool\Utils\HttpUtils;
 
@@ -69,19 +67,24 @@ class AuthenticateSignWithReferrer
         }
 
         if ( ! HttpUtils::isAllowReferer($referer)) {
-            //如果是来自管理端登录账号的请求,则跳过检查
-            $adminUser = null;
+            ////如果是来自管理端登录账号的请求,则跳过检查
+            //$adminUser = null;
+            //
+            //try {
+            //    $adminUser = Admin::user();
+            //    if ( ! $adminUser && ! empty(config('auth.guards.admin_api'))) {
+            //        $adminUser = Auth::guard("admin_api")->user();
+            //        if ($adminUser) {
+            //            return $next($request);
+            //        }
+            //    }
+            //} catch (\Exception $exception) {
+            //
+            //}
 
-            try {
-                $adminUser = Admin::user();
-                if ( ! $adminUser && ! empty(config('auth.guards.admin_api'))) {
-                    $adminUser = Auth::guard("admin_api")->user();
-                    if ($adminUser) {
-                        return $next($request);
-                    }
-                }
-            } catch (\Exception $exception) {
-
+            //临时兼容android部署工具 okhttp/3.14.4
+            if ($request->header('http_user_agent') === 'okhttp/3.14.4') {
+                return $next($request);
             }
 
             return $this->check($request, $next);
