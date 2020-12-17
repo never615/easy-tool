@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Exception\ResourceException;
 
@@ -33,20 +35,26 @@ class ConfigUtils
      */
     public static function get($key, $default = null, $type = null)
     {
-        $query = Config::where("key", $key);
-        if ($type) {
-            $query = $query->where("type", $type);
-        }
-        $config = $query->first();
-        if ($config) {
-            return $config->value;
-        } else {
-            if (isset($default)) {
-                return $default;
+        $value = Cache::get('c_' . $key);
+        if (empty($value) || ! $value) {
+            $query = Config::where("key", $key);
+            if ($type) {
+                $query = $query->where("type", $type);
+            }
+            $config = $query->first();
+            if ($config) {
+                $value = $config->value;
+                Cache::put('c_' . $key, $value, Carbon::now()->endOfDay());
             } else {
-                throw new ResourceException($key . "未配置");
+                if (isset($default)) {
+                    $value = $default;
+                } else {
+                    throw new ResourceException($key . "未配置");
+                }
             }
         }
+
+        return $value;
     }
 
 
