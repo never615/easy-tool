@@ -143,7 +143,7 @@ trait SignCheckTrait
                     throw new ResourceException("请求已被接受,signature_nonce:" . $signatureNonce);
                 }
 
-                if (Carbon::now()->subMinutes(15) < $timestamp) {
+                if (Carbon::now()->subMinutes(3) < $timestamp) {
                     //和当前时间间隔比较在15分钟内
                     //检查签名
                     if (SignUtils::verifySign4(array_merge($inputs, [
@@ -154,7 +154,7 @@ trait SignCheckTrait
                         "signature"       => $signature,
                     ]), $secret)) {
                         //pass
-                        Cache::put($nonce, 1, 15 * 60);
+                        Cache::put($nonce, 1, 3 * 60);
 
                         return $next($request);
                     } else {
