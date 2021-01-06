@@ -11,6 +11,7 @@ use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
@@ -25,6 +26,8 @@ use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\Sms\AliyunSms;
 use Mallto\Tool\Domain\Sms\Sms;
 use Mallto\Tool\Jobs\LogJob;
+use Mallto\Tool\Laravel\Cache\SwooleTableStore;
+use Mallto\Tool\Laravel\MemoryStore;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -93,10 +96,18 @@ class ToolServiceProvider extends ServiceProvider
                 'error-views');
         }
 
+
+        Cache::extend('memory', function ($app) {
+            return Cache::repository(new SwooleTableStore());
+        });
+
+
         $this->appBoot();
         $this->routeBoot();
         $this->queueBoot();
         $this->scheduleBoot();
+
+
 
         Relation::morphMap([
             'user' => User::class,
