@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * 重设表的自增序列
@@ -55,6 +56,9 @@ class RedisDelPrefixCommand extends Command
         //\Log::debug($keys);
 
         app('redis')->del($keys);
+
+        $keys = Redis::connection('cache')->keys($prefix . '*');
+        Redis::connection('cache')->del($keys);
 
         $this->info("finish");
 
