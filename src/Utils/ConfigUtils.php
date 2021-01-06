@@ -35,7 +35,7 @@ class ConfigUtils
      */
     public static function get($key, $default = null, $type = null)
     {
-        $value = Cache::get('c_' . $key);
+        $value = Cache::store('memory')->get('c_' . $key);
         if (empty($value) || ! $value) {
             $query = Config::where("key", $key);
             if ($type) {
@@ -44,7 +44,7 @@ class ConfigUtils
             $config = $query->first();
             if ($config) {
                 $value = $config->value;
-                Cache::put('c_' . $key, $value, Carbon::now()->endOfDay());
+                Cache::store('memory')->put('c_' . $key, $value, Carbon::now()->endOfDay());
             } else {
                 if (isset($default)) {
                     $value = $default;
