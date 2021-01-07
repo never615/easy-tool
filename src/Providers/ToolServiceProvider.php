@@ -5,8 +5,6 @@
 
 namespace Mallto\Tool\Providers;
 
-use Illuminate\Cache\FileStore;
-use Illuminate\Cache\RedisStore;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Mail\TransportManager;
@@ -103,10 +101,10 @@ class ToolServiceProvider extends ServiceProvider
                 if (\config('admin.swoole')) {
                     return Cache::repository(new SwooleTableStore());
                 } else {
-                    return Cache::repository(new RedisStore());
+                    return Cache::store('redis');
                 }
             } else {
-                return Cache::repository(new FileStore());
+                return Cache::store('file');
             }
         });
 
