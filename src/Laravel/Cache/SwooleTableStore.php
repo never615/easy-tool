@@ -59,7 +59,6 @@ class SwooleTableStore implements Store
     //    return ! is_null($value) ? $this->unserialize($value) : null;
     //}
 
-
     /**
      * Retrieve multiple items from the cache by key.
      *
@@ -144,8 +143,8 @@ class SwooleTableStore implements Store
      */
     public function forever($key, $value)
     {
-        $this->serialize($value);
-        return $this->cacheTable->set($key, [ 'value' =>  ]);
+
+        return $this->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
     }
 
 
