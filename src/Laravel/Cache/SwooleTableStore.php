@@ -22,6 +22,20 @@ class SwooleTableStore implements Store
      */
     protected $prefix;
 
+    protected $cacheTable;
+
+    //protected $bcacheTable;
+
+
+    /**
+     * SwooleTableStore constructor.
+     */
+    public function __construct()
+    {
+        $this->cacheTable = app('swoole')->cacheTable;
+        //$this->bcacheTable = app('swoole')->bcacheTable;
+    }
+
 
     /**
      * Retrieve an item from the cache by key.
@@ -32,10 +46,18 @@ class SwooleTableStore implements Store
      */
     public function get($key)
     {
-        $value = app('swoole')->cacheTable->get($key)['value'] ?? null;
+        $value = $this->cacheTable->get($key)['value'] ?? null;
 
         return ! is_null($value) ? $this->unserialize($value) : null;
     }
+
+
+    //public function getBig($key)
+    //{
+    //    $value = $this->bcacheTable->get($key)['value'] ?? null;
+    //
+    //    return ! is_null($value) ? $this->unserialize($value) : null;
+    //}
 
 
     /**
@@ -64,7 +86,7 @@ class SwooleTableStore implements Store
      */
     public function put($key, $value, $seconds)
     {
-        return app('swoole')->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
+        return $this->forever($key, $value);
     }
 
 
@@ -122,7 +144,8 @@ class SwooleTableStore implements Store
      */
     public function forever($key, $value)
     {
-        return app('swoole')->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
+        $this->serialize($value);
+        return $this->cacheTable->set($key, [ 'value' =>  ]);
     }
 
 
@@ -135,7 +158,7 @@ class SwooleTableStore implements Store
      */
     public function forget($key)
     {
-        return app('swoole')->cacheTable->del($key);
+        return $this->cacheTable->del($key);
     }
 
 
@@ -157,7 +180,7 @@ class SwooleTableStore implements Store
      */
     public function exist($key)
     {
-        return app('swoole')->cacheTable->exist($key);
+        return $this->cacheTable->exist($key);
     }
 
 
@@ -166,7 +189,7 @@ class SwooleTableStore implements Store
      */
     public function count()
     {
-        return app('swoole')->cacheTable->count();
+        return $this->cacheTable->count();
     }
 
 
