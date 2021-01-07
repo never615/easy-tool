@@ -16,6 +16,14 @@ class SwooleTableStore implements Store
 {
 
     /**
+     * A string that should be prepended to keys.
+     *
+     * @var string
+     */
+    protected $prefix;
+
+
+    /**
      * Retrieve an item from the cache by key.
      *
      * @param string|array $key
@@ -25,12 +33,8 @@ class SwooleTableStore implements Store
     public function get($key)
     {
         $value = app('swoole')->cacheTable->get($key)['value'] ?? null;
-        if (starts_with($value, 'array:')) {
-            $value = ltrim($value, 'array:');
-            $value = json_decode($value, true);
-        }
 
-        return $value;
+        return ! is_null($value) ? $this->unserialize($value) : null;
     }
 
 
@@ -60,11 +64,7 @@ class SwooleTableStore implements Store
      */
     public function put($key, $value, $seconds)
     {
-        if (is_array($value)) {
-            $value = json_encode($value);
-            $value = 'array:' . $value;
-        }
-        app('swoole')->cacheTable->set($key, [ 'value' => $value ]);
+        return app('swoole')->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
     }
 
 
@@ -92,7 +92,8 @@ class SwooleTableStore implements Store
      */
     public function increment($key, $value = 1)
     {
-        throw new \Exception('not support method');
+        return app('swoole')->cacheTable
+            ->incr($key, 'value', $value);
     }
 
 
@@ -106,7 +107,8 @@ class SwooleTableStore implements Store
      */
     public function decrement($key, $value = 1)
     {
-        throw new \Exception('not support method');
+        return app('swoole')->cacheTable
+            ->decr($key, 'value', $value);
     }
 
 
@@ -120,11 +122,7 @@ class SwooleTableStore implements Store
      */
     public function forever($key, $value)
     {
-        if (is_array($value)) {
-            $value = json_encode($value);
-            $value = 'array:' . $value;
-        }
-        app('swoole')->cacheTable->set($key, [ 'value' => $value ]);
+        return app('swoole')->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
     }
 
 
@@ -137,7 +135,7 @@ class SwooleTableStore implements Store
      */
     public function forget($key)
     {
-        throw new \Exception('not support method');
+        return app('swoole')->cacheTable->del($key);
     }
 
 
@@ -153,12 +151,73 @@ class SwooleTableStore implements Store
 
 
     /**
+     * @param $key
+     *
+     * @return bool
+     */
+    public function exist($key)
+    {
+        return app('swoole')->cacheTable->exist($key);
+    }
+
+
+    /**
+     * @return int
+     */
+    public function count()
+    {
+        return app('swoole')->cacheTable->count();
+    }
+
+
+    /**
      * Get the cache key prefix.
      *
      * @return string
      */
     public function getPrefix()
     {
-        throw new \Exception('not support method');
+        return $this->prefix;
     }
+
+
+    /**
+     * Set the cache key prefix.
+     *
+     * @param string $prefix
+     *
+     * @return void
+     */
+    public function setPrefix($prefix)
+    {
+        $this->prefix = ! empty($prefix) ? $prefix . ':' : '';
+    }
+
+
+    /**
+     * Serialize the value.
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    protected function serialize($value)
+    {
+        return is_numeric($value) && ! in_array($value,
+            [ INF, -INF ]) && ! is_nan($value) ? $value : serialize($value);
+    }
+
+
+    /**
+     * Unserialize the value.
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    protected function unserialize($value)
+    {
+        return is_numeric($value) ? $value : unserialize($value);
+    }
+
 }
