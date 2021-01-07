@@ -98,7 +98,7 @@ class ToolServiceProvider extends ServiceProvider
 
         Cache::extend('memory', function ($app) {
             if (\config('app.env') !== 'local') {
-                if (\config('admin.swoole')) {
+                if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
                     return Cache::repository(new SwooleTableStore());
                 } else {
                     return Cache::store('redis');
