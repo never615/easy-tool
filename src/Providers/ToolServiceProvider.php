@@ -95,19 +95,24 @@ class ToolServiceProvider extends ServiceProvider
                 'error-views');
         }
 
-        if (\config('cache.stores.memory')) {
-            Cache::extend('memory', function ($app) {
-                if (\config('cache.default') === 'redis') {
-                    if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
-                        return Cache::repository(new SwooleTableStore());
-                    } else {
-                        return Cache::store('redis');
-                    }
-                } else {
-                    return Cache::store('file');
-                }
-            });
+        if ( ! \config('cache.stores.memory')) {
+            \config('cache.stores.memory',
+                [
+                    'driver' => 'memory',
+                ]
+            );
         }
+        Cache::extend('memory', function ($app) {
+            if (\config('cache.default') === 'redis') {
+                if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
+                    return Cache::repository(new SwooleTableStore());
+                } else {
+                    return Cache::store('redis');
+                }
+            } else {
+                return Cache::store('file');
+            }
+        });
 
         $this->appBoot();
         $this->routeBoot();
