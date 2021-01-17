@@ -27,7 +27,6 @@ use Mallto\Tool\Domain\Sms\AliyunSms;
 use Mallto\Tool\Domain\Sms\Sms;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Laravel\Cache\SwooleTableStore;
-use Mallto\Tool\Laravel\MemoryStore;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -96,17 +95,19 @@ class ToolServiceProvider extends ServiceProvider
                 'error-views');
         }
 
-        Cache::extend('memory', function ($app) {
-            if (\config('cache.default') === 'redis') {
-                if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
-                    return Cache::repository(new SwooleTableStore());
+        if (\config('cache.stores.memory')) {
+            Cache::extend('memory', function ($app) {
+                if (\config('cache.default') === 'redis') {
+                    if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
+                        return Cache::repository(new SwooleTableStore());
+                    } else {
+                        return Cache::store('redis');
+                    }
                 } else {
-                    return Cache::store('redis');
+                    return Cache::store('file');
                 }
-            } else {
-                return Cache::store('file');
-            }
-        });
+            });
+        }
 
         $this->appBoot();
         $this->routeBoot();
