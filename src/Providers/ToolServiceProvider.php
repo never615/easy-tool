@@ -96,12 +96,20 @@ class ToolServiceProvider extends ServiceProvider
         }
 
         if ( ! \config('cache.stores.memory')) {
-            \config('cache.stores.memory',
-                [
+            //$cacheStores = \config('cache');
+            //$cacheStores = array_merge($cacheStores, [
+            //    'memory' => [
+            //        'driver' => 'memory',
+            //    ],
+            //]);
+
+            config([
+                'cache.stores.memory' => [
                     'driver' => 'memory',
-                ]
-            );
+                ],
+            ]);
         }
+
         Cache::extend('memory', function ($app) {
             if (\config('cache.default') === 'redis') {
                 if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
