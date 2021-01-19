@@ -115,4 +115,37 @@ class StringUtils
 
         return array_merge($return, str_split(substr($str, $headlen), $len));
     }
+
+
+    /**
+     * 十进制转十六进制函数
+     *
+     * @pream string $str;
+     */
+    public static function hex10to16($str)
+    {
+        $hex = "";
+        for ($i = 0, $iMax = strlen($str); $i < $iMax; $i++) {
+            $hex .= dechex(ord($str[$i]));
+        }
+        $hex = strtoupper($hex);
+
+        return $hex;
+    }
+
+
+    /**
+     * 十六进制转十进制
+     *
+     * @pream string $hex;
+     */
+    public static function hex16to10($hex)
+    {
+        $str = "";
+        for ($i = 0; $i < strlen($hex) - 1; $i += 2) {
+            $str .= chr(hexdec($hex[$i] . $hex[$i + 1]));
+        }
+
+        return $str;
+    }
 }
