@@ -112,7 +112,9 @@ class ToolServiceProvider extends ServiceProvider
 
         Cache::extend('memory', function ($app) {
             if (\config('cache.default') === 'redis') {
-                if (\config('admin.swoole') && ! $this->app->runningInConsole()) {
+                if (\config('admin.swoole')
+                    && ! $this->app->runningInConsole()
+                    && count(\config('laravels.swoole_tables')) > 0) {
                     try {
                         return Cache::repository(new SwooleTableStore());
                     } catch (\Exception $exception) {
