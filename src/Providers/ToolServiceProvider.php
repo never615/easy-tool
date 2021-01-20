@@ -114,7 +114,9 @@ class ToolServiceProvider extends ServiceProvider
             if (\config('cache.default') === 'redis') {
                 if (\config('admin.swoole')
                     && ! $this->app->runningInConsole()
-                    && count(\config('laravels.swoole_tables')) > 0) {
+                    //&& isset(\config('laravels.swoole_tables'))
+                    //&& count(\config('laravels.swoole_tables')) > 0
+                ) {
                     try {
                         return Cache::repository(new SwooleTableStore());
                     } catch (\Exception $exception) {
