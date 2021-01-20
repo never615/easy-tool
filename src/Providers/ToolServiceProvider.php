@@ -110,25 +110,38 @@ class ToolServiceProvider extends ServiceProvider
             ]);
         }
 
-        Cache::extend('memory', function ($app) {
-            if (\config('cache.default') === 'redis') {
-                if (\config('admin.swoole')
-                    && ! $this->app->runningInConsole()
-                    //&& isset(\config('laravels.swoole_tables'))
-                    //&& count(\config('laravels.swoole_tables')) > 0
-                ) {
-                    try {
-                        return Cache::repository(new SwooleTableStore());
-                    } catch (\Exception $exception) {
+        try {
+            Cache::extend('memory', function ($app) {
+                if (\config('cache.default') === 'redis') {
+                    if (\config('admin.swoole')
+                        && ! $this->app->runningInConsole()
+                        && ! empty(\config('laravels.swoole_tables'))
+                        && count(\config('laravels.swoole_tables')) > 0
+                    ) {
+                        try {
+                            return Cache::repository(new SwooleTableStore());
+                        } catch (\Exception $exception) {
+                            return Cache::store('redis');
+                        }
+                    } else {
                         return Cache::store('redis');
                     }
                 } else {
-                    return Cache::store('redis');
+                    return Cache::store('file');
                 }
-            } else {
-                return Cache::store('file');
-            }
-        });
+            });
+        } catch (\Exception $exception) {
+            \Log::error('Cache extend memory error');
+            \Log::warning($exception);
+            Cache::extend('memory', function ($app) {
+                if (\config('cache.default') === 'redis') {
+                    return Cache::store('redis');
+
+                } else {
+                    return Cache::store('file');
+                }
+            });
+        }
 
         $this->appBoot();
         $this->routeBoot();
