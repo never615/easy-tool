@@ -272,19 +272,21 @@ abstract class AbstractAPI
             $uuid = SubjectUtils::getUUIDNoException() ?: 0;
 
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
-                dispatch(new LogJob("logThirdPart", [
-                    'uuid'       => $uuid,
-                    "tag"        => $this->slug,
-                    "action"     => 'Retry请求',
-                    "method"     => $request->getMethod(),
-                    "url"        => $request->getUri(),
-                    "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    "body"       => \GuzzleHttp\json_encode([
-                        "request"  => $request->getBody()->getContents(),
-                        "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
-                    ], JSON_UNESCAPED_UNICODE),
-                    'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
-                ]));
+                if (config('app.log.third_api')) {
+                    dispatch(new LogJob("logThirdPart", [
+                        'uuid'       => $uuid,
+                        "tag"        => $this->slug,
+                        "action"     => 'Retry请求',
+                        "method"     => $request->getMethod(),
+                        "url"        => $request->getUri(),
+                        "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                        "body"       => \GuzzleHttp\json_encode([
+                            "request"  => $request->getBody()->getContents(),
+                            "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
+                        ], JSON_UNESCAPED_UNICODE),
+                        'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
+                    ]));
+                }
 
                 return true;
             } else {
