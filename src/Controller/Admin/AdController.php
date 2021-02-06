@@ -10,16 +10,12 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Tool\Controller\Admin\Traits\GetAdTypes;
 use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Exception\ResourceException;
 
 class AdController extends AdminCommonController
 {
-
-    use GetAdTypes;
-
 
     /**
      * 获取这个模块的标题
@@ -74,7 +70,7 @@ class AdController extends AdminCommonController
             ->addElementClass2("mt-ad-type")
             ->rules("required")
             ->help("如果一个模块同时配置了同一类型多个开启状态下广告,则会使用最新创建的")
-            ->load("ad_type", "/admin/select_source/ad_types");
+            ->load("ad_type", data_source_url('ad_types'));
 
         $form->select("ad_type", "广告类型")
             ->addElementClass2("mt-ad-ad-type")
@@ -122,7 +118,7 @@ class AdController extends AdminCommonController
             ->removable()
             ->uniqueName()
             ->addElementClass2("mt-ad-image")
-            ->move('ads/image' . $this->currentId ?: 0);
+            ->move(('ads/image' . $this->currentId) ?: 0);
     }
 
 
@@ -150,7 +146,7 @@ class AdController extends AdminCommonController
                 ->removable()
                 ->uniqueName()
                 ->addElementClass2("mt-ad-images")
-                ->move('ads/images' . $this->currentId ?: 0);
+                ->move(('ads/images' . $this->currentId) ?: 0);
 
             $form->text("link", "跳转链接")
                 ->addElementClass2("mt-ad-images")

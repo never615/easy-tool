@@ -30,15 +30,10 @@ Route::group($attributes, function ($router) {
     Route::get('admin/log',
         '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
 
-
     Route::group([ 'prefix' => config('admin.route.prefix'), "middleware" => [ 'adminE_base' ] ],
         function ($router) {
 
             Route::group([ "namespace" => 'Admin' ], function () {
-
-                Route::get("select_source/ad_types", 'PagePvManagerController@getPageAdType');
-
-
                 Route::group([ 'middleware' => [ 'adminE.auto_permission' ] ],
                     function ($router) {  //指定auth的guard为mall
 

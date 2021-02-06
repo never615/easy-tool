@@ -23,6 +23,9 @@ class  HttpUtils
      */
     public static function isAllowReferer($referer)
     {
+        if(in_array(config('app.env'),['integration','local'])){
+            return true;
+        }
         $refererHost = UrlUtils::getHost($referer);
 
         $allowDomainStr = config("app.allow_access_api_domain");
