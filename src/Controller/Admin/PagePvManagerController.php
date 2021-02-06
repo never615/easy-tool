@@ -88,26 +88,4 @@ class PagePvManagerController extends AdminCommonController
         });
     }
 
-
-    public function getPageAdType(Request $request)
-    {
-        $q = $request->get('q');
-
-        $adminUser = Admin::user();
-
-        $subject = SubjectUtils::getSubject();
-        if ( ! $subject) {
-            $subject = $adminUser->subject;
-        }
-
-        //查询子主体
-        $childSubjectIds = $subject->getChildrenSubject();
-
-        $pagePvManager = PagePvManager::whereIn("subject_id", $childSubjectIds)
-            ->where("path", $q)
-            ->first();
-
-        return $this->getAdTypes($pagePvManager);
-    }
-
 }

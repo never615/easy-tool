@@ -18,7 +18,9 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
+use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
@@ -193,6 +195,7 @@ class ToolServiceProvider extends ServiceProvider
         Response::macro('redirect', function ($value) {
             return Response::json([ 'redirectUrl' => $value ]);
         });
+        AdminE::extendSelectSourceClass(SelectSourceExtend::class);
     }
 
 
