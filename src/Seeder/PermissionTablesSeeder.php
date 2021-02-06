@@ -28,7 +28,6 @@ class PermissionTablesSeeder extends Seeder
 
         $this->call(\Mallto\Tool\Seeder\Permission\SmsTemplatePermissionSeeder::class);
         $this->call(\Mallto\Tool\Seeder\Permission\SmsCodePermissionSeeder::class);
-        $this->call(AppSecretPermissionsSeeder::class);
 //DummySeeder
 
     }
