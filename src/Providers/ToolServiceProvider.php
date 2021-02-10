@@ -242,6 +242,8 @@ class ToolServiceProvider extends ServiceProvider
             Queue::failing(function (JobFailed $event) {
                 \Log::error("队列任务失败");
                 \Log::warning($event->job->payload());
+                \Log::warning($event->exception);
+
                 $logger = app(Logger::class);
                 $logger->logQueue([
                     "connection_name" => $event->connectionName,
