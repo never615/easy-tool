@@ -86,7 +86,7 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::error("阿里日志 logThirdPart");
+            \Log::warning("阿里日志 logThirdPart");
             \Log::warning($exception);
             \Log::warning($content);
         }
@@ -191,7 +191,7 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::error("阿里日志 schedule");
+            \Log::warning("阿里日志 schedule");
             \Log::warning($exception);
             \Log::warning($content);
 
@@ -226,7 +226,7 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::error("阿里日志 queue");
+            \Log::warning("阿里日志 queue");
             \Log::warning($exception);
         }
     }
