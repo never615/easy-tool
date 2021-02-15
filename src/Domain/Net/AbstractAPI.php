@@ -262,7 +262,7 @@ abstract class AbstractAPI
             $retries,
             RequestInterface $request,
             ResponseInterface $response = null,
-            $exception
+            $exception = null
         ) {
             // Limit the number of retries to MAX_RETRIES
             if ($retries && $retries > self::MAX_RETRIES) {
