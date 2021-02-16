@@ -262,7 +262,7 @@ class Http
         }
 
         // XXX: json maybe contains special chars. So, let's FUCK the WeChat API developers ...
-        //$body = $this->fuckTheWeChatInvalidJSON($body);
+        $body = $this->fuckTheWeChatInvalidJSON($body);
 
         if (empty($body)) {
             return false;
@@ -278,17 +278,17 @@ class Http
     }
 
 
-    ///**
-    // * Filter the invalid JSON string.
-    // *
-    // * @param \Psr\Http\Message\StreamInterface|string $invalidJSON
-    // *
-    // * @return string
-    // */
-    //protected function fuckTheWeChatInvalidJSON($invalidJSON)
-    //{
-    //    return preg_replace('/[\x00-\x1F\x80-\x9F]/u', '', trim($invalidJSON));
-    //}
+    /**
+     * Filter the invalid JSON string.
+     *
+     * @param \Psr\Http\Message\StreamInterface|string $invalidJSON
+     *
+     * @return string
+     */
+    protected function fuckTheWeChatInvalidJSON($invalidJSON)
+    {
+        return preg_replace('/[\x00-\x1F\x80-\x9F]/u', '', trim($invalidJSON));
+    }
 
 
     /**
