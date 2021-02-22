@@ -227,6 +227,7 @@ class ToolServiceProvider extends ServiceProvider
                     "status"          => "before",
                     "queue"           => $event->job->getQueue(),
                     "name"            => $event->job->resolveName(),
+                    "payload"         => $event->job->payload(),
                 ]);
             });
 
