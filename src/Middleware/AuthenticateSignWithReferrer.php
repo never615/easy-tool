@@ -82,21 +82,23 @@ class AuthenticateSignWithReferrer
             //
             //}
 
-            //临时兼容android部署工具 okhttp/3.14.4
-            if ($request->userAgent() === 'okhttp/3.14.4') {
-                return $next($request);
-            }
-            //临时兼容android部署巡检工具  okhttp/3.12.3
-            if (str_contains($request->userAgent(), 'okhttp')) {
-                $authorization = $request->header('authorization');
-                if ($authorization) {
+            if ($request->userAgent()) {
+                //临时兼容android部署工具 okhttp/3.14.4
+                if ($request->userAgent() === 'okhttp/3.14.4') {
                     return $next($request);
                 }
-            }
+                //临时兼容android部署巡检工具  okhttp/3.12.3
+                if (str_contains($request->userAgent(), 'okhttp')) {
+                    $authorization = $request->header('authorization');
+                    if ($authorization) {
+                        return $next($request);
+                    }
+                }
 
-            //if ($request->userAgent() === 'okhttp/3.12.3') {
-            //    return $next($request);
-            //}
+                //if ($request->userAgent() === 'okhttp/3.12.3') {
+                //    return $next($request);
+                //}
+            }
 
             return $this->check($request, $next);
         }
