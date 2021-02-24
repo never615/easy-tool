@@ -61,13 +61,12 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-        'requestCheck'          => RequestCheck::class,
-        'authSign'              => AuthenticateSign::class,
-        'authSign2'             => AuthenticateSign2::class,
-        'authSign_referrer'     => AuthenticateSignWithReferrer::class,
-        'owner_api'             => OwnerApiLog::class,
-        'third_api_check'       => ThirdRequestCheck::class,
-        'auto_third_permission' => AutoThirdPermissionMiddleware::class,
+        'requestCheck'      => RequestCheck::class,
+        'authSign'          => AuthenticateSign::class,
+        'authSign2'         => AuthenticateSign2::class,
+        'authSign_referrer' => AuthenticateSignWithReferrer::class,
+        'owner_api'         => OwnerApiLog::class,
+        'third_api_check'   => ThirdRequestCheck::class,
     ];
 
     /**

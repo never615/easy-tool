@@ -21,6 +21,11 @@ trait ThirdCheck
     {
         $roles = $this->roles()->pluck('id')->toArray();
 
+        if (empty($roles)) {
+            //兼容线上没有配置角色的开发者,允许全部权限
+            return true;
+        }
+
         return AppSecretsPermission::query()
             ->whereHas('roles', function ($query) use ($roles) {
                 $query->whereIn('role_id', $roles);

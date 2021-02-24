@@ -16,11 +16,13 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\AppSecret;
+use Mallto\Tool\Data\AppSecretsPermission;
 use Mallto\Tool\Exception\PermissionDeniedException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\SignUtils;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 trait SignCheckTrait
@@ -40,6 +42,8 @@ trait SignCheckTrait
         if (is_null($appSecret->app_secret)) {
             throw new ResourceException("未设置秘钥");
         }
+
+        $this->permissionCheck($request, $appSecret);
 
         $secret = $appSecret->app_secret;
 
@@ -168,6 +172,45 @@ trait SignCheckTrait
                 throw new PermissionDeniedException("无效的签名版本");
                 break;
         }
+    }
+
+
+    /**
+     * 接口权限检查
+     *
+     * @param Request $request
+     * @param         $appSecretUser
+     *
+     * @return bool
+     */
+    public function permissionCheck(Request $request, $appSecretUser)
+    {
+        $routeName = $request->route()->getName();
+        $routenameArr = explode('.', $routeName);
+
+        if (count($routenameArr) == 2) {
+            $subRouteName0 = $routenameArr[0];
+
+            if ( ! AppSecretsPermission::query()->where('slug', $routeName)->exists()) {
+                $routeName = $subRouteName0 . '.*';
+            }
+
+        }
+
+        //做一下兼容，没有做权限的默认放行
+        if (is_null($routeName)) {
+            \Log::error('第三方接口没有配置route name');
+            \Log::warning($request->url());
+
+            return true;
+        }
+
+        //权限管理有该权限,检查开发者是否有该权限
+        if ($appSecretUser->check($routeName)) {
+            return true;
+        }
+
+        throw new AccessDeniedHttpException(trans("errors.permission_denied"));
     }
 
 }

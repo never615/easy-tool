@@ -50,6 +50,8 @@ class AppSecretController extends AdminCommonController
 
         $grid->switch()->switchE();
 
+        $grid->column('roles', trans('admin.roles'))->pluck('name')->label();
+
         $grid->filter(function (Grid\Filter $filter) {
             $filter->ilike("app_id");
             $filter->ilike("name");
