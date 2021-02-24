@@ -203,7 +203,7 @@ abstract class AbstractAPI
             }
 
             try {
-                dispatch(new LogJob('logThirdPart', [
+                $logJob = new LogJob('logThirdPart', [
                     'uuid'       => $uuid,
                     'request_id' => $requestId,
                     'tag'        => $this->slug,
@@ -214,7 +214,14 @@ abstract class AbstractAPI
                     'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody() . "",
                     'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
-                ]));
+                ]);
+
+                if (config('app.log.dispatch_now')) {
+                    dispatch_now($logJob);
+                } else {
+                    dispatch($logJob);
+                }
+
             } catch (\Exception $exception) {
                 \Log::error("记录第三方方请求日志错误");
                 \Log::warning($exception);
@@ -243,7 +250,7 @@ abstract class AbstractAPI
                     $requestTime = round($endTime - $startTime, 3);
                 }
 
-                dispatch(new LogJob('logThirdPart', [
+                $logJob = new LogJob('logThirdPart', [
                     'uuid'         => $uuid,
                     'request_id'   => $requestId,
                     'tag'          => $this->slug,
@@ -255,7 +262,13 @@ abstract class AbstractAPI
                     'status'       => $response->getStatusCode(),
                     'request_time' => $requestTime,
                     'subject_id'   => $uuid ? SubjectUtils::getSubjectId() : 1,
-                ]));
+                ]);
+
+                if (config('app.log.dispatch_now')) {
+                    dispatch_now($logJob);
+                } else {
+                    dispatch($logJob);
+                }
             });
         });
     }
@@ -283,7 +296,7 @@ abstract class AbstractAPI
 
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
                 if (config('app.log.third_api')) {
-                    dispatch(new LogJob("logThirdPart", [
+                    $logJob = new LogJob("logThirdPart", [
                         'uuid'       => $uuid,
                         "tag"        => $this->slug,
                         "action"     => 'Retry请求',
@@ -295,7 +308,13 @@ abstract class AbstractAPI
                             "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
                         ], JSON_UNESCAPED_UNICODE),
                         'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
-                    ]));
+                    ]);
+
+                    if (config('app.log.dispatch_now')) {
+                        dispatch_now($logJob);
+                    } else {
+                        dispatch($logJob);
+                    }
                 }
 
                 return true;
