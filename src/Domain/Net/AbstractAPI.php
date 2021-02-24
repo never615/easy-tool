@@ -8,7 +8,6 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Mallto\Admin\SubjectUtils;
@@ -402,11 +401,11 @@ abstract class AbstractAPI
 
 
     /**
-     * @param Request $request
+     * @param  $request
      *
      * @return bool
      */
-    protected function shouldLogOperation(Request $request)
+    protected function shouldLogOperation($request)
     {
         return config('app.log.third_api')
             && ! $this->inExceptArray($request);
