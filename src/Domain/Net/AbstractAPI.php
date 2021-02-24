@@ -8,7 +8,9 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\NotSettingException;
@@ -192,11 +194,15 @@ abstract class AbstractAPI
             &$startTime,
             $uuid
         ) {
+
+            if ( ! $this->shouldLogOperation($request)) {
+                return;
+            }
             if ( ! AppUtils::isProduction()) {
                 $startTime = microtime(true);
             }
-            try {
 
+            try {
                 dispatch(new LogJob('logThirdPart', [
                     'uuid'       => $uuid,
                     'request_id' => $requestId,
@@ -221,6 +227,10 @@ abstract class AbstractAPI
             $endTime,
             $uuid
         ) {
+            if ( ! $this->shouldLogOperation($request)) {
+                return;
+            }
+
             $response->then(function (ResponseInterface $response) use (
                 $request,
                 $requestId,
@@ -369,6 +379,52 @@ abstract class AbstractAPI
             \Log::error('clientExceptionLog');
             \Log::warning($exception);
         }
+    }
+
+
+    /**
+     * @param Request $request
+     *
+     * @return bool
+     */
+    protected function shouldLogOperation(Request $request)
+    {
+        return config('app.log.third_api')
+            && ! $this->inExceptArray($request);
+    }
+
+
+    /**
+     * Determine if the request has a URI that should pass through CSRF verification.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return bool
+     */
+    protected function inExceptArray($request)
+    {
+        $excepts = config('app.third_api_except.except') ?? [];
+        foreach ($excepts as $except) {
+            if ($except !== '/') {
+                $except = trim($except, '/');
+            }
+
+            $methods = [];
+
+            if (Str::contains($except, ':')) {
+                [ $methods, $except ] = explode(':', $except);
+                $methods = explode(',', $methods);
+            }
+
+            $methods = array_map('strtoupper', $methods);
+
+            if ($request->is($except) &&
+                (empty($methods) || in_array($request->method(), $methods))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }
