@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
+use Mallto\Tool\Seeder\Permission\AppSecretPermissionsSeeder;
 use Mallto\Tool\Seeder\Permission\BasePermissionsSeeder;
 use Mallto\Tool\Seeder\Permission\PagePermissionsSeeder;
 use Mallto\Tool\Seeder\Permission\StatisticsPermissionsSeeder;

@@ -36,8 +36,21 @@ class BaseMenuSeeder extends Seeder
         $systemManagerMenu = $this->updateOrCreate(
             "system_manager", 0, $order++, "系统管理", "fa-windows");
 
-        $this->updateOrCreate(
-            "app_secrets.index", $systemManagerMenu->id, $order++, "app_secrets", "fa-user-secret");
+        // 开放平台管理
+        $thirdApiManagerMenu = $this->updateOrCreate('third_api_manager', $systemManagerMenu->id, $order++,
+            '开放平台管理',
+            'fa-cloud');
+
+        // 开放平台用户管理
+        $this->updateOrCreate('app_secrets.index', $thirdApiManagerMenu->id, $order++, '开发者管理', 'fa-users');
+
+        // 开放平台用户角色管理
+        $this->updateOrCreate('app_secrets_role.index', $thirdApiManagerMenu->id, $order++, '开发者角色管理',
+            'fa-user');
+
+        // 开放平台接口权限管理
+        $this->updateOrCreate('app_secrets_permission.index', $thirdApiManagerMenu->id, $order++, '开发者接口权限管理',
+            'fa-sitemap');
 
         $this->updateOrCreate(
             "configs.index", $systemManagerMenu->id, $order++, "系统通用配置项", "fa-bullseye");

@@ -54,8 +54,14 @@ Route::group($attributes, function ($router) {
                         //意见反馈
                         Route::resource("feedbacks", "FeedBackController");
 
-                        //appsecret manager
+                        //开发者管理
                         Route::resource('app_secrets', 'AppSecretController');
+
+                        //开发者角色管理
+                        Route::resource('app_secrets_role', 'AppSecretRoleController');
+
+                        //开发者权限管理
+                        Route::resource('app_secrets_permission', 'AppSecretPermissionController');
 
                         //----------------------------  系统配置 开始  -----------------------------------------------
                         Route::resource("wechat_template_ids", "WechatTemplateMsgContoller");
@@ -84,8 +90,3 @@ Route::group($attributes, function ($router) {
 //----------------------------------------  管理端结束  -----------------------------------------------
 
 });
-
-
-
-
-

@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Domain\Traits;
 
+use Illuminate\Support\Facades\Schema;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\AppUtils;
 
@@ -37,14 +38,30 @@ trait SlugAutoSave
             $modelClass = $this->getModel();
         }
 
-        $subjectId = $form->subject_id ?? $form->model()->subject_id;
+        $model = resolve($this->getModel());
+        $tableName = $model->getTable();
+        $hasSubjectId = false;
+        if (Schema::hasColumn($this->tableName, "subject_id")) {
+            $hasSubjectId = true;
+        }
+        $subjectId = null;
+        if ($hasSubjectId) {
+            $subjectId = $form->subject_id ?? $form->model()->subject_id;
+        }
 
         //如果主动修改或提交了标识需要保存
         if ($form->slug) {
             if ($form->slug != $form->model()->slug) {
                 //检查slug是否已经存在
-                if ($modelClass::where("subject_id", $subjectId)
-                    ->where($slugColumn, $form->slug)->exists()) {
+                $query = $modelClass::query();
+
+                if ($subjectId) {
+                    $query->where("subject_id", $subjectId);
+                }
+
+                $query->where($slugColumn, $form->slug);
+                if ($query->exists()
+                ) {
                     throw new ResourceException("该标识已经存在:" . $form->slug);
                 }
             }
@@ -52,8 +69,13 @@ trait SlugAutoSave
             if ($form->name && $form->name != $form->model()->name) {
                 //检查name,一个subject下不能重复
 
-                $query = $modelClass::where("subject_id", $subjectId)
-                    ->where("name", $form->name);
+                $query = $modelClass::query();
+
+                if ($subjectId) {
+                    $query->where("subject_id", $subjectId);
+                }
+
+                $query->where("name", $form->name);
 
                 if ($anotherWhereColumn && $antherWhereValue) {
                     $query = $query->where($anotherWhereColumn, $antherWhereValue);
@@ -92,7 +114,7 @@ trait SlugAutoSave
      */
     private function generatorSlug(
         $name,
-        $subjectId,
+        $subjectId = null,
         $modelClass = null,
         $slugColumn = "slug",
         $anotherWhereColumn = null,
@@ -101,8 +123,11 @@ trait SlugAutoSave
 
         $slug = pinyin_permalink($name);
 
-        $query = $modelClass::where("subject_id", $subjectId)
-            ->where($slugColumn, $slug);
+        $query = $modelClass::query();
+        if ($subjectId) {
+            $query->where("subject_id", $subjectId);
+        }
+        $query->where($slugColumn, $slug);
 
         if ($anotherWhereColumn && $antherWhereValue) {
             $query = $query->where($anotherWhereColumn, $antherWhereValue);

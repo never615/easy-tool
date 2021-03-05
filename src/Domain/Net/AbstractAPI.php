@@ -9,6 +9,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\NotSettingException;
@@ -192,12 +193,16 @@ abstract class AbstractAPI
             &$startTime,
             $uuid
         ) {
+
+            if ( ! $this->shouldLogOperation($request)) {
+                return;
+            }
             if ( ! AppUtils::isProduction()) {
                 $startTime = microtime(true);
             }
-            try {
 
-                dispatch(new LogJob('logThirdPart', [
+            try {
+                $logJob = new LogJob('logThirdPart', [
                     'uuid'       => $uuid,
                     'request_id' => $requestId,
                     'tag'        => $this->slug,
@@ -208,7 +213,14 @@ abstract class AbstractAPI
                     'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody() . "",
                     'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
-                ]));
+                ]);
+
+                if (config('app.log.dispatch_now')) {
+                    dispatch_now($logJob);
+                } else {
+                    dispatch($logJob);
+                }
+
             } catch (\Exception $exception) {
                 \Log::error("记录第三方方请求日志错误");
                 \Log::warning($exception);
@@ -221,6 +233,10 @@ abstract class AbstractAPI
             $endTime,
             $uuid
         ) {
+            if ( ! $this->shouldLogOperation($request)) {
+                return;
+            }
+
             $response->then(function (ResponseInterface $response) use (
                 $request,
                 $requestId,
@@ -233,7 +249,7 @@ abstract class AbstractAPI
                     $requestTime = round($endTime - $startTime, 3);
                 }
 
-                dispatch(new LogJob('logThirdPart', [
+                $logJob = new LogJob('logThirdPart', [
                     'uuid'         => $uuid,
                     'request_id'   => $requestId,
                     'tag'          => $this->slug,
@@ -245,7 +261,13 @@ abstract class AbstractAPI
                     'status'       => $response->getStatusCode(),
                     'request_time' => $requestTime,
                     'subject_id'   => $uuid ? SubjectUtils::getSubjectId() : 1,
-                ]));
+                ]);
+
+                if (config('app.log.dispatch_now')) {
+                    dispatch_now($logJob);
+                } else {
+                    dispatch($logJob);
+                }
             });
         });
     }
@@ -273,7 +295,7 @@ abstract class AbstractAPI
 
             if ($this->isServerError($response) || $this->isConnectError($exception)) {
                 if (config('app.log.third_api')) {
-                    dispatch(new LogJob("logThirdPart", [
+                    $logJob = new LogJob("logThirdPart", [
                         'uuid'       => $uuid,
                         "tag"        => $this->slug,
                         "action"     => 'Retry请求',
@@ -285,7 +307,13 @@ abstract class AbstractAPI
                             "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
                         ], JSON_UNESCAPED_UNICODE),
                         'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
-                    ]));
+                    ]);
+
+                    if (config('app.log.dispatch_now')) {
+                        dispatch_now($logJob);
+                    } else {
+                        dispatch($logJob);
+                    }
                 }
 
                 return true;
@@ -369,6 +397,52 @@ abstract class AbstractAPI
             \Log::error('clientExceptionLog');
             \Log::warning($exception);
         }
+    }
+
+
+    /**
+     * @param  $request
+     *
+     * @return bool
+     */
+    protected function shouldLogOperation($request)
+    {
+        return config('app.log.third_api')
+            && ! $this->inExceptArray($request);
+    }
+
+
+    /**
+     * Determine if the request has a URI that should pass through CSRF verification.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return bool
+     */
+    protected function inExceptArray($request)
+    {
+        $excepts = config('app.third_api_except.except') ?? [];
+        foreach ($excepts as $except) {
+            if ($except !== '/') {
+                $except = trim($except, '/');
+            }
+
+            $methods = [];
+
+            if (Str::contains($except, ':')) {
+                [ $methods, $except ] = explode(':', $except);
+                $methods = explode(',', $methods);
+            }
+
+            $methods = array_map('strtoupper', $methods);
+
+            if ($request->is($except) &&
+                (empty($methods) || in_array($request->method(), $methods))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

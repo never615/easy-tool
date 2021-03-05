@@ -6,25 +6,22 @@
 namespace Mallto\Tool\Data;
 
 use Illuminate\Database\Eloquent\Model;
-use Mallto\Tool\Data\Traits\ThirdCheck;
 
-class AppSecret extends Model
+class AppSecretsPermission extends Model
 {
-
-    use ThirdCheck;
 
     protected $guarded = [
     ];
 
 
     /**
-     * 开发者关联角色
+     * 权限管理角色
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function roles()
     {
-        return $this->belongsToMany(AppSecretsRole::class, 'app_secrets_has_roles', 'app_secret_id',
-            'role_id');
+        return $this->belongsToMany(AppSecretsRole::class, 'app_secrets_role_has_permissions',
+            'permission_id', 'role_id');
     }
 }

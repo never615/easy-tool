@@ -9,6 +9,7 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\AppSecret;
+use Mallto\Tool\Data\AppSecretsRole;
 
 /**
  * Class AppSecretController
@@ -25,7 +26,7 @@ class AppSecretController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "app secret管理";
+        return '开发者管理';
     }
 
 
@@ -49,6 +50,8 @@ class AppSecretController extends AdminCommonController
 
         $grid->switch()->switchE();
 
+        $grid->column('roles', trans('admin.roles'))->pluck('name')->label();
+
         $grid->filter(function (Grid\Filter $filter) {
             $filter->ilike("app_id");
             $filter->ilike("name");
@@ -64,6 +67,8 @@ class AppSecretController extends AdminCommonController
         $form->text('app_id');
         $form->text('app_secret')
             ->help("﻿openssl rand -hex 16");
+        $form->multipleSelect('roles', '角色')
+            ->options(AppSecretsRole::query()->get()->pluck('name', 'id'));
         $form->switch("switch");
     }
 
