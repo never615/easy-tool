@@ -20,7 +20,7 @@ use Mallto\Tool\Domain\Traits\SlugAutoSave;
 class PagePvManagerController extends AdminCommonController
 {
 
-    use SlugAutoSave, GetAdTypes;
+    use SlugAutoSave;
 
 
     /**
