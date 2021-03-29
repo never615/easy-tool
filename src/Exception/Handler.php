@@ -73,6 +73,20 @@ class Handler extends ExceptionHandler
 
 
     /**
+     * 是否可以接受json响应
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return bool
+     */
+    public function canAcceptJson(\Illuminate\Http\Request $request)
+    {
+        return ($request->ajax() && ! $request->pjax() && $request->acceptsAnyContentType())
+            || $request->accepts('application/json');
+    }
+
+
+    /**
      * Render an exception into an HTTP response.
      *
      * @param \Illuminate\Http\Request $request
@@ -119,16 +133,20 @@ class Handler extends ExceptionHandler
 
                 return back()->with(compact('error'))->withInput();
             } else {
-                //没有请求json响应
-                $response = $this->interJsonHandler($exception, $request);
-                $content = json_decode($response->getContent(), true);
+                if ($this->canAcceptJson($request)) {
+                    return $this->interJsonHandler($exception, $request);
+                } else {
+                    //没有请求json响应
+                    $response = $this->interJsonHandler($exception, $request);
+                    $content = json_decode($response->getContent(), true);
 
-                $newException = new \Mallto\Tool\Exception\HttpException(
-                    $response->getStatusCode(),
-                    $content['error'] ?? $exception->getMessage(),
-                );
+                    $newException = new \Mallto\Tool\Exception\HttpException(
+                        $response->getStatusCode(),
+                        $content['error'] ?? $exception->getMessage(),
+                    );
 
-                return parent::render($request, $newException);
+                    return parent::render($request, $newException);
+                }
             }
         }
     }
