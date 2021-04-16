@@ -185,6 +185,11 @@ trait SignCheckTrait
      */
     public function permissionCheck(Request $request, $appSecretUser)
     {
+        //没有开启的校验的直接跳过
+        if ( ! $appSecretUser->is_check_third_permission) {
+            return true;
+        }
+
         $routeName = $request->route()->getName();
         $routenameArr = explode('.', $routeName);
 

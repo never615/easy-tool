@@ -50,6 +50,8 @@ class AppSecretController extends AdminCommonController
 
         $grid->switch()->switchE();
 
+        $grid->column('is_check_third_permission', '是否校验接口权限')->switchE();
+
         $grid->column('roles', trans('admin.roles'))->pluck('name')->label();
 
         $grid->filter(function (Grid\Filter $filter) {
@@ -70,6 +72,7 @@ class AppSecretController extends AdminCommonController
         $form->multipleSelect('roles', '角色')
             ->options(AppSecretsRole::query()->get()->pluck('name', 'id'));
         $form->switch("switch");
+        $form->switch("is_check_third_permission", '是否校验接口权限');
     }
 
 }
