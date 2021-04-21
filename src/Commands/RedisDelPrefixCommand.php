@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -53,12 +54,20 @@ class RedisDelPrefixCommand extends Command
 
         // 需要在前面连接上应用的缓存前缀
         $keys = app('redis')->keys($prefix . '*');
-        //\Log::debug($keys);
 
         app('redis')->del($keys);
 
-        $keys = Redis::connection('cache')->keys($prefix . '*');
+        $cachePrefix = config('app.unique') . '_' . config('app.env')
+            . ':' . $prefix . '*';
+
+        $keys = Redis::connection('cache')
+            ->keys($cachePrefix);
+
         Redis::connection('cache')->del($keys);
+
+        if (config('app.env') === 'local') {
+            Artisan::call('cache:clear');
+        }
 
         $this->info("finish");
 
