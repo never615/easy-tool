@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
@@ -148,12 +149,30 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->appBoot();
         $this->routeBoot();
+        $this->authBoot();
         $this->queueBoot();
         $this->scheduleBoot();
 
         Relation::morphMap([
             'user' => User::class,
         ]);
+    }
+
+
+    private function authBoot()
+    {
+        Passport::tokensExpireIn(now()->addDays(1));
+
+        Passport::refreshTokensExpireIn(now()->addDays(15));
+
+        //Passport::personalAccessTokensExpireIn(now()->addMonths(6));
+        Passport::personalAccessTokensExpireIn(now()->addDays(1));
+
+        Route::group([ 'middleware' => 'oauth.providers' ], function () {
+            Passport::routes(function ($router) {
+                return $router->forAccessTokens();
+            });
+        });
     }
 
 
