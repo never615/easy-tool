@@ -21,6 +21,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
+use Mallto\Tool\Commands\TokenCheckCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
@@ -54,6 +55,8 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\UpdateAppSecretCommand',
         'Mallto\Tool\Commands\ResetTableIdSeqCommand',
         RedisDelPrefixCommand::class,
+        TokenCheckCommand::class,
+
     ];
 
     /**
@@ -382,6 +385,21 @@ class ToolServiceProvider extends ServiceProvider
                             [ "slug" => "update_app_secret", "status" => "finish" ]));
                     });
             }
+
+            $schedule->command('tool:token_check')
+                ->onOneServer()
+                ->daily()
+                ->name("token_check")
+                ->runInBackground()
+                ->withoutOverlapping()
+                ->before(function () {
+                    dispatch(new LogJob("logSchedule",
+                        [ "slug" => "token_check", "status" => "start" ]));
+                })
+                ->after(function () {
+                    dispatch(new LogJob("logSchedule",
+                        [ "slug" => "token_check", "status" => "finish" ]));
+                });
         });
     }
 }

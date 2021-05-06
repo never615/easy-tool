@@ -5,7 +5,9 @@
 
 namespace Mallto\Tool\Middleware;
 
+use Carbon\Carbon;
 use Closure;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +15,6 @@ use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\AppUtils;
-use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
@@ -33,7 +34,6 @@ class RequestCheck
     //    'WEB',
     //    'SERVER',
     //];
-
 
     /**
      * @param         $request
@@ -65,6 +65,22 @@ class RequestCheck
         $user = null;
         if (config('auth.guards.api.provider')) {
             $user = Auth::guard('api')->user();
+        }
+
+        try {
+            if ($user) {
+                // 使用 try 包裹，以捕捉 token 过期所抛出的 TokenExpiredException  异常
+                // 检测用户的登录状态，如果正常则通过
+                $token = $user->token();
+
+                if ($token && $token->expires_at && Carbon::now()->greaterThan($token->expires_at)) {
+                    $token->delete();
+                    throw new AuthenticationException('token失效');
+                }
+            }
+        } catch (\Exception $exception) {
+            \Log::error('token 过期校验 error');
+            \Log::warning($exception);
         }
 
         //如果user存在,检查user和uuid是否一致
