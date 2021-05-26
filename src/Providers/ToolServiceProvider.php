@@ -261,13 +261,15 @@ class ToolServiceProvider extends ServiceProvider
                     "name"            => $event->job->resolveName(),
                 ]);
             });
+        }
 
-            //任务失败后
-            Queue::failing(function (JobFailed $event) {
-                \Log::error("队列任务失败");
-                \Log::warning($event->job->payload());
-                \Log::warning($event->exception);
+        //任务失败后
+        Queue::failing(function (JobFailed $event) {
+            \Log::error("队列任务失败");
+            \Log::warning($event->job->payload());
+            \Log::warning($event->exception);
 
+            if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
                     "connection_name" => $event->connectionName,
@@ -276,14 +278,15 @@ class ToolServiceProvider extends ServiceProvider
                     "name"            => $event->job->resolveName(),
                     "payload"         => $event->job->getRawBody(),
                 ]);
+            }
+        });
 
-            });
-
-            //异常发生后
-            Queue::exceptionOccurred(function ($event) {
-                \Log::error("队列任务异常");
-                \Log::warning($event->job->payload());
-                \Log::warning($event->exception);
+        //异常发生后
+        Queue::exceptionOccurred(function ($event) {
+            \Log::error("队列任务异常");
+            \Log::warning($event->job->payload());
+            \Log::warning($event->exception);
+            if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
                     "connection_name" => $event->connectionName,
@@ -292,9 +295,8 @@ class ToolServiceProvider extends ServiceProvider
                     "name"            => $event->job->resolveName(),
                     "payload"         => $event->job->getRawBody(),
                 ]);
-
-            });
-        }
+            }
+        });
     }
 
 
