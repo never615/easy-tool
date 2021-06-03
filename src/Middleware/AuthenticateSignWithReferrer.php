@@ -55,7 +55,8 @@ class AuthenticateSignWithReferrer
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
 
-        if (Str::startsWith($referer, 'https://servicewechat.com')) {
+        //兼容支付宝小程序
+        if (Str::startsWith($referer, 'https://servicewechat.com') || Str::startsWith($referer, 'https://serviceali.com')) {
             //allow_referer_appid
             $allow_referer_appid = config('other.allow_referer_appid');
             $allow_referer_appid = explode(',', $allow_referer_appid);
