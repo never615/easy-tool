@@ -56,7 +56,7 @@ class AuthenticateSignWithReferrer
         $referer = $request->header('Referer');
 
         //兼容支付宝小程序
-        if (Str::startsWith($referer, 'https://servicewechat.com') || Str::startsWith($referer, 'https://serviceali.com')) {
+        if (Str::startsWith($referer, 'https://servicewechat.com') || Str::contains($referer, 'hybrid.alipay-eco.com')) {
             //allow_referer_appid
             $allow_referer_appid = config('other.allow_referer_appid');
             $allow_referer_appid = explode(',', $allow_referer_appid);
