@@ -253,7 +253,10 @@ class Handler extends ExceptionHandler
 
                 if ($exception->getCode() == '23505') {
                     \Log::warning("QueryException:23505");
-                    \Log::warning($exception);
+                    //\Log::warning($exception);
+                    \Log::warning(Str::replaceArray('ERROR', [ 'xxx' ],
+                        $exception->getMessage())); //不替换error,会自动打一条日志
+                    \Log::warning($exception->getTraceAsString());
                     throw new ResourceException('数据已提交或创建成功,请刷新查看');
                 }
 
