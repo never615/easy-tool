@@ -13,7 +13,7 @@ use Illuminate\Support\MessageBag;
  *
  * @package App\Exceptions
  */
-class ResourceWithCodeException extends HttpException implements MessageBagErrors
+class ResourceWithCodeException extends ResourceException implements MessageBagErrors
 {
 
     /**
@@ -53,7 +53,7 @@ class ResourceWithCodeException extends HttpException implements MessageBagError
                 $this->errors = $errors;
             }
         }
-        parent::__construct(422, $message, $code, null, $previous, $headers);
+        parent::__construct($message, $errors, $previous, $headers, $code);
     }
 
 
