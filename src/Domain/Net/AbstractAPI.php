@@ -10,9 +10,9 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Mallto\Admin\Exception\NotSettingByProjectOwnerException;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Exception\InternalHttpException;
-use Mallto\Admin\Exception\NotSettingByProjectOwnerException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
@@ -293,7 +293,10 @@ abstract class AbstractAPI
 
             $uuid = SubjectUtils::getUUIDNoException() ?: 0;
 
-            if ($this->isServerError($response) || $this->isConnectError($exception)) {
+            if ($this->isServerError($response)
+                || $this->isConnectError($exception)
+                || $this->isInvalidResponse($response)
+            ) {
                 if (config('app.log.third_api')) {
                     $logJob = new LogJob("logThirdPart", [
                         'uuid'       => $uuid,
@@ -358,6 +361,17 @@ abstract class AbstractAPI
         }
 
         return false;
+    }
+
+
+    /**
+     * @param ResponseInterface $response
+     *
+     * @return bool
+     */
+    protected function isInvalidResponse(ResponseInterface $response = null)
+    {
+        return $response === false;
     }
 
 
