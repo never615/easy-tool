@@ -7,12 +7,12 @@ namespace Mallto\Tool\Middleware;
 
 use Carbon\Carbon;
 use Closure;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
+use Mallto\Tool\Exception\HttpException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\AppUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
@@ -75,7 +75,8 @@ class RequestCheck
 
                 if ($token && $token->expires_at && Carbon::now()->greaterThan($token->expires_at)) {
                     $token->delete();
-                    throw new AuthenticationException('token失效');
+                    //throw new AuthenticationException('token失效');
+                    throw new HttpException(401, 'token失效');
                 }
             }
         } catch (\Exception $exception) {
