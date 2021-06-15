@@ -152,7 +152,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->appBoot();
         $this->routeBoot();
-        $this->authBoot();
+        //$this->authBoot();
         $this->queueBoot();
         $this->scheduleBoot();
 
