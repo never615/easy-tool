@@ -169,7 +169,7 @@ class ToolServiceProvider extends ServiceProvider
         Passport::refreshTokensExpireIn(now()->addDays(15));
 
         //Passport::personalAccessTokensExpireIn(now()->addMonths(6));
-        Passport::personalAccessTokensExpireIn(now()->addDays(2));
+        Passport::personalAccessTokensExpireIn(now()->addDays(3));
 
         Route::group([ 'middleware' => 'oauth.providers' ], function () {
             Passport::routes(function ($router) {
