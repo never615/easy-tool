@@ -5,12 +5,9 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Illuminate\Http\Request;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
-use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Controller\Admin\Traits\GetAdTypes;
 use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Data\PagePv;
@@ -21,7 +18,6 @@ class PagePvManagerController extends AdminCommonController
 {
 
     use SlugAutoSave;
-
 
     /**
      * 获取这个模块的标题
@@ -50,7 +46,9 @@ class PagePvManagerController extends AdminCommonController
         $grid->path("页面路径");
         $grid->name();
         $grid->switch("统计页是否显示")->switchE();
-        $grid->slug();
+        $grid->slug()
+            ->help('暂时没用');
+        
         $grid->weight()->editable();
     }
 
@@ -71,7 +69,9 @@ class PagePvManagerController extends AdminCommonController
             ->options(PagePv::selectSourceDatas2()->pluck("path", "path"))
             ->rules("required");
         $form->text("name")->rules("required");
-        $form->text("slug")->rules("required");
+        $form->text("slug")
+            ->help('暂时没用')
+            ->rules("required");
 
         $form->multipleSelect("ad_types", "支持的广告类型")
             ->default("float_image")
