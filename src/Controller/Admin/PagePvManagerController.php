@@ -48,7 +48,7 @@ class PagePvManagerController extends AdminCommonController
         $grid->switch("统计页是否显示")->switchE();
         $grid->slug()
             ->help('暂时没用');
-        
+
         $grid->weight()->editable();
     }
 
