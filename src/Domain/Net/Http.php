@@ -192,7 +192,12 @@ class Http
     public function getClient()
     {
         if ( ! ($this->client instanceof HttpClient)) {
-            $this->client = new HttpClient();
+            $this->client = new HttpClient(
+                [
+                    'timeout'         => 10,
+                    'connect_timeout' => 6,
+                ]
+            );
         }
 
         return $this->client;
