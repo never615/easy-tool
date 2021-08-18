@@ -265,7 +265,7 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务失败后
         Queue::failing(function (JobFailed $event) {
-            \Log::error("队列任务失败");
+            \Log::warning("队列任务失败");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
 
