@@ -267,6 +267,16 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务失败后
         Queue::failing(function (JobFailed $event) {
+
+            $exception = $event->exception;
+
+            if ($exception && $exception instanceof MaxAttemptsExceededException) {
+                \Log::warning("队列任务失败，MaxAttemptsExceededException");
+                \Log::warning($event->job->payload());
+
+                return;
+            }
+
             \Log::error("队列任务失败");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
