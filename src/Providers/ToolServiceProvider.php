@@ -8,9 +8,11 @@ namespace Mallto\Tool\Providers;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Mail\TransportManager;
+use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -265,7 +267,7 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务失败后
         Queue::failing(function (JobFailed $event) {
-            \Log::warning("队列任务失败");
+            \Log::error("队列任务失败");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
 
@@ -282,7 +284,14 @@ class ToolServiceProvider extends ServiceProvider
         });
 
         //异常发生后
-        Queue::exceptionOccurred(function ($event) {
+        Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
+            $exception = $event->exception;
+            if ($exception && $exception instanceof MaxAttemptsExceededException) {
+                \Log::warning("队列任务异常，MaxAttemptsExceededException");
+                \Log::warning($event->job->payload());
+
+                return;
+            }
             \Log::error("队列任务异常");
             \Log::warning($event->job->payload());
             \Log::warning($event->exception);
