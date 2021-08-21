@@ -15,6 +15,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\MessageBag;
@@ -53,6 +54,7 @@ class Handler extends ExceptionHandler
         \Illuminate\Validation\ValidationException::class,
         \League\OAuth2\Server\Exception\OAuthServerException::class,
         QueryException::class,
+        MaxAttemptsExceededException::class
     ];
 
 
