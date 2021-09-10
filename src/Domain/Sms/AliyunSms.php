@@ -223,7 +223,8 @@ class AliyunSms extends AbstractAPI implements Sms
             case "OK":
                 break;
             case "isv.BUSINESS_LIMIT_CONTROL":
-                throw new ResourceException("一分钟内只能发送一条短信");
+                //throw new ResourceException("一分钟内只能发送一条短信");
+                throw new ResourceException("今日发送短信超标，无法在发送短信");
                 break;
             default:
                 \Log::warning("短信发送失败");
