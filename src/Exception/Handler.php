@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\MissingScopeException;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use RedisException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
@@ -54,7 +55,8 @@ class Handler extends ExceptionHandler
         \Illuminate\Validation\ValidationException::class,
         \League\OAuth2\Server\Exception\OAuthServerException::class,
         QueryException::class,
-        MaxAttemptsExceededException::class
+        MaxAttemptsExceededException::class,
+        RedisException::class
     ];
 
 
