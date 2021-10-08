@@ -79,7 +79,8 @@ Route::group($attributes, function ($router) {
                         Route::resource('sms_templates', 'SmsTemplateController');
                         Route::resource('sms_codes', 'SmsCodeController');
 //DummyRoutePlaceholder
-
+//卡券短信管理
+                        Route::resource("coupon_sms_templates", 'CouponSmsTemplateController');
                     });
 
 
