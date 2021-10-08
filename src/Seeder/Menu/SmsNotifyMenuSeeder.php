@@ -42,6 +42,9 @@ class SmsNotifyMenuSeeder extends Seeder
         $this->updateOrCreate(
             'sms_templates.index', $parentId, $order++,
             '短信模板管理', 'fa-paper-plane-o');
+        $this->updateOrCreate(
+            'coupon_sms_templates.index', $parentId, $order++,
+            '卡券模板管理', 'fa-paper-plane-o');
 
     }
 }
