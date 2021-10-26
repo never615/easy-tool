@@ -7,7 +7,7 @@ use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\SmsTemplate;
 
-class SmsTemplateController extends AdminCommonController
+class CouponSmsTemplateController extends AdminCommonController
 {
 
     /**
@@ -17,7 +17,7 @@ class SmsTemplateController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "群发短信模板管理";
+        return "卡券模板管理";
     }
 
 
@@ -34,7 +34,7 @@ class SmsTemplateController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->model()->where('type',1);
+        $grid->model()->where('type',2);
         $grid->code("模版CODE");
         $grid->name("模版名称");
         $grid->content("模版内容")->limit(50);
@@ -54,7 +54,7 @@ class SmsTemplateController extends AdminCommonController
      */
     protected function formOption(Form $form)
     {
-        $form->hidden('type')->default(1);
+        $form->hidden('type')->default(2);
         $form->text("code", "模版CODE")
             ->required()
             ->help('在<a target="_blank" href="https://dysms.console.aliyun.com/dysms.htm#/domestic/text/template">阿里云短信管理</a>创建好群发短信模板后,填写到此处

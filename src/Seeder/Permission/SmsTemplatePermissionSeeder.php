@@ -26,5 +26,6 @@ class SmsTemplatePermissionSeeder extends Seeder
             $parentId = $parentPermisson->id;
         }
         $this->createPermissions("短信模板管理", "sms_templates", true, $parentId);
+        $this->createPermissions("卡券短信管理", "coupon_sms_templates");
     }
 }
