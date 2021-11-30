@@ -54,16 +54,28 @@ class RedisDelPrefixCommand extends Command
 
         // 需要在前面连接上应用的缓存前缀
         $keys = app('redis')->keys($prefix . '*');
-
         app('redis')->del($keys);
 
         $cachePrefix = config('app.unique') . '_' . config('app.env')
             . ':' . $prefix . '*';
-
         $keys = Redis::connection('cache')
             ->keys($cachePrefix);
 
         Redis::connection('cache')->del($keys);
+
+        try {
+            //本地数据库
+            $keys = Redis::connection('local')->keys($prefix . '*');
+            Redis::connection('local')->del($keys);
+
+            $cachePrefix = config('app.unique') . '_' . config('app.env')
+                . ':' . $prefix . '*';
+            $keys = Redis::connection('local')
+                ->keys($cachePrefix);
+            Redis::connection('local')->del($keys);
+        } catch (\Exception $exception) {
+
+        }
 
         if (config('app.env') === 'local') {
             Artisan::call('cache:clear');

@@ -32,7 +32,6 @@ use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\Sms\AliyunSms;
 use Mallto\Tool\Domain\Sms\Sms;
 use Mallto\Tool\Jobs\LogJob;
-use Mallto\Tool\Laravel\Cache\SwooleTableStore;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -122,19 +121,26 @@ class ToolServiceProvider extends ServiceProvider
         try {
             Cache::extend('memory', function ($app) {
                 if (\config('cache.default') === 'redis') {
-                    if (\config('admin.swoole')
-                        && ! $this->app->runningInConsole()
-                        && ! empty(\config('laravels.swoole_tables'))
-                        && count(\config('laravels.swoole_tables')) > 0
-                    ) {
-                        try {
-                            return Cache::repository(new SwooleTableStore());
-                        } catch (\Exception $exception) {
-                            return Cache::store('redis');
-                        }
-                    } else {
+                    if(\config('app.env')=='integration'){
+                        //\Log::debug('local redis');
+                        return Cache::store('local_redis');
+                    }else{
                         return Cache::store('redis');
                     }
+
+                    //if (\config('admin.swoole')
+                    //    && ! $this->app->runningInConsole()
+                    //    && ! empty(\config('laravels.swoole_tables'))
+                    //    && count(\config('laravels.swoole_tables')) > 0
+                    //) {
+                    //    try {
+                    //        return Cache::repository(new SwooleTableStore());
+                    //    } catch (\Exception $exception) {
+                    //        return Cache::store('redis');
+                    //    }
+                    //} else {
+                    //    return Cache::store('redis');
+                    //}
                 } else {
                     return Cache::store('file');
                 }
