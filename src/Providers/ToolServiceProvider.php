@@ -124,7 +124,7 @@ class ToolServiceProvider extends ServiceProvider
                     if ( ! empty(\config('database.redis.local.host'))) {
                         return Cache::store('local_redis');
                     } else {
-                        return Cache::store('cache');
+                        return Cache::store('redis');
                     }
 
                     //if(\config('app.env')=='integration'){
@@ -156,8 +156,7 @@ class ToolServiceProvider extends ServiceProvider
             \Log::warning($exception);
             Cache::extend('memory', function ($app) {
                 if (\config('cache.default') === 'redis') {
-                    return Cache::store('cache');
-                    //return Cache::store('redis');
+                    return Cache::store('redis');
 
                 } else {
                     return Cache::store('file');
