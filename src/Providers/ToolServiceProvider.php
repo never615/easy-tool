@@ -121,12 +121,18 @@ class ToolServiceProvider extends ServiceProvider
         try {
             Cache::extend('memory', function ($app) {
                 if (\config('cache.default') === 'redis') {
-                    if(\config('app.env')=='integration'){
-                        //\Log::debug('local redis');
+                    if ( ! empty(\config('database.redis.local.database'))) {
                         return Cache::store('local_redis');
-                    }else{
-                        return Cache::store('redis');
+                    } else {
+                        return Cache::store('cache');
                     }
+
+                    //if(\config('app.env')=='integration'){
+                    //    //\Log::debug('local redis');
+                    //    return Cache::store('local_redis');
+                    //}else{
+                    //    return Cache::store('redis');
+                    //}
 
                     //if (\config('admin.swoole')
                     //    && ! $this->app->runningInConsole()
@@ -150,7 +156,8 @@ class ToolServiceProvider extends ServiceProvider
             \Log::warning($exception);
             Cache::extend('memory', function ($app) {
                 if (\config('cache.default') === 'redis') {
-                    return Cache::store('redis');
+                    return Cache::store('cache');
+                    //return Cache::store('redis');
 
                 } else {
                     return Cache::store('file');
