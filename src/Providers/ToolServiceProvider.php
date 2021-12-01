@@ -121,7 +121,7 @@ class ToolServiceProvider extends ServiceProvider
         try {
             Cache::extend('memory', function ($app) {
                 if (\config('cache.default') === 'redis') {
-                    if ( ! empty(\config('database.redis.local.database'))) {
+                    if ( ! empty(\config('database.redis.local.host'))) {
                         return Cache::store('local_redis');
                     } else {
                         return Cache::store('cache');
