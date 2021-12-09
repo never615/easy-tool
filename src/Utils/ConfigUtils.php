@@ -36,7 +36,7 @@ class ConfigUtils
     public static function get($key, $default = null, $type = null)
     {
         $value = Cache::store('memory')->get('c_' . $key);
-        if (empty($value) || ! $value) {
+        if (is_null($value)) {
             $query = Config::where("key", $key);
             if ($type) {
                 $query = $query->where("type", $type);
