@@ -4,6 +4,7 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Illuminate\Support\Facades\Cache;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Config;
 
@@ -59,6 +60,11 @@ class ConfigController extends AdminCommonController
         $form->text("remark");
         $form->textarea("value");
         $form->text("type");
+
+        $form->saved(function (Form $form) {
+            $key = $form->key;
+            Cache::store('memory')->delete('c_' . $key);
+        });
     }
 
 }
