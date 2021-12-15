@@ -44,7 +44,7 @@ class ConfigUtils
             $config = $query->first();
             if ($config) {
                 $value = $config->value;
-                Cache::store('memory')->put('c_' . $key, $value, Carbon::now()->endOfDay()->addHours(-1));
+                Cache::store('memory')->put('c_' . $key, $value, Carbon::now()->endOfDay());
             } else {
                 if (isset($default)) {
                     $value = $default;
