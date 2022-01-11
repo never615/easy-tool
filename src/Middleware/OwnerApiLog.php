@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
+use Mallto\Tool\Utils\ConfigUtils;
 
 /**
  * 向第三方提供的接口通讯日志记录
@@ -129,6 +130,7 @@ class OwnerApiLog
      */
     protected function shouldLogOperation(Request $request)
     {
+
         return config('app.log.owner_api')
             && ! $this->inExceptArray($request);
     }
@@ -143,6 +145,12 @@ class OwnerApiLog
      */
     protected function inExceptArray($request)
     {
+        //是否关闭owner api log的排除规则，1排除，0不排除
+        $ownerApiLogExcept = ConfigUtils::get('close_owner_api_log_except', 0);
+        if ($ownerApiLogExcept === 1) {
+            return false;
+        }
+
         $excepts = config('app.log.except') ?? [];
         foreach ($excepts as $except) {
             if ($except !== '/') {
