@@ -145,9 +145,9 @@ class OwnerApiLog
      */
     protected function inExceptArray($request)
     {
-        //是否关闭owner api log的排除规则，1排除，0不排除
+        //是否关闭owner api log的排除规则，1关闭，0不关闭
         $ownerApiLogExcept = ConfigUtils::get('close_owner_api_log_except', 0);
-        if ($ownerApiLogExcept === 1) {
+        if ($ownerApiLogExcept) {
             return false;
         }
 
