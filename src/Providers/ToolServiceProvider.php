@@ -103,66 +103,66 @@ class ToolServiceProvider extends ServiceProvider
                 'error-views');
         }
 
-        if ( ! \config('cache.stores.memory')) {
-            //$cacheStores = \config('cache');
-            //$cacheStores = array_merge($cacheStores, [
-            //    'memory' => [
-            //        'driver' => 'memory',
-            //    ],
-            //]);
-
-            config([
-                'cache.stores.memory' => [
-                    'driver' => 'memory',
-                ],
-            ]);
-        }
-
-        try {
-            Cache::extend('memory', function ($app) {
-                if (\config('cache.default') === 'redis') {
-                    if ( ! empty(\config('database.redis.local.host'))) {
-                        return Cache::store('local_redis');
-                    } else {
-                        return Cache::store('redis');
-                    }
-
-                    //if(\config('app.env')=='integration'){
-                    //    //\Log::debug('local redis');
-                    //    return Cache::store('local_redis');
-                    //}else{
-                    //    return Cache::store('redis');
-                    //}
-
-                    //if (\config('admin.swoole')
-                    //    && ! $this->app->runningInConsole()
-                    //    && ! empty(\config('laravels.swoole_tables'))
-                    //    && count(\config('laravels.swoole_tables')) > 0
-                    //) {
-                    //    try {
-                    //        return Cache::repository(new SwooleTableStore());
-                    //    } catch (\Exception $exception) {
-                    //        return Cache::store('redis');
-                    //    }
-                    //} else {
-                    //    return Cache::store('redis');
-                    //}
-                } else {
-                    return Cache::store('file');
-                }
-            });
-        } catch (\Exception $exception) {
-            \Log::error('Cache extend memory error');
-            \Log::warning($exception);
-            Cache::extend('memory', function ($app) {
-                if (\config('cache.default') === 'redis') {
-                    return Cache::store('redis');
-
-                } else {
-                    return Cache::store('file');
-                }
-            });
-        }
+        //if ( ! \config('cache.stores.memory')) {
+        //    //$cacheStores = \config('cache');
+        //    //$cacheStores = array_merge($cacheStores, [
+        //    //    'memory' => [
+        //    //        'driver' => 'memory',
+        //    //    ],
+        //    //]);
+        //
+        //    config([
+        //        'cache.stores.memory' => [
+        //            'driver' => 'memory',
+        //        ],
+        //    ]);
+        //}
+        //
+        //try {
+        //    Cache::extend('memory', function ($app) {
+        //        if (\config('cache.default') === 'redis') {
+        //            if ( ! empty(\config('database.redis.local.host'))) {
+        //                return Cache::store('local_redis');
+        //            } else {
+        //                return Cache::store('redis');
+        //            }
+        //
+        //            //if(\config('app.env')=='integration'){
+        //            //    //\Log::debug('local redis');
+        //            //    return Cache::store('local_redis');
+        //            //}else{
+        //            //    return Cache::store('redis');
+        //            //}
+        //
+        //            //if (\config('admin.swoole')
+        //            //    && ! $this->app->runningInConsole()
+        //            //    && ! empty(\config('laravels.swoole_tables'))
+        //            //    && count(\config('laravels.swoole_tables')) > 0
+        //            //) {
+        //            //    try {
+        //            //        return Cache::repository(new SwooleTableStore());
+        //            //    } catch (\Exception $exception) {
+        //            //        return Cache::store('redis');
+        //            //    }
+        //            //} else {
+        //            //    return Cache::store('redis');
+        //            //}
+        //        } else {
+        //            return Cache::store('file');
+        //        }
+        //    });
+        //} catch (\Exception $exception) {
+        //    \Log::error('Cache extend memory error');
+        //    \Log::warning($exception);
+        //    Cache::extend('memory', function ($app) {
+        //        if (\config('cache.default') === 'redis') {
+        //            return Cache::store('redis');
+        //
+        //        } else {
+        //            return Cache::store('file');
+        //        }
+        //    });
+        //}
 
         $this->appBoot();
         $this->routeBoot();

@@ -36,8 +36,8 @@ class ConfigController extends AdminCommonController
     protected function gridOption(Grid $grid)
     {
         $grid->key();
-        $grid->remark();
-        $grid->value();
+        $grid->remark()->limit(20);
+        $grid->value()->limit(20);;
         $grid->type();
 
 

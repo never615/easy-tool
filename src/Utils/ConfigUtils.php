@@ -8,7 +8,6 @@ namespace Mallto\Tool\Utils;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\Config;
-use Mallto\Tool\Exception\ResourceException;
 
 /**
  *
@@ -22,6 +21,21 @@ use Mallto\Tool\Exception\ResourceException;
 class ConfigUtils
 {
 
+    public static function getJson2Array($key, $default = [], $type = null)
+    {
+        $result = self::get($key, $default, $type);
+        if (is_null($result)) {
+            return $result;
+        } else {
+            if (is_string($result)) {
+                $result = json_decode($result, true);
+            }
+
+            return array_merge($default, $result);
+        }
+    }
+
+
     /**
      * 读取配置
      *
@@ -32,6 +46,7 @@ class ConfigUtils
      * @param null $type
      *
      * @return null
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public static function get($key, $default = null, $type = null)
     {
@@ -49,7 +64,8 @@ class ConfigUtils
                 if (isset($default)) {
                     $value = $default;
                 } else {
-                    throw new ResourceException($key . "未配置");
+                    return null;
+                    //throw new ResourceException($key . "未配置");
                 }
             }
         }
