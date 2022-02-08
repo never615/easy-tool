@@ -31,8 +31,7 @@
         "overtrue/laravel-pinyin": "~3.0",
         "predis/predis": "^1.1",
         "rap2hpoutre/laravel-log-viewer": "^1.1",
-        "codingyu/ueditor": "dev-develop",
-        "lcobucci/jwt": "3.3.0"
+        "codingyu/ueditor": "dev-develop"
     },
     "autoload": {
         "psr-4": {
