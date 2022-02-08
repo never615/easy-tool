@@ -23,7 +23,6 @@
         "laravel/helpers": "^1.1",
         "symfony/console": "4.4.24",
         "laravel/horizon": "^3.3",
-        "laravel/passport": "^7.0",
         "laravel/tinker": "~1.0",
         "maatwebsite/excel": "~3.1.0",
         "barryvdh/laravel-cors": "^1.0.3",
@@ -32,7 +31,6 @@
         "overtrue/laravel-pinyin": "~3.0",
         "predis/predis": "^1.1",
         "rap2hpoutre/laravel-log-viewer": "^1.1",
-        "smartins/passport-multiauth": "^4.0",
         "codingyu/ueditor": "dev-develop",
         "lcobucci/jwt": "3.3.0"
     },
