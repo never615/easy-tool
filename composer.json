@@ -31,7 +31,8 @@
         "overtrue/laravel-pinyin": "~3.0",
         "predis/predis": "^1.1",
         "rap2hpoutre/laravel-log-viewer": "^1.1",
-        "codingyu/ueditor": "dev-develop"
+        "codingyu/ueditor": "dev-develop",
+        "smartins/passport-multiauth": "^6.0"
     },
     "autoload": {
         "psr-4": {
