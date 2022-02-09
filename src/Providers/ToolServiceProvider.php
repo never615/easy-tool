@@ -136,6 +136,9 @@ class ToolServiceProvider extends ServiceProvider
     }
 
 
+    /**
+     * 移动到了AuthServiceProvider处理，配合配置到laravels每次请求重置
+     */
     private function authBoot()
     {
         Passport::tokensExpireIn(now()->addDays(2));
