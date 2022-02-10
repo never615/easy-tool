@@ -56,7 +56,8 @@ class Handler extends ExceptionHandler
         \League\OAuth2\Server\Exception\OAuthServerException::class,
         QueryException::class,
         MaxAttemptsExceededException::class,
-        RedisException::class
+        RedisException::class,
+        \Mallto\Tool\Exception\HttpException::class,
     ];
 
 
