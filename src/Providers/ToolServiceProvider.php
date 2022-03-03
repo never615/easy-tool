@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
+use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Commands\TokenCheckCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
@@ -57,7 +58,7 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\ResetTableIdSeqCommand',
         RedisDelPrefixCommand::class,
         TokenCheckCommand::class,
-
+        CreateTableIdSeqCommand::class
     ];
 
     /**
