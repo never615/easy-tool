@@ -34,7 +34,8 @@
         "codingyu/ueditor": "dev-develop",
         "laravel/passport": "^7.0",
         "lcobucci/jwt": "3.3.0",
-        "smartins/passport-multiauth": "^4.0"
+        "smartins/passport-multiauth": "^4.0",
+        "qiniu/php-sdk": "7.2"
     },
     "autoload": {
         "psr-4": {
