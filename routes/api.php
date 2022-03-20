@@ -57,7 +57,7 @@ Route::group($attributes, function ($router) {
         /**
          * 需要经过签名校验
          */
-        Route::group([ 'middleware' => [ 'authSign' ] ], function () {
+        Route::group([ 'middleware' => [ 'authSign_referrer' ] ], function () {
 
         });
 
