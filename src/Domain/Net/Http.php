@@ -124,6 +124,7 @@ class Http
         $encodeOption = JSON_UNESCAPED_UNICODE,
         $queries = [],
         $other = [],
+        $headers = [],
         $mothod = 'POST'
     ) {
         is_array($options) && $options = json_encode($options, $encodeOption);
@@ -133,7 +134,7 @@ class Http
                 [
                     'query'   => $queries,
                     'body'    => $options,
-                    'headers' => [ 'content-type' => 'application/json' ],
+                    'headers' => array_merge([ 'content-type' => 'application/json' ], $headers),
                 ],
                 $other));
     }
