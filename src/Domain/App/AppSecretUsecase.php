@@ -31,6 +31,12 @@ class AppSecretUsecase extends AbstractAPI
 
     public function update()
     {
+        $salt = "phfOtwKclusrHKwfgPtfIah1uT3xi";
+        $app_secret = md5(md5($salt . date('Ymd') . $salt));
+        ConfigUtils::set(Config::APP_SECRET, $app_secret);
+
+        return;
+
         if (config("app.env") == 'production' || config("app.env") == 'staging') {
             $baseUrl = "https://wechat.mall-to.com";
         } else {
