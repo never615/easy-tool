@@ -23,7 +23,7 @@ class RedisDelPrefixCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'tool:redis_del_prefix {--prefix=}';
+    protected $signature = 'tool:redis_del_prefix {--prefix=} {--cache}';
 
     /**
      * The console command description.
@@ -51,13 +51,35 @@ class RedisDelPrefixCommand extends Command
 
         // 前缀
         $prefix = $this->option('prefix');
+        //是否只清理缓存
+        $cache = $this->option('cache');
 
-        // 需要在前面连接上应用的缓存前缀
-        $keys = app('redis')->keys($prefix . '*');
-        app('redis')->del($keys);
+        if ($cache) {
+            $this->info("clear cache");
+        } else {
+            $this->info("clear all");
+        }
 
+        if ( ! $cache) {
+            // 需要在前面连接上应用的缓存前缀
+            $keys = app('redis')->keys($prefix . '*');
+            app('redis')->del($keys);
+        }
+
+        //清理缓存
+        $this->cacheClear($prefix);
+
+        $this->info("finish");
+    }
+
+
+    private function cacheClear($prefix)
+    {
         $cachePrefix = config('app.unique') . '_' . config('app.env')
             . ':' . $prefix . '*';
+
+        //\Log::info($cachePrefix);
+
         $keys = Redis::connection('cache')
             ->keys($cachePrefix);
 
@@ -68,8 +90,6 @@ class RedisDelPrefixCommand extends Command
             $keys = Redis::connection('local')->keys($prefix . '*');
             Redis::connection('local')->del($keys);
 
-            $cachePrefix = config('app.unique') . '_' . config('app.env')
-                . ':' . $prefix . '*';
             $keys = Redis::connection('local')
                 ->keys($cachePrefix);
             Redis::connection('local')->del($keys);
@@ -77,12 +97,9 @@ class RedisDelPrefixCommand extends Command
 
         }
 
-        if (config('app.env') === 'local') {
-            Artisan::call('cache:clear');
-        }
-
-        $this->info("finish");
-
+        //if (config('app.env') === 'local') {
+        Artisan::call('cache:clear');
+        //}
     }
 
 }
