@@ -63,7 +63,9 @@ class RedisDelPrefixCommand extends Command
         if ( ! $cache) {
             // 需要在前面连接上应用的缓存前缀
             $keys = app('redis')->keys($prefix . '*');
-            app('redis')->del($keys);
+            if ( ! empty($keys)) {
+                app('redis')->del($keys);
+            }
         }
 
         //清理缓存
@@ -88,11 +90,15 @@ class RedisDelPrefixCommand extends Command
         try {
             //本地数据库
             $keys = Redis::connection('local')->keys($prefix . '*');
-            Redis::connection('local')->del($keys);
+            if ( ! empty($keys)) {
+                Redis::connection('local')->del($keys);
+            }
 
             $keys = Redis::connection('local')
                 ->keys($cachePrefix);
-            Redis::connection('local')->del($keys);
+            if ( ! empty($keys)) {
+                Redis::connection('local')->del($keys);
+            }
         } catch (\Exception $exception) {
 
         }
