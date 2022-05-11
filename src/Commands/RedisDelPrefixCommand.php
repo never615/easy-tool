@@ -85,7 +85,9 @@ class RedisDelPrefixCommand extends Command
         $keys = Redis::connection('cache')
             ->keys($cachePrefix);
 
-        Redis::connection('cache')->del($keys);
+        if ( ! empty($keys)) {
+            Redis::connection('cache')->del($keys);
+        }
 
         try {
             //本地数据库
