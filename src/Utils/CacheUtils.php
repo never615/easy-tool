@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Utils;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -24,6 +23,8 @@ class CacheUtils
         $keys = Redis::connection('cache')
             ->keys($cachePrefix);
 
-        Redis::connection('cache')->del($keys);
+        if ($keys) {
+            Redis::connection('cache')->del($keys);
+        }
     }
 }

@@ -524,4 +524,39 @@ class AppUtils
         return $count;
     }
 
+
+    /**
+     * 获取校验码
+     *
+     * @param $data
+     *
+     * @return string|void
+     */
+    public static function getCheckCode($data)
+    {
+        if ($data) {
+            $arr = [];
+            $arr = str_split($data, 2);
+            $result = 0;
+            for ($i = 0; $i < count($arr); $i++) {
+                $result = $result + hexdec($arr[$i]);
+            }
+            //$result = strtoupper('0' . dechex($result)); //转换成大写
+            $result = strtolower('0' . dechex($result)); //转换成大写
+
+            return $result;
+        }
+    }
+
+
+    /**
+     * 获取毫秒时间戳
+     *
+     * @return int
+     */
+    public static function getMicroTimestamp()
+    {
+        return (int) (microtime(true) * 1000);
+    }
+
 }
