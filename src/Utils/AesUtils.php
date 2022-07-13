@@ -10,6 +10,8 @@ use Mallto\Tool\Exception\ResourceException;
 /**
  * 微信AES加密工具类
  *
+ * @deprecated
+ *
  * Class AesUtils
  *
  * @package Mallto\Tool\Utils
