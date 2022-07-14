@@ -79,6 +79,8 @@ class RequestCheck
                     throw new HttpException(401, 'token失效');
                 }
             }
+        } catch (HttpException $httpException) {
+            throw $httpException;
         } catch (\Exception $exception) {
             \Log::error('token 过期校验 error');
             \Log::warning($exception);
