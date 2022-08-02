@@ -147,7 +147,8 @@ class AdController extends AdminCommonController
                 ->uniqueName()
                 ->addElementClass2("mt-ad-images")
                 ->move(('ads/images' . $this->currentId) ?: 0)
-                ->help("建议尺寸:690*344");
+                ->help('默认建议尺寸:690*344</br>
+                        积分商城建议尺寸:420*172');
 
             $form->text("link", "跳转链接")
                 ->addElementClass2("mt-ad-images")
