@@ -8,6 +8,8 @@ namespace Mallto\Tool\Domain\Log;
 use Aliyun\SLS\Client;
 use Aliyun\SLS\Models\LogItem;
 use Aliyun\SLS\Models\PutLogsRequest;
+use Mallto\Admin\Data\Menu;
+use Mallto\Admin\Data\OperationLog;
 
 /**
  * Created by PhpStorm.
@@ -38,6 +40,8 @@ class LoggerAliyun implements Logger
 
     private $switch = false;
 
+    private $switch_database_operation_log = false;
+
 
     /**
      * LoggerAliyun constructor.
@@ -50,7 +54,7 @@ class LoggerAliyun implements Logger
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n") ?: "cli";
         $this->localIp = $_SERVER['SERVER_ADDR'] ?? "";
-
+        $this->switch_database_operation_log = config("app.switch_database_operation_log",false);
     }
 
 
@@ -155,6 +159,52 @@ class LoggerAliyun implements Logger
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source,
             $logitems);
         try {
+            //写入数据库
+            if($this->switch_database_operation_log)
+            {
+                //判断增删改查
+                if ($log['method'] === 'GET') {
+                    $method = '获取';
+                    if (strpos($log['path'], 'create') !== false) {
+                        $method = '创建';
+                    }
+                    if (strpos($log['path'], 'edit') !== false) {
+                        $method = '编辑';
+                    }
+                } elseif ($log['method'] === 'POST') {
+                    $method = '保存';
+                } elseif ($log['method'] === 'PUT') {
+                    $method = '更新';
+                } elseif ($log['method'] === 'DELETE') {
+                    $method = '删除';
+                }
+
+                //判断菜单
+                $arrPath = explode('/',$log['path']);
+                $countPath = count($arrPath);
+                $likePath = $arrPath[1] ?? null;
+                if($countPath >= 3)
+                {
+                    if(strpos($log['path'], 'auth') || strpos($log['path'], 'statistics'))
+                    {
+                        $likePath = $arrPath[2];
+                    }
+                }
+                $path = Menu::query()->where('uri','like','%'.$likePath.'%')->first()->title ?? null;
+
+                if($path)
+                {
+                    $operationLog['method'] = $method;
+                    $operationLog['path'] = $path;
+                    $operationLog['user_id'] = $log['user_id'];
+                    $operationLog['ip'] = $log['request_ip'];
+                    $operationLog['subject_id'] = $log['subject_id'];
+                    $operationLog['input'] = $log['input'];
+                    //判断模块
+                    OperationLog::create($operationLog);
+                }
+            }
+
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
             \Log::warning("阿里日志 logAdminOperation");
