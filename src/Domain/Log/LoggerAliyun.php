@@ -160,56 +160,22 @@ class LoggerAliyun implements Logger
             $logitems);
         try {
             //写入数据库
-            if($this->switch_database_operation_log)
-            {
-                //判断增删改查
-                if ($log['method'] === 'GET') {
-                    $method = '获取';
-                    if (strpos($log['path'], 'create') !== false) {
-                        $method = '创建';
-                    }
-                    if (strpos($log['path'], 'edit') !== false) {
-                        $method = '编辑';
-                    }
-                } elseif ($log['method'] === 'POST') {
-                    $method = '保存';
-                } elseif ($log['method'] === 'PUT') {
-                    $method = '更新';
-                } elseif ($log['method'] === 'DELETE') {
-                    $method = '删除';
-                }
-
-                //判断菜单
-                $arrPath = explode('/',$log['path']);
-                $countPath = count($arrPath);
-                $likePath = $arrPath[1] ?? null;
-                if($countPath >= 3)
-                {
-                    if(strpos($log['path'], 'auth') || strpos($log['path'], 'statistics'))
-                    {
-                        $likePath = $arrPath[2];
-                    }
-                }
-                $path = Menu::query()->where('uri','like','%'.$likePath.'%')->first()->title ?? null;
-
-                if($path)
-                {
-                    $operationLog['method'] = $method;
-                    $operationLog['path'] = $path;
-                    $operationLog['user_id'] = $log['user_id'];
-                    $operationLog['ip'] = $log['request_ip'];
-                    $operationLog['subject_id'] = $log['subject_id'];
-                    $operationLog['input'] = $log['input'];
-                    //判断模块
-                    OperationLog::create($operationLog);
-                }
+            if ($this->switch_database_operation_log) {
+                $operationLog['method'] = $log['method'];
+                $operationLog['path'] = $log['path'];
+                $operationLog['user_id'] = $log['user_id'];
+                $operationLog['ip'] = $log['request_ip'];
+                $operationLog['subject_id'] = $log['subject_id'];
+                $operationLog['input'] = $log['input'];
+                //判断模块
+                OperationLog::create($operationLog);
             }
 
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
             \Log::warning("阿里日志 logAdminOperation");
             \Log::warning($exception);
-            \Log::warning($log['path']??null);
+            \Log::warning($log['path'] ?? null);
         }
     }
 
