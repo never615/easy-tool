@@ -118,6 +118,25 @@ class StringUtils
 
 
     /**
+     * 解析16进制数据为GBK编码的字符串
+     *
+     * @param $hex
+     *
+     * @return string
+     */
+    public static function hex2GBKString($hex)
+    {
+        $string = '';
+        for ($i = 0; $i < strlen($hex) - 1; $i += 2) {
+            $string .= chr(hexdec($hex[$i] . $hex[$i + 1]));
+        }
+
+        $string = iconv("GBK","utf-8", $string);
+        return $string;
+    }
+
+
+    /**
      * 十进制转十六进制函数
      *
      * @pream string $str;
