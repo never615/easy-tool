@@ -81,10 +81,6 @@ Route::group($attributes, function ($router) {
 //DummyRoutePlaceholder
 //卡券短信管理
                         Route::resource("coupon_sms_templates", 'CouponSmsTemplateController');
-
-                        //操作日志字典
-                        Route::resource("operation_log_dictionarys", 'OperationLogDictionaryController');
-                        Route::resource("auth/logs", 'OperationLogController');
                     });
 
 
