@@ -131,8 +131,22 @@ class StringUtils
             $string .= chr(hexdec($hex[$i] . $hex[$i + 1]));
         }
 
-        $string = iconv("GBK","utf-8", $string);
+        $string = iconv("GBK", "utf-8", $string);
+
         return $string;
+    }
+
+
+    public static function gbkString2Hex($string)
+    {
+        $string = iconv("utf-8", "GBK", $string);
+
+        $hex = '';
+        for ($i = 0, $iMax = strlen($string); $i < $iMax; $i++) {
+            $hex .= dechex(ord($string[$i]));
+        }
+
+        return $hex;
     }
 
 
