@@ -42,7 +42,6 @@ class LoggerAliyun implements Logger
 
     private $switch_database_operation_log = false;
 
-
     /**
      * LoggerAliyun constructor.
      */
@@ -159,16 +158,10 @@ class LoggerAliyun implements Logger
         $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source,
             $logitems);
         try {
-            //写入数据库
-            if ($this->switch_database_operation_log) {
-                $operationLog['method'] = $log['method'];
-                $operationLog['path'] = $log['path'];
-                $operationLog['user_id'] = $log['user_id'];
-                $operationLog['ip'] = $log['request_ip'];
-                $operationLog['subject_id'] = $log['subject_id'];
-                $operationLog['input'] = $log['input'];
-                //判断模块
-                OperationLog::create($operationLog);
+            if($this->switch_database_operation_log){
+                //写入数据库
+                $loggerDb = app(LoggerDb::class);
+                $loggerDb->logAdminOperation($log);
             }
 
             $res2 = $this->client->putLogs($req2);

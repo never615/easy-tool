@@ -34,7 +34,5 @@ class ApiPvManagerMenuSeeder extends Seeder
 
         $this->updateOrCreate(
             "api_pv_managers.index", $parentId, $order++, "api pv管理", "fa-line-chart");
-        $this->updateOrCreate(
-            "operation_log_dictionarys.index", $parentId, $order++, "操作日志字典", "fa-line-chart");
     }
 }
