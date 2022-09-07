@@ -24,9 +24,11 @@ class ClearCacheUsecase
      *
      * @return void
      */
-    public function clearCache($cache = false, $prefix = '')
+    public function clearCache($cache = true, $prefix = '')
     {
         if ( ! $cache) {
+            \Log::warning('clear all');
+
             // 需要在前面连接上应用的缓存前缀
             $keys = app('redis')->keys($prefix . '*');
 
@@ -49,11 +51,6 @@ class ClearCacheUsecase
 
         try {
             //本地数据库
-            $keys = Redis::connection('local')->keys($prefix . '*');
-            if ( ! empty($keys)) {
-                Redis::connection('local')->del($keys);
-            }
-
             $keys = Redis::connection('local')
                 ->keys($cachePrefix);
             if ( ! empty($keys)) {
