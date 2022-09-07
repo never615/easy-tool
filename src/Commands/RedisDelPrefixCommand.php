@@ -22,7 +22,7 @@ class RedisDelPrefixCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'tool:redis_del_prefix {--prefix=} {--cache}';
+    protected $signature = 'tool:redis_del_prefix {--prefix=} {--cache=true}';
 
     /**
      * The console command description.
