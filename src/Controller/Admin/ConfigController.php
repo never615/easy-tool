@@ -63,7 +63,7 @@ class ConfigController extends AdminCommonController
 
         $form->saved(function (Form $form) {
             $key = $form->key;
-            Cache::store('memory')->delete('c_' . $key);
+            Cache::delete('c_' . $key);
         });
     }
 

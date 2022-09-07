@@ -50,7 +50,7 @@ class ConfigUtils
      */
     public static function get($key, $default = null, $type = null)
     {
-        $value = Cache::store('memory')->get('c_' . $key);
+        $value = Cache::get('c_' . $key,);
         if (is_null($value)) {
             $query = Config::where("key", $key);
             if ($type) {
@@ -59,18 +59,18 @@ class ConfigUtils
             $config = $query->first();
             if ($config) {
                 $value = $config->value;
-                Cache::store('memory')->put('c_' . $key, $value, Carbon::now()->endOfDay());
             } else {
                 if (isset($default)) {
                     $value = $default;
                 } else {
-                    return null;
-                    //throw new ResourceException($key . "未配置");
+                    $value = '';
                 }
             }
+
+            Cache::put('c_' . $key, $value, Carbon::now()->endOfDay());
         }
 
-        return $value;
+        return $value ?? $default ?? null;
     }
 
 

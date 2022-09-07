@@ -13,7 +13,6 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\MaxAttemptsExceededException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
@@ -58,7 +57,7 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\ResetTableIdSeqCommand',
         RedisDelPrefixCommand::class,
         TokenCheckCommand::class,
-        CreateTableIdSeqCommand::class
+        CreateTableIdSeqCommand::class,
     ];
 
     /**
@@ -103,27 +102,6 @@ class ToolServiceProvider extends ServiceProvider
             $this->publishes([ __DIR__ . '/../../resources/errors_view' => resource_path('views/errors') ],
                 'error-views');
         }
-
-        if ( ! \config('cache.stores.memory')) {
-            config([
-                'cache.stores.memory' => [
-                    'driver'     => 'memory',
-                    'connection' => 'cache',
-                ],
-            ]);
-        }
-
-        Cache::extend('memory', function ($app) {
-            if (\config('cache.default') === 'redis') {
-                if ( ! empty(\config('database.redis.local.host'))) {
-                    return Cache::store('local_redis');
-                } else {
-                    return Cache::store('redis');
-                }
-            } else {
-                return Cache::store('file');
-            }
-        });
 
         $this->appBoot();
         $this->routeBoot();

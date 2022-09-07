@@ -6,7 +6,7 @@
 namespace Mallto\Tool\Domain\App;
 
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * User: never615 <never615.com>
@@ -26,40 +26,25 @@ class ClearCacheUsecase
      */
     public function clearCache($cache = true, $prefix = '')
     {
-        if ( ! $cache) {
-            \Log::warning('clear all');
+        if ($prefix) {
+            Cache::
+        } else {
+            if ( ! $cache) {
+                \Log::warning('clear all');
+                //清理默认 redis,存储的 session horizon
+                app('redis')->flush();
 
-            // 需要在前面连接上应用的缓存前缀
-            $keys = app('redis')->keys($prefix . '*');
-
-            if ( ! empty($keys)) {
-                app('redis')->del($keys);
+                //keys 操作大量数据的时候会卡死一下
+                //$keys = app('redis')->keys('*');
+                //
+                //if ( ! empty($keys)) {
+                //    app('redis')->del($keys);
+                //}
             }
+
+            //正常情况下只清理缓存库
+            Artisan::call('cache:clear');
+            Artisan::call('cache:clear remote_redis');
         }
-
-        $cachePrefix = config('app.unique') . '_' . config('app.env')
-            . ':' . $prefix . '*';
-
-        //\Log::info($cachePrefix);
-
-        $keys = Redis::connection('cache')
-            ->keys($cachePrefix);
-
-        if ( ! empty($keys)) {
-            Redis::connection('cache')->del($keys);
-        }
-
-        try {
-            //本地数据库
-            $keys = Redis::connection('local')
-                ->keys($cachePrefix);
-            if ( ! empty($keys)) {
-                Redis::connection('local')->del($keys);
-            }
-        } catch (\Exception $exception) {
-
-        }
-
-        Artisan::call('cache:clear');
     }
 }
