@@ -6,8 +6,7 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Redis;
+use Mallto\Tool\Domain\App\ClearCacheUsecase;
 
 /**
  * 重设表的自增序列
@@ -60,55 +59,10 @@ class RedisDelPrefixCommand extends Command
             $this->info("clear all");
         }
 
-        if ( ! $cache) {
-            // 需要在前面连接上应用的缓存前缀
-            $keys = app('redis')->keys($prefix . '*');
-            if ( ! empty($keys)) {
-                app('redis')->del($keys);
-            }
-        }
-
-        //清理缓存
-        $this->cacheClear($prefix);
+        $clearCacheUsecase = app(ClearCacheUsecase::class);
+        $clearCacheUsecase->clearCache($cache, $prefix);
 
         $this->info("finish");
-    }
-
-
-    private function cacheClear($prefix)
-    {
-        $cachePrefix = config('app.unique') . '_' . config('app.env')
-            . ':' . $prefix . '*';
-
-        //\Log::info($cachePrefix);
-
-        $keys = Redis::connection('cache')
-            ->keys($cachePrefix);
-
-
-        if ( ! empty($keys)) {
-            Redis::connection('cache')->del($keys);
-        }
-
-        try {
-            //本地数据库
-            $keys = Redis::connection('local')->keys($prefix . '*');
-            if ( ! empty($keys)) {
-                Redis::connection('local')->del($keys);
-            }
-
-            $keys = Redis::connection('local')
-                ->keys($cachePrefix);
-            if ( ! empty($keys)) {
-                Redis::connection('local')->del($keys);
-            }
-        } catch (\Exception $exception) {
-
-        }
-
-        //if (config('app.env') === 'local') {
-        Artisan::call('cache:clear');
-        //}
     }
 
 }
