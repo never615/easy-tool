@@ -6,7 +6,7 @@
 namespace Mallto\Tool\Domain\App;
 
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * User: never615 <never615.com>
@@ -27,7 +27,21 @@ class ClearCacheUsecase
     public function clearCache($cache = true, $prefix = '')
     {
         if ($prefix) {
-            Cache::
+            // 需要在前面连接上应用的缓存前缀
+            $prefix = config('cache.prefix') . ':' . $prefix . '*';
+            $keys = Redis::connection('cache')
+                ->keys($prefix);
+
+            if ( ! empty($keys)) {
+                Redis::connection('cache')->del($keys);
+            }
+
+            $keys = Redis::connection('remote_cache')
+                ->keys($prefix);
+
+            if ( ! empty($keys)) {
+                Redis::connection('remote_cache')->del($keys);
+            }
         } else {
             if ( ! $cache) {
                 \Log::warning('clear all');
