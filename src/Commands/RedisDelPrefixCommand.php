@@ -22,7 +22,7 @@ class RedisDelPrefixCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'tool:redis_del_prefix {--prefix=} {--cache=true}';
+    protected $signature = 'tool:redis_del_prefix {--prefix=} {--cache=1}';
 
     /**
      * The console command description.
@@ -52,7 +52,6 @@ class RedisDelPrefixCommand extends Command
         $prefix = $this->option('prefix');
         //是否只清理缓存
         $cache = $this->option('cache');
-
         if ($cache) {
             $this->info("clear cache");
         } else {
