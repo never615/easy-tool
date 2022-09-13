@@ -26,39 +26,42 @@ class ClearCacheUsecase
      */
     public function clearCache($cache = true, $prefix = '')
     {
-        if ($prefix) {
-            // 需要在前面连接上应用的缓存前缀
-            $prefix = config('cache.prefix') . ':' . $prefix . '*';
-            $keys = Redis::connection('cache')
-                ->keys($prefix);
 
-            if ( ! empty($keys)) {
-                Redis::connection('cache')->del($keys);
+        //正常情况下只清理缓存库
+        Artisan::call('cache:clear');
+        Artisan::call('cache:clear local_redis');
+
+        if (config('cache.default') === 'redis') {
+            if ($prefix) {
+                // 需要在前面连接上应用的缓存前缀
+                $prefix = config('cache.prefix') . ':' . $prefix . '*';
+                $keys = Redis::connection('local_cache')
+                    ->keys($prefix);
+
+                if ( ! empty($keys)) {
+                    Redis::connection('local_cache')->del($keys);
+                }
+
+                $keys = Redis::connection('cache')
+                    ->keys($prefix);
+
+                if ( ! empty($keys)) {
+                    Redis::del($keys);
+                }
+            } else {
+                if ( ! $cache) {
+                    \Log::warning('clear all');
+                    //清理默认 redis,存储的 session horizon
+                    app('redis')->flushdb();
+
+                    //keys 操作大量数据的时候会卡死一下
+                    //$keys = app('redis')->keys('*');
+                    //
+                    //if ( ! empty($keys)) {
+                    //    app('redis')->del($keys);
+                    //}
+                }
             }
-
-            $keys = Redis::connection('remote_cache')
-                ->keys($prefix);
-
-            if ( ! empty($keys)) {
-                Redis::connection('remote_cache')->del($keys);
-            }
-        } else {
-            if ( ! $cache) {
-                \Log::warning('clear all');
-                //清理默认 redis,存储的 session horizon
-                app('redis')->flushdb();
-
-                //keys 操作大量数据的时候会卡死一下
-                //$keys = app('redis')->keys('*');
-                //
-                //if ( ! empty($keys)) {
-                //    app('redis')->del($keys);
-                //}
-            }
-
-            //正常情况下只清理缓存库
-            Artisan::call('cache:clear');
-            Artisan::call('cache:clear remote_redis');
         }
     }
 }

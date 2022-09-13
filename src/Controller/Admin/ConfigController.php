@@ -7,6 +7,7 @@ use Encore\Admin\Grid;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Config;
+use Mallto\Tool\Domain\App\ClearCacheUsecase;
 
 class ConfigController extends AdminCommonController
 {
@@ -63,7 +64,8 @@ class ConfigController extends AdminCommonController
 
         $form->saved(function (Form $form) {
             $key = $form->key;
-            Cache::delete('c_' . $key);
+            $clearCache=app(ClearCacheUsecase::class);
+            $clearCache->clearCache();
         });
     }
 

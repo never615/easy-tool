@@ -50,7 +50,7 @@ class ConfigUtils
      */
     public static function get($key, $default = null, $type = null)
     {
-        $value = Cache::get('c_' . $key,);
+        $value = Cache::store('local_redis')->get('c_' . $key,);
         if (is_null($value)) {
             $query = Config::where("key", $key);
             if ($type) {
@@ -67,7 +67,7 @@ class ConfigUtils
                 }
             }
 
-            Cache::put('c_' . $key, $value, Carbon::now()->endOfDay());
+            Cache::store('local_redis')->put('c_' . $key, $value, Carbon::now()->endOfDay());
         }
 
         return $value ?? $default ?? null;
