@@ -36,7 +36,6 @@ use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\AuthenticateSignWithReferrer;
-use Mallto\Tool\Middleware\AutoThirdPermissionMiddleware;
 use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
