@@ -21,10 +21,19 @@ interface Sms
      * @param $smsSign         string 短信签名
      * @param $smsTemplateCode string 模板号
      * @param $templateParam   array 模板参数
+     * @param $subjectId       integer 主体ID
+     * @param $content         string 短信内容
      *
      * @return mixed
      */
-    public function sendSms($mobile, $smsSign, $smsTemplateCode, $templateParam);
+    public function sendSms(
+        $mobile,
+        $smsTemplateCode,
+        $templateParam,
+        $smsSign = null,
+        $subjectId = null,
+        $content = null
+    );
 
 
     /**

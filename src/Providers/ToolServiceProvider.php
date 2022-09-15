@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
+use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
+use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Commands\TokenCheckCommand;
@@ -29,8 +31,6 @@ use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
-use Mallto\Tool\Domain\Sms\AliyunSms;
-use Mallto\Tool\Domain\Sms\Sms;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
@@ -101,6 +101,9 @@ class ToolServiceProvider extends ServiceProvider
             $this->publishes([ __DIR__ . '/../../resources/errors_view' => resource_path('views/errors') ],
                 'error-views');
         }
+
+        AdminE::extendSubjectConfigClass(SubjectConfigExtend::class);
+        AdminE::extendSubjectSettingClass(SubjectSettingExtend::class);
 
         $this->appBoot();
         $this->routeBoot();
@@ -289,7 +292,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->registerMail();
 
         $this->app->singleton(Logger::class, config('mall.logger', LoggerAliyun::class));
-        $this->app->singleton(Sms::class, AliyunSms::class);
+        //$this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
     }
