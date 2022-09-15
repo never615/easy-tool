@@ -47,7 +47,7 @@ class DynamicInject
     {
         if ($subjectId) {
             $operatorSlug = SubjectSettingUtils::getSubjectSetting(SubjectConfigConstants::SMS_SYSTEM,
-                $subjectId);
+                $subjectId,'aliyun');
             switch ($operatorSlug) {
                 case 'aliyun':
                     $operator = resolve(AliyunSms::class);
