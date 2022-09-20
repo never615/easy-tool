@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
+use Mallto\Tool\Commands\ClearCacheCommand;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Commands\TokenCheckCommand;
@@ -57,6 +58,7 @@ class ToolServiceProvider extends ServiceProvider
         RedisDelPrefixCommand::class,
         TokenCheckCommand::class,
         CreateTableIdSeqCommand::class,
+        ClearCacheCommand::class
     ];
 
     /**

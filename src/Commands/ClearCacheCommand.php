@@ -22,7 +22,7 @@ class ClearCacheCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'tool: clear_cache';
+    protected $signature = 'tool:clear_cache';
 
     /**
      * The console command description.
