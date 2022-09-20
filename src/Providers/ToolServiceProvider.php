@@ -21,12 +21,12 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
-use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
-use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Commands\TokenCheckCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
+use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
+use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
@@ -376,6 +376,20 @@ class ToolServiceProvider extends ServiceProvider
                 ->after(function () {
                     dispatch(new LogJob("logSchedule",
                         [ "slug" => "token_check", "status" => "finish" ]));
+                });
+
+            $schedule->command('tool:clear_cache')
+                ->name("clear_cache")
+                ->everyFiveMinutes()
+                ->runInBackground()
+                ->withoutOverlapping()
+                ->before(function () {
+                    dispatch(new LogJob("logSchedule",
+                        [ "slug" => "clear_cache", "status" => "start" ]));
+                })
+                ->after(function () {
+                    dispatch(new LogJob("logSchedule",
+                        [ "slug" => "clear_cache", "status" => "finish" ]));
                 });
         });
     }

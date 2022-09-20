@@ -6,14 +6,15 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Domain\App\ClearCacheUsecase;
 
 /**
- * Class RedisDelPrefixCommand
+ * 清理缓存
  *
  * @package Mallto\Tool\Commands
  */
-class RedisDelPrefixCommand extends Command
+class ClearCacheCommand extends Command
 {
 
     /**
@@ -21,14 +22,14 @@ class RedisDelPrefixCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'tool:redis_del_prefix {--prefix=} {--cache=1}';
+    protected $signature = 'tool: clear_cache';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = '删除指定开头的key';
+    protected $description = '清理缓存';
 
     /**
      * Install directory.
@@ -47,18 +48,12 @@ class RedisDelPrefixCommand extends Command
     {
         $this->info("start");
 
-        // 前缀
-        $prefix = $this->option('prefix');
-        //是否只清理缓存
-        $cache = $this->option('cache');
-        if ($cache) {
-            $this->info("clear cache");
-        } else {
-            $this->info("clear all");
+        //查询redis 是否有清理任务
+        $isClearCache = Cache::get('clear_cache_task');
+        if ($isClearCache === 1) {
+            $clearCacheUsecase = app(ClearCacheUsecase::class);
+            $clearCacheUsecase->clearCache();
         }
-
-        $clearCacheUsecase = app(ClearCacheUsecase::class);
-        $clearCacheUsecase->clearCache($cache, $prefix);
 
         $this->info("finish");
     }
