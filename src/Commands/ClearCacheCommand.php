@@ -6,8 +6,8 @@
 namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
-use Mallto\Tool\Domain\App\ClearCacheUsecase;
 
 /**
  * 清理缓存
@@ -51,8 +51,9 @@ class ClearCacheCommand extends Command
         //查询redis 是否有清理任务
         $isClearCache = Cache::get('clear_cache_task');
         if ($isClearCache === 1) {
-            $clearCacheUsecase = app(ClearCacheUsecase::class);
-            $clearCacheUsecase->clearCache();
+            //正常情况下只清理缓存库
+            Artisan::call('cache:clear');
+            Artisan::call('cache:clear local_redis');
         }
 
         $this->info("finish");
