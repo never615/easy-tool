@@ -50,9 +50,9 @@ class ClearCacheCommand extends Command
 
         //查询redis 是否有清理任务
         $isClearCache = Cache::get('clear_cache_task');
-        \Log::warning('clear cache by schedule', [ $isClearCache ]);
 
         if ($isClearCache === 'clear_cache_task') {
+            \Log::warning('clear cache by schedule', [ $isClearCache ]);
             //正常情况下只清理缓存库
             Artisan::call('cache:clear local_redis');
         }

@@ -58,7 +58,7 @@ class ToolServiceProvider extends ServiceProvider
         RedisDelPrefixCommand::class,
         TokenCheckCommand::class,
         CreateTableIdSeqCommand::class,
-        ClearCacheCommand::class
+        ClearCacheCommand::class,
     ];
 
     /**
@@ -379,6 +379,8 @@ class ToolServiceProvider extends ServiceProvider
                     dispatch(new LogJob("logSchedule",
                         [ "slug" => "token_check", "status" => "finish" ]));
                 });
+
+            $schedule = $this->app->make(Schedule::class);
 
             $schedule->command('tool:clear_cache')
                 ->name("clear_cache")
