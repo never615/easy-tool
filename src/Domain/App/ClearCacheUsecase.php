@@ -30,8 +30,6 @@ class ClearCacheUsecase
     {
         \Log::warning('clear cache', [ $cache, $prefix ]);
 
-        //添加清理任务到缓存中,用于多服务器清理缓存,每5分钟所有服务器检查一次是否需要有清理缓存的任务
-        Cache::put('clear_cache_task', "clear_cache_task", Carbon::now()->addMinutes(7));
 
         //正常情况下只清理缓存库
         Artisan::call('cache:clear');
@@ -69,5 +67,9 @@ class ClearCacheUsecase
                 }
             }
         }
+
+
+        //添加清理任务到缓存中,用于多服务器清理缓存,每5分钟所有服务器检查一次是否需要有清理缓存的任务
+        Cache::put('clear_cache_task', "clear_cache_task", Carbon::now()->addMinutes(7));
     }
 }

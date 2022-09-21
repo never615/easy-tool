@@ -384,7 +384,6 @@ class ToolServiceProvider extends ServiceProvider
                 ->name("clear_cache")
                 ->everyFiveMinutes()
                 ->runInBackground()
-                ->withoutOverlapping()
                 ->before(function () {
                     dispatch(new LogJob("logSchedule",
                         [ "slug" => "clear_cache", "status" => "start" ]));

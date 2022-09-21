@@ -54,7 +54,6 @@ class ClearCacheCommand extends Command
 
         if ($isClearCache === 'clear_cache_task') {
             //正常情况下只清理缓存库
-            Artisan::call('cache:clear');
             Artisan::call('cache:clear local_redis');
         }
 
