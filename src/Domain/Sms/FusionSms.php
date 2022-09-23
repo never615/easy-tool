@@ -129,7 +129,7 @@ class FusionSms extends AbstractAPI implements Sms
     private function getUrl($subjectId)
     {
         return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_URL, $subjectId,
-            '104.0.44.119:30020');
+            '104.0.44.119:30020/api/v3.0/msg/send');
     }
 
 
