@@ -12,15 +12,12 @@
 
 namespace Mallto\Tool\Domain;
 
-use Mallto\Admin\Data\SubjectSetting;
 use Mallto\Admin\Exception\SubjectNotFoundException;
 use Mallto\Admin\SubjectSettingUtils;
-use Mallto\Admin\SubjectUtils;
-use Mallto\Tool\SubjectSettingConstants;
-use Mallto\Tool\SubjectConfigConstants;
 use Mallto\Tool\Domain\Sms\AliyunSms;
 use Mallto\Tool\Domain\Sms\FusionSms;
 use Mallto\Tool\Exception\PermissionDeniedException;
+use Mallto\Tool\SubjectConfigConstants;
 
 /**
  * 动态注入
@@ -47,7 +44,7 @@ class DynamicInject
     {
         if ($subjectId) {
             $operatorSlug = SubjectSettingUtils::getSubjectSetting(SubjectConfigConstants::SMS_SYSTEM,
-                $subjectId,'aliyun');
+                $subjectId, config('other.sms_system', 'aliyun'));
             switch ($operatorSlug) {
                 case 'aliyun':
                     $operator = resolve(AliyunSms::class);

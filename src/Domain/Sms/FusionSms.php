@@ -58,7 +58,7 @@ class FusionSms extends AbstractAPI implements Sms
         $params["bizCode"] = $smsSign;
 
         //必填: 收信人列表
-        $params["toList"] = [ (string)$mobile ];
+        $params["toList"] = [ (string) $mobile ];
 
         //必填: 消息类型:0:短信
         $params["msgType"] = 0;
@@ -82,7 +82,7 @@ class FusionSms extends AbstractAPI implements Sms
         $http = $this->getHttp();
         try {
             $response = $http->request($url, 'POST', [
-                'headers' => $headers,
+                'headers'     => $headers,
                 'form_params' => $params,
             ]);
 
@@ -115,19 +115,21 @@ class FusionSms extends AbstractAPI implements Sms
 
     private function getAccount($subjectId)
     {
-        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_ACCOUNT, $subjectId);
+        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_ACCOUNT, $subjectId, 'znwx');
     }
 
 
     private function getAuthorizationCode($subjectId)
     {
-        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_AUTHORIZATION_CODE, $subjectId);
+        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_AUTHORIZATION_CODE, $subjectId,
+            'pdEKIusgG9');
     }
 
 
     private function getUrl($subjectId)
     {
-        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_URL, $subjectId);
+        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_URL, $subjectId,
+            '104.0.44.119:30020');
     }
 
 
