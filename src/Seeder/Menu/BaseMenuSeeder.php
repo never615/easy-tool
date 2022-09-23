@@ -53,7 +53,7 @@ class BaseMenuSeeder extends Seeder
             'fa-sitemap');
 
         $this->updateOrCreate(
-            "configs.index", $systemManagerMenu->id, $order++, "系统通用配置项", "fa-bullseye");
+            "configs.index", $systemManagerMenu->id, $order++, "全局配置", "fa-bullseye");
 
         $this->updateOrCreate(
             "third_logs.index", $systemManagerMenu->id, $order++, "第三方日志", "fa-history");
