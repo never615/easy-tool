@@ -25,7 +25,7 @@ class LoggerDb implements Logger
      */
     public function __construct()
     {
-        $this->switch = config("app.ali_log", true);
+        $this->switch = config("app.db_log", true);
     }
 
 
