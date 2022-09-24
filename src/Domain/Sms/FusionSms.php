@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Domain\Sms;
 
 use GuzzleHttp\Exception\ClientException;
+use Illuminate\Support\Carbon;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
@@ -55,7 +56,7 @@ class FusionSms extends AbstractAPI implements Sms
         $authorization_code = $this->getAuthorizationCode($subjectId);
 
         //必填: 业务编码
-        $params["bizCode"] = $smsSign;
+        $params["bizCode"] = $smsTemplateCode;
 
         //必填: 收信人列表
         $params["toList"] = [ (string) $mobile ];
@@ -69,12 +70,12 @@ class FusionSms extends AbstractAPI implements Sms
         //处理请求头
         $headers = [];
 
-        $time = time();
-        //验证信息:使用Base64编码（账号 + 英文冒号 + 时间戳），时间戳是当前系统时间，格式yyyyMMddHHmms
-        $headers['X-Auth'] = base64_encode($account . ':' . $time);
+        $unixTime = Carbon::now()->format('YmdHis');
+        //验证信息:使用Base64编码（账号 + 英文冒号 + 时间戳），时间戳是当前系统时间，格式yyyyMMddHHmmss
+        $headers['X-Auth'] = base64_encode($account . ':' . $unixTime);
 
         //签名信息:使用SHA1加密（账号 + 发送授权码 + 时间戳），时间戳与X-Auth中的相同
-        $headers['X-Sign'] = sha1($account . $authorization_code . $time);
+        $headers['X-Sign'] = sha1($account . $authorization_code . $unixTime);
 
         $headers['Content-Type'] = 'application/json';
         $headers['Accept'] = 'application/json';
