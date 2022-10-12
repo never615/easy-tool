@@ -80,37 +80,31 @@ class FusionSms extends AbstractAPI implements Sms
         $headers['Content-Type'] = 'application/json';
         $headers['Accept'] = 'application/json';
 
-        $http = $this->getHttp();
         try {
-            $response = $http->request($url, 'POST', [
-                'headers'     => $headers,
-                'form_params' => $params,
-            ]);
-
-            try {
-                $contents = $http->parseJson($response);
-                $this->checkAndThrow($contents);
-            } catch (ClientException $clientException) {
-                \Log::error("融合通信 client exception");
-                \Log::warning($clientException->getMessage());
-                throw new ResourceException("请重试");
-            } catch (ResourceException $resourceException) {
-                throw $resourceException;
-            } catch (\Exception $exception) {
-                \Log::error("融合通信:数据解析错误");
-                \Log::warning($exception);
-
-                return false;
-            }
+            $contents = $this->parseJSON(
+                'POST',
+                [
+                    $url,
+                    $params,
+                    [
+                        'headers' => $headers,
+                    ],
+                ]
+            );
 
             return true;
-        } catch (ClientException $exception) {
-            \Log::error("融合通信:ClientException");
+        } catch (ClientException $clientException) {
+            \Log::error("融合通信 client exception");
+            \Log::warning($clientException->getMessage());
+            throw new ResourceException("请重试");
+        } catch (ResourceException $resourceException) {
+            throw $resourceException;
+        } catch (\Exception $exception) {
+            \Log::error("融合通信:数据解析错误");
             \Log::warning($exception);
-            \Log::warning($exception->getResponse()->getBody());
-        }
 
-        return false;
+            return false;
+        }
     }
 
 
@@ -147,19 +141,19 @@ class FusionSms extends AbstractAPI implements Sms
     function checkAndThrow(
         array $contents
     ) {
-        //switch ($contents['Code']) {
-        //    case "OK":
-        //        break;
-        //    case "isv.BUSINESS_LIMIT_CONTROL":
-        //        //throw new ResourceException("一分钟内只能发送一条短信");
-        //        throw new ResourceException("今日发送短信超标，无法在发送短信");
-        //        break;
-        //    default:
-        //        \Log::warning("短信发送失败");
-        //        \Log::warning($contents);
-        //        throw new ResourceException("短信发送失败:" . $contents['Code'] . "," . $contents["Message"]);
-        //        break;
-        //}
+        switch ($contents['code']) {
+            case "0":
+                break;
+            //case "isv.BUSINESS_LIMIT_CONTROL":
+            //    //throw new ResourceException("一分钟内只能发送一条短信");
+            //    throw new ResourceException("今日发送短信超标，无法在发送短信");
+            //    break;
+            default:
+                \Log::warning("短信发送失败");
+                \Log::warning($contents);
+                throw new ResourceException("短信发送失败:" . $contents['code'] . "," . $contents["msg"]);
+                break;
+        }
     }
 
 

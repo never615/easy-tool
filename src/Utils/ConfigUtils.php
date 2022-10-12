@@ -50,7 +50,7 @@ class ConfigUtils
      */
     public static function get($key, $default = null, $type = null)
     {
-        $value = Cache::store('local_redis')->get('c_' . $key,);
+        $value = Cache::store('local_redis')->get('c_' . $key);
         if (is_null($value)) {
             $query = Config::where("key", $key);
             if ($type) {
