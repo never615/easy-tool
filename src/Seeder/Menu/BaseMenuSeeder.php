@@ -6,13 +6,13 @@
 namespace Mallto\Tool\Seeder\Menu;
 
 use Illuminate\Database\Seeder;
+use Mallto\Admin\Data\Menu;
 use Mallto\Admin\Seeder\MenuSeederMaker;
 
 class BaseMenuSeeder extends Seeder
 {
 
     use MenuSeederMaker;
-
 
     /**
      * Run the database seeds.
@@ -23,8 +23,7 @@ class BaseMenuSeeder extends Seeder
     {
         $order = 2;
 
-        $adminManagerMenu = $this->updateOrCreate(
-            "admin_manager", 0, $order++, "管理", "fa-tasks");
+        $adminManagerMenu = Menu::where("uri", "admin_manager")->first();
 
         $order = $adminManagerMenu->order;
 
