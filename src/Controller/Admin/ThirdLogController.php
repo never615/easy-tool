@@ -20,6 +20,9 @@ use Mallto\Tool\Data\ThirdApiLog;
 class ThirdLogController extends AdminCommonController
 {
 
+    protected $isDisableDelete = true;
+
+
     /**
      * 获取这个模块的标题
      *
@@ -41,7 +44,6 @@ class ThirdLogController extends AdminCommonController
         return ThirdApiLog::class;
     }
 
-
     protected function gridOption(Grid $grid)
     {
         $grid->uuid();
@@ -61,13 +63,9 @@ class ThirdLogController extends AdminCommonController
             $filter->ilike('tag');
             $filter->ilike('content');
         });
-
-
     }
-
 
     protected function formOption(Form $form)
     {
     }
-
 }
