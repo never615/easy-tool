@@ -29,7 +29,7 @@
         "overtrue/laravel-filesystem-qiniu": "^1.0",
         "overtrue/laravel-pinyin": "~3.0",
         "predis/predis": "^1.1",
-        "rap2hpoutre/laravel-log-viewer": "^1.1",
+        "rap2hpoutre/laravel-log-viewer": "^2.2.0",
         "codingyu/ueditor": "dev-develop",
         "laravel/passport": "^7.0",
         "lcobucci/jwt": "3.3.0",
