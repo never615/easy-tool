@@ -85,7 +85,7 @@ class FusionSms extends AbstractAPI implements Sms
                 'POST',
                 [
                     $url,
-                    $params,
+                    json_encode($params),
                     [
                         'headers' => $headers,
                     ],
@@ -96,6 +96,7 @@ class FusionSms extends AbstractAPI implements Sms
         } catch (ClientException $clientException) {
             \Log::error("融合通信 client exception");
             \Log::warning($clientException->getMessage());
+            \Log::warning($clientException->getResponse()->getBody());
             throw new ResourceException("请重试");
         } catch (ResourceException $resourceException) {
             throw $resourceException;
@@ -110,21 +111,35 @@ class FusionSms extends AbstractAPI implements Sms
 
     private function getAccount($subjectId)
     {
-        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_ACCOUNT, $subjectId, 'znwx');
+        if ($subjectId) {
+            return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_ACCOUNT, $subjectId,
+                'znwx');
+        } else {
+            return 'znwx';
+        }
     }
 
 
     private function getAuthorizationCode($subjectId)
     {
-        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_AUTHORIZATION_CODE, $subjectId,
-            'pdEKIusgG9');
+        if ($subjectId) {
+            return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_AUTHORIZATION_CODE,
+                $subjectId,
+                'pdEKIusgG9');
+        } else {
+            return 'pdEKIusgG9';
+        }
     }
 
 
     private function getUrl($subjectId)
     {
-        return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_URL, $subjectId,
-            '104.0.44.119:30020/api/v3.0/msg/send');
+        if ($subjectId) {
+            return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_URL, $subjectId,
+                '104.0.44.119:30020/api/v3.0/msg/sen/direct');
+        } else {
+            return '104.0.44.119:30020/api/v3.0/msg/send/direct';
+        }
     }
 
 
