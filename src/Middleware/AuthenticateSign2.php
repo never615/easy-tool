@@ -14,17 +14,8 @@
 
 namespace Mallto\Tool\Middleware;
 
-use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Mallto\Tool\Data\AppSecret;
-use Mallto\Tool\Exception\PermissionDeniedException;
-use Mallto\Tool\Exception\ResourceException;
-use Mallto\Tool\Exception\SignException;
-use Mallto\Tool\Utils\AppUtils;
-use Mallto\Tool\Utils\SignUtils;
-use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
 /**
  * 管理端权限过滤
@@ -54,9 +45,11 @@ class AuthenticateSign2
      */
     public function handle(Request $request, Closure $next)
     {
-        return $this->check($request, $next);
+        if (config('other.auth_sign')) {
+            return $next($request);
+        } else {
+            return $this->check($request, $next);
+        }
     }
-
-
 
 }
