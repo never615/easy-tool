@@ -45,11 +45,7 @@ class AuthenticateSign2
      */
     public function handle(Request $request, Closure $next)
     {
-        if (config('other.auth_sign')) {
-            return $next($request);
-        } else {
-            return $this->check($request, $next);
-        }
+        return $this->check($request, $next);
     }
 
 }

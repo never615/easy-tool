@@ -30,6 +30,10 @@ trait SignCheckTrait
 
     protected function check(Request $request, Closure $next)
     {
+        if ( ! config('other.auth_sign')) {
+            return $next($request);
+        }
+
         $appId = $request->header("app_id");
         $appSecret = AppSecret::where("app_id", $appId)->first();
 
