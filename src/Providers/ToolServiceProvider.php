@@ -102,6 +102,14 @@ class ToolServiceProvider extends ServiceProvider
             //发布view覆盖error页面
             $this->publishes([ __DIR__ . '/../../resources/errors_view' => resource_path('views/errors') ],
                 'error-views');
+
+            //发布 view 覆盖 laravel-log 的页面
+            $this->publishes([
+                __DIR__ . '/../../resources/laravel_log_view' => resource_path('views/vendor/laravel-log-viewer'),
+            ], 'laravel-log-views');
+
+            $this->publishes([ __DIR__ . '/../../resources/assets/laravel-log' => public_path('vendor/laravel-log') ],
+                'laravel-log-assets');
         }
 
         AdminE::extendSubjectConfigClass(SubjectConfigExtend::class);
