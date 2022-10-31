@@ -33,7 +33,12 @@ class ClearCacheUsecase
 
         //正常情况下只清理缓存库
         Artisan::call('cache:clear');
-        Artisan::call('cache:clear local_redis');
+        
+        try {
+            Artisan::call('cache:clear local_redis');
+        } catch (ConnectionException $connectionException) {
+            //本地 redis 库在部署的时候会清理一次缓存,但是还没启动会报错
+        }
 
         if (config('cache.default') === 'redis') {
             if ($prefix) {
