@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
+use Predis\Connection\ConnectionException;
 
 /**
  * User: never615 <never615.com>
@@ -30,7 +31,6 @@ class ClearCacheUsecase
     {
         \Log::warning('clear cache', [ $cache, $prefix ]);
 
-
         //正常情况下只清理缓存库
         Artisan::call('cache:clear');
         Artisan::call('cache:clear local_redis');
@@ -39,11 +39,16 @@ class ClearCacheUsecase
             if ($prefix) {
                 // 需要在前面连接上应用的缓存前缀
                 $prefix = config('cache.prefix') . ':' . $prefix . '*';
-                $keys = Redis::connection('local_cache')
-                    ->keys($prefix);
+                try {
+                    $keys = Redis::connection('local_cache')
+                        ->keys($prefix);
 
-                if ( ! empty($keys)) {
-                    Redis::connection('local_cache')->del($keys);
+                    if ( ! empty($keys)) {
+                        Redis::connection('local_cache')->del($keys);
+                    }
+                } catch (ConnectionException $connectionException) {
+                    //本地 redis 库在部署的时候会清理一次缓存,但是还没启动会报错
+
                 }
 
                 $keys = Redis::connection('cache')
@@ -67,7 +72,6 @@ class ClearCacheUsecase
                 }
             }
         }
-
 
         //添加清理任务到缓存中,用于多服务器清理缓存,每5分钟所有服务器检查一次是否需要有清理缓存的任务
         Cache::put('clear_cache_task', "clear_cache_task", Carbon::now()->addMinutes(7));
