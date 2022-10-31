@@ -5,8 +5,6 @@
 
 namespace Mallto\Tool\Utils;
 
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
 use RuntimeException;
@@ -438,67 +436,6 @@ class AppUtils
         }
 
         return $appSecret;
-    }
-
-
-    /**
-     * 解析openid
-     *
-     * @param $openid
-     *
-     * @return mixed|string
-     * @throws AuthenticationException
-     */
-    public static function decryptOpenid($openid)
-    {
-        if (empty($openid)) {
-            throw new AuthenticationException('openid为空,请检查微信授权或刷新重试');
-        }
-
-        try {
-            $openid = urldecode($openid);
-            $openid = decrypt($openid);
-
-            return $openid;
-        } catch (DecryptException $e) {
-            \Log::warning('解析openid失败');
-            \Log::warning($openid);
-            throw new AuthenticationException('openid解析失败,请检查微信授权或刷新重试');
-            //throw new ResourceException('openid无效');
-        }
-    }
-
-
-    /**
-     * 从原始数据中获取openid
-     *
-     * @param $orginalOpenid
-     *
-     * @return mixed
-     * @throws AuthenticationException
-     */
-    public static function getOpenidFromOriginalOpenid($orginalOpenid)
-    {
-        $openids = self::getOpenidFromOriginalOpenids($orginalOpenid);
-
-        return $openids[0];
-    }
-
-
-    /**
-     * 从原始数据中获取openid数据和时间戳
-     *
-     * @param $orginalOpenid
-     *
-     * @return array
-     * @throws AuthenticationException
-     */
-    public static function getOpenidFromOriginalOpenids($orginalOpenid)
-    {
-        $openid = self::decryptOpenid($orginalOpenid);
-
-        //数组有两个元素,第一个就是原始openid;第二个就是时间戳
-        return explode('|||', $openid);
     }
 
 

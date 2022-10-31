@@ -11,6 +11,7 @@ use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\Log;
 use Mallto\Tool\Utils\AppUtils;
 use Mallto\User\Data\UserAuth;
+use Mallto\User\Domain\OpenidUtils;
 
 /**
  * User: never615 <never615.com>
@@ -34,7 +35,7 @@ class LogController extends Controller
         $openid = null;
 
         if ($request->openid) {
-            $openid = AppUtils::getOpenidFromOriginalOpenid($request->openid);
+            $openid = OpenidUtils::decryptOpenid($request->openid);
             //查询对应的user_id
             $userAuth = UserAuth::where([
                 "subject_id"    => $subjectId,
