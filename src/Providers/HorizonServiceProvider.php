@@ -6,7 +6,6 @@
 namespace Mallto\Tool\Providers;
 
 use Encore\Admin\Facades\Admin;
-use Illuminate\Support\Facades\Gate;
 use Laravel\Horizon\Horizon;
 use Laravel\Horizon\HorizonApplicationServiceProvider;
 
@@ -19,6 +18,23 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
 {
 
     /**
+     * Bootstrap any application services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        parent::boot();
+
+        // Horizon::routeSmsNotificationsTo('15556667777');
+        // Horizon::routeMailNotificationsTo('example@example.com');
+        // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');
+
+        Horizon::night();
+    }
+
+
+    /**
      * Configure the Horizon authorization services.
      *
      * @return void
@@ -26,9 +42,10 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     protected function authorization()
     {
         Horizon::auth(function ($request) {
-            $user=Admin::user();
-            return app()->environment('local') ||
-                ( $user && $user->isOwner());
+            $user = Admin::user();
+
+            return ($user && app()->environment('integration')) ||
+                ($user && $user->isOwner());
         });
     }
 
