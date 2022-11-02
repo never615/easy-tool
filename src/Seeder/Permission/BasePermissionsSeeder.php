@@ -13,7 +13,6 @@ class BasePermissionsSeeder extends Seeder
 
     use SeederMaker;
 
-
     /**
      * Run the database seeds.
      *
@@ -23,5 +22,6 @@ class BasePermissionsSeeder extends Seeder
     public function run()
     {
         $this->createPermissions("微信模板消息管理", "wechat_template_ids");
+        $this->createPermissions("全局配置", "configs");
     }
 }

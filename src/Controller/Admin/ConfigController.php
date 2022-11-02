@@ -4,7 +4,6 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Illuminate\Support\Facades\Cache;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Domain\App\ClearCacheUsecase;
@@ -19,7 +18,7 @@ class ConfigController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "configs";
+        return "全局配置";
     }
 
 
@@ -38,10 +37,8 @@ class ConfigController extends AdminCommonController
     {
         $grid->key();
         $grid->remark()->limit(20);
-        $grid->value()->limit(20);;
+        $grid->value()->limit(20);
         $grid->type();
-
-
     }
 
 
@@ -64,7 +61,7 @@ class ConfigController extends AdminCommonController
 
         $form->saved(function (Form $form) {
             $key = $form->key;
-            $clearCache=app(ClearCacheUsecase::class);
+            $clearCache = app(ClearCacheUsecase::class);
             $clearCache->clearCache();
         });
     }
