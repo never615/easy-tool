@@ -1,23 +1,13 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
- */
-
-/**
- * Created by PhpStorm.
- * User: never615
- * Date: 07/07/2017
- * Time: 12:25 PM
+ * Copyright (c) 2022. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
  */
 
 namespace Mallto\Tool\Domain;
 
-use Mallto\Admin\Exception\SubjectNotFoundException;
-use Mallto\Admin\SubjectSettingUtils;
 use Mallto\Tool\Domain\Sms\AliyunSms;
 use Mallto\Tool\Domain\Sms\FusionSms;
 use Mallto\Tool\Exception\PermissionDeniedException;
-use Mallto\Tool\SubjectConfigConstants;
 
 /**
  * 动态注入
@@ -40,28 +30,25 @@ class DynamicInject
      *
      * @return mixed|null
      */
-    public static function makeSmsOperator($subjectId)
+    public static function makeSmsOperator()
     {
-        if ($subjectId) {
-            $operatorSlug = SubjectSettingUtils::getSubjectSetting(SubjectConfigConstants::SMS_SYSTEM,
-                $subjectId, config('other.sms_system', 'aliyun'));
+        $operatorSlug = config('other.sms_system', 'aliyun');
+        //$operatorSlug = SubjectSettingUtils::getSubjectSetting(SubjectConfigConstants::SMS_SYSTEM,
+        //    $subjectId, config('other.sms_system', 'aliyun'));
 
-            switch ($operatorSlug) {
-                case 'aliyun':
-                    $operator = resolve(AliyunSms::class);
-                    break;
-                case 'fusion':
-                    $operator = resolve(FusionSms::class);
-                    break;
-                case 'none':
-                    return null;
-                default:
-                    throw new PermissionDeniedException('无效的短信系统');
-            }
-
-            return $operator;
+        switch ($operatorSlug) {
+            case 'aliyun':
+                $operator = resolve(AliyunSms::class);
+                break;
+            case 'fusion':
+                $operator = resolve(FusionSms::class);
+                break;
+            case 'none':
+                return null;
+            default:
+                throw new PermissionDeniedException('无效的短信系统');
         }
 
-        throw new SubjectNotFoundException();
+        return $operator;
     }
 }

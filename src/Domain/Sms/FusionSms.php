@@ -7,10 +7,10 @@ namespace Mallto\Tool\Domain\Sms;
 
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Support\Carbon;
-use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\ThirdPartException;
+use Mallto\Tool\Utils\ConfigUtils;
 
 /**
  * Created by PhpStorm.
@@ -31,35 +31,34 @@ class FusionSms extends AbstractAPI implements Sms
     /**
      * 发送单条短信
      *
-     * @param $templateParam                 消息内容
-     * @param $smsTemplateCode               业务编码
-     * @param $mobile                        收信人列表
-     * @param $content                       短信内容
+     * @param              $templateParam                 消息内容
+     * @param              $smsTemplateCode               业务编码
+     * @param array|string $mobiles                       收信人列表
+     * @param              $content                       短信内容
      *
      * @return mixed
      */
     public function sendSms(
-        $mobile,
+        $mobiles,
         $smsTemplateCode,
         $templateParam,
         $smsSign = null,
-        $subjectId = null,
         $content = null
     ) {
         $params = [];
 
         //请求地址
-        $url = $this->getUrl($subjectId);
+        $url = $this->getUrl();
         //账号
-        $account = $this->getAccount($subjectId);
+        $account = $this->getAccount();
         //发送授权码
-        $authorization_code = $this->getAuthorizationCode($subjectId);
+        $authorization_code = $this->getAuthorizationCode();
 
         //必填: 业务编码
         $params["bizCode"] = $smsTemplateCode;
 
         //必填: 收信人列表
-        $params["toList"] = [ (string) $mobile ];
+        $params["toList"] = is_array($mobiles) ? $mobiles : [ (string) $mobiles ];
 
         //必填: 消息类型:0:短信
         $params["msgType"] = 0;
@@ -109,37 +108,22 @@ class FusionSms extends AbstractAPI implements Sms
     }
 
 
-    private function getAccount($subjectId)
+    private function getAccount()
     {
-        if ($subjectId) {
-            return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_ACCOUNT, $subjectId,
-                'znwx');
-        } else {
-            return 'znwx';
-        }
+        return ConfigUtils::get(self::SETTING_KEY_RH_SMS_ACCOUNT, 'znwx');
     }
 
 
-    private function getAuthorizationCode($subjectId)
+    private function getAuthorizationCode()
     {
-        if ($subjectId) {
-            return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_AUTHORIZATION_CODE,
-                $subjectId,
-                'pdEKIusgG9');
-        } else {
-            return 'pdEKIusgG9';
-        }
+        return ConfigUtils::get(self::SETTING_KEY_RH_AUTHORIZATION_CODE, 'pdEKIusgG9');
     }
 
 
-    private function getUrl($subjectId)
+    private function getUrl()
     {
-        if ($subjectId) {
-            return SubjectUtils::getDynamicKeyConfigByOwner(self::SETTING_KEY_RH_SMS_URL, $subjectId,
-                '104.0.44.119:30020/api/v3.0/msg/send/direct');
-        } else {
-            return '104.0.44.119:30020/api/v3.0/msg/send/direct';
-        }
+        return ConfigUtils::get(self::SETTING_KEY_RH_SMS_URL,
+                '104.0.44.119:30020') . '/api/v3.0/msg/send/direct';
     }
 
 

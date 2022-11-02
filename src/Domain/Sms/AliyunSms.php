@@ -34,10 +34,10 @@ class AliyunSms extends AbstractAPI implements Sms
      * @param $smsSign         短信签名
      * @param $smsTemplateCode 模板号
      * @param $templateParam   模板参数
-     * @param $subjectId       主体ID
+     *
      * @return mixed
      */
-    public function sendSms($mobile, $smsTemplateCode, $templateParam, $smsSign = null, $subjectId = null, $content = null)
+    public function sendSms($mobile, $smsTemplateCode, $templateParam, $smsSign = null, $content = null)
     {
         $params = [];
 
