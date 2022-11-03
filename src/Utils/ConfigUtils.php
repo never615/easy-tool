@@ -21,9 +21,9 @@ use Mallto\Tool\Data\Config;
 class ConfigUtils
 {
 
-    public static function getJson2Array($key, $default = [], $type = null)
+    public static function getJson2Array($key, $default = [])
     {
-        $result = self::get($key, $default, $type);
+        $result = self::get($key, $default);
         if (is_null($result)) {
             return $result;
         } else {
@@ -43,19 +43,18 @@ class ConfigUtils
      *
      * @param      $key
      * @param null $default
-     * @param null $type
      *
      * @return null
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public static function get($key, $default = null, $type = null)
+    public static function get($key, $default = null)
     {
         $value = Cache::store('local_redis')->get('c_' . $key);
         if (is_null($value)) {
             $query = Config::where("key", $key);
-            if ($type) {
-                $query = $query->where("type", $type);
-            }
+            //if ($type) {
+            //    $query = $query->where("type", $type);
+            //}
             $config = $query->first();
             if ($config) {
                 $value = $config->value;

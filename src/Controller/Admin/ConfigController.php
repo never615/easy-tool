@@ -38,7 +38,7 @@ class ConfigController extends AdminCommonController
         $grid->key();
         $grid->remark()->limit(20);
         $grid->value()->limit(20);
-        $grid->type();
+        //$grid->type();
     }
 
 
@@ -57,7 +57,7 @@ class ConfigController extends AdminCommonController
         $form->text("key");
         $form->text("remark");
         $form->textarea("value");
-        $form->text("type");
+        //$form->text("type");
 
         $form->saved(function (Form $form) {
             $key = $form->key;
