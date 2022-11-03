@@ -44,6 +44,7 @@ class FusionSmsHandler extends AbstractProcessingHandler
 
         parent::__construct($level, $bubble);
 
+        $this->unique = $unique;
     }
 
 
