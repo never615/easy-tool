@@ -92,6 +92,19 @@ class Handler extends ExceptionHandler
 
 
     /**
+     * 是否可以接受html响应
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return bool
+     */
+    public function canAcceptHtml(\Illuminate\Http\Request $request)
+    {
+        return $request->accepts('text/html');
+    }
+
+
+    /**
      * Render an exception into an HTTP response.
      *
      * @param \Illuminate\Http\Request $request
@@ -127,7 +140,6 @@ class Handler extends ExceptionHandler
 
             //如果是管理端请求
             if (Admin::user() && $request->ajax() && ! $request->pjax()) {
-
                 $response = $this->interJsonHandler($exception, $request);
 
                 $content = json_decode($response->getContent(), true);
@@ -138,9 +150,8 @@ class Handler extends ExceptionHandler
 
                 return back()->with(compact('error'))->withInput();
             } else {
-                if ($this->canAcceptJson($request)) {
-                    return $this->interJsonHandler($exception, $request);
-                } else {
+
+                if ($this->canAcceptHtml($request)) {
                     //没有请求json响应
                     $response = $this->interJsonHandler($exception, $request);
                     $content = json_decode($response->getContent(), true);
@@ -151,6 +162,21 @@ class Handler extends ExceptionHandler
                     );
 
                     return parent::render($request, $newException);
+                } else {
+                    if ($this->canAcceptJson($request)) {
+                        return $this->interJsonHandler($exception, $request);
+                    } else {
+                        //没有请求json响应
+                        $response = $this->interJsonHandler($exception, $request);
+                        $content = json_decode($response->getContent(), true);
+
+                        $newException = new \Mallto\Tool\Exception\HttpException(
+                            $response->getStatusCode(),
+                            $content['error'] ?? $exception->getMessage(),
+                        );
+
+                        return parent::render($request, $newException);
+                    }
                 }
             }
         }

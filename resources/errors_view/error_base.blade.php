@@ -3,12 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content=@yield('title')">
-    <title>@yield('title')</title>
-    <!-- Bootstrap core CSS -->
-    <link rel=" stylesheet
-    " href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    {{--    <meta name="description" content=@yield('title')">--}}
+    {{--    <title>@yield('title')</title>--}}
+
+    <link rel="stylesheet"
+          href="{{ admin_asset("vendor/laravel-admin/AdminLTE/bootstrap/css/bootstrap.min.css") }}">
+    <link rel="stylesheet"
+          href="{{ admin_asset("vendor/laravel-admin/font-awesome/css/font-awesome.min.css") }}">
+
+
+    {{--    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">--}}
+    {{--    <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">--}}
     <style>
         /* Error Page Inline Styles */
         body {
@@ -84,18 +89,25 @@
                     </div>
                     <div class="col-md-6">
                         <h2>我可以怎么做?</h2>
-                        <p>请点击浏览器的返回按钮,并确认您所在页面正确.如果您想立马的得到援助,可以联系网站管理员.</p>
+                        <p>
+                            请点击浏览器的返回按钮,并确认您所在页面正确.如果您想立马的得到援助,可以联系网站管理员.</p>
                     </div>
                 </div>
             </div>
         </div>
-    @show
-    <!-- End Error Page Content -->
-        <!--Scripts-->
-        <!-- jQuery library -->
-        <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
-        <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    {{--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>--}}
-    {{--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>--}}
+    </div>
+
+@show
+<!-- End Error Page Content -->
+<!--Scripts-->
+<!-- jQuery library -->
+{{--        <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>--}}
+{{--        <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>--}}
+<script src="{{admin_asset("vendor/laravel-admin/AdminLTE/plugins/jQuery/jQuery-2.1.4.min.js") }}"></script>
+<script src="{{admin_asset("vendor/laravel-admin/AdminLTE/bootstrap/js/bootstrap.min.js") }}"></script>
+
+
+{{--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>--}}
+{{--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>--}}
 </body>
 </html>
