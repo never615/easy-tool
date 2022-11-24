@@ -93,14 +93,14 @@ class FusionSms extends AbstractAPI implements Sms
 
             return true;
         } catch (ClientException $clientException) {
-            \Log::error("融合通信 client exception");
+            \Log::warning("融合通信 client exception");
             \Log::warning($clientException->getMessage());
             \Log::warning($clientException->getResponse()->getBody());
             throw new ResourceException("请重试");
         } catch (ResourceException $resourceException) {
             throw $resourceException;
         } catch (\Exception $exception) {
-            \Log::error("融合通信:数据解析错误");
+            \Log::warning("融合通信:数据解析错误");
             \Log::warning($exception);
 
             return false;
