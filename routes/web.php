@@ -37,7 +37,8 @@ Route::group($attributes, function ($router) {
                     function ($router) {  //指定auth的guard为mall
 
                         Route::get('log',
-                            '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->name("log");
+                            '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')
+                            ->name("system_logs.index");
 
                         //第三方接口请求日志
                         Route::resource("third_logs", "ThirdLogController");

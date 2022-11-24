@@ -23,5 +23,6 @@ class BasePermissionsSeeder extends Seeder
     {
         $this->createPermissions("微信模板消息管理", "wechat_template_ids");
         $this->createPermissions("全局配置", "configs");
+        $this->createPermissions("系统日志", "system_logs.index",false,0);
     }
 }
