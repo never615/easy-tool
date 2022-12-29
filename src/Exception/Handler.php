@@ -166,16 +166,22 @@ class Handler extends ExceptionHandler
                     if ($this->canAcceptJson($request)) {
                         return $this->interJsonHandler($exception, $request);
                     } else {
-                        //没有请求json响应
-                        $response = $this->interJsonHandler($exception, $request);
-                        $content = json_decode($response->getContent(), true);
+                        //如果是来自 api 的请求则响应 json
+                        if (str_starts_with($request->path(), 'api') ||
+                            str_starts_with($request->path(), 'admin/api')) {
+                            return $this->interJsonHandler($exception, $request);
+                        } else {
+                            //没有请求json响应
+                            $response = $this->interJsonHandler($exception, $request);
+                            $content = json_decode($response->getContent(), true);
 
-                        $newException = new \Mallto\Tool\Exception\HttpException(
-                            $response->getStatusCode(),
-                            $content['error'] ?? $exception->getMessage(),
-                        );
+                            $newException = new \Mallto\Tool\Exception\HttpException(
+                                $response->getStatusCode(),
+                                $content['error'] ?? $exception->getMessage(),
+                            );
 
-                        return parent::render($request, $newException);
+                            return parent::render($request, $newException);
+                        }
                     }
                 }
             }
