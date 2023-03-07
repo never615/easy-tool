@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\ThirdPartException;
+use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\ConfigUtils;
 
 /**
@@ -78,6 +79,11 @@ class FusionSms extends AbstractAPI implements Sms
 
         $headers['Content-Type'] = 'application/json';
         $headers['Accept'] = 'application/json';
+
+        $debug = AppUtils::locationDebugLog();
+        if ($debug) {
+            \Log::warning('fusion sms:', [ $url, $params, $headers ]);
+        }
 
         try {
             $contents = $this->parseJSON(

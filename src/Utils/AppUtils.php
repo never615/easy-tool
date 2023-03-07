@@ -496,4 +496,10 @@ class AppUtils
         return (int) (microtime(true) * 1000);
     }
 
+    public static function locationDebugLog()
+    {
+        return ConfigUtils::get('location_debug_log', 0) || str_contains(config('app.env'), 'local');
+    }
+
+
 }
