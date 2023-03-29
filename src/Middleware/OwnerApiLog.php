@@ -68,8 +68,8 @@ class OwnerApiLog
             'request_id' => $requestId,
         ];
 
-        if ( ! $this->shouldLogOperation($request)) {
-            dispatch(new LogJob('logOwnerApi', $log))->onConnection('sync');
+        if (config('app.log.dispatch_now')) {
+            dispatch_now(new LogJob('logOwnerApi', $log));
         } else {
             dispatch(new LogJob('logOwnerApi', $log));
         }
@@ -113,8 +113,8 @@ class OwnerApiLog
 
         $response->headers->set('request-id', $requestId);
 
-        if ( ! $this->shouldLogOperation($request)) {
-            dispatch(new LogJob('logOwnerApi', $log))->onConnection('sync');
+        if (config('app.log.dispatch_now')) {
+            dispatch_now(new LogJob('logOwnerApi', $log));
         } else {
             dispatch(new LogJob('logOwnerApi', $log));
         }
