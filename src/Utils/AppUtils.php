@@ -20,11 +20,11 @@ class AppUtils
 {
 
     const ENV = [
-        '',
-        'production',
-        'staging',
-        'test',
-        'integration',
+        ''            => '',
+        'production'  => 'production',
+        'staging'     => 'staging',
+        'test'        => 'test',
+        'integration' => 'integration',
     ];
 
 
