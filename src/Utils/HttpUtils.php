@@ -44,6 +44,7 @@ class  HttpUtils
         }
 
         \Log::warning($refererHost);
+        \Log::warning($allowDomains);
 
         return false;
     }
