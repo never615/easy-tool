@@ -40,7 +40,7 @@ class  HttpUtils
         }
 
         if (in_array($refererHost, $allowDomains)) {
-            true;
+            return true;
         }
 
         \Log::warning($refererHost);
