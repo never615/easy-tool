@@ -43,6 +43,8 @@ class  HttpUtils
             true;
         }
 
+        \Log::warning($refererHost);
+
         return false;
     }
 
