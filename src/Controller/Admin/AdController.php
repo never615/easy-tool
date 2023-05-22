@@ -76,7 +76,7 @@ class AdController extends AdminCommonController
             ->addElementClass2("mt-ad-ad-type")
             ->default("text")
             ->rules("required")
-            ->help('浮层广告建议尺寸:420 * 520 </br>
+            ->help('浮层广告建议尺寸按[宽3竖4]上传画面 </br>
 <a href="/admin/page_pv_manager">点此修改页面支持的广告类型</a>')
             ->options(Ad::AD_TYPE);
 
