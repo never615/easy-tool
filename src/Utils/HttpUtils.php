@@ -43,8 +43,8 @@ class  HttpUtils
             return true;
         }
 
-        \Log::warning($refererHost);
-        \Log::warning($allowDomains);
+//        \Log::warning($refererHost);
+//        \Log::warning($allowDomains);
 
         return false;
     }
