@@ -86,11 +86,15 @@ class ConfigUtils
      *
      * @param $key
      * @param $value
-     *
+     * @param null $ttl
      * @return null
      */
-    public static function set($key, $value)
+    public static function set($key, $value, $ttl = null)
     {
+        if (!$ttl) {
+            $ttl = Carbon::now()->endOfDay();
+        }
+        Cache::store('local_redis')->put('c_' . $key, $value, $ttl);
         return Config::updateOrCreate([
                 "key" => $key,
         ], [
