@@ -8,6 +8,7 @@ namespace Mallto\Tool\Utils;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\Config;
+use Psr\SimpleCache\InvalidArgumentException;
 
 /**
  *
@@ -43,15 +44,16 @@ class ConfigUtils
      *
      * @param      $key
      * @param null $default
-     *
+     * @param null $ttl
+     * @param bool $cacheNullValue 手机哦凑韩村
      * @return null
-     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public static function get($key, $default = null)
+    public static function get($key, $default = null, $cacheNullValue = true, $ttl = null)
     {
         $value = Cache::store('local_redis')->get('c_' . $key);
-        if (is_null($value)) {
-            $query = Config::where("key", $key);
+        if ($value === null) {
+            $query = Config::where('key', $key);
             //if ($type) {
             //    $query = $query->where("type", $type);
             //}
@@ -61,12 +63,18 @@ class ConfigUtils
             } else {
                 if (isset($default)) {
                     $value = $default;
-                } else {
+                } else if ($cacheNullValue) {
                     $value = '';
                 }
             }
 
-            Cache::store('local_redis')->put('c_' . $key, $value, Carbon::now()->endOfDay());
+            if (!$ttl) {
+                $ttl = Carbon::now()->endOfDay();
+            }
+
+            if ($value !== null) {
+                Cache::store('local_redis')->put('c_' . $key, $value, $ttl);
+            }
         }
 
         return $value ?? $default ?? null;
@@ -84,9 +92,9 @@ class ConfigUtils
     public static function set($key, $value)
     {
         return Config::updateOrCreate([
-            "key" => $key,
+                "key" => $key,
         ], [
-            "value" => $value,
+                "value" => $value,
         ]);
     }
 }
