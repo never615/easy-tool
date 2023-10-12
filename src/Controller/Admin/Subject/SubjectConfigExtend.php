@@ -17,7 +17,9 @@ use Mallto\Tool\SubjectConfigConstants;
  */
 class SubjectConfigExtend implements SubjectConfigExtendInterface
 {
+
     protected $subjectConfigExpandObjs = [];
+
 
     /**
      * 主体管理基本信息扩展
@@ -37,7 +39,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      *
      * @return mixed
      */
-    public function basicInfoExtend(Form $form)
+    public function basicInfoExtend(Form $form, $currentId)
     {
         // TODO: Implement basicInfoExtend() method.
     }
@@ -60,7 +62,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      *
      * @return mixed
      */
-    public function subjectOwnerExtraConfigByJson(EmbeddedForm $form)
+    public function subjectOwnerExtraConfigByJson(EmbeddedForm $form, $currentId)
     {
         // TODO: Implement subjectOwnerExtraConfigByJson() method.
     }
@@ -82,6 +84,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
         // TODO: Implement subjectOwnerExtend() method.
     }
 
+
     /**
      * 项目拥有者可以配置的
      *
@@ -95,7 +98,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      *
      * @return mixed
      */
-    public function projectOwnerConfig(Form $form)
+    public function projectOwnerConfig(Form $form, $currentId)
     {
         // TODO: Implement projectOwnerConfig() method.
         foreach ($this->subjectConfigExpandObjs as $subjectConfigExpandObj) {
@@ -130,7 +133,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      *
      * @return mixed
      */
-    public function projectOwnerExtraConfigByJson(EmbeddedForm $form)
+    public function projectOwnerExtraConfigByJson(EmbeddedForm $form, $currentId)
     {
 
     }
