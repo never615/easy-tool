@@ -86,8 +86,7 @@ class Handler extends ExceptionHandler
      */
     public function canAcceptJson(\Illuminate\Http\Request $request)
     {
-        return ($request->ajax() && ! $request->pjax() && $request->acceptsAnyContentType())
-            || $request->accepts('application/json');
+        return ($request->ajax() && ! $request->pjax() && $request->acceptsAnyContentType()) || $request->accepts('application/json');
     }
 
 
@@ -135,7 +134,7 @@ class Handler extends ExceptionHandler
         } else {
             //走到这大概率是管理端请求
             if ($exception instanceof TokenMismatchException) {
-                return redirect()->guest(config('app.url') . config("admin.admin_login"));
+                return redirect()->guest(config('app.url').config("admin.admin_login"));
             }
 
             //如果是管理端请求
@@ -156,10 +155,8 @@ class Handler extends ExceptionHandler
                     $response = $this->interJsonHandler($exception, $request);
                     $content = json_decode($response->getContent(), true);
 
-                    $newException = new \Mallto\Tool\Exception\HttpException(
-                        $response->getStatusCode(),
-                        $content['error'] ?? $exception->getMessage(),
-                    );
+                    $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
+                        $content['error'] ?? $exception->getMessage(),);
 
                     return parent::render($request, $newException);
                 } else {
@@ -167,18 +164,16 @@ class Handler extends ExceptionHandler
                         return $this->interJsonHandler($exception, $request);
                     } else {
                         //如果是来自 api 的请求则响应 json
-                        if (str_starts_with($request->path(), 'api') ||
-                            str_starts_with($request->path(), 'admin/api')) {
+                        if (str_starts_with($request->path(), 'api') || str_starts_with($request->path(),
+                                'admin/api')) {
                             return $this->interJsonHandler($exception, $request);
                         } else {
                             //没有请求json响应
                             $response = $this->interJsonHandler($exception, $request);
                             $content = json_decode($response->getContent(), true);
 
-                            $newException = new \Mallto\Tool\Exception\HttpException(
-                                $response->getStatusCode(),
-                                $content['error'] ?? $exception->getMessage(),
-                            );
+                            $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
+                                $content['error'] ?? $exception->getMessage(),);
 
                             return parent::render($request, $newException);
                         }
@@ -206,18 +201,13 @@ class Handler extends ExceptionHandler
 //        }
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
-                return response()->json(
-                    $this->responseData([
-                        "error" => "系统维护中",
-                    ], $exception),
-                    $exception->getStatusCode(), [],
-                    JSON_UNESCAPED_UNICODE);
+                return response()->json($this->responseData([
+                    "error" => "系统维护中",
+                ], $exception), $exception->getStatusCode(), [], JSON_UNESCAPED_UNICODE);
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json(
-                    $exception->getResponseContent(),
-                    $exception->getStatusCode(), [],
+                return response()->json($exception->getResponseContent(), $exception->getStatusCode(), [],
                     JSON_UNESCAPED_UNICODE);
             } else {
                 //其他系统定义的异常
@@ -229,34 +219,29 @@ class Handler extends ExceptionHandler
                     $data["code"] = $code;
                 }
 
-                return response()
-                    ->json($this->responseData($data, $exception->getMessage()),
+                return response()->json($this->responseData($data, $exception->getMessage()),
                         $exception->getStatusCode(), [], JSON_UNESCAPED_UNICODE);
             }
         } else {
             if ($exception instanceof ModelNotFoundException) {
 //                $arr = explode('\\', $exception->getModel());
+                \Log::warning('ModelNotFoundException');
                 \Log::warning($exception);
 
-                return response()->json(
-                    $this->responseData([
-                        "error" => trans("errors.not_found"),
-                    ], $exception), '404', [],
-                    JSON_UNESCAPED_UNICODE);
+                return response()->json($this->responseData([
+                    "error" => trans("errors.not_found"),
+                ], $exception), '404', [], JSON_UNESCAPED_UNICODE);
 
             } elseif ($exception instanceof OAuthServerException) {
                 throw new HttpException($exception->getHttpStatusCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
-                return response()->json(
-                    $this->responseData([
-                        "error" => $exception->getMessage(),
-                    ], $exception), $exception->getCode(), [],
-                    JSON_UNESCAPED_UNICODE);
+                return response()->json($this->responseData([
+                    "error" => $exception->getMessage(),
+                ], $exception), $exception->getCode(), [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof ServerException) {
                 return response()->json($this->responseData([
                     "error" => $exception->getMessage(),
-                ], $exception), $exception->getCode(), [],
-                    JSON_UNESCAPED_UNICODE);
+                ], $exception), $exception->getCode(), [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof AuthenticationException) {
                 return $this->unauthenticated($request, $exception);
             } elseif ($exception instanceof ValidationException) {
@@ -267,33 +252,25 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof MissingScopeException) {
 //                \Log::info($exception);
 //                \Log::info($exception->scopes());
-                return response()
-                    ->json(
-                        $this->responseData([
-                            'error' => $exception->getMessage(),
-                        ], $exception),
-                        401, [], JSON_UNESCAPED_UNICODE);
+                return response()->json($this->responseData([
+                        'error' => $exception->getMessage(),
+                    ], $exception), 401, [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof TokenMismatchException) {
-                return response()
-                    ->json(
-                        $this->responseData([
-                            'error' => '登录失效请重新登录,' . $exception->getMessage(),
-                        ], $exception),
-                        401, [], JSON_UNESCAPED_UNICODE);
+                return response()->json($this->responseData([
+                        'error' => '登录失效请重新登录,'.$exception->getMessage(),
+                    ], $exception), 401, [], JSON_UNESCAPED_UNICODE);
             } elseif ($exception instanceof QueryException) {
                 if (str_contains($exception->getMessage(), "Invalid text representation:")) {
                     $requestId = $exception->getBindings()[0] ?? "";
-                    \Log::warning(Str::replaceArray('ERROR', [ 'xxx' ],
-                        $exception->getMessage())); //不替换error,会自动打一条日志
+                    \Log::warning(Str::replaceArray('ERROR', [ 'xxx' ], $exception->getMessage())); //不替换error,会自动打一条日志
                     \Log::warning($exception->getTraceAsString());
-                    throw new ResourceException("查询参数错误,无效的id:" . $requestId);
+                    throw new ResourceException("查询参数错误,无效的id:".$requestId);
                 }
 
                 if ($exception->getCode() == '23505') {
                     \Log::warning("QueryException:23505");
                     //\Log::warning($exception);
-                    \Log::warning(Str::replaceArray('ERROR', [ 'xxx' ],
-                        $exception->getMessage())); //不替换error,会自动打一条日志
+                    \Log::warning(Str::replaceArray('ERROR', [ 'xxx' ], $exception->getMessage())); //不替换error,会自动打一条日志
                     \Log::warning($exception->getTraceAsString());
                     throw new ResourceException('数据已提交或创建成功,请刷新查看');
                 }
@@ -307,7 +284,7 @@ class Handler extends ExceptionHandler
                 \Log::warning($exception);
                 throw new ResourceException($msg);
             } elseif ($exception instanceof RequestException) {
-                return response()->json([ "error" => "网络繁忙,请重试:" . $exception->getMessage() ], 422, [],
+                return response()->json([ "error" => "网络繁忙,请重试:".$exception->getMessage() ], 422, [],
                     JSON_UNESCAPED_UNICODE);
             } else {
                 //\Log::error('服务器繁忙');
@@ -329,17 +306,14 @@ class Handler extends ExceptionHandler
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         if ($request->expectsJson()) {
-            return response()
-                ->json(
-                    $this->responseData([
+            return response()->json($this->responseData([
 //                        'error' => trans("errors.unauthenticated").','.$exception->getMessage(),
-                        'error' => "登录失效,请重新登录或刷新:" . $exception->getMessage(),
-                    ], $exception),
-                    401, [], JSON_UNESCAPED_UNICODE);
+                    'error' => "登录失效,请重新登录或刷新:".$exception->getMessage(),
+                ], $exception), 401, [], JSON_UNESCAPED_UNICODE);
         }
 
         if (Admin::user()) {
-            return redirect()->guest(config('app.url') . config("admin.admin_login"));
+            return redirect()->guest(config('app.url').config("admin.admin_login"));
         } else {
             $e = new \Mallto\Tool\Exception\AuthorizeFailedException();
 
@@ -360,18 +334,15 @@ class Handler extends ExceptionHandler
     {
         $protocolVersion = $request->header("protocol_version", 1);
         if ($protocolVersion == 2) {
-            return response()->json(
-                [
+            return response()->json([
                     'errors'  => $exception->errors(),
                     "message" => $exception->getMessage(),
                 ], $exception->status, [], JSON_UNESCAPED_UNICODE);
         } else {
 //            return response()->json($exception->errors(), $exception->status, [], JSON_UNESCAPED_UNICODE);
-            return response()->json(
-                $this->responseData([
-                    "error" => array_first($exception->errors())[0] ?? $exception->getMessage(),
-                ], $exception),
-                $exception->status, [], JSON_UNESCAPED_UNICODE);
+            return response()->json($this->responseData([
+                "error" => array_first($exception->errors())[0] ?? $exception->getMessage(),
+            ], $exception), $exception->status, [], JSON_UNESCAPED_UNICODE);
 
         }
     }
