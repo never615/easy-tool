@@ -18,7 +18,6 @@ use Mallto\Tool\Exception\PermissionDeniedException;
  *
  * Class DynamicInject
  *
- * @package Mallto\Mall\Domain
  */
 class DynamicInject
 {
