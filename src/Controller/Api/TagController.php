@@ -20,7 +20,9 @@ class TagController extends Controller
             "type" => "required",
         ]);
 
-        return Tag::where("type", $request->type)
+        $tagModel = config('other.database.tags_model');
+
+        return $tagModel::where("type", $request->type)
             ->where("subject_id", SubjectUtils::getSubjectId())
             ->limit("100")
             ->get();

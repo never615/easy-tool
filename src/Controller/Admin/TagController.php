@@ -12,14 +12,12 @@ use Mallto\Admin\AdminUtils;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
-use Mallto\Tool\Data\Tag;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
 class TagController extends AdminCommonController
 {
 
     use  SlugAutoSave;
-
 
     /**
      * 获取这个模块的标题
@@ -39,7 +37,7 @@ class TagController extends AdminCommonController
      */
     protected function getModel()
     {
-        return Tag::class;
+        return config('other.database.tags_model');
     }
 
 
@@ -47,9 +45,9 @@ class TagController extends AdminCommonController
     {
         $tagTypes = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_TAG_TYPES);
         if ( ! $tagTypes) {
-            return Tag::TYPE;
+            return config('other.database.tags_model')::TYPE;
         } else {
-            return array_only(Tag::TYPE, $tagTypes);
+            return array_only(config('other.database.tags_model')::TYPE, $tagTypes);
         }
     }
 
@@ -68,9 +66,7 @@ class TagController extends AdminCommonController
         if (AdminUtils::isOwner()) {
             $grid->slug();
         }
-        $grid->type()->select(
-            $this->getSelectTagTypes()
-        )->sortable();
+        $grid->type()->select($this->getSelectTagTypes())->sortable();
 
         $grid->filter(function (Grid\Filter $filter) {
             $filter->equal('type')->select($this->getSelectTagTypes());
@@ -91,36 +87,23 @@ class TagController extends AdminCommonController
         $form->text('name')->rules('required');
 
         if ($type) {
-            $form->select('type')
-                ->default($type)
-                ->options(
-                    $this->getSelectTagTypes()
+            $form->select('type')->default($type)->options($this->getSelectTagTypes()
 
-                )
-                ->rules("required");
+            )->rules("required");
         } else {
-            $form->select('type')
-                ->default("common")
-                ->options(
-                    $this->getSelectTagTypes()
-                )
-                ->rules("required");
+            $form->select('type')->default("common")->options($this->getSelectTagTypes())->rules("required");
         }
 
         if ($this->currentId && \Mallto\Admin\AdminUtils::isOwner()) {
             $form->displayE("slug");
         }
 
-        $form->image("logo")
-            ->uniqueName()
-            ->removable()
-            ->move('tag/logo/' . $this->currentId);
+        $form->image("logo")->uniqueName()->removable()->move('tag/logo/'.$this->currentId);
 
         $form->saving(function ($form) {
             $type = $form->type ?: $form->model()->type;
             //自动生成标识
-            $this->slugSavingCheck($form, $this->getModel(), "slug",
-                "type", $type);
+            $this->slugSavingCheck($form, $this->getModel(), "slug", "type", $type);
         });
     }
 }
