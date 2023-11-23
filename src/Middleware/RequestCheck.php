@@ -52,7 +52,7 @@ class RequestCheck
             $firstRouterParam = Arr::first(($route->parameters()));
             if ($firstRouterParam) {
                 if ( ! preg_match('/\d/', $firstRouterParam)) {
-                    throw new ResourceException("无效的查询参数:" . $firstRouterParam);
+                    //throw new ResourceException("无效的查询参数:" . $firstRouterParam);
                 }
             }
         }
