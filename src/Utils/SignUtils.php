@@ -216,19 +216,19 @@ class SignUtils
         }
 
         $waiteSign = $arr['signature'];
-        \Log::debug('$waiteSign:' . $waiteSign);
+//        \Log::debug('$waiteSign:' . $waiteSign);
         unset($arr['signature']);
         ksort($arr, SORT_STRING);
-        \Log::debug($arr);
+//        \Log::debug($arr);
 
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
         $stringToSign = rawurlencode($stringToSign);
-        \Log::debug('$stringToSign:' . $stringToSign);
+//        \Log::debug('$stringToSign:' . $stringToSign);
 
         $sign = rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
 
-        \Log::debug('$sign:' . $sign);
+//        \Log::debug('$sign:' . $sign);
 
         return $sign == $waiteSign ? true : false;
     }
