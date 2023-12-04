@@ -102,7 +102,7 @@ class SignUtils
             $key = self::$mallto_key;
         }
 
-        if ( ! isset($arr['sign'])) {
+        if (!isset($arr['sign'])) {
             throw new SignException("缺少sign字段");
         }
 
@@ -149,13 +149,13 @@ class SignUtils
      * https://wiki.mall-to.com/web/#/27?page_id=234
      *
      * @param array $arr
-     * @param null  $secret
+     * @param null $secret
      *
      * @return string
      */
     public static function verifySign2(array $arr, $secret)
     {
-        if ( ! isset($arr['signature'])) {
+        if (!isset($arr['signature'])) {
             throw new SignException("缺少signature字段");
         }
 
@@ -177,7 +177,7 @@ class SignUtils
      * 签名2.0/3.0
      *
      * https://wiki.mall-to.com/web/#/27?page_id=234
-     * @param array  $arr    待签名数据
+     * @param array $arr 待签名数据
      * @param string $secret 签名秘钥
      *
      * @return string
@@ -205,30 +205,30 @@ class SignUtils
      * https://wiki.mall-to.com/web/#/27?page_id=232
      *
      * @param array $arr
-     * @param null  $secret
+     * @param null $secret
      *
      * @return string
      */
     public static function verifySign4(array $arr, $secret)
     {
-        if ( ! isset($arr['signature'])) {
+        if (!isset($arr['signature'])) {
             throw new SignException("缺少signature字段");
         }
 
         $waiteSign = $arr['signature'];
-        //\Log::debug($waiteSign);
+        \Log::debug('$waiteSign:' . $waiteSign);
         unset($arr['signature']);
         ksort($arr, SORT_STRING);
-        //\Log::debug($arr);
+        \Log::debug($arr);
 
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
         $stringToSign = rawurlencode($stringToSign);
-        //\Log::debug($stringToSign);
+        \Log::debug('$stringToSign:' . $stringToSign);
 
         $sign = rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
 
-        //\Log::debug($sign);
+        \Log::debug('$sign:' . $sign);
 
         return $sign == $waiteSign ? true : false;
     }
@@ -238,7 +238,7 @@ class SignUtils
      * 签名4.0
      *
      * https://wiki.mall-to.com/web/#/27?page_id=232
-     * @param array  $arr    待签名数据
+     * @param array $arr 待签名数据
      * @param string $secret 签名秘钥
      *
      * @return string

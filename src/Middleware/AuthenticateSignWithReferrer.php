@@ -48,12 +48,21 @@ class AuthenticateSignWithReferrer
      */
     public function handle(Request $request, Closure $next)
     {
+
+//        \Log::debug(1111);
+
         //if(AppUtils::isTestEnv()){
         //    return $next($request);
         //}
 
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
+
+//        \Log::debug($referer);
+
+        if (in_array(config('app.env'), ['integration', 'local'])) {
+            return $next($request);
+        }
 
         //兼容支付宝小程序
         if (Str::startsWith($referer, 'https://servicewechat.com') || Str::contains($referer, 'hybrid.alipay-eco.com')) {
@@ -62,12 +71,13 @@ class AuthenticateSignWithReferrer
             $allow_referer_appid = explode(',', $allow_referer_appid);
 
             //来自小程序的请求  wx71ea6eca62665ef9
-            if ( ! empty($allow_referer_appid) && Str::contains($referer, $allow_referer_appid)) {
+            if (!empty($allow_referer_appid) && Str::contains($referer, $allow_referer_appid)) {
                 return $next($request);
             }
         }
 
-        if ( ! HttpUtils::isAllowReferer($referer)) {
+
+        if (!HttpUtils::isAllowReferer($referer)) {
             ////如果是来自管理端登录账号的请求,则跳过检查
             //$adminUser = null;
             //

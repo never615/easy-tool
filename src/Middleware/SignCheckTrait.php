@@ -66,64 +66,64 @@ trait SignCheckTrait
                     return $next($request);
                 }
                 break;
-            case "1": //原始版本,只有签名校验
-                if (SignUtils::verifySign($inputs, $secret)) {
-                    //pass
-                    return $next($request);
-                } else {
-                    throw new SignException(trans("errors.sign_error"));
-                }
-                break;
-            case "2":  //签名校验+时间戳校验
-                $timestamp = $request->header("timestamp");
-                //时间戳格式检查
-                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
-                    throw new ResourceException("InvalidTimeStamp.Format");
-                }
-
-                if (Carbon::now()->subMinutes(15) < $timestamp) {
-                    //和当前时间间隔比较在15分钟内
-                    //检查签名
-                    if (SignUtils::verifySign2($inputs, $secret)) {
-                        //pass
-                        return $next($request);
-                    } else {
-                        throw new SignException(trans("errors.sign_error"));
-                    }
-                } else {
-                    throw new ResourceException("InvalidTimeStamp.Expired");
-                }
-                break;
-            case "3":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
-                $timestamp = $request->header("timestamp");
-                $uuid = $request->header("uuid");
-                $appId = $request->header("app_id");
-
-                if ( ! $timestamp | ! $uuid | ! $appId) {
-                    throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
-                }
-
-                //时间戳格式检查
-                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
-                    throw new ResourceException("InvalidTimeStamp.Format");
-                }
-
-                if (Carbon::now()->subMinutes(15) < $timestamp) {
-                    //和当前时间间隔比较在15分钟内
-                    //检查签名
-                    if (SignUtils::verifySign2(array_merge($inputs, [
-                        "timestamp" => $timestamp,
-                        "uuid"      => $uuid,
-                        "app_id"    => $appId,
-                    ]), $secret)) {
-                        //pass
-                        return $next($request);
-                    } else {
-                        throw new SignException(trans("errors.sign_error"));
-                    }
-                } else {
-                    throw new ResourceException("InvalidTimeStamp.Expired");
-                }
+//            case "1": //原始版本,只有签名校验
+//                if (SignUtils::verifySign($inputs, $secret)) {
+//                    //pass
+//                    return $next($request);
+//                } else {
+//                    throw new SignException(trans("errors.sign_error"));
+//                }
+//                break;
+//            case "2":  //签名校验+时间戳校验
+//                $timestamp = $request->header("timestamp");
+//                //时间戳格式检查
+//                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+//                    throw new ResourceException("InvalidTimeStamp.Format");
+//                }
+//
+//                if (Carbon::now()->subMinutes(15) < $timestamp) {
+//                    //和当前时间间隔比较在15分钟内
+//                    //检查签名
+//                    if (SignUtils::verifySign2($inputs, $secret)) {
+//                        //pass
+//                        return $next($request);
+//                    } else {
+//                        throw new SignException(trans("errors.sign_error"));
+//                    }
+//                } else {
+//                    throw new ResourceException("InvalidTimeStamp.Expired");
+//                }
+//                break;
+//            case "3":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
+//                $timestamp = $request->header("timestamp");
+//                $uuid = $request->header("uuid");
+//                $appId = $request->header("app_id");
+//
+//                if ( ! $timestamp | ! $uuid | ! $appId) {
+//                    throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
+//                }
+//
+//                //时间戳格式检查
+//                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+//                    throw new ResourceException("InvalidTimeStamp.Format");
+//                }
+//
+//                if (Carbon::now()->subMinutes(15) < $timestamp) {
+//                    //和当前时间间隔比较在15分钟内
+//                    //检查签名
+//                    if (SignUtils::verifySign2(array_merge($inputs, [
+//                        "timestamp" => $timestamp,
+//                        "uuid"      => $uuid,
+//                        "app_id"    => $appId,
+//                    ]), $secret)) {
+//                        //pass
+//                        return $next($request);
+//                    } else {
+//                        throw new SignException(trans("errors.sign_error"));
+//                    }
+//                } else {
+//                    throw new ResourceException("InvalidTimeStamp.Expired");
+//                }
                 break;
             case "4":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
                 $timestamp = $request->header("timestamp");

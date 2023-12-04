@@ -21,6 +21,10 @@ use Mallto\Tool\Utils\SignUtils;
 /**
  * 管理端权限过滤
  *
+ * @deprecated
+ *
+ *
+ *
  * Class AuthenticateAdmin
  *
  * @package App\Http\Middleware

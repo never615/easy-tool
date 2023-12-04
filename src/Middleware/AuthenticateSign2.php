@@ -22,6 +22,9 @@ use Illuminate\Http\Request;
  *
  * 使用appid和secret
  *
+ * @deprecated
+ *
+ *
  * Class AuthenticateAdmin
  *
  * @package App\Http\Middleware
