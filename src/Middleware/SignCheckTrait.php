@@ -128,6 +128,9 @@ trait SignCheckTrait
             case "4":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
                 $timestamp = $request->header("timestamp");
                 $uuid = $request->header("x_uuid") ?? $request->header("uuid");
+
+                $uuidKey = $request->header("x_uuid") ? 'x_uuid' : 'uuid';
+
                 $appId = $request->header("app_id");
                 $signatureNonce = $request->header("signature_nonce");
                 $signature = $request->header("signature");
@@ -156,7 +159,7 @@ trait SignCheckTrait
                     //检查签名
                     if (SignUtils::verifySign4(array_merge($inputs, [
                         "timestamp" => $timestamp,
-                        "x_uuid" => $uuid,
+                        $uuidKey => $uuid,
                         "app_id" => $appId,
                         "signature_nonce" => $signatureNonce,
                         "signature" => $signature,
