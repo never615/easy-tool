@@ -30,14 +30,14 @@ trait SignCheckTrait
 
     protected function check(Request $request, Closure $next)
     {
-        if ( ! config('other.auth_sign')) {
+        if (!config('other.auth_sign')) {
             return $next($request);
         }
 
         $appId = $request->header("app_id");
         $appSecret = AppSecret::where("app_id", $appId)->first();
 
-        if ( ! $appSecret || ! $appSecret->switch) {
+        if (!$appSecret || !$appSecret->switch) {
             \Log::warning("app_id 无效:" . $appId);
             \Log::warning($request->url());
             throw new SignException("app_id 无效");
@@ -127,7 +127,7 @@ trait SignCheckTrait
                 break;
             case "4":  //签名校验+时间戳校验,请求头中的appid,uuid,和timestamp需要参与到签名中
                 $timestamp = $request->header("timestamp");
-                $uuid = $request->header("uuid");
+                $uuid = $request->header("x_uuid") ?? $request->header("uuid");
                 $appId = $request->header("app_id");
                 $signatureNonce = $request->header("signature_nonce");
                 $signature = $request->header("signature");
@@ -138,7 +138,7 @@ trait SignCheckTrait
                 }
 
                 //时间戳格式检查
-                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
@@ -155,11 +155,11 @@ trait SignCheckTrait
                     //和当前时间间隔比较在15分钟内
                     //检查签名
                     if (SignUtils::verifySign4(array_merge($inputs, [
-                        "timestamp"       => $timestamp,
-                        "uuid"            => $uuid,
-                        "app_id"          => $appId,
+                        "timestamp" => $timestamp,
+                        "x_uuid" => $uuid,
+                        "app_id" => $appId,
                         "signature_nonce" => $signatureNonce,
-                        "signature"       => $signature,
+                        "signature" => $signature,
                     ]), $secret)) {
                         //pass
                         Cache::put($nonce, 1, 3 * 60);
@@ -190,7 +190,7 @@ trait SignCheckTrait
     public function permissionCheck(Request $request, $appSecretUser)
     {
         //没有开启的校验的直接跳过
-        if ( ! $appSecretUser->is_check_third_permission) {
+        if (!$appSecretUser->is_check_third_permission) {
             return true;
         }
 
@@ -200,7 +200,7 @@ trait SignCheckTrait
         if (count($routenameArr) == 2) {
             $subRouteName0 = $routenameArr[0];
 
-            if ( ! AppSecretsPermission::query()->where('slug', $routeName)->exists()) {
+            if (!AppSecretsPermission::query()->where('slug', $routeName)->exists()) {
                 $routeName = $subRouteName0 . '.*';
             }
 
