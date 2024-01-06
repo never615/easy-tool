@@ -157,7 +157,7 @@ class Handler extends ExceptionHandler
                     $content = json_decode($response->getContent(), true);
 
                     $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
-                        $content['error'] ?? $exception->getMessage(),);
+                        $content['error'] ?? $exception->getMessage(),JSON_UNESCAPED_UNICODE);
 
                     return parent::render($request, $newException);
                 } else {
@@ -174,7 +174,7 @@ class Handler extends ExceptionHandler
                             $content = json_decode($response->getContent(), true);
 
                             $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
-                                $content['error'] ?? $exception->getMessage(),);
+                                $content['error'] ?? $exception->getMessage(),JSON_UNESCAPED_UNICODE);
 
                             return parent::render($request, $newException);
                         }
@@ -194,7 +194,7 @@ class Handler extends ExceptionHandler
      *
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
      */
-    protected function interJsonHandler(Exception $exception, $request, $isAdmin = false)
+    protected function interJsonHandler(Throwable $exception, $request, $isAdmin = false)
     {
 //        if ($exception instanceof InternalHttpException) {
 //            \Log::error("系统内部异常");
