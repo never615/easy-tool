@@ -195,6 +195,10 @@ class  WechatUsecase extends AbstractAPI
         if (WechatUtils::isUserSystemTemplate($shortId)) {
             $uuid = $subject->wechat_uuid ?? $subject->uuid;
         } elseif (WechatUtils::isAdminSystemTemplate($shortId)) {
+            if(!is_array($subject->extra_config))
+            {
+                throw new ResourceException('管理端微信服务uuid未设置!!');
+            }
             $uuid = $subject->extra_config[SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID];
         }
 
