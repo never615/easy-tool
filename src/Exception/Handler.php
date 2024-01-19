@@ -6,7 +6,6 @@
 namespace Mallto\Tool\Exception;
 
 use Encore\Admin\Facades\Admin;
-use Exception;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
@@ -157,7 +156,7 @@ class Handler extends ExceptionHandler
                     $content = json_decode($response->getContent(), true);
 
                     $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
-                        $content['error'] ?? $exception->getMessage(),JSON_UNESCAPED_UNICODE);
+                        $content['error'] ?? $exception->getMessage(), JSON_UNESCAPED_UNICODE);
 
                     return parent::render($request, $newException);
                 } else {
@@ -174,7 +173,7 @@ class Handler extends ExceptionHandler
                             $content = json_decode($response->getContent(), true);
 
                             $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
-                                $content['error'] ?? $exception->getMessage(),JSON_UNESCAPED_UNICODE);
+                                $content['error'] ?? $exception->getMessage(), JSON_UNESCAPED_UNICODE);
 
                             return parent::render($request, $newException);
                         }

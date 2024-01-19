@@ -18,7 +18,7 @@
         "endroid/qr-code": "^3.4",
         "intervention/image": "^2.4",
         "jeremeamia/superclosure": "^2.3",
-        "laravel/framework": "^10.0",
+        "laravel/framework": "^10.10",
         "laravel/helpers": "^1.1",
         "symfony/console": "^6.4",
         "laravel/horizon": "^5.0",
