@@ -32,7 +32,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
     public function __construct(
         $statusCode,
         $message = null,
-        $errCode = null,
+        $errCode = 0,
         $content = null,
         \Exception $previous = null,
         array $headers = [],
