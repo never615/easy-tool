@@ -39,6 +39,7 @@ use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\AuthenticateSignWithReferrer;
 use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
+use Mallto\Tool\Middleware\SetLanguage;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
@@ -73,6 +74,7 @@ class ToolServiceProvider extends ServiceProvider
         'authSign_referrer' => AuthenticateSignWithReferrer::class,
         'owner_api'         => OwnerApiLog::class,
         'third_api_check'   => ThirdRequestCheck::class,
+        'set_language'      => SetLanguage::class,
     ];
 
     /**
