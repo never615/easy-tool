@@ -39,6 +39,7 @@ use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\AuthenticateSignWithReferrer;
 use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
+use Mallto\Tool\Middleware\SetLanguage;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
@@ -51,14 +52,14 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $commands = [
-            'Mallto\Tool\Commands\InstallCommand',
-            'Mallto\Tool\Commands\UpdateCommand',
-            'Mallto\Tool\Commands\UpdateAppSecretCommand',
-            'Mallto\Tool\Commands\ResetTableIdSeqCommand',
-            RedisDelPrefixCommand::class,
-            TokenCheckCommand::class,
-            CreateTableIdSeqCommand::class,
-            ClearCacheCommand::class,
+        'Mallto\Tool\Commands\InstallCommand',
+        'Mallto\Tool\Commands\UpdateCommand',
+        'Mallto\Tool\Commands\UpdateAppSecretCommand',
+        'Mallto\Tool\Commands\ResetTableIdSeqCommand',
+        RedisDelPrefixCommand::class,
+        TokenCheckCommand::class,
+        CreateTableIdSeqCommand::class,
+        ClearCacheCommand::class,
     ];
 
     /**
@@ -67,12 +68,13 @@ class ToolServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-            'requestCheck' => RequestCheck::class,
-            'authSign' => AuthenticateSign::class,
-            'authSign2' => AuthenticateSign2::class,
-            'authSign_referrer' => AuthenticateSignWithReferrer::class,
-            'owner_api' => OwnerApiLog::class,
-            'third_api_check' => ThirdRequestCheck::class,
+        'requestCheck' => RequestCheck::class,
+        'authSign' => AuthenticateSign::class,
+        'authSign2' => AuthenticateSign2::class,
+        'authSign_referrer' => AuthenticateSignWithReferrer::class,
+        'owner_api' => OwnerApiLog::class,
+        'third_api_check' => ThirdRequestCheck::class,
+        'set_language' => SetLanguage::class,
     ];
 
     /**
@@ -101,15 +103,15 @@ class ToolServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             //发布view覆盖error页面
             $this->publishes([__DIR__ . '/../../resources/errors_view' => resource_path('views/errors')],
-                    'error-views');
+                'error-views');
 
             //发布 view 覆盖 laravel-log 的页面
             $this->publishes([
-                    __DIR__ . '/../../resources/laravel_log_view' => resource_path('views/vendor/laravel-log-viewer'),
+                __DIR__ . '/../../resources/laravel_log_view' => resource_path('views/vendor/laravel-log-viewer'),
             ], 'laravel-log-views');
 
             $this->publishes([__DIR__ . '/../../resources/assets/laravel-log' => public_path('vendor/laravel-log')],
-                    'laravel-log-assets');
+                'laravel-log-assets');
         }
 
         AdminE::extendSubjectConfigClass(SubjectConfigExtend::class);
@@ -122,7 +124,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->scheduleBoot();
 
         Relation::morphMap([
-                'user' => User::class,
+            'user' => User::class,
         ]);
     }
 
@@ -138,28 +140,28 @@ class ToolServiceProvider extends ServiceProvider
 
         //Passport::personalAccessTokensExpireIn(now()->addMonths(6));
         Passport::personalAccessTokensExpireIn(now()->addDays(3));
-        
+
         Route::group(['middleware' => 'oauth.providers'], function () {
             Route::group([
-                    'as' => 'passport.',
-                    'prefix' => config('passport.path', 'oauth'),
-                    'namespace' => 'Laravel\Passport\Http\Controllers',
+                'as' => 'passport.',
+                'prefix' => config('passport.path', 'oauth'),
+                'namespace' => 'Laravel\Passport\Http\Controllers',
             ], function () {
                 // Passport 路由……
                 Route::post('/token', [
-                        'uses' => 'AccessTokenController@issueToken',
-                        'as' => 'passport.token',
-                        'middleware' => 'throttle',
+                    'uses' => 'AccessTokenController@issueToken',
+                    'as' => 'passport.token',
+                    'middleware' => 'throttle',
                 ]);
                 Route::group(['middleware' => ['web', 'auth']], function ($router) {
                     $router->get('/tokens', [
-                            'uses' => 'AuthorizedAccessTokenController@forUser',
-                            'as' => 'passport.tokens.index',
+                        'uses' => 'AuthorizedAccessTokenController@forUser',
+                        'as' => 'passport.tokens.index',
                     ]);
 
                     $router->delete('/tokens/{token_id}', [
-                            'uses' => 'AuthorizedAccessTokenController@destroy',
-                            'as' => 'passport.tokens.destroy',
+                        'uses' => 'AuthorizedAccessTokenController@destroy',
+                        'as' => 'passport.tokens.destroy',
                     ]);
                 });
             });
@@ -232,21 +234,21 @@ class ToolServiceProvider extends ServiceProvider
             Queue::before(function (JobProcessing $event) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
-                        "connection_name" => $event->connectionName,
-                        "status" => "before",
-                        "queue" => $event->job->getQueue(),
-                        "name" => $event->job->resolveName(),
-                        "payload" => json_encode($event->job->payload()),
+                    "connection_name" => $event->connectionName,
+                    "status" => "before",
+                    "queue" => $event->job->getQueue(),
+                    "name" => $event->job->resolveName(),
+                    "payload" => json_encode($event->job->payload()),
                 ]);
             });
 
             Queue::after(function (JobProcessed $event) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
-                        "connection_name" => $event->connectionName,
-                        "status" => "after",
-                        "queue" => $event->job->getQueue(),
-                        "name" => $event->job->resolveName(),
+                    "connection_name" => $event->connectionName,
+                    "status" => "after",
+                    "queue" => $event->job->getQueue(),
+                    "name" => $event->job->resolveName(),
                 ]);
             });
         }
@@ -270,11 +272,11 @@ class ToolServiceProvider extends ServiceProvider
             if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
-                        "connection_name" => $event->connectionName,
-                        "status" => "failure",
-                        "queue" => $event->job->getQueue(),
-                        "name" => $event->job->resolveName(),
-                        "payload" => $event->job->getRawBody(),
+                    "connection_name" => $event->connectionName,
+                    "status" => "failure",
+                    "queue" => $event->job->getQueue(),
+                    "name" => $event->job->resolveName(),
+                    "payload" => $event->job->getRawBody(),
                 ]);
             }
         });
@@ -294,11 +296,11 @@ class ToolServiceProvider extends ServiceProvider
             if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
-                        "connection_name" => $event->connectionName,
-                        "status" => "exception",
-                        "queue" => $event->job->getQueue(),
-                        "name" => $event->job->resolveName(),
-                        "payload" => $event->job->getRawBody(),
+                    "connection_name" => $event->connectionName,
+                    "status" => "exception",
+                    "queue" => $event->job->getQueue(),
+                    "name" => $event->job->resolveName(),
+                    "payload" => $event->job->getRawBody(),
                 ]);
             }
         });
@@ -356,7 +358,7 @@ class ToolServiceProvider extends ServiceProvider
     protected function registerMail()
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/services.php'
-                , 'services'
+            , 'services'
         );
         $this->app->resolving('swift.transport', function (TransportManager $tm) {
             $tm->extend('aliyun_mail', function () {
@@ -381,50 +383,50 @@ class ToolServiceProvider extends ServiceProvider
 
             if (\config("other.update_app_secret")) {
                 $schedule->command('tool:update_app_secret')
-                        ->onOneServer()
-                        ->daily()
-                        ->name("update_app_secret")
-                        ->runInBackground()
-                        ->withoutOverlapping()
-                        ->before(function () {
-                            dispatch(new LogJob("logSchedule",
-                                    ["slug" => "update_app_secret", "status" => "start"]));
-                        })
-                        ->after(function () {
-                            dispatch(new LogJob("logSchedule",
-                                    ["slug" => "update_app_secret", "status" => "finish"]));
-                        });
-            }
-
-            $schedule->command('tool:token_check')
                     ->onOneServer()
                     ->daily()
-                    ->name("token_check")
+                    ->name("update_app_secret")
                     ->runInBackground()
                     ->withoutOverlapping()
                     ->before(function () {
                         dispatch(new LogJob("logSchedule",
-                                ["slug" => "token_check", "status" => "start"]));
+                            ["slug" => "update_app_secret", "status" => "start"]));
                     })
                     ->after(function () {
                         dispatch(new LogJob("logSchedule",
-                                ["slug" => "token_check", "status" => "finish"]));
+                            ["slug" => "update_app_secret", "status" => "finish"]));
                     });
+            }
+
+            $schedule->command('tool:token_check')
+                ->onOneServer()
+                ->daily()
+                ->name("token_check")
+                ->runInBackground()
+                ->withoutOverlapping()
+                ->before(function () {
+                    dispatch(new LogJob("logSchedule",
+                        ["slug" => "token_check", "status" => "start"]));
+                })
+                ->after(function () {
+                    dispatch(new LogJob("logSchedule",
+                        ["slug" => "token_check", "status" => "finish"]));
+                });
 
             $schedule = $this->app->make(Schedule::class);
 
             $schedule->command('tool:clear_cache')
-                    ->name("clear_cache")
-                    ->everyFiveMinutes()
-                    ->runInBackground()
-                    ->before(function () {
-                        dispatch(new LogJob("logSchedule",
-                                ["slug" => "clear_cache", "status" => "start"]));
-                    })
-                    ->after(function () {
-                        dispatch(new LogJob("logSchedule",
-                                ["slug" => "clear_cache", "status" => "finish"]));
-                    });
+                ->name("clear_cache")
+                ->everyFiveMinutes()
+                ->runInBackground()
+                ->before(function () {
+                    dispatch(new LogJob("logSchedule",
+                        ["slug" => "clear_cache", "status" => "start"]));
+                })
+                ->after(function () {
+                    dispatch(new LogJob("logSchedule",
+                        ["slug" => "clear_cache", "status" => "finish"]));
+                });
         });
     }
 }

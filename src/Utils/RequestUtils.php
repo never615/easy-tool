@@ -18,11 +18,15 @@ class RequestUtils
      *
      * @return array|mixed|string
      */
-    public static  function getLan()
+    public static function getLan()
     {
-        $language = request()->header('language');
-        if ( ! $language) {
-            $language = request()->get('language', 'zh_Hans');
+        $language = request()->header('language', request()->get('language'));
+
+        // 可用的语言版本
+        $availableLanguages = ['en', 'tc'];
+
+        if (!in_array($language, $availableLanguages, true)) {
+            return null;
         }
 
         return $language;
