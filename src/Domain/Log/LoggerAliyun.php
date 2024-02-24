@@ -5,11 +5,7 @@
 
 namespace Mallto\Tool\Domain\Log;
 
-use Aliyun\SLS\Client;
-use Aliyun\SLS\Models\LogItem;
-use Aliyun\SLS\Models\PutLogsRequest;
-use Mallto\Admin\Data\Menu;
-use Mallto\Admin\Data\OperationLog;
+use Aliyun_Log_Models_LogItem;
 
 /**
  * Created by PhpStorm.
@@ -48,12 +44,12 @@ class LoggerAliyun implements Logger
     public function __construct()
     {
         $this->switch = config("app.ali_log", true);
-        $this->client = new Client(config("app.aliyun_log_endpoint"), config("app.aliyun_access_key_id"),
+        $this->client = new \Aliyun_Log_Client(config("app.aliyun_log_endpoint"), config("app.aliyun_access_key_id"),
             config("app.aliyun_access_key"));
         $this->project = config("app.aliyun_log_project");
         $this->serverName = php_uname("n") ?: "cli";
         $this->localIp = $_SERVER['SERVER_ADDR'] ?? "";
-        $this->switch_database_operation_log = config("app.switch_database_operation_log",false);
+        $this->switch_database_operation_log = config("app.switch_database_operation_log", false);
     }
 
 
@@ -67,24 +63,24 @@ class LoggerAliyun implements Logger
      */
     public function logThirdPart($content)
     {
-        if ( ! $this->switch) {
+        if (!$this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
         $logitems = [];
-        $logItem = new LogItem();
+        $logItem = new Aliyun_Log_Models_LogItem();
         $logItem->setTime(time());
 
         $logItem->setContents(
             array_merge($content, [
                 "server_name" => $this->serverName,
-                "env"         => config("app.env"),
+                "env" => config("app.env"),
             ])
         );
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_third_part_api, $topic, $source,
+        $req2 = new  \Aliyun_Log_Models_PutLogsRequest($this->project, $this->logstore_third_part_api, $topic, $source,
             $logitems);
         try {
             $res2 = $this->client->putLogs($req2);
@@ -105,21 +101,21 @@ class LoggerAliyun implements Logger
      */
     public function logOwnerApi($content)
     {
-        if ( ! $this->switch) {
+        if (!$this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
         $logitems = [];
-        $logItem = new LogItem();
+        $logItem = new Aliyun_Log_Models_LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
-            "env"         => config("app.env"),
+            "env" => config("app.env"),
         ]));
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
+        $req2 = new \Aliyun_Log_Models_PutLogsRequest($this->project, $this->logstore_own_api, $topic, $source, $logitems);
 
         try {
             $res2 = $this->client->putLogs($req2);
@@ -140,25 +136,25 @@ class LoggerAliyun implements Logger
      */
     public function logAdminOperation($log)
     {
-        if ( ! $this->switch) {
+        if (!$this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
         $logitems = [];
-        $logItem = new LogItem();
+        $logItem = new Aliyun_Log_Models_LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($log, [
             "server_name" => $this->serverName,
             "request_url" => config("app.url"),
-            "env"         => config("app.env"),
+            "env" => config("app.env"),
         ]));
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source,
+        $req2 = new \Aliyun_Log_Models_PutLogsRequest($this->project, $this->logstore_admin_operation, $topic, $source,
             $logitems);
         try {
-            if($this->switch_database_operation_log){
+            if ($this->switch_database_operation_log) {
                 //写入数据库
                 $loggerDb = app(LoggerDb::class);
                 $loggerDb->logAdminOperation($log);
@@ -182,21 +178,21 @@ class LoggerAliyun implements Logger
      */
     public function logSchedule($content)
     {
-        if ( ! $this->switch) {
+        if (!$this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
         $logitems = [];
-        $logItem = new LogItem();
+        $logItem = new Aliyun_Log_Models_LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
-            "env"         => config("app.env"),
+            "env" => config("app.env"),
         ]));
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_schedule, $topic, $source, $logitems);
+        $req2 = new \Aliyun_Log_Models_PutLogsRequest($this->project, $this->logstore_schedule, $topic, $source, $logitems);
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
@@ -217,21 +213,21 @@ class LoggerAliyun implements Logger
      */
     public function logQueue($content)
     {
-        if ( ! $this->switch) {
+        if (!$this->switch) {
             return;
         }
 
         $topic = "";
         $source = $this->localIp;
         $logitems = [];
-        $logItem = new LogItem();
+        $logItem = new Aliyun_Log_Models_LogItem();
         $logItem->setTime(time());
         $logItem->setContents(array_merge($content, [
             "server_name" => $this->serverName,
-            "env"         => config("app.env"),
+            "env" => config("app.env"),
         ]));
         array_push($logitems, $logItem);
-        $req2 = new PutLogsRequest($this->project, $this->logstore_queue, $topic, $source, $logitems);
+        $req2 = new \Aliyun_Log_Models_PutLogsRequest($this->project, $this->logstore_queue, $topic, $source, $logitems);
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
