@@ -67,11 +67,11 @@ Route::group($attributes, function ($router) {
         Route::group([ 'middleware' => [ 'auth:api' ] ], function () {
 
 
-            Route::group([ "middleware" => [ "scopes:mobile-token" ] ], function () {
+            Route::group([ "middleware" => [ "ability:mobile-token" ] ], function () {
 
             });
 
-            Route::group([ "middleware" => [ "scope:mobile-token,wechat-token" ] ], function () {
+            Route::group([ "middleware" => [ "ability:mobile-token,wechat-token" ] ], function () {
 
             });
         });

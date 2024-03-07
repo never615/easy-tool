@@ -20,8 +20,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Laravel\Passport\Exceptions\MissingScopeException;
-use League\OAuth2\Server\Exception\OAuthServerException;
+use Laravel\Sanctum\Exceptions\MissingAbilityException;
+use Laravel\Sanctum\Exceptions\MissingScopeException;
 use RedisException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -53,7 +53,6 @@ class Handler extends ExceptionHandler
         \Illuminate\Database\Eloquent\ModelNotFoundException::class,
         \Illuminate\Session\TokenMismatchException::class,
         \Illuminate\Validation\ValidationException::class,
-        \League\OAuth2\Server\Exception\OAuthServerException::class,
         QueryException::class,
         MaxAttemptsExceededException::class,
         RedisException::class,
@@ -249,7 +248,7 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof DecryptException) {
                 //解密失败
                 throw new ValidationHttpException("解密失败");
-            } elseif ($exception instanceof MissingScopeException) {
+            } elseif ($exception instanceof MissingAbilityException) {
 //                \Log::info($exception);
 //                \Log::info($exception->scopes());
                 return response()->json($this->responseData([
