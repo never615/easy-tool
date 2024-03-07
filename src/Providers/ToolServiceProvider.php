@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Passport\Passport;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\ClearCacheCommand;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
@@ -57,7 +56,6 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\UpdateAppSecretCommand',
         'Mallto\Tool\Commands\ResetTableIdSeqCommand',
         RedisDelPrefixCommand::class,
-        TokenCheckCommand::class,
         CreateTableIdSeqCommand::class,
         ClearCacheCommand::class,
     ];
@@ -134,38 +132,7 @@ class ToolServiceProvider extends ServiceProvider
      */
     private function authBoot()
     {
-        Passport::tokensExpireIn(now()->addDays(2));
 
-        Passport::refreshTokensExpireIn(now()->addDays(15));
-
-        //Passport::personalAccessTokensExpireIn(now()->addMonths(6));
-        Passport::personalAccessTokensExpireIn(now()->addDays(3));
-
-        Route::group(['middleware' => 'oauth.providers'], function () {
-            Route::group([
-                'as' => 'passport.',
-                'prefix' => config('passport.path', 'oauth'),
-                'namespace' => 'Laravel\Passport\Http\Controllers',
-            ], function () {
-                // Passport 路由……
-                Route::post('/token', [
-                    'uses' => 'AccessTokenController@issueToken',
-                    'as' => 'passport.token',
-                    'middleware' => 'throttle',
-                ]);
-                Route::group(['middleware' => ['web', 'auth']], function ($router) {
-                    $router->get('/tokens', [
-                        'uses' => 'AuthorizedAccessTokenController@forUser',
-                        'as' => 'passport.tokens.index',
-                    ]);
-
-                    $router->delete('/tokens/{token_id}', [
-                        'uses' => 'AuthorizedAccessTokenController@destroy',
-                        'as' => 'passport.tokens.destroy',
-                    ]);
-                });
-            });
-        });
     }
 
 
@@ -327,9 +294,6 @@ class ToolServiceProvider extends ServiceProvider
         //$this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
-
-        //禁用自动注册路由
-        Passport::ignoreRoutes();
     }
 
 
@@ -398,7 +362,7 @@ class ToolServiceProvider extends ServiceProvider
                     });
             }
 
-            $schedule->command('tool:token_check')
+            $schedule->command('sanctum:prune-expired --hours=24')
                 ->onOneServer()
                 ->daily()
                 ->name("token_check")
