@@ -9,6 +9,7 @@ use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Handler\Curl\Util;
 use Monolog\Handler\MissingExtensionException;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use Monolog\Utils;
 
 /**
@@ -76,7 +77,7 @@ class DingdingWebhookHandler extends AbstractProcessingHandler
     /**
      * {@inheritDoc}
      */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         $postData = [
             'msgtype' => "text",
@@ -85,7 +86,7 @@ class DingdingWebhookHandler extends AbstractProcessingHandler
                     [
                         'unique' => $this->unique,
                     ],
-                    array_except($record, [
+                    array_except($record->toArray(), [
                         'formatted',
                         'extra',
                         'level',
