@@ -287,7 +287,7 @@ class Handler extends ExceptionHandler
                     JSON_UNESCAPED_UNICODE);
             } else {
                 //\Log::error('服务器繁忙');
-                //\Log::warning($exception);
+                \Log::warning($exception);
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }

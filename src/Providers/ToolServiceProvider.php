@@ -7,13 +7,13 @@ namespace Mallto\Tool\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Mail\TransportManager;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
@@ -23,7 +23,6 @@ use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\ClearCacheCommand;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
-use Mallto\Tool\Commands\TokenCheckCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
@@ -32,7 +31,6 @@ use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Jobs\LogJob;
-use Mallto\Tool\Mail\AliyunMailTransport;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\AuthenticateSignWithReferrer;
@@ -191,7 +189,7 @@ class ToolServiceProvider extends ServiceProvider
         Queue::looping(function () {
             while (DB::transactionLevel() > 0) {
                 //防止事务没有释放
-                \Log::info("queue rollback");
+                Log::info("queue rollback");
                 DB::rollBack();
             }
         });
@@ -226,15 +224,15 @@ class ToolServiceProvider extends ServiceProvider
             $exception = $event->exception;
 
             if ($exception && $exception instanceof MaxAttemptsExceededException) {
-                \Log::warning("队列任务失败，MaxAttemptsExceededException");
-                \Log::warning($event->job->payload());
+                Log::warning("队列任务失败，MaxAttemptsExceededException");
+                Log::warning($event->job->payload());
 
                 return;
             }
 
-            \Log::error("队列任务失败");
-            \Log::warning($event->job->payload());
-            \Log::warning($event->exception);
+            Log::error("队列任务失败");
+            Log::warning($event->job->payload());
+            Log::warning($event->exception);
 
             if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
@@ -252,14 +250,14 @@ class ToolServiceProvider extends ServiceProvider
         Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
             $exception = $event->exception;
             if ($exception && $exception instanceof MaxAttemptsExceededException) {
-                \Log::warning("队列任务异常，MaxAttemptsExceededException");
-                \Log::warning($event->job->payload());
+                Log::warning("队列任务异常，MaxAttemptsExceededException");
+                Log::warning($event->job->payload());
 
                 return;
             }
-            \Log::error("队列任务异常");
-            \Log::warning($event->job->payload());
-            \Log::warning($event->exception);
+            Log::error("队列任务异常");
+            Log::warning($event->job->payload());
+            Log::warning($event->exception);
             if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
                 $logger->logQueue([
@@ -321,26 +319,27 @@ class ToolServiceProvider extends ServiceProvider
      */
     protected function registerMail()
     {
-        $this->mergeConfigFrom(__DIR__ . '/../../config/services.php'
-            , 'services'
-        );
-        $this->app->resolving('swift.transport', function (TransportManager $tm) {
-            $tm->extend('aliyun_mail', function () {
-                $AccessKeyId = config('services.aliyun_mail.AccessKeyId');
-                $AccessSecret = config('services.aliyun_mail.AccessSecret');
-                $ReplyToAddress = config('services.aliyun_mail.ReplyToAddress');
-                $AddressType = config('services.aliyun_mail.AddressType');
-
-                return new AliyunMailTransport($AccessKeyId, $AccessSecret, $ReplyToAddress, $AddressType);
-            });
-        });
+//        $this->mergeConfigFrom(__DIR__ . '/../../config/services.php'
+//            , 'services'
+//        );
+//        $this->app->resolving('swift.transport', function (TransportManager $tm) {
+//            $tm->extend('aliyun_mail', function () {
+//                $AccessKeyId = config('services.aliyun_mail.AccessKeyId');
+//                $AccessSecret = config('services.aliyun_mail.AccessSecret');
+//                $ReplyToAddress = config('services.aliyun_mail.ReplyToAddress');
+//                $AddressType = config('services.aliyun_mail.AddressType');
+//
+//                return new AliyunMailTransport($AccessKeyId, $AccessSecret, $ReplyToAddress, $AddressType);
+//            });
+//    });
     }
 
 
     /**
      * 调度任务
      */
-    private function scheduleBoot()
+    private
+    function scheduleBoot()
     {
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
