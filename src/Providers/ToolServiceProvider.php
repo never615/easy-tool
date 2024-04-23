@@ -95,6 +95,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/../../routes/adminapi.php');
 
         if ($this->app->runningInConsole()) {
             //发布view覆盖error页面

@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Domain\Log;
 
 use Aliyun_Log_Models_LogItem;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -85,9 +86,9 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::warning("阿里日志 logThirdPart");
-            \Log::warning($exception);
-            \Log::warning($content);
+            Log::warning("阿里日志 logThirdPart");
+            Log::warning($exception);
+            Log::warning($content);
         }
     }
 
@@ -120,9 +121,9 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::warning("阿里日志 logOwnerApi");
-            \Log::warning($exception);
-            \Log::warning($content['url'] ?? null);
+            Log::warning("阿里日志 logOwnerApi");
+            Log::warning($exception);
+            Log::warning($content['url'] ?? null);
         }
     }
 
@@ -162,9 +163,9 @@ class LoggerAliyun implements Logger
 
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::warning("阿里日志 logAdminOperation");
-            \Log::warning($exception);
-            \Log::warning($log['path'] ?? null);
+            Log::warning("阿里日志 logAdminOperation");
+            Log::warning($exception);
+            Log::warning($log['path'] ?? null);
         }
     }
 
@@ -196,9 +197,9 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::warning("阿里日志 schedule");
-            \Log::warning($exception);
-            \Log::warning($content);
+            Log::warning("阿里日志 schedule");
+            Log::warning($exception);
+            Log::warning($content);
 
         }
     }
@@ -231,8 +232,8 @@ class LoggerAliyun implements Logger
         try {
             $res2 = $this->client->putLogs($req2);
         } catch (\Exception $exception) {
-            \Log::warning("阿里日志 queue");
-            \Log::warning($exception);
+            Log::warning("阿里日志 queue");
+            Log::warning($exception);
         }
     }
 }
