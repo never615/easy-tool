@@ -7,7 +7,6 @@ namespace Mallto\Tool\Data;
 
 use Illuminate\Support\Facades\DB;
 use Mallto\Admin\Data\Traits\BaseModel;
-use Mallto\Mall\Data\Shop;
 use Mallto\User\Data\User;
 
 class Tag extends BaseModel
