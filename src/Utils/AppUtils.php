@@ -8,6 +8,7 @@ namespace Mallto\Tool\Utils;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
 use RuntimeException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 工具类
@@ -363,8 +364,8 @@ class AppUtils
                 return $data;
             }
         } catch (\Exception $e) {
-            \Log::warning($e);
-            \Log::warning($data);
+            Log::warning($e);
+            Log::warning($data);
 
             return [];
         }

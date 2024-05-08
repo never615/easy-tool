@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\ClientException;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Domain\Traits\AliyunTrait;
 use Mallto\Tool\Exception\ThirdPartException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -67,16 +68,16 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
 
                 return true;
             } catch (\Exception $exception) {
-                \Log::error("阿里云移动推送:数据解析错误");
-                \Log::warning($exception);
+                Log::error("阿里云移动推送:数据解析错误");
+                Log::warning($exception);
 
                 return false;
             }
 
         } catch (ClientException $exception) {
-            \Log::error("阿里云移动推送:ClientException");
-            \Log::warning($exception);
-            \Log::warning($exception->getResponse()->getBody());
+            Log::error("阿里云移动推送:ClientException");
+            Log::warning($exception);
+            Log::warning($exception->getResponse()->getBody());
 
             return false;
         }

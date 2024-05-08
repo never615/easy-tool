@@ -10,6 +10,7 @@ use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Domain\Traits\AliyunTrait;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\ThirdPartException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -86,23 +87,23 @@ class AliyunSms extends AbstractAPI implements Sms
                 $contents = $http->parseJson($response);
                 $this->checkAndThrow($contents);
             } catch (ClientException $clientException) {
-                \Log::error("阿里云短信 client exception");
-                \Log::warning($clientException->getMessage());
+                Log::error("阿里云短信 client exception");
+                Log::warning($clientException->getMessage());
                 throw new ResourceException("请重试");
             } catch (ResourceException $resourceException) {
                 throw $resourceException;
             } catch (\Exception $exception) {
-                \Log::error("阿里云短信:数据解析错误");
-                \Log::warning($exception);
+                Log::error("阿里云短信:数据解析错误");
+                Log::warning($exception);
 
                 return false;
             }
 
             return true;
         } catch (ClientException $exception) {
-            \Log::error("阿里云短信:ClientException");
-            \Log::warning($exception);
-            \Log::warning($exception->getResponse()->getBody());
+            Log::error("阿里云短信:ClientException");
+            Log::warning($exception);
+            Log::warning($exception->getResponse()->getBody());
         }
 
         return false;
@@ -177,17 +178,17 @@ class AliyunSms extends AbstractAPI implements Sms
             } catch (ResourceException $resourceException) {
                 throw $resourceException;
             } catch (\Exception $exception) {
-                \Log::error("阿里云短信:数据解析错误");
-                \Log::warning($exception);
+                Log::error("阿里云短信:数据解析错误");
+                Log::warning($exception);
 
                 return false;
             }
 
             return true;
         } catch (ClientException $exception) {
-            \Log::error("阿里云短信:ClientException;");
-            \Log::warning($exception);
-            \Log::warning($exception->getResponse()->getBody());
+            Log::error("阿里云短信:ClientException;");
+            Log::warning($exception);
+            Log::warning($exception->getResponse()->getBody());
         }
 
         return false;
@@ -227,8 +228,8 @@ class AliyunSms extends AbstractAPI implements Sms
                 throw new ResourceException("今日发送短信超标，无法在发送短信");
                 break;
             default:
-                \Log::warning("短信发送失败");
-                \Log::warning($contents);
+                Log::warning("短信发送失败");
+                Log::warning($contents);
                 throw new ResourceException("短信发送失败:" . $contents['Code'] . "," . $contents["Message"]);
                 break;
         }

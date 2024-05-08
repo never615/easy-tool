@@ -8,6 +8,7 @@ namespace Mallto\Tool\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 重设表的自增序列
@@ -59,14 +60,14 @@ class CreateTableIdSeqCommand extends Command
             if (Schema::hasColumn($tableName, "id")) {
                 $idType = Schema::connection(config('database.default'))->getColumnType($tableName, 'id');
                 if ($idType == "integer") {
-                    //\Log::debug($tableName . ':' . $idType);
+                    //Log::debug($tableName . ':' . $idType);
 
                     DB::statement("alter table $tableName alter column id set default nextval('$seq')");
                 }
             }
             } catch (\Exception $exception) {
-                \Log::info($exception->getMessage());
-                \Log::info($tableName);
+                Log::info($exception->getMessage());
+                Log::info($tableName);
             }
         }
 

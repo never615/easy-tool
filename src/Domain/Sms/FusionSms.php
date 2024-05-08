@@ -12,6 +12,7 @@ use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\ConfigUtils;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -82,7 +83,7 @@ class FusionSms extends AbstractAPI implements Sms
 
         $debug = AppUtils::locationDebugLog();
         if ($debug) {
-            \Log::warning('fusion sms:', [ $url, $params, $headers ]);
+            Log::warning('fusion sms:', [ $url, $params, $headers ]);
         }
 
         try {
@@ -99,15 +100,15 @@ class FusionSms extends AbstractAPI implements Sms
 
             return true;
         } catch (ClientException $clientException) {
-            \Log::warning("融合通信 client exception");
-            \Log::warning($clientException->getMessage());
-            \Log::warning($clientException->getResponse()->getBody());
+            Log::warning("融合通信 client exception");
+            Log::warning($clientException->getMessage());
+            Log::warning($clientException->getResponse()->getBody());
             throw new ResourceException("请重试");
         } catch (ResourceException $resourceException) {
             throw $resourceException;
         } catch (\Exception $exception) {
-            \Log::warning("融合通信:数据解析错误");
-            \Log::warning($exception);
+            Log::warning("融合通信:数据解析错误");
+            Log::warning($exception);
 
             return false;
         }
@@ -154,8 +155,8 @@ class FusionSms extends AbstractAPI implements Sms
             //    throw new ResourceException("今日发送短信超标，无法在发送短信");
             //    break;
             default:
-                \Log::warning("短信发送失败");
-                \Log::warning($contents);
+                Log::warning("短信发送失败");
+                Log::warning($contents);
                 throw new ResourceException("短信发送失败:" . $contents['code'] . "," . $contents["msg"]);
                 break;
         }

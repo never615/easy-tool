@@ -15,6 +15,7 @@ use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\HttpUtils;
 use Mallto\Tool\Utils\UrlUtils;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -53,8 +54,8 @@ class QrController extends Controller
 
             }
         } catch (\Exception $exception) {
-            \Log::error("二维码尺寸设置失败");
-            \Log::warning($exception);
+            Log::error("二维码尺寸设置失败");
+            Log::warning($exception);
             throw new ResourceException("二维码尺寸设置失败");
         }
 

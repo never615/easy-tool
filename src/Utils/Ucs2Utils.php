@@ -33,8 +33,6 @@ class Ucs2Utils
                 $tmpChar = substr($str, $pos, 1);
                 ++$pos;
             }
-            //\Log::debug('Ucs2Code', [ $tmpChar, bin2hex(iconv("UTF-8", "UCS-2", $tmpChar)) ]);
-            //$buffer[] = bin2hex(iconv("UTF-8", "UCS-2", $tmpChar));
             $buffer[] = bin2hex(iconv("UTF-8", "UCS-2BE", $tmpChar));
         }
 

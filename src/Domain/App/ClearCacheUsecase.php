@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use Predis\Connection\ConnectionException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * User: never615 <never615.com>
@@ -29,7 +30,7 @@ class ClearCacheUsecase
      */
     public function clearCache($cache = true, $prefix = '')
     {
-        \Log::warning('clear cache', [ $cache, $prefix ]);
+        Log::warning('clear cache', [ $cache, $prefix ]);
 
         //正常情况下只清理缓存库
         Artisan::call('cache:clear');
@@ -64,7 +65,7 @@ class ClearCacheUsecase
                 }
             } else {
                 if ( ! $cache) {
-                    \Log::warning('clear all');
+                    Log::warning('clear all');
                     //清理默认 redis,存储的 session horizon
                     app('redis')->flushdb();
 

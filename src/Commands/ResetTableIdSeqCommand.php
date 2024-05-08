@@ -7,6 +7,7 @@ namespace Mallto\Tool\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 重设表的自增序列
@@ -57,8 +58,8 @@ class ResetTableIdSeqCommand extends Command
                     \DB::select("select setval('" . $tableName . "_id_seq',(select max(id) from $tableName))");
                 }
             } catch (\Exception $exception) {
-                \Log::info($tableName);
-                \Log::info($exception->getMessage());
+                Log::info($tableName);
+                Log::info($exception->getMessage());
             }
         }
 

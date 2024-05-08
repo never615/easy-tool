@@ -49,7 +49,6 @@ class AuthenticateSignWithReferrer
     public function handle(Request $request, Closure $next)
     {
 
-//        \Log::debug(1111);
 
         //if(AppUtils::isTestEnv()){
         //    return $next($request);
@@ -58,7 +57,6 @@ class AuthenticateSignWithReferrer
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
 
-//        \Log::debug($referer);
 
         if (in_array(config('app.env'), ['integration', 'local'])) {
             return $next($request);

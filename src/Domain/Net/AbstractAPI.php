@@ -18,6 +18,7 @@ use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class AbstractAPI.
@@ -222,8 +223,8 @@ abstract class AbstractAPI
                 }
 
             } catch (\Exception $exception) {
-                \Log::error("记录第三方方请求日志错误");
-                \Log::warning($exception);
+                Log::error("记录第三方方请求日志错误");
+                Log::warning($exception);
             }
 
 
@@ -354,10 +355,10 @@ abstract class AbstractAPI
         }
 
         if ($exception) {
-            \Log::error('基础网络库:其他异常');
-            \Log::warning($exception);
-            \Log::warning($exception->getRequest()->getUri()->getHost());
-            \Log::warning($exception->getRequest()->getUri()->getPath());
+            Log::error('基础网络库:其他异常');
+            Log::warning($exception);
+            Log::warning($exception->getRequest()->getUri()->getHost());
+            Log::warning($exception->getRequest()->getUri()->getPath());
         }
 
         return false;
@@ -403,13 +404,13 @@ abstract class AbstractAPI
     protected function clientExceptionLog(ClientException $clientException)
     {
         try {
-            \Log::error('clientException:' . static::class);
-            \Log::warning(new Exception());
-            \Log::warning($clientException);
-            \Log::warning($clientException->getResponse()->getBody()->getContents());
+            Log::error('clientException:' . static::class);
+            Log::warning(new Exception());
+            Log::warning($clientException);
+            Log::warning($clientException->getResponse()->getBody()->getContents());
         } catch (\Exception $exception) {
-            \Log::error('clientExceptionLog');
-            \Log::warning($exception);
+            Log::error('clientExceptionLog');
+            Log::warning($exception);
         }
     }
 
