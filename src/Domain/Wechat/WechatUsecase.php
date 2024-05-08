@@ -13,6 +13,7 @@ use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\SignUtils;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -77,7 +78,7 @@ class  WechatUsecase extends AbstractAPI
             }
         } else {
             if ($public_template_id != 'OPENTM202764141') {
-                \Log::warning("模板消息不存在,新设置:" . $public_template_id . ",subject_id:" . $subject->id);
+                Log::warning("模板消息不存在,新设置:" . $public_template_id . ",subject_id:" . $subject->id);
 
                 $templateId = $this->addTemplateId($public_template_id, $subject);
                 if ($templateId) {
@@ -114,8 +115,8 @@ class  WechatUsecase extends AbstractAPI
         }
 
         if ( ! $uuid) {
-            \Log::error("微信模板消息发送失败 uuid未设置");
-            \Log::warning($public_template_id);
+            Log::error("微信模板消息发送失败 uuid未设置");
+            Log::warning($public_template_id);
 
             return false;
         }
@@ -138,7 +139,7 @@ class  WechatUsecase extends AbstractAPI
         } catch (ResourceException $exception) {
             if ( ! starts_with($exception->getMessage(), "require subscribe")) {
                 if (starts_with($exception->getMessage(), 'invalid template_id hint')) {
-                    \Log::warning('addTemplateId', [ $public_template_id, $subject->id ]);
+                    Log::warning('addTemplateId', [ $public_template_id, $subject->id ]);
                     $new_templateId = $this->addTemplateId($public_template_id, $subject,
                         $content['template_id']);
                     if ($new_templateId) {
@@ -149,23 +150,23 @@ class  WechatUsecase extends AbstractAPI
                         $this->templateMsg($content, $subject, $public_template_id);
                     }
                 } else {
-                    \Log::error("微信模板消息发送失败", [ $exception->getMessage() ]);
-                    \Log::warning($exception);
+                    Log::error("微信模板消息发送失败", [ $exception->getMessage() ]);
+                    Log::warning($exception);
                 }
             }
 
             return false;
         } catch (ClientException $clientException) {
-            \Log::error("微信模板消息发送失败 ClientException");
+            Log::error("微信模板消息发送失败 ClientException");
             $response = $clientException->getResponse();
-            \Log::warning($clientException);
-            \Log::warning($response->getBody()->getContents());
+            Log::warning($clientException);
+            Log::warning($response->getBody()->getContents());
 
             return false;
 
         } catch (\Exception $exception) {
-            \Log::error("微信模板消息发送失败 Exception");
-            \Log::warning($exception);
+            Log::error("微信模板消息发送失败 Exception");
+            Log::warning($exception);
 
             return false;
         }
@@ -184,7 +185,7 @@ class  WechatUsecase extends AbstractAPI
      */
     public function addTemplateId($shortId, $subject, $oldTemplateId = null)
     {
-        \Log::warning(new \Exception());
+        Log::warning(new \Exception());
 
         if ( ! AppUtils::isTestEnv()) {
             $baseUrl = "https://wechat.mall-to.com";
@@ -237,17 +238,17 @@ class  WechatUsecase extends AbstractAPI
 
             return false;
         } catch (ResourceException $resourceException) {
-            \Log::warning("获取/设置模板消息id resourceException");
-            \Log::warning($resourceException);
+            Log::warning("获取/设置模板消息id resourceException");
+            Log::warning($resourceException);
             throw $resourceException;
         } catch (ClientException $clientException) {
-            \Log::warning("获取/设置模板消息id client exception");
-            \Log::warning($clientException->getResponse()->getBody()->getContents());
+            Log::warning("获取/设置模板消息id client exception");
+            Log::warning($clientException->getResponse()->getBody()->getContents());
 
             return false;
         } catch (\Exception $exception) {
-            \Log::warning("获取/设置模板消息id exception");
-            \Log::warning($exception);
+            Log::warning("获取/设置模板消息id exception");
+            Log::warning($exception);
 
             return false;
         }

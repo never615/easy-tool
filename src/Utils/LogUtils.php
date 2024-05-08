@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Support\Facades\Log;
+
 /**
  * Created by PhpStorm.
  * User: never615 <never615.com>
@@ -23,7 +25,7 @@ class LogUtils
      */
     public static function notConfigLogByOwner($msg)
     {
-        \Log::warning("owner_config:" . $msg);
+        Log::warning("owner_config:" . $msg);
     }
 
 
@@ -36,7 +38,7 @@ class LogUtils
      */
     public static function notConfigLogBySubjecter($msg)
     {
-        \Log::warning("subjecter_config:" . $msg);
+        Log::warning("subjecter_config:" . $msg);
     }
 
 }

@@ -12,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Mallto\Tool\Domain\Log\Logger;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 日志投递任务
@@ -81,8 +82,8 @@ class LogJob implements ShouldQueue
      */
     public function failed(Exception $e)
     {
-        \Log::error("日志投递任务失败");
-        \Log::warning($e);
+        Log::error("日志投递任务失败");
+        Log::warning($e);
     }
 
 }

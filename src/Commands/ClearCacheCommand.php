@@ -8,6 +8,7 @@ namespace Mallto\Tool\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 清理缓存
@@ -52,7 +53,7 @@ class ClearCacheCommand extends Command
         $isClearCache = Cache::get('clear_cache_task');
 
         if ($isClearCache === 'clear_cache_task') {
-            \Log::warning('clear cache by schedule', [ $isClearCache ]);
+            Log::warning('clear cache by schedule', [ $isClearCache ]);
             //正常情况下只清理缓存库
             Artisan::call('cache:clear local_redis');
         }

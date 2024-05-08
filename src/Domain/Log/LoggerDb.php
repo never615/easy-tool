@@ -7,6 +7,7 @@ namespace Mallto\Tool\Domain\Log;
 
 use Mallto\Admin\Data\OperationLog;
 use Mallto\Tool\Data\ThirdApiLog;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Created by PhpStorm.
@@ -44,7 +45,7 @@ class LoggerDb implements Logger
         try {
             ThirdApiLog::create($content);
         } catch (\Exception $exception) {
-            \Log::info($exception);
+            Log::info($exception);
         }
 
     }
@@ -104,7 +105,7 @@ class LoggerDb implements Logger
             }
         } catch (\Exception $exception) {
             // pass
-            \Log::info($exception);
+            Log::info($exception);
         }
     }
 

@@ -16,6 +16,7 @@ use Mallto\Tool\Exception\HttpException;
 use Mallto\Tool\Exception\ResourceException;
 use Mallto\Tool\Utils\AppUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * api 接口请求专用
@@ -82,8 +83,8 @@ class RequestCheck
 //        } catch (HttpException $httpException) {
 //            throw $httpException;
 //        } catch (\Exception $exception) {
-//            \Log::error('token 过期校验 error');
-//            \Log::warning($exception);
+//            Log::error('token 过期校验 error');
+//            Log::warning($exception);
 //        }
 
         //如果user存在,检查user和uuid是否一致
@@ -96,7 +97,7 @@ class RequestCheck
             $adminUUID = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_ADMIN_WECHAT_UUID);
 
             if ($subject->uuid != $uuid && $adminUUID != $uuid) {
-                \Log::warning("当前请求用户不属于该uuid:" . $subject->uuid . "," . $uuid);
+                Log::warning("当前请求用户不属于该uuid:" . $subject->uuid . "," . $uuid);
                 throw new ResourceException("当前请求用户不属于该uuid");
             }
         }

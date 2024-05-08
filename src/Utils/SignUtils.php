@@ -20,6 +20,7 @@
 namespace Mallto\Tool\Utils;
 
 use Mallto\Tool\Exception\SignException;
+use Illuminate\Support\Facades\Log;
 
 class SignUtils
 {
@@ -50,9 +51,9 @@ class SignUtils
         } else {
             $stringSignTemp = 'key=' . $key;
         }
-//        \Log::info($stringSignTemp);
+//        Log::info($stringSignTemp);
         $stringSignTemp = base64_encode($stringSignTemp);
-//        \Log::info('base64以后:'.$stringSignTemp);
+//        Log::info('base64以后:'.$stringSignTemp);
 
         $sign = strtolower(md5($stringSignTemp));
 
@@ -80,7 +81,7 @@ class SignUtils
 
         $stringSignTemp = urldecode($stringSignTemp);
 
-//        \Log::info($stringSignTemp);
+//        Log::info($stringSignTemp);
 
         return strtolower(md5($stringSignTemp));
     }
@@ -120,9 +121,9 @@ class SignUtils
             $stringSignTemp = 'key=' . $key;
         }
 
-//        \Log::info($stringSignTemp);
+//        Log::info($stringSignTemp);
         $stringSignTemp = base64_encode($stringSignTemp);
-//        \Log::info('base64以后:'.$stringSignTemp);
+//        Log::info('base64以后:'.$stringSignTemp);
 
         $sign = strtolower(md5($stringSignTemp));
 
@@ -134,9 +135,9 @@ class SignUtils
                 return false;
             }
         }
-//        \Log::info($arr);
-//        \Log::info($waiteSign);
-//        \Log::info($sign);
+//        Log::info($arr);
+//        Log::info($waiteSign);
+//        Log::info($sign);
         return $sign == $waiteSign ? true : false;
     }
 
@@ -188,10 +189,10 @@ class SignUtils
 
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
-        //\Log::debug("signVersion2 2:" . $stringToSign);
+        //Log::debug("signVersion2 2:" . $stringToSign);
         $stringToSign = rawurlencode($stringToSign);
 
-        //\Log::debug("signVersion2 3:" . $stringToSign);
+        //Log::debug("signVersion2 3:" . $stringToSign);
 
         return base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
     }
@@ -216,19 +217,19 @@ class SignUtils
         }
 
         $waiteSign = $arr['signature'];
-//        \Log::debug('$waiteSign:' . $waiteSign);
+//        Log::debug('$waiteSign:' . $waiteSign);
         unset($arr['signature']);
         ksort($arr, SORT_STRING);
-//        \Log::debug($arr);
+//        Log::debug($arr);
 
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
         $stringToSign = rawurlencode($stringToSign);
-//        \Log::debug('$stringToSign:' . $stringToSign);
+//        Log::debug('$stringToSign:' . $stringToSign);
 
         $sign = rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
 
-//        \Log::debug('$sign:' . $sign);
+//        Log::debug('$sign:' . $sign);
 
         return $sign == $waiteSign ? true : false;
     }

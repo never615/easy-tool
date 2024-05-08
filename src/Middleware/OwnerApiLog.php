@@ -12,6 +12,7 @@ use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\ConfigUtils;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 向第三方提供的接口通讯日志记录
@@ -91,7 +92,7 @@ class OwnerApiLog
                         $input = $response->getContent();
                     }
                 } catch (\Exception $exception) {
-                    \Log::warning($exception);
+                    Log::warning($exception);
                     $input = '异常数据';
                 }
             } else {

@@ -27,6 +27,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 /**
  *
@@ -195,8 +196,8 @@ class Handler extends ExceptionHandler
     protected function interJsonHandler(Throwable $exception, $request, $isAdmin = false)
     {
 //        if ($exception instanceof InternalHttpException) {
-//            \Log::error("系统内部异常");
-//            \Log::warning($exception);
+//            Log::error("系统内部异常");
+//            Log::warning($exception);
 //        }
         if ($exception instanceof HttpException) {
             if ($exception instanceof ServiceUnavailableHttpException) {
@@ -224,8 +225,8 @@ class Handler extends ExceptionHandler
         } else {
             if ($exception instanceof ModelNotFoundException) {
 //                $arr = explode('\\', $exception->getModel());
-                \Log::warning('ModelNotFoundException', $request->all() ?? []);
-//                \Log::warning($exception);
+                Log::warning('ModelNotFoundException', $request->all() ?? []);
+//                Log::warning($exception);
 
                 return response()->json($this->responseData([
                     "error" => trans("errors.not_found"),
@@ -249,8 +250,8 @@ class Handler extends ExceptionHandler
                 //解密失败
                 throw new ValidationHttpException("解密失败");
             } elseif ($exception instanceof MissingAbilityException) {
-//                \Log::info($exception);
-//                \Log::info($exception->scopes());
+//                Log::info($exception);
+//                Log::info($exception->scopes());
                 return response()->json($this->responseData([
                     'error' => $exception->getMessage(),
                 ], $exception), 401, [], JSON_UNESCAPED_UNICODE);
@@ -261,33 +262,33 @@ class Handler extends ExceptionHandler
             } elseif ($exception instanceof QueryException) {
                 if (str_contains($exception->getMessage(), "Invalid text representation:")) {
                     $requestId = $exception->getBindings()[0] ?? "";
-                    \Log::warning(Str::replaceArray('ERROR', ['xxx'], $exception->getMessage())); //不替换error,会自动打一条日志
-                    \Log::warning($exception->getTraceAsString());
+                    Log::warning(Str::replaceArray('ERROR', ['xxx'], $exception->getMessage())); //不替换error,会自动打一条日志
+                    Log::warning($exception->getTraceAsString());
                     throw new ResourceException("查询参数错误,无效的id:" . $requestId);
                 }
 
                 if ($exception->getCode() == '23505') {
-                    \Log::warning("QueryException:23505");
-                    //\Log::warning($exception);
-                    \Log::warning(Str::replaceArray('ERROR', ['xxx'], $exception->getMessage())); //不替换error,会自动打一条日志
-                    \Log::warning($exception->getTraceAsString());
+                    Log::warning("QueryException:23505");
+                    //Log::warning($exception);
+                    Log::warning(Str::replaceArray('ERROR', ['xxx'], $exception->getMessage())); //不替换error,会自动打一条日志
+                    Log::warning($exception->getTraceAsString());
                     throw new ResourceException('数据已提交或创建成功,请刷新查看');
                 }
 
-                \Log::warning("QueryException");
-                \Log::warning($exception);
+                Log::warning("QueryException");
+                Log::warning($exception);
                 throw new ResourceException("无效的查询");
             } elseif ($exception instanceof \PDOException) {
                 $msg = preg_replace('/(.*)\(.*\)/', "$1", $exception->getMessage());
-                \Log::error("PDOException");
-                \Log::warning($exception);
+                Log::error("PDOException");
+                Log::warning($exception);
                 throw new ResourceException($msg);
             } elseif ($exception instanceof RequestException) {
                 return response()->json(["error" => "网络繁忙,请重试:" . $exception->getMessage()], 422, [],
                     JSON_UNESCAPED_UNICODE);
             } else {
-                //\Log::error('服务器繁忙');
-                \Log::warning($exception);
+                //Log::error('服务器繁忙');
+                Log::warning($exception);
                 throw new InternalHttpException(trans("errors.internal_error"));
             }
         }

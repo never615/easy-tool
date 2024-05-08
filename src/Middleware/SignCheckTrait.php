@@ -24,6 +24,7 @@ use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\SignUtils;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
+use Illuminate\Support\Facades\Log;
 
 trait SignCheckTrait
 {
@@ -38,8 +39,8 @@ trait SignCheckTrait
         $appSecret = AppSecret::where("app_id", $appId)->first();
 
         if (!$appSecret || !$appSecret->switch) {
-            \Log::warning("app_id 无效:" . $appId);
-            \Log::warning($request->url());
+            Log::warning("app_id 无效:" . $appId);
+            Log::warning($request->url());
             throw new SignException("app_id 无效");
         }
 
@@ -211,8 +212,8 @@ trait SignCheckTrait
 
         //做一下兼容，没有做权限的默认放行
         if (is_null($routeName)) {
-            \Log::error('第三方接口没有配置route name');
-            \Log::warning($request->url());
+            Log::error('第三方接口没有配置route name');
+            Log::warning($request->url());
 
             return true;
         }
