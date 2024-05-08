@@ -5,6 +5,9 @@
 
 namespace Mallto\Tool\Utils;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+
 /**
  * User: never615 <never615.com>
  * Date: 2021/1/15
@@ -17,18 +20,25 @@ class RequestUtils
      * 获取请求中的需求的语言
      *
      * @return array|mixed|string
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
-    public static function getLan()
+    public static function getLan(): mixed
     {
-        $language = request()->header('language', request()->get('language'));
+        $request = request();
+        if ($request) {
+            $language = $request->header('language', $request->get('language'));
 
-        // 可用的语言版本
-        $availableLanguages = ['en', 'tc'];
+            // 可用的语言版本
+            $availableLanguages = ['en', 'tc'];
 
-        if (!in_array($language, $availableLanguages, true)) {
+            if (!in_array($language, $availableLanguages, true)) {
+                return null;
+            }
+
+            return $language;
+        } else {
             return null;
         }
-
-        return $language;
     }
 }
