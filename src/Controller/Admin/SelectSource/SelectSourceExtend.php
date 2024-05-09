@@ -69,7 +69,7 @@ class SelectSourceExtend implements SelectSourceExtendInterface
                     ->select(DB::raw("id,name as text"))
                     ->findOrFail($id);
             } else {
-                if (!$adminUser->isOwner()) {
+                if (count($childSubjectIds) > 1) {
                     $query = Tag::query()
                         ->select(DB::raw("tags.id,tags.name||'-('||subjects.name||')' as text"))
                         ->join('subjects', 'subjects.id', 'subject_id')
