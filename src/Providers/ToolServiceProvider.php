@@ -120,9 +120,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->queueBoot();
         $this->scheduleBoot();
 
-        Relation::morphMap([
-            'user' => User::class,
-        ]);
+
     }
 
 
