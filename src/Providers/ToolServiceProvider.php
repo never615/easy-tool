@@ -22,6 +22,7 @@ use Illuminate\Support\ServiceProvider;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\ClearCacheCommand;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
+use Mallto\Tool\Commands\DeleteFailedJobsCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
@@ -56,6 +57,7 @@ class ToolServiceProvider extends ServiceProvider
         RedisDelPrefixCommand::class,
         CreateTableIdSeqCommand::class,
         ClearCacheCommand::class,
+        DeleteFailedJobsCommand::class
     ];
 
     /**
@@ -388,6 +390,22 @@ class ToolServiceProvider extends ServiceProvider
                 ->after(function () {
                     dispatch(new LogJob("logSchedule",
                         ["slug" => "clear_cache", "status" => "finish"]));
+                });
+
+            $schedule->command('tool:delete_failed_jobs_log')
+                ->onOneServer()
+                ->dailyAt('04:00')
+                ->name("delete_failed_jobs_log")
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->evenInMaintenanceMode()
+                ->before(function () {
+                    dispatch(new LogJob("logSchedule",
+                        [ "slug" => "clean_failed_jobs_log", "status" => "start" ]));
+                })
+                ->after(function () {
+                    dispatch(new LogJob("logSchedule",
+                        [ "slug" => "clean_failed_jobs_log", "status" => "finish" ]));
                 });
         });
     }
