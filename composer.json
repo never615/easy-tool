@@ -21,7 +21,7 @@
     "overtrue/laravel-filesystem-qiniu": "^2.2",
     "overtrue/laravel-pinyin": "~3.0",
     "predis/predis": "^2.2",
-    "rap2hpoutre/laravel-log-viewer": "^2.2.0",
+    "rap2hpoutre/laravel-log-viewer": "^2.3.0",
     "qiniu/php-sdk": "^7.12.0",
     "laravel/ui": "^4.0",
     "guzzlehttp/guzzle": "^7.2.0",
