@@ -8,6 +8,8 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
+use Mallto\Admin\Data\Subject;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Data\AppSecretsRole;
 
@@ -54,6 +56,8 @@ class AppSecretController extends AdminCommonController
 
         $grid->column('roles', trans('admin.roles'))->pluck('name')->label();
 
+        $grid->column('app_secret_subjects', '主体')->pluck('name')->label();
+
         $grid->filter(function (Grid\Filter $filter) {
             $filter->ilike("app_id");
             $filter->ilike("name");
@@ -71,6 +75,8 @@ class AppSecretController extends AdminCommonController
             ->help("﻿openssl rand -hex 16");
         $form->multipleSelect('roles', '角色')
             ->options(AppSecretsRole::query()->get()->pluck('name', 'id'));
+        $form->multipleSelect('app_secret_subjects', '主体')
+            ->options(Subject::DynamicData()->get()->pluck('name', 'id'));
         $form->switch("switch");
         $form->switch("is_check_third_permission", '是否校验接口权限');
     }
