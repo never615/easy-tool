@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Data\AppSecretsPermission;
 use Mallto\Tool\Exception\PermissionDeniedException;
@@ -141,6 +142,9 @@ trait SignCheckTrait
                     throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
                 }
 
+                //校验uuid是否属于开发者关联的subject或者他的子主体
+                $this->subjectCheck($appSecret);
+
                 //时间戳格式检查
                 if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
@@ -182,6 +186,20 @@ trait SignCheckTrait
         }
     }
 
+
+    public function subjectCheck($appSecret)
+    {
+        //获取开发者关联的主体
+        $subjects = $appSecret->app_secret_subjects->toarray();
+        if (empty($subjects)) {
+            throw new ResourceException("该项目未绑定主体,请联系管理员");
+        }
+        //获取uuid对应的主体id
+        $appSecretSubjectId = SubjectUtils::getSubjectId();
+        if (!in_array($appSecretSubjectId, array_column($subjects, 'id'), true)) {
+            throw new ResourceException("权限不足,请联系管理员");
+        }
+    }
 
     /**
      * 接口权限检查
