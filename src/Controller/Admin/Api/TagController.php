@@ -20,7 +20,7 @@ class TagController extends Controller
 
     public function index(Request $request)
     {
-        $type = $request->get('type');
+        $type = $request->get('type','locator');
         $name = $request->get('name');
 
         $perPage = $request->get('per_page', 20);
