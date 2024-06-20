@@ -20,14 +20,12 @@ class TagController extends Controller
 
     public function index(Request $request)
     {
-        $type = $request->get('type','locator');
+        $type = $request->get('type');
         $name = $request->get('name');
-
         $perPage = $request->get('per_page', 20);
 
         $subjectId = SubjectUtils::getSubjectId();
-        $query = Tag::query()
-            ->where("subject_id", $subjectId);
+        $query = Tag::query()->where("subject_id", $subjectId);
 
 //        $query->select(['id','name', 'type', 'logo', 'created_at', 'updated_at']);
 
@@ -48,15 +46,19 @@ class TagController extends Controller
     public function show($id)
     {
         $subjectId = SubjectUtils::getSubjectId();
-        $tag = Tag::query()
-            ->where("subject_id", $subjectId)
-            ->find($id);
+        $tag = Tag::query()->where("subject_id", $subjectId)->find($id);
+
         return $tag;
     }
 
 
     public function store(Request $request)
     {
+        $this->validate($request, [
+            'type' => 'required|string',
+            'name' => 'required|string',
+        ]);
+
         $subjectId = SubjectUtils::getSubjectId();
         $tag = new Tag();
         $tag->fill($request->only([
@@ -66,31 +68,32 @@ class TagController extends Controller
         ]));
         $tag->subject_id = $subjectId;
         $tag->save();
+
         return $tag;
     }
+
 
     public function update(Request $request, $id)
     {
         $subjectId = SubjectUtils::getSubjectId();
-        $tag = Tag::query()
-            ->where("subject_id", $subjectId)
-            ->find($id);
+        $tag = Tag::query()->where("subject_id", $subjectId)->find($id);
         $tag->fill($request->only([
             'name',
             'type',
             'logo',
         ]));
         $tag->save();
+
         return $tag;
     }
+
 
     public function destroy($id)
     {
         $subjectId = SubjectUtils::getSubjectId();
-        $tag = Tag::query()
-            ->where("subject_id", $subjectId)
-            ->findOrFail($id);
+        $tag = Tag::query()->where("subject_id", $subjectId)->findOrFail($id);
         $tag->delete();
+
         return response()->noContent();
     }
 
