@@ -14,22 +14,21 @@ class Tag extends BaseModel
 
     //todo 主体可以设置的标签做成主体可配置的
     const TYPE = [
-        'shop' => "店铺标签",
+        'shop'     => "店铺标签",
         'activity' => "活动标签",
-        "user" => "用户自选标签",
+        "user"     => "用户自选标签",
 //        "coupon"   => "卡券标签",
         'discount' => "会员优惠模块标签",
 //        "common"   => "通用标签",
-        'relic' => "文物",
-        'locator' => '定位器'
+        'relic'    => "文物",
+        'locator'  => '定位器',
+        'area'     => '区域',
     ];
 
 
     public static function selectUserTags()
     {
-        return static::dynamicData()
-            ->where("type", "user")
-            ->pluck("name", "id");
+        return static::dynamicData()->where("type", "user")->pluck("name", "id");
     }
 
 
@@ -39,9 +38,7 @@ class Tag extends BaseModel
      */
     public static function selectNotUserTags()
     {
-        return static::dynamicData()
-            ->where("type", "common")
-            ->pluck("name", "id");
+        return static::dynamicData()->where("type", "common")->pluck("name", "id");
     }
 
 
@@ -56,19 +53,13 @@ class Tag extends BaseModel
     public function scopeOfType($query, $type)
     {
         if (\Mallto\Admin\AdminUtils::isOwner()) {
-            return static::dynamicData()
-                ->where(function ($query) use ($type) {
-                    $query->where("type", $type)
-                        ->orWhere("type", "common");
-                })
-                ->select(DB::raw("name||subject_id as name,id"))->pluck("name", "id");
+            return static::dynamicData()->where(function ($query) use ($type) {
+                $query->where("type", $type)->orWhere("type", "common");
+            })->select(DB::raw("name||subject_id as name,id"))->pluck("name", "id");
         } else {
-            return $query->dynamicData()
-                ->where(function ($query) use ($type) {
-                    $query->where("type", $type)
-                        ->orWhere("type", "common");
-                })
-                ->pluck("name", "id");
+            return $query->dynamicData()->where(function ($query) use ($type) {
+                $query->where("type", $type)->orWhere("type", "common");
+            })->pluck("name", "id");
         }
     }
 
