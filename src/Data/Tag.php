@@ -7,6 +7,7 @@ namespace Mallto\Tool\Data;
 
 use Illuminate\Support\Facades\DB;
 use Mallto\Admin\Data\Traits\BaseModel;
+use Mallto\Mall\Data\Shop;
 use Mallto\User\Data\User;
 
 class Tag extends BaseModel
@@ -68,5 +69,13 @@ class Tag extends BaseModel
     {
         return $this->morphedByMany(User::class, "taggable");
     }
+
+
+    public function shops()
+    {
+        return $this->morphedByMany(Shop::class, "taggable");
+    }
+
+
 
 }
