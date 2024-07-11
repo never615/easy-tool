@@ -12,6 +12,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Support\Facades\Log;
+
 class TimeUtils
 {
 
@@ -71,8 +73,8 @@ class TimeUtils
             $date2 = $date1;
             $date1 = $tmp;
         }
-        list($Y1, $m1, $d1) = explode('-', $date1);
-        list($Y2, $m2, $d2) = explode('-', $date2);
+        [ $Y1, $m1, $d1 ] = explode('-', $date1);
+        [ $Y2, $m2, $d2 ] = explode('-', $date2);
         $Y = $Y2 - $Y1;
         $m = $m2 - $m1;
         $d = $d2 - $d1;
@@ -95,11 +97,39 @@ class TimeUtils
     public static function millisecond()
     {
         $time = explode(" ", microtime());
-        $time = $time [1] . ($time [0] * 1000);
+        $time = $time [1].($time [0] * 1000);
         $time2 = explode(".", $time);
         $time = $time2 [0];
 
         return $time;
+    }
+
+
+    /**
+     * 计算代码运行时间辅助工具
+     *
+     * @param        $startTime
+     * @param        $locationDebug
+     * @param string $text
+     *
+     * @return int|void
+     */
+    public static function getCodeRunTime($startTime, $locationDebug, $text = '定位结果计算执行时间:')
+    {
+        if ($locationDebug) {
+            if ( ! isset($startTime) || is_null($startTime)) {
+                return 0;
+            }
+            $end = microtime(true);
+            $executionTime = $end - $startTime;
+            $executionTime = round($executionTime, 3);
+            $executionTime = $executionTime * 1000;
+
+            Log::info($text.$executionTime."毫秒");
+
+        }
+
+        //return $executionTime;
     }
 
 }
