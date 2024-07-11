@@ -108,6 +108,9 @@ class TimeUtils
     /**
      * 计算代码运行时间辅助工具
      *
+     * $startTimeGlobal = microtime(true);
+     *
+     *
      * @param        $startTime
      * @param        $locationDebug
      * @param string $text
