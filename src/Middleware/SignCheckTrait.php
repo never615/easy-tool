@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Data\AppSecretsPermission;
@@ -25,22 +26,21 @@ use Mallto\Tool\Utils\AppUtils;
 use Mallto\Tool\Utils\SignUtils;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
-use Illuminate\Support\Facades\Log;
 
 trait SignCheckTrait
 {
 
     protected function check(Request $request, Closure $next)
     {
-        if (!config('other.auth_sign')) {
+        if ( ! config('other.auth_sign')) {
             return $next($request);
         }
 
         $appId = $request->header("app_id");
         $appSecret = AppSecret::where("app_id", $appId)->first();
 
-        if (!$appSecret || !$appSecret->switch) {
-            Log::warning("app_id 无效:" . $appId);
+        if ( ! $appSecret || ! $appSecret->switch) {
+            Log::warning("app_id 无效:".$appId);
             Log::warning($request->url());
             throw new SignException("app_id 无效");
         }
@@ -137,16 +137,15 @@ trait SignCheckTrait
                 $signatureNonce = $request->header("signature_nonce");
                 $signature = $request->header("signature");
 
-                if (is_null($timestamp) || is_null($uuid) || is_null($appId) ||
-                    is_null($signatureNonce) || is_null($signature)) {
-                    throw new PreconditionRequiredHttpException(trans("errors.precondition_request"));
+                if (is_null($timestamp) || is_null($uuid) || is_null($appId) || is_null($signatureNonce) || is_null($signature)) {
+                    throw new PreconditionRequiredHttpException('sign auth fail:'.trans("errors.precondition_request"));
                 }
 
                 //校验uuid是否属于开发者关联的subject或者他的子主体
                 $this->subjectCheck($appSecret);
 
                 //时间戳格式检查
-                if (!Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
+                if ( ! Carbon::hasFormat($timestamp, "Y-m-d H:i:s")) {
                     throw new ResourceException("InvalidTimeStamp.Format");
                 }
 
@@ -154,20 +153,20 @@ trait SignCheckTrait
 
                 $requestPath = $request->path();
 
-                $nonce = $uuid . $appId . $requestPath . $signatureNonce;
+                $nonce = $uuid.$appId.$requestPath.$signatureNonce;
                 if (Cache::get($nonce)) {
-                    throw new ResourceException("请求已被接受,signature_nonce:" . $signatureNonce);
+                    throw new ResourceException("请求已被接受,signature_nonce:".$signatureNonce);
                 }
 
                 if (Carbon::now()->subMinutes(3) < $timestamp) {
                     //和当前时间间隔比较在15分钟内
                     //检查签名
                     if (SignUtils::verifySign4(array_merge($inputs, [
-                        "timestamp" => $timestamp,
-                        $uuidKey => $uuid,
-                        "app_id" => $appId,
+                        "timestamp"       => $timestamp,
+                        $uuidKey          => $uuid,
+                        "app_id"          => $appId,
                         "signature_nonce" => $signatureNonce,
-                        "signature" => $signature,
+                        "signature"       => $signature,
                     ]), $secret)) {
                         //pass
                         Cache::put($nonce, 1, 3 * 60);
@@ -196,10 +195,11 @@ trait SignCheckTrait
         }
         //获取uuid对应的主体id
         $appSecretSubjectId = SubjectUtils::getSubjectId();
-        if (!in_array($appSecretSubjectId, array_column($subjects, 'id'), true)) {
+        if ( ! in_array($appSecretSubjectId, array_column($subjects, 'id'), true)) {
             throw new ResourceException("权限不足,请联系管理员");
         }
     }
+
 
     /**
      * 接口权限检查
@@ -212,7 +212,7 @@ trait SignCheckTrait
     public function permissionCheck(Request $request, $appSecretUser)
     {
         //没有开启的校验的直接跳过
-        if (!$appSecretUser->is_check_third_permission) {
+        if ( ! $appSecretUser->is_check_third_permission) {
             return true;
         }
 
@@ -222,8 +222,8 @@ trait SignCheckTrait
         if (count($routenameArr) == 2) {
             $subRouteName0 = $routenameArr[0];
 
-            if (!AppSecretsPermission::query()->where('slug', $routeName)->exists()) {
-                $routeName = $subRouteName0 . '.*';
+            if ( ! AppSecretsPermission::query()->where('slug', $routeName)->exists()) {
+                $routeName = $subRouteName0.'.*';
             }
 
         }
