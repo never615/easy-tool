@@ -6,6 +6,7 @@ use Exception;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
@@ -340,11 +341,11 @@ abstract class AbstractAPI
 
 
     /**
-     * @param RequestException $exception
+     * @param TransferException $exception
      *
      * @return bool
      */
-    protected function isConnectError(RequestException $exception = null)
+    protected function isConnectError(TransferException $exception = null)
     {
         if ($exception && (strpos($exception->getMessage(), ' Connection reset by peer'))) {
             return true;
