@@ -5,11 +5,10 @@
 
 namespace Mallto\Tool\Data;
 
-use Illuminate\Database\Eloquent\Model;
 use Mallto\Admin\Data\Subject;
 use Mallto\Tool\Data\Traits\ThirdCheck;
 
-class AppSecret extends Model
+class AppSecret extends BaseModel
 {
 
     use ThirdCheck;
@@ -34,6 +33,6 @@ class AppSecret extends Model
      */
     public function app_secret_subjects()
     {
-        return $this->belongsToMany(Subject::class, 'app_secrets_has_subjects','app_secret_id','subject_id');
+        return $this->belongsToMany(Subject::class, 'app_secrets_has_subjects', 'app_secret_id', 'subject_id');
     }
 }

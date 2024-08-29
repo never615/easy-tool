@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Data;
 
-use Illuminate\Database\Eloquent\Model;
 use Mallto\Admin\Data\Traits\DynamicData;
 
 /**
@@ -14,7 +13,7 @@ use Mallto\Admin\Data\Traits\DynamicData;
  *
  * @package Mallto\Tool\Data
  */
-class Log extends Model
+class Log extends BaseModel
 {
 
     use DynamicData;

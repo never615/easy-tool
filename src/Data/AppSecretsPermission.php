@@ -7,7 +7,7 @@ namespace Mallto\Tool\Data;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AppSecretsPermission extends Model
+class AppSecretsPermission extends BaseModel
 {
 
     protected $guarded = [
