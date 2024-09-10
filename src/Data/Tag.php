@@ -12,18 +12,19 @@ use Mallto\User\Data\User;
 
 class Tag extends BaseModel
 {
+    protected $hidden = ['pivot'];
 
     //todo 主体可以设置的标签做成主体可配置的
     const TYPE = [
-        'shop'     => "店铺标签",
+        'shop' => "店铺标签",
         'activity' => "活动标签",
-        "user"     => "用户自选标签",
+        "user" => "用户自选标签",
 //        "coupon"   => "卡券标签",
         'discount' => "会员优惠模块标签",
 //        "common"   => "通用标签",
-        'relic'    => "文物",
-        'locator'  => '定位器',
-        'area'     => '区域',
+        'relic' => "文物",
+        'locator' => '定位器',
+        'area' => '区域',
     ];
 
 
@@ -75,7 +76,6 @@ class Tag extends BaseModel
     {
         return $this->morphedByMany(Shop::class, "taggable");
     }
-
 
 
 }

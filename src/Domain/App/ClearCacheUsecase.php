@@ -45,10 +45,15 @@ class ClearCacheUsecase
             //删除直接使用redis保存的定位结果
             $keys = app('redis')->keys('l_res_c_*');
 
-            if (!empty($keys)) {
-                app('redis')->del($keys);
-            }
+//            Log::debug($keys);
 
+            app('redis')->del($keys);
+
+//            if (!empty($keys)) {
+//                foreach ($keys as $key) {
+//                    app('redis')->del($key);
+//                }
+//            }
 
             if ($prefix) {
                 // 需要在前面连接上应用的缓存前缀
