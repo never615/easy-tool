@@ -8,9 +8,9 @@ namespace Mallto\Tool\Domain\App;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Predis\Connection\ConnectionException;
-use Illuminate\Support\Facades\Log;
 
 /**
  * User: never615 <never615.com>
@@ -23,14 +23,14 @@ class ClearCacheUsecase
     /**
      * 清理缓存
      *
-     * @param bool   $cache  是否只清理 redis cache 库
+     * @param bool $cache 是否只清理 redis cache 库
      * @param string $prefix redis key 前缀
      *
      * @return void
      */
     public function clearCache($cache = true, $prefix = '')
     {
-        Log::warning('clear cache', [ $cache, $prefix ]);
+        Log::warning('clear cache', [$cache, $prefix]);
 
         //正常情况下只清理缓存库
         Artisan::call('cache:clear');
@@ -42,6 +42,14 @@ class ClearCacheUsecase
         }
 
         if (config('cache.default') === 'redis') {
+            //删除直接使用redis保存的定位结果
+            $keys = app('redis')->keys('l_res_c_*');
+
+            if (!empty($keys)) {
+                app('redis')->del($keys);
+            }
+
+
             if ($prefix) {
                 // 需要在前面连接上应用的缓存前缀
                 $prefix = config('cache.prefix') . ':' . $prefix . '*';
@@ -49,7 +57,7 @@ class ClearCacheUsecase
                     $keys = Redis::connection('local_cache')
                         ->keys($prefix);
 
-                    if ( ! empty($keys)) {
+                    if (!empty($keys)) {
                         Redis::connection('local_cache')->del($keys);
                     }
                 } catch (ConnectionException $connectionException) {
@@ -60,11 +68,13 @@ class ClearCacheUsecase
                 $keys = Redis::connection('cache')
                     ->keys($prefix);
 
-                if ( ! empty($keys)) {
+                if (!empty($keys)) {
                     Redis::del($keys);
                 }
+
+
             } else {
-                if ( ! $cache) {
+                if (!$cache) {
                     Log::warning('clear all');
                     //清理默认 redis,存储的 session horizon
                     app('redis')->flushdb();
