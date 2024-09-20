@@ -49,9 +49,7 @@ class TagController extends Controller
     public function show($id)
     {
         $subjectId = SubjectUtils::getSubjectId();
-        $tag = Tag::query()->where("subject_id", $subjectId)->find($id);
-
-        return $tag;
+        return Tag::query()->where("subject_id", $subjectId)->findOrFail($id);
     }
 
 
@@ -79,7 +77,7 @@ class TagController extends Controller
     public function update(Request $request, $id)
     {
         $subjectId = SubjectUtils::getSubjectId();
-        $tag = Tag::query()->where("subject_id", $subjectId)->find($id);
+        $tag = Tag::query()->where("subject_id", $subjectId)->findOrFail($id);
         $tag->fill($request->only([
             'name',
             'type',
