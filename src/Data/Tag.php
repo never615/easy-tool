@@ -12,7 +12,7 @@ use Mallto\User\Data\User;
 
 class Tag extends BaseModel
 {
-    protected $hidden = ['pivot'];
+    protected $hidden = ['pivot','deleted_at'];
 
     //todo 主体可以设置的标签做成主体可配置的
     const TYPE = [

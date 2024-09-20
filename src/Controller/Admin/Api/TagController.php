@@ -37,6 +37,9 @@ class TagController extends Controller
             $query->where('name', 'ilike', "%$name%");
         }
 
+        $query->orderBy('weight', 'desc')
+            ->orderBy('id', 'desc');
+
         $tags = $query->paginate($perPage);
 
         return $tags;
