@@ -92,7 +92,7 @@
             <div class="body-content">
                 <div class="row">
                     <div class="col-md-6">
-                        <h2>发生了什么?</h2>
+                        <h2>What happened?</h2>
                         <p>{{isset($exception)?$exception->getMessage():""}}</p>
                         <p class="lead">@yield("error_msg")</p>
                     </div>

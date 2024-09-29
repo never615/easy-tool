@@ -83,14 +83,16 @@
             <div class="body-content">
                 <div class="row">
                     <div class="col-md-6">
-                        <h2>发生了什么?</h2>
+                        <h2>What happened?</h2>
                         <p class="lead">{{isset($exception)?$exception->getMessage():""}}</p>
                         <p class="lead">@yield("error_msg")</p>
                     </div>
                     <div class="col-md-6">
-                        <h2>我可以怎么做?</h2>
+                        <h2>What can I do?</h2>
                         <p>
                             请点击浏览器的返回按钮,并确认您所在页面正确.如果您想立马的得到援助,可以联系网站管理员.</p>
+                        <p>
+                            Please click the browser's back button and confirm that you are on the correct page. If you want immediate assistance, you can contact the webmaster.</p>
                     </div>
                 </div>
             </div>
