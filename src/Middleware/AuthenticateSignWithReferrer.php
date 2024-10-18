@@ -75,6 +75,7 @@ class AuthenticateSignWithReferrer
         }
 
 
+        //如果是允许的referer域名,跳过校验
         if (!HttpUtils::isAllowReferer($referer)) {
             ////如果是来自管理端登录账号的请求,则跳过检查
             //$adminUser = null;

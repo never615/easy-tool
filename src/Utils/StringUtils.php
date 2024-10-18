@@ -29,7 +29,7 @@ class StringUtils
      */
     public static function hex64to10($m, $len = 0)
     {
-        $m = (string) $m;
+        $m = (string)$m;
         $hex2 = '';
         $Code = self::KeyCode;
         for ($i = 0, $l = strlen($Code); $i < $l; $i++) {
@@ -105,13 +105,13 @@ class StringUtils
         }
         $strlen = strlen($str);
         if ($strlen <= $len) {
-            return [ $str ];
+            return [$str];
         }
         $headlen = $strlen % $len;
         if ($headlen == 0) {
             return str_split($str, $len);
         }
-        $return = [ substr($str, 0, $headlen) ];
+        $return = [substr($str, 0, $headlen)];
 
         return array_merge($return, str_split(substr($str, $headlen), $len));
     }
@@ -181,4 +181,37 @@ class StringUtils
 
         return $str;
     }
+
+
+    /**
+     * 十六进制字符串转换成二进制字符串  010000110这种
+     * @param $hexValue
+     * @return string
+     */
+    public static function hex2binStr($hexValue)
+    {
+        // 将十六进制数转换为十进制数
+        $decimalValue = hexdec($hexValue);
+
+        // 将十进制数转换为二进制字符串
+        $binaryString = decbin($decimalValue);
+
+
+        // 确保二进制字符串具有固定的长度（8位）
+        return str_pad($binaryString, 8, '0', STR_PAD_LEFT);
+    }
+
+    public static function binStr2Hex($binaryString)
+    {
+        // 将二进制字符串转换为十进制数
+        $decimalValue = bindec($binaryString);
+
+        // 将十进制数转换为十六进制字符串
+        $hexString = dechex($decimalValue);
+
+        // 确保十六进制字符串具有固定的长度（如果需要）
+        return str_pad($hexString, 2, '0', STR_PAD_LEFT);
+    }
+
+
 }
