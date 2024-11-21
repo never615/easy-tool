@@ -11,6 +11,7 @@ use Mallto\Tool\Seeder\Menu\BaseMenuSeeder;
 use Mallto\Tool\Seeder\Menu\OwnerLogMenuSeeder;
 use Mallto\Tool\Seeder\Menu\PagePvManagerMenuSeeder;
 use Mallto\Tool\Seeder\Menu\SmsNotifyMenuSeeder;
+use Mallto\Tool\Seeder\Menu\FeedbackMenuSeeder;
 
 class MenuTablesSeeder extends Seeder
 {
@@ -27,6 +28,7 @@ class MenuTablesSeeder extends Seeder
         $this->call(ApiPvManagerMenuSeeder::class);
         $this->call(PagePvManagerMenuSeeder::class);
         $this->call(OwnerLogMenuSeeder::class);
+        $this->call(FeedbackMenuSeeder::class);
 //DummySeeder
 
     }
