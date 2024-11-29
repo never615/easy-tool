@@ -21,8 +21,8 @@ class WechatUtils
      */
     public static function getTemplateIds()
     {
-        return array_merge(config("other.wechat_template_id.admin_system"),
-            config("other.wechat_template_id.user_system"));
+        return array_merge(config("wechat-template.wechat_template_id.admin_system"),
+            config("wechat-template.wechat_template_id.user_system"));
     }
 
 
@@ -35,7 +35,7 @@ class WechatUtils
      */
     public static function isUserSystemTemplate($templateId)
     {
-        return array_key_exists($templateId, config("other.wechat_template_id.user_system"));
+        return array_key_exists($templateId, config("wechat-template.wechat_template_id.user_system"));
     }
 
 
@@ -48,7 +48,7 @@ class WechatUtils
      */
     public static function isAdminSystemTemplate($templateId)
     {
-        return array_key_exists($templateId, config("other.wechat_template_id.admin_system"));
+        return array_key_exists($templateId, config("wechat-template.wechat_template_id.admin_system"));
     }
 
 }
