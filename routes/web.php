@@ -17,8 +17,8 @@
 use Illuminate\Support\Facades\Route;
 
 $attributes = [
-    'namespace'  => 'Mallto\Tool\Controller',
-    'middleware' => [ 'web' ],
+    'namespace' => 'Mallto\Tool\Controller',
+    'middleware' => ['web'],
 ];
 
 Route::group($attributes, function ($router) {
@@ -28,12 +28,11 @@ Route::group($attributes, function ($router) {
     Route::get("error/{code}", 'ErrorController@index');
 
 
-
-    Route::group([ 'prefix' => config('admin.route.prefix'), "middleware" => [ 'adminE_base' ] ],
+    Route::group(['prefix' => config('admin.route.prefix'), "middleware" => ['adminE_base']],
         function ($router) {
 
-            Route::group([ "namespace" => 'Admin' ], function () {
-                Route::group([ 'middleware' => [ 'adminE.auto_permission' ] ],
+            Route::group(["namespace" => 'Admin'], function () {
+                Route::group(['middleware' => ['adminE.auto_permission']],
                     function ($router) {  //指定auth的guard为mall
 
                         Route::get('log',
@@ -81,6 +80,7 @@ Route::group($attributes, function ($router) {
                         //Route::resource('sms_notifies', 'SmsNotifyController');
                         Route::resource('sms_templates', 'SmsTemplateController');
                         Route::resource('sms_codes', 'SmsCodeController');
+                        Route::resource('alert_rules', 'AlertRuleController');
 //DummyRoutePlaceholder
 //卡券短信管理
                         Route::resource("coupon_sms_templates", 'CouponSmsTemplateController');
