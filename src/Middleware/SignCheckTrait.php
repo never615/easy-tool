@@ -42,6 +42,7 @@ trait SignCheckTrait
         if (!$appSecret || !$appSecret->switch) {
             Log::warning("app_id 无效:" . $appId);
             Log::warning($request->url());
+            Log::warning($request->all());
             throw new SignException("app_id 无效");
         }
 

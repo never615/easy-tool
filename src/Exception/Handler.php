@@ -17,17 +17,15 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Exceptions\MissingAbilityException;
-use Laravel\Sanctum\Exceptions\MissingScopeException;
-use RedisException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Throwable;
-use Illuminate\Support\Facades\Log;
 
 /**
  *
@@ -56,7 +54,6 @@ class Handler extends ExceptionHandler
         \Illuminate\Validation\ValidationException::class,
         QueryException::class,
         MaxAttemptsExceededException::class,
-        RedisException::class,
         \Mallto\Tool\Exception\HttpException::class,
     ];
 
@@ -226,14 +223,12 @@ class Handler extends ExceptionHandler
             if ($exception instanceof ModelNotFoundException) {
 //                $arr = explode('\\', $exception->getModel());
                 Log::warning('ModelNotFoundException', $request->all() ?? []);
-//                Log::warning($exception);
+                Log::warning($exception);
 
                 return response()->json($this->responseData([
                     "error" => trans("errors.not_found"),
                 ], $exception), '404', [], JSON_UNESCAPED_UNICODE);
 
-            } elseif ($exception instanceof OAuthServerException) {
-                throw new HttpException($exception->getHttpStatusCode(), $exception->getMessage());
             } elseif ($exception instanceof ClientException) {
                 return response()->json($this->responseData([
                     "error" => $exception->getMessage(),
