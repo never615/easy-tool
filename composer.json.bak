@@ -14,18 +14,20 @@
     }
   ],
   "require": {
-    "clickbar/laravel-magellan": "^1.6",
-    "rap2hpoutre/laravel-log-viewer": "^2.4",
-    "overtrue/laravel-pinyin": "^5.1",
-    "endroid/qr-code": "^6.0",
-    "intervention/image": "^3.9",
+    "doctrine/dbal": "^3.0",
+    "endroid/qr-code": "^3.4",
+    "intervention/image": "^2.4",
+    "jeremeamia/superclosure": "^2.3",
     "overtrue/laravel-filesystem-qiniu": "^2.2",
-    "predis/predis": "^2.3",
-    "qiniu/php-sdk": "^7.14",
-    "guzzlehttp/guzzle": "^7.9",
-    "codingyu/laravel-ueditor": "11.x-dev",
-    "mongodb/laravel-mongodb": "^5.1",
-    "alibabacloud/aliyun-log-php-sdk": "^0.6.7"
+    "overtrue/laravel-pinyin": "~3.0",
+    "predis/predis": "^2.2",
+    "rap2hpoutre/laravel-log-viewer": "^2.3.0",
+    "qiniu/php-sdk": "^7.12.0",
+    "laravel/ui": "^4.0",
+    "guzzlehttp/guzzle": "^7.2.0",
+    "codingyu/laravel-ueditor": "dev-11.x-dev",
+    "mongodb/laravel-mongodb": "^4.1",
+    "alibabacloud/aliyun-log-php-sdk": "0.6.*"
   },
   "require-dev": {
   },
