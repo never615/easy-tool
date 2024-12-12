@@ -5,11 +5,11 @@ namespace Mallto\Tool\Domain\Net;
 use Exception;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Mallto\Admin\Exception\NotSettingByProjectOwnerException;
 use Mallto\Admin\SubjectUtils;
@@ -19,7 +19,6 @@ use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class AbstractAPI.
@@ -67,7 +66,8 @@ abstract class AbstractAPI
      */
     public function __construct()
     {
-        if ( ! $this->slug) {
+        if (!$this->slug) {
+            Log::warning(new \Exception());
             throw new InternalHttpException('继承自AbstractAPI的类 没有设置slug');
         }
     }
@@ -143,7 +143,7 @@ abstract class AbstractAPI
      * Parse JSON from response and check error.
      *
      * @param string $method
-     * @param array  $args
+     * @param array $args
      *
      * @return Collection
      */
@@ -151,7 +151,7 @@ abstract class AbstractAPI
     {
         $http = $this->getHttp();
 
-        $contents = $http->parseJSON(call_user_func_array([ $http, $method ], $args));
+        $contents = $http->parseJSON(call_user_func_array([$http, $method], $args));
 
         if (is_array($contents)) {
             $this->checkAndThrow($contents);
@@ -196,23 +196,23 @@ abstract class AbstractAPI
             $uuid
         ) {
 
-            if ( ! $this->shouldLogOperation($request)) {
+            if (!$this->shouldLogOperation($request)) {
                 return;
             }
-            if ( ! AppUtils::isProduction()) {
+            if (!AppUtils::isProduction()) {
                 $startTime = microtime(true);
             }
 
             try {
                 $logJob = new LogJob('logThirdPart', [
-                    'uuid'       => $uuid,
+                    'uuid' => $uuid,
                     'request_id' => $requestId,
-                    'tag'        => $this->slug,
-                    'action'     => '请求',
-                    'method'     => $request->getMethod(),
-                    'url'        => $request->getUri(),
-                    'headers'    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    'body'       => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
+                    'tag' => $this->slug,
+                    'action' => '请求',
+                    'method' => $request->getMethod(),
+                    'url' => $request->getUri(),
+                    'headers' => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    'body' => is_null(json_decode($request->getBody())) ? json_encode(AppUtils::httpQueryBuildReverse($request->getBody()),
                         JSON_UNESCAPED_UNICODE) : $request->getBody() . "",
                     'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
                 ]);
@@ -235,7 +235,7 @@ abstract class AbstractAPI
             $endTime,
             $uuid
         ) {
-            if ( ! $this->shouldLogOperation($request)) {
+            if (!$this->shouldLogOperation($request)) {
                 return;
             }
 
@@ -246,23 +246,23 @@ abstract class AbstractAPI
                 $uuid
             ) {
                 $requestTime = 0;
-                if ( ! AppUtils::isProduction()) {
+                if (!AppUtils::isProduction()) {
                     $endTime = microtime(true);
                     $requestTime = round($endTime - $startTime, 3);
                 }
 
                 $logJob = new LogJob('logThirdPart', [
-                    'uuid'         => $uuid,
-                    'request_id'   => $requestId,
-                    'tag'          => $this->slug,
-                    'action'       => '响应',
-                    'method'       => $request->getMethod(),
-                    'url'          => $request->getUri(),
-                    'headers'      => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                    'body'         => $response->getBody()->getContents(),
-                    'status'       => $response->getStatusCode(),
+                    'uuid' => $uuid,
+                    'request_id' => $requestId,
+                    'tag' => $this->slug,
+                    'action' => '响应',
+                    'method' => $request->getMethod(),
+                    'url' => $request->getUri(),
+                    'headers' => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                    'body' => $response->getBody()->getContents(),
+                    'status' => $response->getStatusCode(),
                     'request_time' => $requestTime,
-                    'subject_id'   => $uuid ? SubjectUtils::getSubjectId() : 1,
+                    'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
                 ]);
 
                 if (config('app.log.dispatch_now')) {
@@ -301,14 +301,14 @@ abstract class AbstractAPI
             ) {
                 if (config('app.log.third_api')) {
                     $logJob = new LogJob("logThirdPart", [
-                        'uuid'       => $uuid,
-                        "tag"        => $this->slug,
-                        "action"     => 'Retry请求',
-                        "method"     => $request->getMethod(),
-                        "url"        => $request->getUri(),
-                        "headers"    => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
-                        "body"       => \GuzzleHttp\json_encode([
-                            "request"  => $request->getBody()->getContents(),
+                        'uuid' => $uuid,
+                        "tag" => $this->slug,
+                        "action" => 'Retry请求',
+                        "method" => $request->getMethod(),
+                        "url" => $request->getUri(),
+                        "headers" => json_encode($request->getHeaders(), JSON_UNESCAPED_UNICODE),
+                        "body" => \GuzzleHttp\json_encode([
+                            "request" => $request->getBody()->getContents(),
                             "response" => $response ? 'status code: ' . $response->getStatusCode() : ($exception ? $exception->getMessage() : ""),
                         ], JSON_UNESCAPED_UNICODE),
                         'subject_id' => $uuid ? SubjectUtils::getSubjectId() : 1,
@@ -424,7 +424,7 @@ abstract class AbstractAPI
     protected function shouldLogOperation($request)
     {
         return config('app.log.third_api')
-            && ! $this->inExceptArray($request);
+            && !$this->inExceptArray($request);
     }
 
 
@@ -446,7 +446,7 @@ abstract class AbstractAPI
             $methods = [];
 
             if (Str::contains($except, ':')) {
-                [ $methods, $except ] = explode(':', $except);
+                [$methods, $except] = explode(':', $except);
                 $methods = explode(',', $methods);
             }
 
