@@ -222,8 +222,8 @@ class Handler extends ExceptionHandler
         } else {
             if ($exception instanceof ModelNotFoundException) {
 //                $arr = explode('\\', $exception->getModel());
-                Log::warning('ModelNotFoundException', $request->all() ?? []);
-                Log::warning($exception);
+//                Log::warning('ModelNotFoundException', $request->all() ?? []);
+//                Log::warning($exception);
 
                 return response()->json($this->responseData([
                     "error" => trans("errors.not_found"),
