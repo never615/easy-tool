@@ -6,7 +6,6 @@
 namespace Mallto\Tool\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -41,7 +40,6 @@ use Mallto\Tool\Middleware\SetLanguage;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
-use Mallto\User\Data\User;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -174,7 +172,7 @@ class ToolServiceProvider extends ServiceProvider
         Response::macro('redirect', function ($value) {
             return Response::json(['redirectUrl' => $value]);
         });
-        AdminE::extendSelectSourceClass(SelectSourceExtend::class);
+        AdminE::extendSelectSourceClass('easy-tool', SelectSourceExtend::class);
     }
 
 
@@ -401,11 +399,11 @@ class ToolServiceProvider extends ServiceProvider
                 ->evenInMaintenanceMode()
                 ->before(function () {
                     dispatch(new LogJob("logSchedule",
-                        [ "slug" => "clean_failed_jobs_log", "status" => "start" ]));
+                        ["slug" => "clean_failed_jobs_log", "status" => "start"]));
                 })
                 ->after(function () {
                     dispatch(new LogJob("logSchedule",
-                        [ "slug" => "clean_failed_jobs_log", "status" => "finish" ]));
+                        ["slug" => "clean_failed_jobs_log", "status" => "finish"]));
                 });
         });
     }

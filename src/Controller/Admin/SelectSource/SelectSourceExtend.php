@@ -9,6 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Request;
 use LaravelIdea\Helper\Mallto\Tool\Data\_IH_Tag_C;
 use Mallto\Admin\Controllers\Base\SelectSourceExtendInterface;
 use Mallto\Tool\Data\Ad;
@@ -61,7 +62,7 @@ class SelectSourceExtend implements SelectSourceExtendInterface
 
     }
 
-    private function adTypesSelect($id, $childSubjectIds, $q, $perPage)
+    protected function adTypesSelect($id, $childSubjectIds, $q, $perPage)
     {
         $pagePvManager = PagePvManager::query()
             ->whereIn("subject_id", $childSubjectIds)
@@ -89,8 +90,10 @@ class SelectSourceExtend implements SelectSourceExtendInterface
         }
     }
 
-    private function tagSelect($id, $childSubjectIds, $q, $perPage)
+    protected function tagSelect($id, $childSubjectIds, $q, $perPage)
     {
+        $tagType = Request::get('tag_type');
+
         $query = Tag::query();
 
         $query->join('subjects', 'subjects.id', 'subject_id')
@@ -101,6 +104,10 @@ class SelectSourceExtend implements SelectSourceExtendInterface
             $query->select(DB::raw("tags.id,tags.name||'-('||subjects.name||')' as text"));
         } else {
             $query->select(DB::raw('tags.id,tags.name as text'));
+        }
+
+        if ($tagType) {
+            $query->where("tags.type", $tagType);
         }
 
 
