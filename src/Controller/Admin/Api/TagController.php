@@ -24,6 +24,12 @@ class TagController extends Controller
         $name = $request->get('name');
         $perPage = $request->get('per_page', 20);
 
+        $this->validate($request, [
+            'type' =>'sometimes|string',
+            'name' =>'sometimes|string',
+            'per_page' =>'sometimes|integer',
+        ]);
+
         $subjectId = SubjectUtils::getSubjectId();
         $query = Tag::query()->where("subject_id", $subjectId);
 
