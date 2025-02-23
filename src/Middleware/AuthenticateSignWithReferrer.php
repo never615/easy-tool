@@ -18,6 +18,7 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Mallto\Tool\Utils\HttpUtils;
 
@@ -56,7 +57,6 @@ class AuthenticateSignWithReferrer
 
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
-
 
         if (in_array(config('app.env'), ['integration', 'local'])) {
             return $next($request);

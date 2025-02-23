@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Domain\Traits;
 
+use Mallto\Tool\Data\Tag;
+
 /**
  * Created by PhpStorm.
  * User: never615
@@ -16,6 +18,7 @@ trait TagTrait
 
     public function tags()
     {
+//        return $this->morphToMany(Tag::class, "taggable");
         return $this->morphToMany(config('other.database.tags_model'), "taggable");
     }
 }

@@ -183,6 +183,15 @@ class StringUtils
     }
 
 
+    public static function hexToBinary($hex) {
+        // 使用 base_convert 函数将十六进制转换为二进制
+        $binary = base_convert($hex, 16, 2);
+        // 计算补齐后的二进制长度
+        $padLength = strlen($hex) * 4;
+        // 补齐前导零
+        return str_pad($binary, $padLength, '0', STR_PAD_LEFT);
+    }
+
     /**
      * 十六进制字符串转换成二进制字符串  010000110这种
      * @param $hexValue
