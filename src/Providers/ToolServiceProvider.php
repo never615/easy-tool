@@ -165,6 +165,14 @@ class ToolServiceProvider extends ServiceProvider
             return true;
         });
 
+
+        /**
+         * $parameters 传参设置可以有几位小数,设置几,就是几
+         */
+        Validator::extend('boolean2', function ($attribute, $value, $parameters) {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null;
+        });
+
         //自定义响应方法
         Response::macro('nocontent', function () {
             return Response::make('', 204);
