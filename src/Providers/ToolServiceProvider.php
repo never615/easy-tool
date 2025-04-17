@@ -257,8 +257,8 @@ class ToolServiceProvider extends ServiceProvider
         Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
             $exception = $event->exception;
             if ($exception && $exception instanceof MaxAttemptsExceededException) {
-                Log::warning("队列任务异常，MaxAttemptsExceededException");
-                Log::warning($event->job->payload());
+//                Log::warning("队列任务异常，MaxAttemptsExceededException");
+//                Log::warning($event->job->payload());
 
                 return;
             }
