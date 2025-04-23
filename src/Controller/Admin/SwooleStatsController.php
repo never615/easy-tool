@@ -3,7 +3,7 @@
  * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
  */
 
-namespace Mallto\Tool\Controller;
+namespace Mallto\Tool\Controller\Admin;
 
 /**
  * Created by PhpStorm.

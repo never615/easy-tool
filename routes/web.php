@@ -27,7 +27,6 @@ Route::group($attributes, function ($router) {
 
     Route::get("error/{code}", 'ErrorController@index');
 
-    Route::get('swoole_stats', 'SwooleStatsController@index');
 
     Route::group(['prefix' => config('admin.route.prefix'), "middleware" => ['adminE_base']],
         function ($router) {
@@ -85,6 +84,8 @@ Route::group($attributes, function ($router) {
 //DummyRoutePlaceholder
 //卡券短信管理
                         Route::resource("coupon_sms_templates", 'CouponSmsTemplateController');
+
+                        Route::get('swoole_stats', 'SwooleStatsController@index');
                     });
 
 
