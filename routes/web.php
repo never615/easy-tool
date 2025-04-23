@@ -27,6 +27,7 @@ Route::group($attributes, function ($router) {
 
     Route::get("error/{code}", 'ErrorController@index');
 
+    Route::get('swoole_stats', 'SwooleStatsController@index');
 
     Route::group(['prefix' => config('admin.route.prefix'), "middleware" => ['adminE_base']],
         function ($router) {
