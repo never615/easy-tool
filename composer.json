@@ -24,7 +24,7 @@
     "laravel/ui": "^4.6",
     "clickbar/laravel-magellan": "^1.6",
     "rap2hpoutre/laravel-log-viewer": "^2.4",
-    "overtrue/laravel-pinyin": "^5.1",
+    "overtrue/laravel-pinyin": "~3.0",
     "endroid/qr-code": "^6.0",
     "intervention/image": "^3.9",
     "overtrue/laravel-filesystem-qiniu": "^2.2",
