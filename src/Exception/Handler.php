@@ -360,8 +360,8 @@ class Handler extends ExceptionHandler
      */
     protected function getHttpExceptionView(HttpExceptionInterface $e)
     {
-//        return "tooL_errors::{$e->getStatusCode()}";
-        return "errors.{$e->getStatusCode()}";
+        return "tooL_errors::{$e->getStatusCode()}";
+//        return "errors.{$e->getStatusCode()}";
     }
 
 }
