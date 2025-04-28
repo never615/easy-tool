@@ -81,7 +81,7 @@ class FusionSms extends AbstractAPI implements Sms
         $headers['Content-Type'] = 'application/json';
         $headers['Accept'] = 'application/json';
 
-        $debug = AppUtils::locationDebugLog();
+        $debug = AppUtils::debugLog();
         if ($debug) {
             Log::warning('fusion sms:', [ $url, $params, $headers ]);
         }

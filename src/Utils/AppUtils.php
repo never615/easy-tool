@@ -5,10 +5,10 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Support\Facades\Log;
 use Mallto\Tool\Data\AppSecret;
 use Mallto\Tool\Exception\ResourceException;
 use RuntimeException;
-use Illuminate\Support\Facades\Log;
 
 /**
  * 工具类
@@ -21,10 +21,10 @@ class AppUtils
 {
 
     const ENV = [
-        ''            => '',
-        'production'  => 'production',
-        'staging'     => 'staging',
-        'test'        => 'test',
+        '' => '',
+        'production' => 'production',
+        'staging' => 'staging',
+        'test' => 'test',
         'integration' => 'integration',
     ];
 
@@ -48,7 +48,7 @@ class AppUtils
      */
     public static function isTestEnv()
     {
-        if ( ! in_array(config('app.env'), [ 'staging', 'production' ])) {
+        if (!in_array(config('app.env'), ['staging', 'production'])) {
             return true;
         } else {
             return false;
@@ -254,7 +254,7 @@ class AppUtils
                 throw new RuntimeException('Unable to generate a random string');
             }
 
-            return substr(str_replace([ '/', '+', '=' ], '', base64_encode($bytes)), 0, $length);
+            return substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $length);
         }
 
         $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -273,7 +273,7 @@ class AppUtils
     public static function object2array($array)
     {
         if (is_object($array)) {
-            $array = (array) $array;
+            $array = (array)$array;
         }
         if (is_array($array)) {
             foreach ($array as $key => $value) {
@@ -376,7 +376,7 @@ class AppUtils
      *   将数组转换为xml
      *
      * @param array $data 要转换的数组
-     * @param bool  $root 是否要根节点
+     * @param bool $root 是否要根节点
      *
      * @return string         xml字符串
      * @author Dragondean
@@ -441,7 +441,7 @@ class AppUtils
         $appSecret = AppSecret::where('app_id',
             $appId)->first();
 
-        if ( ! $appSecret) {
+        if (!$appSecret) {
             throw new ResourceException('无效的app id:' . $appId);
         }
 
@@ -503,13 +503,17 @@ class AppUtils
      */
     public static function getMicroTimestamp()
     {
-        return (int) (microtime(true) * 1000);
+        return (int)(microtime(true) * 1000);
     }
 
 
-    public static function locationDebugLog()
+    /**
+     * @return string|null
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public static function debugLog()
     {
-        return ConfigUtils::get('location_debug_log', 0) || str_contains(config('app.env'), 'local');
+        return ConfigUtils::get('debug_log', 0);
     }
 
 }
