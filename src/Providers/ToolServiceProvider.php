@@ -295,7 +295,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerMail();
 
-        $this->app->singleton(Logger::class, config('mall.logger', LoggerAliyun::class));
+        $this->app->singleton(Logger::class, config('app.log.logger', LoggerAliyun::class));
         //$this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
