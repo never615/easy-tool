@@ -5,6 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
+use Illuminate\Support\Str;
+
 /**
  * User: never615 <never615.com>
  * Date: 2025/5/14
@@ -37,9 +39,9 @@ class UserAgentUtils
     {
         $userAgent = strtolower($userAgent);
 
-        if (str_contains($userAgent, ['android', 'okhttp'])) {
+        if (Str::contains($userAgent, ['android', 'okhttp'])) {
             $mobileType = 'android';
-        } elseif (str_contains($userAgent, ['iphone', 'darwin'])) {
+        } elseif (Str::contains($userAgent, ['iphone', 'darwin'])) {
             $mobileType = 'ios';
         }
 
