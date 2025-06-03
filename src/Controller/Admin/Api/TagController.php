@@ -25,9 +25,9 @@ class TagController extends Controller
         $perPage = $request->get('per_page', 20);
 
         $this->validate($request, [
-            'type' =>'sometimes|string',
-            'name' =>'sometimes|string',
-            'per_page' =>'sometimes|integer',
+            'type' => 'sometimes|string',
+            'name' => 'sometimes|string',
+            'per_page' => 'sometimes|integer',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -72,6 +72,7 @@ class TagController extends Controller
             'name',
             'type',
             'logo',
+            'slug',
         ]));
         $tag->subject_id = $subjectId;
         $tag->save();
@@ -88,6 +89,7 @@ class TagController extends Controller
             'name',
             'type',
             'logo',
+            'slug'
         ]));
         $tag->save();
 
