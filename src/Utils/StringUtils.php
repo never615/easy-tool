@@ -222,5 +222,29 @@ class StringUtils
         return str_pad($hexString, 2, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * 添加冒号
+     * @param $mac
+     * @return string
+     */
+    public static function macAddColon($mac)
+    {
+        // 使用chunk_split将字符串每两个字符分隔一次，并在每一块后面添加一个冒号
+        $formatted_str = chunk_split(strtoupper($mac), 2, ':');
+        // 使用rtrim移除最后的一个冒号
+        return rtrim($formatted_str, ':');
+    }
+
+    /**
+     * 移除冒号
+     * @param $mac
+     * @return string
+     */
+    public static function macRemoveColon($mac)
+    {
+        // 使用str_replace移除所有的冒号
+        return str_replace(':', '', $mac);
+    }
+
 
 }
