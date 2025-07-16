@@ -25,7 +25,8 @@ class Tag extends BaseModel
         'relic' => "文物",
         'locator' => '定位器',
         'area' => '区域',
-        'fence' => '电子围栏'
+        'fence' => '电子围栏',
+        'area_alarm_rule' => '区域报警规则'
     ];
 
 
