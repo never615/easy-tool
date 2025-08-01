@@ -33,7 +33,8 @@
     "guzzlehttp/guzzle": "^7.9",
     "codingyu/laravel-ueditor": "11.x-dev",
     "mongodb/laravel-mongodb": "^5.1",
-    "alibabacloud/aliyun-log-php-sdk": "^0.6.7"
+    "alibabacloud/aliyun-log-php-sdk": "^0.6.7",
+    "symfony/console": "v7.2.0"
   },
   "require-dev": {
   },
