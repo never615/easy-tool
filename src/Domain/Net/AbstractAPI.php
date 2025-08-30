@@ -147,7 +147,7 @@ abstract class AbstractAPI
      *
      * @return Collection
      */
-    protected function parseJSON($method, array $args)
+    public function parseJSON($method, array $args)
     {
         $http = $this->getHttp();
 

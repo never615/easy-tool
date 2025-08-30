@@ -166,9 +166,7 @@ class ToolServiceProvider extends ServiceProvider
         });
 
 
-        /**
-         * $parameters 传参设置可以有几位小数,设置几,就是几
-         */
+        //支持各种boolean值 true,false,1,0,"1","0","true","false"
         Validator::extend('boolean2', function ($attribute, $value, $parameters) {
             return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null;
         });

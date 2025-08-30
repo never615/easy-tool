@@ -30,7 +30,7 @@ class LogJob implements ShouldQueue
      *
      * @var int
      */
-    public $timeout = 300;
+    public $timeout = 5;
 
     /**
      * The number of times the job may be attempted.
