@@ -105,7 +105,7 @@ class LoggerDb implements Logger
             }
         } catch (\Exception $exception) {
             // pass
-            Log::info($exception);
+//            Log::info($exception);
         }
     }
 

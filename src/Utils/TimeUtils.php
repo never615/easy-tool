@@ -128,7 +128,7 @@ class TimeUtils
             $executionTime = round($executionTime, 3);
             $executionTime = $executionTime * 1000;
 
-            Log::info($text.$executionTime."毫秒");
+//            Log::info($text.$executionTime."毫秒");
 
         }
 
