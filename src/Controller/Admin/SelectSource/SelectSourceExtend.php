@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
-use LaravelIdea\Helper\Mallto\Tool\Data\_IH_Tag_C;
 use Mallto\Admin\Controllers\Base\SelectSourceExtendInterface;
 use Mallto\Tool\Data\Ad;
 use Mallto\Tool\Data\PagePvManager;
@@ -28,7 +27,7 @@ class SelectSourceExtend implements SelectSourceExtendInterface
      * 方便下级依赖库添加数据源
      *
      * @param $key
-     * @param $id
+     * @param array|int $id 限定查询的id数组 或者 int 的id
      * @param $childSubjectIds
      * @param $q
      * @param $perPage
@@ -123,3 +122,5 @@ class SelectSourceExtend implements SelectSourceExtendInterface
         }
     }
 }
+
+
