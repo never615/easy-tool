@@ -54,6 +54,9 @@ Route::group($attributes, function ($router) {
 
         //-------------------  页面配置结束 ------------------------
 
+        // WebView 签名校验
+        Route::post('webview/verify-sign', 'WebviewSignController@verify');
+
         /**
          * 需要经过签名校验
          */
@@ -77,8 +80,5 @@ Route::group($attributes, function ($router) {
         });
     });
 });
-
-
-
 
 

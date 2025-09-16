@@ -222,6 +222,7 @@ class SignUtils
         ksort($arr, SORT_STRING);
 //        Log::debug($arr);
 
+
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
         $stringToSign = rawurlencode($stringToSign);
@@ -251,8 +252,13 @@ class SignUtils
         $stringToSign = http_build_query($arr);
         $stringToSign = urldecode($stringToSign);
         $stringToSign = rawurlencode($stringToSign);
+//        dd($stringToSign);
 
-        return rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
+        $stringToSign= base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
+//        dd($stringToSign);
+
+
+        return rawurlencode($stringToSign);
     }
 
 }
