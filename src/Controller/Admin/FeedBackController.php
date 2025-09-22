@@ -25,7 +25,7 @@ class FeedBackController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "app意见反馈";
+        return trans("admin.feedback_header_title");
     }
 
 
@@ -42,13 +42,13 @@ class FeedBackController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->mobile();
-        $grid->content()->limit(250);
+        $grid->mobile(trans("admin.mobile"));
+        $grid->content(trans("admin.content"))->limit(250);
 
         $grid->disableCreation();
         $grid->filter(function (Grid\Filter $filter) {
-            $filter->ilike("content");
-            $filter->ilike("mobile");
+            $filter->ilike("content", trans("admin.content"));
+            $filter->ilike("mobile", trans("admin.mobile"));
         });
 
 
@@ -57,8 +57,8 @@ class FeedBackController extends AdminCommonController
 
     protected function formOption(Form $form)
     {
-        $form->displayE("mobile");
-        $form->displayE("content", "反馈内容");
+        $form->displayE("mobile", trans("admin.mobile"));
+        $form->displayE("content", trans("admin.content"));
     }
 
 }
