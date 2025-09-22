@@ -24,8 +24,8 @@ class FeedbackMenuSeeder extends Seeder
         $order = 8;
 
         $operationMenu = $this->updateOrCreate("operation", 0,
-            $order, "运营", "fa-anchor");
-        $this->updateOrCreate("feedbacks.index", $operationMenu->id, $order++, "意见反馈", "fa-adjust");
+            $order, "trans::admin.menu_titles.operation", "fa-anchor");
+        $this->updateOrCreate("feedbacks.index", $operationMenu->id, $order++, "trans::admin.menu_titles.feedbacks", "fa-adjust");
 
     }
 }
