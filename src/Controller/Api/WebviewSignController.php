@@ -58,6 +58,9 @@ class WebviewSignController extends \App\Http\Controllers\Controller
                 'signature' => $signature
             ];
 
+//            Log::debug($arr);
+//            Log::debug($appSecret->app_secret);
+
             $isValid = SignUtils::verifySign4($arr, $appSecret->app_secret);
             if (!$isValid) {
                 throw new SignException("Invalid signature");

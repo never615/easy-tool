@@ -20,7 +20,6 @@
 namespace Mallto\Tool\Utils;
 
 use Mallto\Tool\Exception\SignException;
-use Illuminate\Support\Facades\Log;
 
 class SignUtils
 {
@@ -217,7 +216,6 @@ class SignUtils
         }
 
         $waiteSign = $arr['signature'];
-//        Log::debug('$waiteSign:' . $waiteSign);
         unset($arr['signature']);
         ksort($arr, SORT_STRING);
 //        Log::debug($arr);
@@ -228,11 +226,14 @@ class SignUtils
         $stringToSign = rawurlencode($stringToSign);
 //        Log::debug('$stringToSign:' . $stringToSign);
 
-        $sign = rawurlencode(base64_encode(hash_hmac('sha1', $stringToSign, $secret, true)));
+
+        $sign = base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
+        $urlEncodeSign = rawurlencode($sign);
 
 //        Log::debug('$sign:' . $sign);
+//        Log::debug('$waiteSign:' . $waiteSign);
 
-        return $sign == $waiteSign ? true : false;
+        return ($sign === $waiteSign || $urlEncodeSign === $waiteSign) ? true : false;
     }
 
 
@@ -254,7 +255,7 @@ class SignUtils
         $stringToSign = rawurlencode($stringToSign);
 //        dd($stringToSign);
 
-        $stringToSign= base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
+        $stringToSign = base64_encode(hash_hmac('sha1', $stringToSign, $secret, true));
 //        dd($stringToSign);
 
 
