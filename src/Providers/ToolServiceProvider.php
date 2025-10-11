@@ -433,7 +433,7 @@ class ToolServiceProvider extends ServiceProvider
                                 'size' => $size,
                                 'threshold' => 5000,
                             ]);
-                        } elseif ($size >= 30) {
+                        } elseif ($size >= 1000) {
                             Log::warning('Queue backlog high', [
                                 'connection' => $connection,
                                 'queue' => $queue,
