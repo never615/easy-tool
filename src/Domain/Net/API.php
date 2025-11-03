@@ -26,6 +26,13 @@ class API
      */
     protected $http;
 
+    /**
+     * Optional slug for logging tag.
+     *
+     * @var string|null
+     */
+    protected $slug;
+
     const GET = 'get';
     const POST = 'post';
     const JSON = 'json';
@@ -114,7 +121,7 @@ class API
                 $logJob = new LogJob('logThirdPart', [
                     'uuid' => $uuid,
                     'request_id' => $requestId,
-                    'tag' => $this->slug,
+                    'tag' => $this->getSlug(),
                     'action' => '请求',
                     'method' => $request->getMethod(),
                     'url' => $request->getUri(),
@@ -161,7 +168,7 @@ class API
                 $logJob = new LogJob('logThirdPart', [
                     'uuid' => $uuid,
                     'request_id' => $requestId,
-                    'tag' => $this->slug,
+                    'tag' => $this->getSlug(),
                     'action' => '响应',
                     'method' => $request->getMethod(),
                     'url' => $request->getUri(),
@@ -209,7 +216,7 @@ class API
                 if (config('app.log.third_api')) {
                     $logJob = new LogJob("logThirdPart", [
                         'uuid' => $uuid,
-                        "tag" => $this->slug,
+                        "tag" => $this->getSlug(),
                         "action" => 'Retry请求',
                         "method" => $request->getMethod(),
                         "url" => $request->getUri(),
@@ -346,6 +353,23 @@ class API
         }
 
         return false;
+    }
+
+    /**
+     * Set logging slug.
+     */
+    public function setSlug(string $slug)
+    {
+        $this->slug = $slug;
+        return $this;
+    }
+
+    /**
+     * Get logging slug, defaulting to class basename if not set.
+     */
+    public function getSlug(): string
+    {
+        return $this->slug ?: class_basename(static::class);
     }
 
 }
