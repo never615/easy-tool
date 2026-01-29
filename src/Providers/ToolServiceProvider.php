@@ -55,7 +55,7 @@ class ToolServiceProvider extends ServiceProvider
         RedisDelPrefixCommand::class,
         CreateTableIdSeqCommand::class,
         ClearCacheCommand::class,
-        DeleteFailedJobsCommand::class
+        DeleteFailedJobsCommand::class,
     ];
 
     /**

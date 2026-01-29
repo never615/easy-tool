@@ -16,7 +16,8 @@ trait AppSecretSeederMaker
         $name,
         $slug,
         $force = false
-    ) {
+    )
+    {
         try {
             $temp = AppSecretsPermission::query()
                 ->updateOrCreate(
@@ -44,5 +45,10 @@ trait AppSecretSeederMaker
         }
 
         return $temp->id;
+    }
+
+    public function delete($slug)
+    {
+        AppSecretsPermission::query()->where('slug', $slug)->delete();
     }
 }

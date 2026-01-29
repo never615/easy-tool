@@ -18,7 +18,6 @@ namespace Mallto\Tool\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Mallto\Tool\Utils\HttpUtils;
 
@@ -42,19 +41,13 @@ class AuthenticateSignWithReferrer
     /**
      * Handle an incoming request.
      *
-     * @param         $request
+     * @param Request $request
      * @param Closure $next
      *
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
     {
-
-
-        //if(AppUtils::isTestEnv()){
-        //    return $next($request);
-        //}
-
         //如果请求方的Referer是自己的域名,则跳过检查
         $referer = $request->header('Referer');
 

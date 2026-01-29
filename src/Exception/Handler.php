@@ -296,11 +296,12 @@ class Handler extends ExceptionHandler
      * @param \Illuminate\Http\Request $request
      * @param AuthenticationException $exception
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         if ($request->expectsJson()) {
+//            Log::debug($exception);
             return response()->json($this->responseData([
 //                        'error' => trans("errors.unauthenticated").','.$exception->getMessage(),
                 'error' => "登录失效,请重新登录或刷新:" . $exception->getMessage(),
