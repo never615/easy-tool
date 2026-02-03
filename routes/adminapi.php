@@ -48,7 +48,7 @@ Route::group($attributes, function ($router) use ($routeFunction, $routeFunction
     Route::group([
         'prefix' => 'admin/web_api',
         "middleware" => ['adminE'],
-        'as' => 'web_api', // 配置路由组中路由命名的前缀。
+        'as' => 'web_api.', // 配置路由组中路由命名的前缀。
     ], function ($router) use ($routeFunction, $routeFunctionByAutoPermission) {
         Route::group([
             'namespace' => 'Mallto\Tool\Controller\Admin\Api',
@@ -67,7 +67,7 @@ Route::group([
     'prefix' => 'admin/api',
     'middleware' => ['owner_api', 'requestCheck', 'set_language'],
     'namespace' => 'Mallto\Tool\Controller\Admin\Api',
-    'as' => 'admin_api', // 配置路由组中路由命名的前缀。
+    'as' => 'admin_api.', // 配置路由组中路由命名的前缀。
 ], function ($router) use ($routeFunction, $routeFunctionByAutoPermission) {
     Route::group([
         'middleware' => ['auth:admin_api'],
@@ -90,7 +90,7 @@ $attributes = [
     'namespace' => 'Mallto\Tool\Controller\Admin\Api',
     'prefix' => 'api/tp',
     'middleware' => ['api'],
-    'as' => 'tp_api', // 配置路由组中路由命名的前缀。
+    'as' => 'tp_api.', // 配置路由组中路由命名的前缀。
 ];
 
 Route::group($attributes, function ($router) use ($routeFunctionByAutoPermission) {
@@ -103,7 +103,7 @@ $attributes = [
     'namespace' => 'Mallto\Tool\Controller\Tp',
     'prefix' => 'api/tp',
     'middleware' => ['api'],
-    'as' => 'tp_api', // 配置路由组中路由命名的前缀。
+    'as' => 'tp_api.', // 配置路由组中路由命名的前缀。
 ];
 
 Route::group($attributes, function ($router) use ($routeFunctionByAutoPermission) {
