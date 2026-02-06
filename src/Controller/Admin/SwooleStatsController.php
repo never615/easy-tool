@@ -42,20 +42,23 @@ class SwooleStatsController
         $server = app('swoole');
         $stats = $server->stats();
 
-        return array_merge(
-            array_only($stats, [
-                'idle_worker_num',
-                'task_idle_worker_num',
-                'start_time',
-                'connection_num',
-                'request_count',
-                'worker_num',
-                'tasking_num',
-                'task_worker_num',
-            ]),
+        return array_merge([
+            'hostname' => gethostname(),
+            'swoole_cpu_num' => swoole_cpu_num(),
+        ],
             [
-                'swoole_cpu_num' => swoole_cpu_num(),
-                'hostname' => gethostname(),
+                'worker_num_use' => ($stats['worker_num'] - $stats['idle_worker_num']) . '/' . $stats['worker_num'],
+                'task_worker_num_use' => ($stats['task_worker_num'] - $stats['task_idle_worker_num']) . '/' . $stats['task_worker_num'],
+//                'worker_num' => $stats['worker_num'],
+//                'idle_worker_num' => $stats['idle_worker_num'],
+//                'task_worker_num' => $stats['task_worker_num'],
+//                'task_idle_worker_num' => $stats['task_idle_worker_num'],
+                'start_time' => $stats['start_time'] . ' (' . date('Y-m-d H:i:s', $stats['start_time']) . ')',
+                'connection_num' => $stats['connection_num'],
+                'request_count' => $stats['request_count'],
+                'tasking_num' => $stats['tasking_num'],
+            ],
+            [
             ]
         );
     }
@@ -162,6 +165,6 @@ class SwooleStatsController
 </body>
 </html>
 HTML
-        , 200, ['Content-Type' => 'text/html']);
+            , 200, ['Content-Type' => 'text/html']);
     }
 }
