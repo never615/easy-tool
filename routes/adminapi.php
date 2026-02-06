@@ -29,10 +29,6 @@ $routeFunction = function () {
 //$routeFunctionByAutoPermission支持1/2/3 三中方式请求
 $routeFunctionByAutoPermission = function () {
     Route::resource('tags', 'TagController');
-
-//    Route::get('swoole_stats', '\Mallto\Tool\Controller\Admin\SwooleStatsController@index');
-
-
 };
 
 //-------------- laravel 管理端项目请求 走web 中间件 start ---------------------------------------------------

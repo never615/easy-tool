@@ -27,6 +27,9 @@ Route::group($attributes, function ($router) {
 
     Route::post("log", 'LogController@store');
 
+//    Route::get('swoole_stats', '\Mallto\Tool\Controller\Admin\SwooleStatsController@index');
+
+
     Route::group([ 'middleware' => [ 'owner_api' ] ], function () {
         Route::get("qr_image", 'QrController@index');
     });
