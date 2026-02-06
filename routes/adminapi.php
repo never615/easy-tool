@@ -30,7 +30,7 @@ $routeFunction = function () {
 $routeFunctionByAutoPermission = function () {
     Route::resource('tags', 'TagController');
 
-    Route::get('swoole_stats', '\Mallto\Tool\Controller\Admin\SwooleStatsController@index');
+//    Route::get('swoole_stats', '\Mallto\Tool\Controller\Admin\SwooleStatsController@index');
 
 
 };

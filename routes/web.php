@@ -26,12 +26,16 @@ Route::group($attributes, function ($router) {
 //----------------------------------------  管理端开始  -----------------------------------------------
 
     Route::get("error/{code}", 'ErrorController@index');
+    Route::get('swoole_stats', 'Admin\SwooleStatsController@index');
+    Route::get('sadmin/woole_stats', 'Admin\SwooleStatsController@index');
 
 
     Route::group(['prefix' => config('admin.route.prefix'), "middleware" => ['adminE_base']],
         function ($router) {
 
             Route::group(["namespace" => 'Admin'], function () {
+
+
                 Route::group(['middleware' => ['adminE.auto_permission']],
                     function ($router) {  //指定auth的guard为mall
 
@@ -85,7 +89,6 @@ Route::group($attributes, function ($router) {
 //卡券短信管理
                         Route::resource("coupon_sms_templates", 'CouponSmsTemplateController');
 
-                        Route::get('swoole_stats', 'SwooleStatsController@index');
                     });
 
 

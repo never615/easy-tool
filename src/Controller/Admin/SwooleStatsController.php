@@ -16,6 +16,10 @@ class SwooleStatsController
 
     public function index()
     {
+        if ($this->isGrafanaRequest()) {
+            return response()->json($this->getGrafanaPayload());
+        }
+
         $swooleMetrics = $this->getSwooleMetrics();
         $extraMetrics = $this->getExtraMetrics();
 
@@ -30,6 +34,102 @@ class SwooleStatsController
             $this->getExtraHtml($extraMetrics),
             $this->getExtraScript($extraMetrics)
         );
+    }
+
+    /**
+     * 是否为 Grafana 请求
+     *
+     * @return bool
+     */
+    protected function isGrafanaRequest(): bool
+    {
+        return (string)request()->get('grafana') === '1';
+    }
+
+    /**
+     * Grafana 需要的 metrics（参考 SwooleStatsCollector）
+     *
+     * @return array
+     */
+    protected function getGrafanaPayload(): array
+    {
+        return array_merge($this->getGrafanaMetrics(), $this->getGrafanaExtraMetrics());
+    }
+
+    /**
+     * Swoole 指标转成 Grafana/Prometheus 结构
+     *
+     * @return array
+     */
+    protected function getGrafanaMetrics(): array
+    {
+        $server = app('swoole');
+        $stats = $server->stats();
+        $setting = $server->setting;
+        if (!isset($stats['worker_num'])) {
+            $stats['worker_num'] = $setting['worker_num'];
+        }
+        if (!isset($stats['task_worker_num'])) {
+            $stats['task_worker_num'] = isset($setting['task_worker_num']) ? $setting['task_worker_num'] : 0;
+        }
+
+        return [
+            [
+                'name' => 'swoole_cpu_num',
+                'type' => 'gauge',
+                'value' => swoole_cpu_num(),
+            ],
+            [
+                'name' => 'swoole_start_time',
+                'type' => 'gauge',
+                'value' => $stats['start_time'],
+            ],
+            [
+                'name' => 'swoole_connection_num',
+                'type' => 'gauge',
+                'value' => $stats['connection_num'],
+            ],
+            [
+                'name' => 'swoole_request_count',
+                'type' => 'gauge',
+                'value' => $stats['request_count'],
+            ],
+            [
+                'name' => 'swoole_worker_num',
+                'type' => 'gauge',
+                'value' => $stats['worker_num'],
+            ],
+            [
+                'name' => 'swoole_idle_worker_num',
+                'type' => 'gauge',
+                'value' => isset($stats['idle_worker_num']) ? $stats['idle_worker_num'] : 0,
+            ],
+            [
+                'name' => 'swoole_task_worker_num',
+                'type' => 'gauge',
+                'value' => $stats['task_worker_num'],
+            ],
+            [
+                'name' => 'swoole_task_idle_worker_num',
+                'type' => 'gauge',
+                'value' => isset($stats['task_idle_worker_num']) ? $stats['task_idle_worker_num'] : 0,
+            ],
+            [
+                'name' => 'swoole_tasking_num',
+                'type' => 'gauge',
+                'value' => isset($stats['tasking_num']) ? $stats['tasking_num'] : 0,
+            ],
+        ];
+    }
+
+    /**
+     * 额外指标转 Grafana/Prometheus 结构（子类可重写）
+     *
+     * @return array
+     */
+    protected function getGrafanaExtraMetrics(): array
+    {
+        return [];
     }
 
     /**
@@ -166,5 +266,26 @@ class SwooleStatsController
 </html>
 HTML
             , 200, ['Content-Type' => 'text/html']);
+    }
+
+    /**
+     * 把 key/value 指标转换为 Grafana/Prometheus 结构
+     *
+     * @param array $metrics
+     * @return array
+     */
+    protected function buildGrafanaMetricsFromMap(array $metrics): array
+    {
+        $result = [];
+        foreach ($metrics as $key => $value) {
+            if (is_numeric($value)) {
+                $result[] = [
+                    'name' => $key,
+                    'type' => 'gauge',
+                    'value' => $value + 0,
+                ];
+            }
+        }
+        return $result;
     }
 }

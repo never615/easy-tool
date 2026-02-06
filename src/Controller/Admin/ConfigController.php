@@ -18,7 +18,7 @@ class ConfigController extends AdminCommonController
      */
     protected function getHeaderTitle()
     {
-        return "全局配置";
+        return '全局配置';
     }
 
 
@@ -39,6 +39,10 @@ class ConfigController extends AdminCommonController
         $grid->remark()->limit(20);
         $grid->value()->limit(20);
         //$grid->type();
+
+        $grid->filter(function ($filter) {
+            $filter->ilike('key');
+        });
     }
 
 
