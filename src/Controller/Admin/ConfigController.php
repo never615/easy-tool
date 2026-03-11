@@ -35,9 +35,9 @@ class ConfigController extends AdminCommonController
 
     protected function gridOption(Grid $grid)
     {
-        $grid->key();
-        $grid->remark()->limit(20);
-        $grid->value()->limit(20);
+        $grid->key()->editable();
+        $grid->remark()->limit(20)->editable();
+        $grid->value()->limit(20)->editable();
         //$grid->type();
 
         $grid->filter(function ($filter) {

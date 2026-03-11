@@ -35,6 +35,8 @@ class ClearCacheUsecase
         //正常情况下只清理缓存库
         Artisan::call('cache:clear');
 
+        Artisan::call('swoole-table:flush');
+
         try {
             Artisan::call('cache:clear local_redis');
         } catch (ConnectionException $connectionException) {
