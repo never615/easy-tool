@@ -279,8 +279,21 @@ class Handler extends ExceptionHandler
                 Log::warning($exception);
                 throw new ResourceException($msg);
             } elseif ($exception instanceof RequestException) {
-                return response()->json(["error" => "网络繁忙,请重试:" . $exception->getMessage()], 422, [],
+                return response()->json(["error" => "网络繋忙,请重试:" . $exception->getMessage()], 422, [],
                     JSON_UNESCAPED_UNICODE);
+            } elseif ($exception instanceof \Error) {
+                // 当 Sanctum 尝试通过 tokenable_type 解析已不存在的模型类时（如旧 token 中记录的类已被移除），
+                // 会抛出 PHP \Error（Class not found）。此时应视为认证失效，抛出 AuthenticationException，
+                // 让前端自动处理登出，而不是返回 500 错误。
+                $trace = $exception->getTraceAsString();
+                if (preg_match('/Class .* not found/', $exception->getMessage()) &&
+                    (str_contains($trace, 'Guard.php') || str_contains($trace, 'sanctum') || str_contains($trace, 'HasRelationships'))) {
+                    Log::warning('Sanctum tokenable class not found, treating as AuthenticationException: ' . $exception->getMessage());
+                    throw new AuthenticationException('登录失效,请重新登录');
+                }
+                //Log::error('服务器繁忙');
+                Log::warning($exception);
+                throw new InternalHttpException(trans("errors.internal_error"));
             } else {
                 //Log::error('服务器繁忙');
                 Log::warning($exception);
