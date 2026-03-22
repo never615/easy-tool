@@ -69,20 +69,16 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
                         'hostname'   => $hostname,
                         'updated_at' => time(),
                         'stats'      => [
-                            'swoole_cpu_num'        => swoole_cpu_num(),
-                            'worker_num'            => $stats['worker_num'] ?? 0,
-                            'idle_worker_num'       => $stats['idle_worker_num'] ?? 0,
-                            'worker_num_use'        => ($stats['worker_num'] - ($stats['idle_worker_num'] ?? 0))
+                            'swoole_cpu_num'      => swoole_cpu_num(),
+                            'worker_num_use'      => ($stats['worker_num'] - ($stats['idle_worker_num'] ?? 0))
                                 . '/' . $stats['worker_num'],
-                            'task_worker_num'       => $stats['task_worker_num'] ?? 0,
-                            'task_idle_worker_num'  => $stats['task_idle_worker_num'] ?? 0,
-                            'task_worker_num_use'   => (($stats['task_worker_num'] ?? 0) - ($stats['task_idle_worker_num'] ?? 0))
+                            'task_worker_num_use' => (($stats['task_worker_num'] ?? 0) - ($stats['task_idle_worker_num'] ?? 0))
                                 . '/' . ($stats['task_worker_num'] ?? 0),
-                            'start_time'            => ($stats['start_time'] ?? 0)
+                            'start_time'          => ($stats['start_time'] ?? 0)
                                 . ' (' . date('Y-m-d H:i:s', $stats['start_time'] ?? 0) . ')',
-                            'connection_num'        => $stats['connection_num'] ?? 0,
-                            'request_count'         => $stats['request_count'] ?? 0,
-                            'tasking_num'           => $stats['tasking_num'] ?? 0,
+                            'connection_num'      => $stats['connection_num'] ?? 0,
+                            'request_count'       => $stats['request_count'] ?? 0,
+                            'tasking_num'         => $stats['tasking_num'] ?? 0,
                         ],
                     ], JSON_UNESCAPED_UNICODE);
 
