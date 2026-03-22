@@ -278,6 +278,21 @@ class Handler extends ExceptionHandler
                 Log::error("PDOException");
                 Log::warning($exception);
                 throw new ResourceException($msg);
+            } elseif ($exception instanceof \RedisException) {
+                // Redis 重启加载快照期间，所有命令均返回
+                // "LOADING Redis is loading the dataset into memory"，
+                // 此时服务暂时不可用，应返回 503 而非 500，且不必记录为 error 级别。
+                if (str_contains($exception->getMessage(), 'LOADING')) {
+                    Log::warning('RedisException: Redis is loading the dataset, returning 503', [
+                        'message' => $exception->getMessage(),
+                    ]);
+                    return response()->json($this->responseData([
+                        'error' => '系统缓存服务初始化中，请稍后重试',
+                    ], $exception), 503, [], JSON_UNESCAPED_UNICODE);
+                }
+                Log::error('RedisException');
+                Log::warning($exception);
+                throw new InternalHttpException('缓存服务异常，请稍后重试');
             } elseif ($exception instanceof RequestException) {
                 return response()->json(["error" => "网络繋忙,请重试:" . $exception->getMessage()], 422, [],
                     JSON_UNESCAPED_UNICODE);
