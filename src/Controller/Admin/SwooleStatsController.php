@@ -7,6 +7,7 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
+use Mallto\Tool\Processes\SwooleStatsCollectorProcess;
 
 /**
  * Created by PhpStorm.
@@ -17,40 +18,37 @@ use Illuminate\Support\Facades\Redis;
 class SwooleStatsController
 {
     /**
-     * Redis Hash 键：存储所有已注册 pod 的心跳信息
-     * Field = hostname，Value = JSON({hostname, address, registered_at})
+     * Pod 数据新鲜度阈值（秒）：超过此时间未更新视为下线
      */
-    protected const PODS_REGISTRY_KEY = 'swoole_pods';
+    protected const POD_STALE_SECONDS = 15;
 
     /**
-     * Pod 心跳超时（秒）：超过此时间未刷新则视为下线并惰性清理
+     * 默认采集持续时间（秒）
      */
-    protected const POD_TTL = 120;
-
-    /**
-     * 跨 pod HTTP 请求的连接/读取超时（秒）
-     */
-    protected const REMOTE_TIMEOUT = 3;
+    protected const DEFAULT_COLLECT_DURATION = 300;
 
     public function index()
     {
-        // 每次访问都刷新本 pod 在 Redis 中的心跳注册
-        $this->registerSelf();
+        // ?start_collect=1&duration=300：开启全 pod 采集
+        if (request()->boolean('start_collect')) {
+            return $this->handleStartCollect();
+        }
 
-        // ?self_only=1：pod 间内部调用，只返回本机指标（需携带内部 Token）
-        if (request()->boolean('self_only')) {
-            return $this->handleSelfOnly();
+        // ?stop_collect=1：停止采集
+        if (request()->boolean('stop_collect')) {
+            return $this->handleStopCollect();
         }
 
         if ($this->isGrafanaRequest()) {
             return response()->json($this->getGrafanaPayload());
         }
 
-        // ?all_pods=1：聚合所有 pod 的指标
+        // ?all_pods=1：显示所有 pod 聚合状态（从 Redis 读取）
         if (request()->boolean('all_pods')) {
             return $this->handleAllPods();
         }
 
+        // 默认：只显示当前 pod
         $swooleMetrics = $this->getSwooleMetrics();
         $extraMetrics = $this->getExtraMetrics();
 
@@ -68,216 +66,139 @@ class SwooleStatsController
     }
 
     // =========================================================================
-    // 多 Pod 支持
+    // 多 Pod 支持（基于 Redis + SwooleStatsCollectorProcess）
     // =========================================================================
 
     /**
-     * 将本 pod 注册/刷新到 Redis（心跳）
-     *
-     * 使用 Redis Hash 存储，Field = hostname，避免 KEYS 扫描时的 prefix 干扰。
+     * 开启采集：设置 Redis 标志位，所有 pod 的 SwooleStatsCollectorProcess 会检测到并开始写入
      */
-    protected function registerSelf(): void
+    protected function handleStartCollect()
     {
-        $address = $this->getSelfPodAddress();
-        if (!$address) {
-            return;
-        }
-        try {
-            Redis::hset(self::PODS_REGISTRY_KEY, gethostname(), json_encode([
-                'hostname'      => gethostname(),
-                'address'       => $address,
-                'registered_at' => time(),
-            ]));
-        } catch (\Exception $e) {
-            Log::warning('SwooleStatsController::registerSelf failed: ' . $e->getMessage());
-        }
+        $duration = (int) request()->get('duration', self::DEFAULT_COLLECT_DURATION);
+        $duration = max(10, min($duration, 3600)); // 限制 10秒 ~ 1小时
+
+        Redis::setex(SwooleStatsCollectorProcess::COLLECTING_KEY, $duration, time());
+
+        // 返回时自动跳转到 all_pods 页面
+        $allPodsUrl = request()->url() . '?all_pods=1';
+        return redirect($allPodsUrl);
     }
 
     /**
-     * 获取本 pod 的内部访问地址，供其他 pod 通过 HTTP 调用
-     *
-     * 优先使用 Kubernetes Downward API 注入的 POD_IP 环境变量；
-     * 非 k8s 环境退回到 gethostbyname(hostname)。
+     * 停止采集：删除 Redis 标志位
      */
-    protected function getSelfPodAddress(): ?string
+    protected function handleStopCollect()
     {
-        // POD_IP 由 Kubernetes Downward API 在运行时注入，每 pod 不同，
-        // 不能走 config()（config:cache 后所有 pod 会共享同一份缓存值），
-        // 直接读 $_ENV / $_SERVER 绕过 Laravel 的配置缓存。
-        $ip = $_ENV['POD_IP'] ?? $_SERVER['POD_IP'] ?? gethostbyname(gethostname());
-        if (!$ip || in_array($ip, ['127.0.0.1', '::1'], true)) {
-            return null;
-        }
-        $port = config('laravels.listen_port', 5200);
-        return "http://{$ip}:{$port}";
+        Redis::del(SwooleStatsCollectorProcess::COLLECTING_KEY);
+
+        $allPodsUrl = request()->url() . '?all_pods=1';
+        return redirect($allPodsUrl);
     }
 
     /**
-     * 从 Redis 读取所有存活 pod，同时惰性清理已超时的条目
-     *
-     * @return array [['hostname'=>..., 'address'=>..., 'registered_at'=>...], ...]
+     * 查看当前采集剩余时间（秒），-2 表示未在采集
      */
-    protected function getRegisteredPods(): array
+    protected function getCollectingTtl(): int
     {
-        try {
-            $raw = Redis::hgetall(self::PODS_REGISTRY_KEY);
-            if (!$raw) {
-                return [];
-            }
-            $cutoff = time() - self::POD_TTL;
-            $alive  = [];
-            $stale  = [];
-            foreach ($raw as $hostname => $json) {
-                $pod = json_decode($json, true);
-                if ($pod && ($pod['registered_at'] ?? 0) >= $cutoff) {
-                    $alive[] = $pod;
-                } else {
-                    $stale[] = $hostname; // 惰性清理
-                }
-            }
-            if ($stale) {
-                Redis::hdel(self::PODS_REGISTRY_KEY, ...$stale);
-            }
-            return $alive;
-        } catch (\Exception $e) {
-            Log::warning('SwooleStatsController::getRegisteredPods failed: ' . $e->getMessage());
+        $ttl = Redis::ttl(SwooleStatsCollectorProcess::COLLECTING_KEY);
+        return $ttl > 0 ? $ttl : -2;
+    }
+
+    /**
+     * 从 Redis Hash 读取所有 pod 的指标数据，过滤掉过期条目
+     *
+     * @return array [['hostname'=>..., 'stats'=>[...], 'updated_at'=>..., 'stale'=>bool], ...]
+     */
+    protected function getAllPodsStats(): array
+    {
+        $raw = Redis::hgetall(SwooleStatsCollectorProcess::PODS_HASH_KEY);
+        if (!$raw) {
             return [];
         }
-    }
 
-    /**
-     * 计算 pod 间内部请求使用的 HMAC Token，防止直接从公网调用 self_only 端点
-     */
-    protected function getInternalToken(): string
-    {
-        return hash_hmac('sha256', 'swoole-stats-internal', config('app.key', 'fallback'));
-    }
+        $cutoff  = time() - self::POD_STALE_SECONDS;
+        $result  = [];
+        $staleKeys = [];
 
-    /**
-     * 处理 pod 间内部请求（?self_only=1）
-     *
-     * 校验 X-Internal-Token Header，通过后返回本机 JSON 指标。
-     */
-    protected function handleSelfOnly()
-    {
-        $token = request()->header('X-Internal-Token');
-        if ($token !== $this->getInternalToken()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        return response()->json($this->getSwooleMetrics());
-    }
-
-    /**
-     * 向指定 pod 地址发起内部 HTTP 请求，获取其 Swoole 指标
-     *
-     * @param  string $address  形如 http://10.x.x.x:5200
-     * @return array|null       指标数组，请求失败返回 null
-     */
-    protected function fetchPodStats(string $address): ?array
-    {
-        // 路由路径：可在 .env 中设置 SWOOLE_STATS_INTERNAL_PATH 覆盖（需同步写入对应 config 文件）；
-        // 默认按 admin.route.prefix 拼接，与 easy-tool routes/web.php 中的路由保持一致。
-        $path  = $_ENV['SWOOLE_STATS_INTERNAL_PATH']
-            ?? ('/' . trim(config('admin.route.prefix', 'admin'), '/') . '/swoole_stats');
-        $url   = rtrim($address, '/') . $path . '?self_only=1';
-        $token = $this->getInternalToken();
-
-        try {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT        => self::REMOTE_TIMEOUT,
-                CURLOPT_CONNECTTIMEOUT => self::REMOTE_TIMEOUT,
-                CURLOPT_HTTPHEADER     => [
-                    'Accept: application/json',
-                    'X-Internal-Token: ' . $token,
-                ],
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($response && $httpCode === 200) {
-                return json_decode($response, true);
+        foreach ($raw as $hostname => $json) {
+            $pod = json_decode($json, true);
+            if (!$pod) {
+                $staleKeys[] = $hostname;
+                continue;
             }
-        } catch (\Exception $e) {
-            Log::warning("SwooleStatsController::fetchPodStats [{$address}]: " . $e->getMessage());
+
+            $updatedAt = $pod['updated_at'] ?? 0;
+            $pod['stale'] = ($updatedAt < $cutoff);
+
+            $result[] = $pod;
         }
-        return null;
+
+        // 惰性清理无法解析的条目（不清理仅过期的，因为采集停止后数据自然变 stale）
+        if ($staleKeys) {
+            Redis::hdel(SwooleStatsCollectorProcess::PODS_HASH_KEY, ...$staleKeys);
+        }
+
+        // 按 hostname 排序，保证显示顺序稳定
+        usort($result, fn($a, $b) => ($a['hostname'] ?? '') <=> ($b['hostname'] ?? ''));
+
+        return $result;
     }
 
     /**
-     * 聚合所有 pod 的指标并返回响应
-     *
-     * 本 pod 直接读取（无需 HTTP），其余 pod 逐一 cURL 拉取。
+     * 聚合所有 pod 的指标页面
      */
     protected function handleAllPods()
     {
-        $selfAddress = $this->getSelfPodAddress();
-        $pods        = $this->getRegisteredPods();
-
-        // 本 pod 直接取，不走 HTTP
-        $results = [[
-            'hostname' => gethostname(),
-            'address'  => $selfAddress,
-            'metrics'  => $this->getSwooleMetrics(),
-            'status'   => 'ok',
-        ]];
-
-        // 依次拉取其余 pod（可改为并发，当前 pod 数量有限，串行已够用）
-        foreach ($pods as $pod) {
-            if (($pod['address'] ?? '') === $selfAddress) {
-                continue; // 已加入本 pod，跳过
-            }
-            $metrics   = $this->fetchPodStats($pod['address']);
-            $results[] = [
-                'hostname' => $pod['hostname'],
-                'address'  => $pod['address'],
-                'metrics'  => $metrics,
-                'status'   => $metrics ? 'ok' : 'unreachable',
-            ];
-        }
+        $collectingTtl = $this->getCollectingTtl();
+        $isCollecting  = $collectingTtl > 0;
+        $pods          = $this->getAllPodsStats();
 
         $accept = request()->header('accept');
         if (request()->ajax() || strpos($accept, 'application/json') !== false) {
-            return response()->json($results);
+            return response()->json([
+                'collecting'     => $isCollecting,
+                'collecting_ttl' => $collectingTtl,
+                'pods'           => $pods,
+            ]);
         }
-        return $this->renderMultiPodHtml($results);
+
+        return $this->renderMultiPodHtml($pods, $isCollecting, $collectingTtl);
     }
 
     /**
-     * 渲染多 pod 聚合 HTML 页面，每个 pod 独立一个表格
-     *
-     * @param array $allPodsStats [['hostname', 'address', 'metrics', 'status'], ...]
+     * 渲染多 pod 聚合 HTML 页面
      */
-    protected function renderMultiPodHtml(array $allPodsStats)
+    protected function renderMultiPodHtml(array $allPodsStats, bool $isCollecting, int $collectingTtl)
     {
-        $podCount  = count($allPodsStats);
+        $podCount   = count($allPodsStats);
+        $baseUrl    = request()->url();
         $tablesHtml = '';
 
         foreach ($allPodsStats as $pod) {
-            $hostname    = htmlspecialchars($pod['hostname'] ?? '');
-            $address     = htmlspecialchars($pod['address']  ?? '');
-            $statusLabel = $pod['status'] === 'ok'
-                ? '<span style="color:green">✓ online</span>'
-                : '<span style="color:#cc0000">✗ unreachable</span>';
+            $hostname  = htmlspecialchars($pod['hostname'] ?? '');
+            $updatedAt = isset($pod['updated_at']) ? date('H:i:s', $pod['updated_at']) : '-';
+            $isStale   = $pod['stale'] ?? true;
+
+            $statusLabel = $isStale
+                ? '<span style="color:#cc0000">● stale</span>'
+                : '<span style="color:green">● live</span>';
 
             $rowsHtml = '';
-            if (!empty($pod['metrics'])) {
-                foreach ($pod['metrics'] as $k => $v) {
+            if (!empty($pod['stats'])) {
+                foreach ($pod['stats'] as $k => $v) {
                     $rowsHtml .= '<tr><td>' . htmlspecialchars($k) . '</td>'
-                        . '<td>' . htmlspecialchars((string)$v) . '</td></tr>';
+                        . '<td>' . htmlspecialchars((string) $v) . '</td></tr>';
                 }
             } else {
-                $rowsHtml = '<tr><td colspan="2" style="color:#999">无法获取数据</td></tr>';
+                $rowsHtml = '<tr><td colspan="2" style="color:#999">暂无数据</td></tr>';
             }
 
             $tablesHtml .= <<<HTML
 
             <div class="pod-block">
                 <h2>{$hostname}
-                    <small style="font-size:0.65em;color:#888;font-weight:normal">{$address}</small>
                     {$statusLabel}
+                    <small style="font-size:0.6em;color:#888;font-weight:normal">更新于 {$updatedAt}</small>
                 </h2>
                 <table>
                     <thead><tr><th>指标</th><th>值</th></tr></thead>
@@ -287,31 +208,97 @@ class SwooleStatsController
 HTML;
         }
 
+        // 采集控制区
+        if ($isCollecting) {
+            $collectControlHtml = <<<HTML
+            <div class="collect-status" style="background:#e8f5e9;padding:12px 18px;border-radius:6px;margin-bottom:1.5em">
+                <strong style="color:green">✓ 正在采集</strong>
+                <span style="margin-left:8px">剩余 <strong id="ttl-countdown">{$collectingTtl}</strong> 秒</span>
+                <a href="{$baseUrl}?stop_collect=1" style="margin-left:16px;color:#cc0000">■ 停止采集</a>
+                <a href="{$baseUrl}?all_pods=1" style="margin-left:16px">⟳ 刷新</a>
+            </div>
+HTML;
+        } else {
+            $collectControlHtml = <<<HTML
+            <div class="collect-status" style="background:#fff3e0;padding:12px 18px;border-radius:6px;margin-bottom:1.5em">
+                <strong style="color:#e65100">○ 未在采集</strong>
+                <span style="margin-left:12px">持续时间:</span>
+                <select id="duration-select" style="margin-left:4px">
+                    <option value="60">1 分钟</option>
+                    <option value="300" selected>5 分钟</option>
+                    <option value="600">10 分钟</option>
+                    <option value="1800">30 分钟</option>
+                    <option value="3600">1 小时</option>
+                </select>
+                <a id="start-btn" href="#" style="margin-left:12px;color:green;font-weight:bold">▶ 开始采集</a>
+            </div>
+HTML;
+        }
+
+        $noDataHint = $podCount === 0
+            ? '<p style="color:#999">暂无 pod 数据。请先点击「开始采集」，等待 2~3 秒后刷新页面。</p>'
+            : '';
+
         return response()->make(<<<HTML
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Swoole 运行状态 — 所有 Pod ({$podCount})</title>
+    <title>Swoole 运行状态 — 所有 Pod</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
+        body { font-family: -apple-system, Arial, sans-serif; margin: 2em; }
         h1   { margin-bottom: 0.4em; }
-        .nav { margin-bottom: 1.8em; }
+        .nav { margin-bottom: 1em; }
         .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
-        .pod-block { margin-bottom: 2.5em; }
-        h2 { margin-top: 0; margin-bottom: 0.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.4em; }
+        .pod-block { margin-bottom: 2em; }
+        h2 { margin-top: 0; margin-bottom: 0.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.4em; font-size: 1.1em; }
         table { border-collapse: collapse; width: 60%; }
-        th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+        th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
         th { background: #f5f5f5; }
+        select { padding: 2px 6px; }
     </style>
 </head>
 <body>
     <h1>Swoole 运行状态 — 所有 Pod ({$podCount})</h1>
     <div class="nav">
-        <a href="?">← 仅当前 Pod</a>
-        <a href="?all_pods=1">⟳ 刷新</a>
+        <a href="{$baseUrl}">← 仅当前 Pod</a>
     </div>
+
+    {$collectControlHtml}
+    {$noDataHint}
     {$tablesHtml}
+
+    <script>
+        // 开始采集按钮 → 带 duration 参数跳转
+        var startBtn = document.getElementById('start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var duration = document.getElementById('duration-select').value;
+                window.location.href = '{$baseUrl}?start_collect=1&duration=' + duration;
+            });
+        }
+
+        // 倒计时显示
+        var ttlEl = document.getElementById('ttl-countdown');
+        if (ttlEl) {
+            var ttl = parseInt(ttlEl.textContent);
+            var timer = setInterval(function() {
+                ttl--;
+                if (ttl <= 0) {
+                    clearInterval(timer);
+                    ttlEl.textContent = '0';
+                    // 自动刷新
+                    setTimeout(function() { window.location.reload(); }, 1000);
+                } else {
+                    ttlEl.textContent = ttl;
+                }
+            }, 1000);
+
+            // 采集中自动刷新（每 5 秒）
+            setTimeout(function() { window.location.reload(); }, 5000);
+        }
+    </script>
 </body>
 </html>
 HTML
@@ -319,7 +306,7 @@ HTML
     }
 
     // =========================================================================
-    // 原有方法（保持不变，仅在 renderHtmlWithExtras 中增加多 Pod 导航入口）
+    // 原有方法
     // =========================================================================
 
     /**
