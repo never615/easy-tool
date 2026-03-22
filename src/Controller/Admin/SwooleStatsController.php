@@ -116,8 +116,8 @@ class SwooleStatsController
             return [];
         }
 
-        $cutoff  = time() - self::POD_STALE_SECONDS;
-        $result  = [];
+        $cutoff    = time() - self::POD_STALE_SECONDS;
+        $result    = [];
         $staleKeys = [];
 
         foreach ($raw as $hostname => $json) {
@@ -128,12 +128,16 @@ class SwooleStatsController
             }
 
             $updatedAt = $pod['updated_at'] ?? 0;
-            $pod['stale'] = ($updatedAt < $cutoff);
+            if ($updatedAt < $cutoff) {
+                // 已过期（pod 下线 / 重新部署后旧 pod），从 Hash 中清除，不显示
+                $staleKeys[] = $hostname;
+                continue;
+            }
 
             $result[] = $pod;
         }
 
-        // 惰性清理无法解析的条目（不清理仅过期的，因为采集停止后数据自然变 stale）
+        // 清理过期 & 无法解析的条目
         if ($staleKeys) {
             Redis::hdel(SwooleStatsCollectorProcess::PODS_HASH_KEY, ...$staleKeys);
         }
@@ -177,11 +181,6 @@ class SwooleStatsController
         foreach ($allPodsStats as $pod) {
             $hostname  = htmlspecialchars($pod['hostname'] ?? '');
             $updatedAt = isset($pod['updated_at']) ? date('H:i:s', $pod['updated_at']) : '-';
-            $isStale   = $pod['stale'] ?? true;
-
-            $statusLabel = $isStale
-                ? '<span style="color:#cc0000">● stale</span>'
-                : '<span style="color:green">● live</span>';
 
             $rowsHtml = '';
             if (!empty($pod['stats'])) {
@@ -197,7 +196,7 @@ class SwooleStatsController
 
             <div class="pod-block">
                 <h2>{$hostname}
-                    {$statusLabel}
+                    <span style="color:green">● live</span>
                     <small style="font-size:0.6em;color:#888;font-weight:normal">更新于 {$updatedAt}</small>
                 </h2>
                 <table>
