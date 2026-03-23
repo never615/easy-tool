@@ -70,6 +70,20 @@ class Handler extends ExceptionHandler
      */
     public function report(Throwable $exception)
     {
+        // Sanctum 通过 tokenable_type 解析已不存在的模型类时（如旧 token 中记录的类已被移除），
+        // 会抛出 PHP \Error（Class not found）。
+        // render() 中已将其转为 AuthenticationException（401），此处跳过 report，
+        // 避免产生误导性的错误日志。
+        if ($exception instanceof \Error &&
+            preg_match('/Class .* not found/', $exception->getMessage())) {
+            $trace = $exception->getTraceAsString();
+            if (str_contains($trace, 'Guard.php') ||
+                str_contains($trace, 'sanctum') ||
+                str_contains($trace, 'HasRelationships')) {
+                return;
+            }
+        }
+
         parent::report($exception);
     }
 
