@@ -6,12 +6,14 @@
 namespace Mallto\Tool\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Response;
@@ -119,6 +121,9 @@ class ToolServiceProvider extends ServiceProvider
         //$this->authBoot();
         $this->queueBoot();
         $this->scheduleBoot();
+
+        $this->configurePostgresTimeouts();
+        $this->registerTransactionGuard();
 
 
     }
@@ -276,6 +281,65 @@ class ToolServiceProvider extends ServiceProvider
                     "name" => $event->job->resolveName(),
                     "payload" => $event->job->getRawBody(),
                 ]);
+            }
+        });
+    }
+
+
+    /**
+     * 监听 PostgreSQL 连接建立事件，设置会话级超时参数。
+     *
+     * LaravelS 常驻 Worker + PDO 持久连接场景下，若某个请求的查询因锁等待无限阻塞，
+     * 会导致该 Worker 永远无法处理新请求，最终 accept queue 满溢、健康探针 timeout。
+     *
+     * lock_timeout：等待行锁/表锁超过此时间直接抛出异常（不等 statement_timeout）
+     * statement_timeout：单条 SQL 超过此时间直接抛出异常
+     *
+     * 对应 config/database.php：lock_timeout（默认 8s）、statement_timeout（默认 30s）
+     * 需要绕过超时的场景（如数据迁移）可在执行前 SET LOCAL statement_timeout = 0
+     */
+    private function configurePostgresTimeouts(): void
+    {
+        $lockTimeout      = config('database.connections.pgsql.lock_timeout', '8s');
+        $statementTimeout = config('database.connections.pgsql.statement_timeout', '30s');
+
+        Event::listen(ConnectionEstablished::class, function (ConnectionEstablished $event) use ($lockTimeout, $statementTimeout) {
+            if ($event->connection->getDriverName() !== 'pgsql') {
+                return;
+            }
+            try {
+                // SET（会话级），确保整个连接生效
+                $event->connection->unprepared("SET lock_timeout = '{$lockTimeout}'");
+                $event->connection->unprepared("SET statement_timeout = '{$statementTimeout}'");
+            } catch (\Throwable $e) {
+                // 超时参数设置失败不阻断业务，但需记录
+                Log::error('[ToolServiceProvider] PostgreSQL timeout config failed: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * 注册事务泄漏守卫：每次请求结束时，若 Worker 仍有未提交的事务，强制回滚。
+     *
+     * easy-tool 的 Handler::render() 已在异常时回滚事务，
+     * 但有些场景不经过 render()（如 LaravelS Worker 超时强杀、Fatal Error 等），
+     * 此守卫作为最后一道防线，确保每次请求结束时事务处于干净状态。
+     */
+    private function registerTransactionGuard(): void
+    {
+        $this->app->terminating(function () {
+            try {
+                $db = DB::connection();
+                if ($db->transactionLevel() > 0) {
+                    Log::warning('[TransactionGuard] 检测到请求结束时仍有未提交事务，强制回滚', [
+                        'level' => $db->transactionLevel(),
+                    ]);
+                    while ($db->transactionLevel() > 0) {
+                        $db->rollBack();
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('[TransactionGuard] rollback failed: ' . $e->getMessage());
             }
         });
     }

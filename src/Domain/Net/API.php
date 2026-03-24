@@ -38,7 +38,20 @@ class API
     const JSON = 'json';
 
 
-    const MAX_RETRIES = 2;
+    /**
+     * 最大重试次数。
+     *
+     * LaravelS 常驻 Worker 中，每次外部 HTTP 调用都占用一个 Worker 进程，
+     * 重试次数过多会导致所有 Worker 同时阻塞，accept queue 满溢，健康探针 timeout。
+     *
+     * 每次重试有 Guzzle exponentialDelay：retry1=1s, retry2=2s...
+     * 加上 timeout=8s，最坏耗时 = (8+delay) * (MAX_RETRIES+1)
+     * MAX_RETRIES=1 → 最坏 8+1+8 = 17s，可接受。
+     *
+     * 注意：原来 MAX_RETRIES=2 但判断是 retries > MAX_RETRIES，
+     * 实际允许 3 次 retry（4 次总请求），最坏 47s，故障根因。
+     */
+    const MAX_RETRIES = 1;
 
 
     /**
@@ -202,8 +215,8 @@ class API
             ResponseInterface $response = null,
             $exception = null
         ) {
-            // Limit the number of retries to MAX_RETRIES
-            if ($retries && $retries > self::MAX_RETRIES) {
+            // retries 是已重试次数；>= MAX_RETRIES 时停止（原来是 > MAX_RETRIES，实际多允许一次）
+            if ($retries >= self::MAX_RETRIES) {
                 return false;
             }
 
@@ -239,6 +252,10 @@ class API
             } else {
                 return false;
             }
+        }, function (int $retries): int {
+            // 限制 retry delay 上限为 500ms（Guzzle 默认 exponentialDelay 最坏 2s+）
+            // 在 LaravelS 常驻 Worker 中，delay 直接占用 Worker 进程，必须控制上限
+            return min(500, (int)(1000 * pow(2, $retries - 1)));
         });
     }
 

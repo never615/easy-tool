@@ -195,8 +195,11 @@ class Http
         if ( ! ($this->client instanceof HttpClient)) {
             $this->client = new HttpClient(
                 [
-                    'timeout'         => 10,
-                    'connect_timeout' => 6,
+                    // LaravelS 常驻 Worker：timeout 直接占用 Worker 进程。
+                    // 配合 API::MAX_RETRIES=1，最坏耗时 = 8 + 0.5(delay) + 8 = 16.5s
+                    // 原来 timeout=10 + MAX_RETRIES=2（实际3次retry）最坏 47s，是 Worker 死锁根因。
+                    'timeout'         => 8,
+                    'connect_timeout' => 5,
                 ]
             );
         }
