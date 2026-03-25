@@ -61,7 +61,7 @@ Route::group($attributes, function ($router) use ($routeFunction, $routeFunction
 
 Route::group([
     'prefix' => 'admin/api',
-    'middleware' => ['owner_api', 'requestCheck', 'set_language'],
+    'middleware' => ['owner_api', 'requestCheck', 'set_language', 'token_from_query'],
     'namespace' => 'Mallto\Tool\Controller\Admin\Api',
     'as' => 'admin_api.', // 配置路由组中路由命名的前缀。
 ], function ($router) use ($routeFunction, $routeFunctionByAutoPermission) {

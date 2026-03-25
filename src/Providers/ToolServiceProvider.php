@@ -40,6 +40,7 @@ use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\SetLanguage;
 use Mallto\Tool\Middleware\ThirdRequestCheck;
+use Mallto\Tool\Middleware\TokenFromQuery;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
 
@@ -73,6 +74,7 @@ class ToolServiceProvider extends ServiceProvider
         'owner_api' => OwnerApiLog::class,
         'third_api_check' => ThirdRequestCheck::class,
         'set_language' => SetLanguage::class,
+        'token_from_query' => TokenFromQuery::class,
     ];
 
     /**
