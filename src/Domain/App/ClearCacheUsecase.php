@@ -5,7 +5,6 @@
 
 namespace Mallto\Tool\Domain\App;
 
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -69,7 +68,6 @@ class ClearCacheUsecase
                     }
                 } catch (ConnectionException $connectionException) {
                     //本地 redis 库在部署的时候会清理一次缓存,但是还没启动会报错
-
                 }
 
                 $keys = Redis::connection('cache')
@@ -78,8 +76,6 @@ class ClearCacheUsecase
                 if (!empty($keys)) {
                     Redis::del($keys);
                 }
-
-
             } else {
                 if (!$cache) {
                     Log::warning('clear all');
@@ -87,16 +83,16 @@ class ClearCacheUsecase
                     app('redis')->flushdb();
 
                     //keys 操作大量数据的时候会卡死一下
-                    //$keys = app('redis')->keys('*');
-                    //
-                    //if ( ! empty($keys)) {
-                    //    app('redis')->del($keys);
-                    //}
                 }
             }
         }
 
-        //添加清理任务到缓存中,用于多服务器清理缓存,每5分钟所有服务器检查一次是否需要有清理缓存的任务
-        Cache::put('clear_cache_task', "clear_cache_task", Carbon::now()->addMinutes(7));
+        // 缓存清理后，重新预热 locator MAC 集合（在所有 Redis 清理操作完成后，从 DB 全量重建）。
+        // 使用 try-catch：easy-location 包未安装时命令不存在，不影响其他业务。
+        try {
+            Artisan::call('location:mac-cache-warm');
+        } catch (\Throwable $e) {
+            // easy-location 未安装或预热失败，不影响主流程
+        }
     }
 }

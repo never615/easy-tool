@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Mallto\Admin\Facades\AdminE;
-use Mallto\Tool\Commands\ClearCacheCommand;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
@@ -57,7 +56,6 @@ class ToolServiceProvider extends ServiceProvider
         'Mallto\Tool\Commands\ResetTableIdSeqCommand',
         RedisDelPrefixCommand::class,
         CreateTableIdSeqCommand::class,
-        ClearCacheCommand::class,
         DeleteFailedJobsCommand::class,
     ];
 
@@ -453,18 +451,6 @@ class ToolServiceProvider extends ServiceProvider
 
             $schedule = $this->app->make(Schedule::class);
 
-            $schedule->command('tool:clear_cache')
-                ->name("clear_cache")
-                ->everyFiveMinutes()
-                ->runInBackground()
-                ->before(function () {
-                    dispatch(new LogJob("logSchedule",
-                        ["slug" => "clear_cache", "status" => "start"]));
-                })
-                ->after(function () {
-                    dispatch(new LogJob("logSchedule",
-                        ["slug" => "clear_cache", "status" => "finish"]));
-                });
 
             $schedule->command('tool:delete_failed_jobs_log')
                 ->onOneServer()
