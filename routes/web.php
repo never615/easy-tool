@@ -16,6 +16,12 @@
 
 use Illuminate\Support\Facades\Route;
 
+// ---- K8s 健康检查（无中间件，最低开销）----
+Route::group(['namespace' => 'Mallto\Tool\Controller'], function () {
+    Route::get('health/liveness', 'HealthCheckController@liveness');
+    Route::get('health/readiness', 'HealthCheckController@readiness');
+});
+
 $attributes = [
     'namespace' => 'Mallto\Tool\Controller',
     'middleware' => ['web'],
