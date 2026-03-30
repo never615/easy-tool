@@ -237,6 +237,11 @@ class ToolServiceProvider extends ServiceProvider
 
             $exception = $event->exception;
 
+            // 反序列化失败的残留队列任务（类已不存在），已在 exceptionOccurred 中删除，跳过错误日志
+            if ($exception && str_contains($exception->getMessage(), 'Job is incomplete class')) {
+                return;
+            }
+
             if ($exception && $exception instanceof MaxAttemptsExceededException) {
 //                Log::warning("队列任务失败，MaxAttemptsExceededException");
 //                Log::warning($event->job->payload());
@@ -263,6 +268,15 @@ class ToolServiceProvider extends ServiceProvider
         //异常发生后
         Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
             $exception = $event->exception;
+
+            // 自动清理反序列化失败的残留队列任务（类已不存在），直接删除并跳过重试
+            if ($exception && str_contains($exception->getMessage(), 'Job is incomplete class')) {
+                Log::warning("队列任务类不存在，自动删除: ".$exception->getMessage());
+                $event->job->delete();
+
+                return;
+            }
+
             if ($exception && $exception instanceof MaxAttemptsExceededException) {
 //                Log::warning("队列任务异常，MaxAttemptsExceededException");
 //                Log::warning($event->job->payload());
