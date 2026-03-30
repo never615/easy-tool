@@ -80,7 +80,7 @@ class ClearCacheUsecase
                 if (!$cache) {
                     Log::warning('clear all');
                     //清理默认 redis,存储的 session horizon
-                    app('redis')->flushdb();
+                    app('redis')->flushall();
 
                     //keys 操作大量数据的时候会卡死一下
                 }
