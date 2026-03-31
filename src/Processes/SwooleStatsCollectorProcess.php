@@ -48,15 +48,21 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
     public const POD_DATA_TTL = 15;
 
     /**
+     * 进程运行标志，onReload/onStop 置 false 通知主循环退出
+     */
+    private static bool $running = true;
+
+    /**
      * @param Server  $swoole
      * @param Process $process
      */
     public static function callback(Server $swoole, Process $process)
     {
+        self::$running = true;
         $hostname = gethostname();
         Log::info("[SwooleStatsCollector] 进程启动，hostname: {$hostname}");
 
-        while (true) {
+        while (self::$running) {
             try {
                 // 检查采集开关
                 $collecting = Redis::exists(self::COLLECTING_KEY);
@@ -88,8 +94,19 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
                 Log::warning('[SwooleStatsCollector] 采集异常: ' . $e->getMessage());
             }
 
-            sleep(self::POLL_INTERVAL);
+            // 将 sleep 拆分为短间隔，以便更快响应 reload/stop 信号
+            for ($i = 0; $i < self::POLL_INTERVAL * 10 && self::$running; $i++) {
+                \Swoole\Coroutine::sleep(0.1);
+            }
         }
+
+        // 主循环退出后，在协程上下文中安全清理 Redis 数据
+        try {
+            Redis::hdel(self::PODS_HASH_KEY, $hostname);
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        Log::info("[SwooleStatsCollector] 进程退出，hostname: {$hostname}");
     }
 
     /**
@@ -99,13 +116,8 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
     public static function onReload(Server $swoole, Process $process)
     {
         Log::info('[SwooleStatsCollector] reloading');
-        // 清理本 pod 在 Hash 中的数据
-        try {
-            Redis::hdel(self::PODS_HASH_KEY, gethostname());
-        } catch (\Throwable $e) {
-            // ignore
-        }
-        $process->exit(0);
+        // 仅设置标志位，让主循环自行退出并清理，避免在信号上下文中做阻塞 IO 导致协程死锁
+        self::$running = false;
     }
 
     /**
@@ -115,13 +127,8 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
     public static function onStop(Server $swoole, Process $process)
     {
         Log::info('[SwooleStatsCollector] stopping');
-        // 清理本 pod 在 Hash 中的数据
-        try {
-            Redis::hdel(self::PODS_HASH_KEY, gethostname());
-        } catch (\Throwable $e) {
-            // ignore
-        }
-        $process->exit(0);
+        // 仅设置标志位，让主循环自行退出并清理，避免在信号上下文中做阻塞 IO 导致协程死锁
+        self::$running = false;
     }
 }
 
