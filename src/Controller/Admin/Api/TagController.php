@@ -28,6 +28,8 @@ class TagController extends Controller
             'type' => 'sometimes|string',
             'name' => 'sometimes|string',
             'per_page' => 'sometimes|integer',
+            'en_name' => 'sometimes|string',
+            'tc_name' => 'sometimes|string',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -41,6 +43,14 @@ class TagController extends Controller
 
         if ($name) {
             $query->where('name', 'ilike', "%$name%");
+        }
+
+        if ($request->get('en_name')) {
+            $query->where('en_name', 'ilike', "%{$request->get('en_name')}%");
+        }
+
+        if ($request->get('tc_name')) {
+            $query->where('tc_name', 'ilike', "%{$request->get('tc_name')}%");
         }
 
         $query->orderBy('weight', 'desc')
@@ -64,6 +74,8 @@ class TagController extends Controller
         $this->validate($request, [
             'type' => 'required|string',
             'name' => 'required|string',
+            'en_name' => 'sometimes|string',
+            'tc_name' => 'sometimes|string',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -73,6 +85,8 @@ class TagController extends Controller
             'type',
             'logo',
             'slug',
+            'en_name',
+            'tc_name',
         ]));
         $tag->subject_id = $subjectId;
         $tag->save();
@@ -89,7 +103,9 @@ class TagController extends Controller
             'name',
             'type',
             'logo',
-            'slug'
+            'slug',
+            'en_name',
+            'tc_name'
         ]));
         $tag->save();
 
