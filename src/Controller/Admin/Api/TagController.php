@@ -7,6 +7,7 @@ namespace Mallto\Tool\Controller\Admin\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Data\Tag;
 
@@ -27,9 +28,11 @@ class TagController extends Controller
         $this->validate($request, [
             'type' => 'sometimes|string',
             'name' => 'sometimes|string',
-            'per_page' => 'sometimes|integer',
+            'per_page' => 'sometimes|integer|min:1|max:100',
             'en_name' => 'sometimes|string',
             'tc_name' => 'sometimes|string',
+            'slug' => 'sometimes|string',
+            'third_id' => 'sometimes|string',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -51,6 +54,14 @@ class TagController extends Controller
 
         if ($request->get('tc_name')) {
             $query->where('tc_name', 'ilike', "%{$request->get('tc_name')}%");
+        }
+
+        if ($request->get('third_id')) {
+            $query->where('third_id', 'ilike', "%{$request->get('third_id')}%");
+        }
+
+        if($request->get('slug')) {
+            $query->where('slug', 'ilike', "%{$request->get('slug')}%");
         }
 
         $query->orderBy('weight', 'desc')
@@ -76,6 +87,8 @@ class TagController extends Controller
             'name' => 'required|string',
             'en_name' => 'sometimes|string',
             'tc_name' => 'sometimes|string',
+            'third_id' => 'sometimes|string',
+            'slug' => 'sometimes|string',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -87,6 +100,7 @@ class TagController extends Controller
             'slug',
             'en_name',
             'tc_name',
+            'third_id',
         ]));
         $tag->subject_id = $subjectId;
         $tag->save();
@@ -99,13 +113,26 @@ class TagController extends Controller
     {
         $subjectId = SubjectUtils::getSubjectId();
         $tag = Tag::query()->where("subject_id", $subjectId)->findOrFail($id);
+
+        $aa=$request->only([
+            'name',
+            'type',
+            'logo',
+            'slug',
+            'en_name',
+            'tc_name',
+            'third_id',
+        ]);
+//        Log::debug($aa);
+
         $tag->fill($request->only([
             'name',
             'type',
             'logo',
             'slug',
             'en_name',
-            'tc_name'
+            'tc_name',
+            'third_id',
         ]));
         $tag->save();
 
