@@ -32,7 +32,7 @@ class TagController extends Controller
             'en_name' => 'sometimes|string',
             'tc_name' => 'sometimes|string',
             'slug' => 'sometimes|string',
-            'third_id' => 'sometimes|string',
+            'third_code' => 'sometimes|string',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -56,8 +56,8 @@ class TagController extends Controller
             $query->where('tc_name', 'ilike', "%{$request->get('tc_name')}%");
         }
 
-        if ($request->get('third_id')) {
-            $query->where('third_id', 'ilike', "%{$request->get('third_id')}%");
+        if ($request->get('third_code')) {
+            $query->where('third_code', 'ilike', "%{$request->get('third_id')}%");
         }
 
         if($request->get('slug')) {
@@ -89,6 +89,7 @@ class TagController extends Controller
             'tc_name' => 'sometimes|string',
             'third_id' => 'sometimes|string',
             'slug' => 'sometimes|string',
+            'third_code' => 'sometimes|string',
         ]);
 
         $subjectId = SubjectUtils::getSubjectId();
@@ -121,7 +122,7 @@ class TagController extends Controller
             'slug',
             'en_name',
             'tc_name',
-            'third_id',
+            'third_code',
         ]);
 //        Log::debug($aa);
 
@@ -132,7 +133,7 @@ class TagController extends Controller
             'slug',
             'en_name',
             'tc_name',
-            'third_id',
+            'third_code',
         ]));
         $tag->save();
 
