@@ -133,11 +133,12 @@ class Handler extends ExceptionHandler
                 $response = $this->interJsonHandler($exception, $request);
 
                 $content = json_decode($response->getContent(), true);
+                $message = $this->responseContentMessage((array)$content, $exception);
 
                 return response()->json([
                     'status' => false,
-                    'message' => $content['error'] ?? $exception->getMessage(),
-                    'error' => $content['error'] ?? $exception->getMessage(),
+                    'message' => $message,
+                    'error' => $message,
                 ]);
             } else {
                 return $this->interJsonHandler($exception, $request);
@@ -155,7 +156,7 @@ class Handler extends ExceptionHandler
                 $content = json_decode($response->getContent(), true);
 
                 $error = new MessageBag([
-                    'title' => $content['error'] ?? $exception->getMessage(),
+                    'title' => $this->responseContentMessage((array)$content, $exception),
                 ]);
 
                 return back()->with(compact('error'))->withInput();
@@ -167,7 +168,7 @@ class Handler extends ExceptionHandler
                     $content = json_decode($response->getContent(), true);
 
                     $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
-                        $content['error'] ?? $exception->getMessage(), JSON_UNESCAPED_UNICODE);
+                        $this->responseContentMessage((array)$content, $exception), JSON_UNESCAPED_UNICODE);
 
                     return parent::render($request, $newException);
                 } else {
@@ -184,7 +185,7 @@ class Handler extends ExceptionHandler
                             $content = json_decode($response->getContent(), true);
 
                             $newException = new \Mallto\Tool\Exception\HttpException($response->getStatusCode(),
-                                $content['error'] ?? $exception->getMessage(), JSON_UNESCAPED_UNICODE);
+                                $this->responseContentMessage((array)$content, $exception), JSON_UNESCAPED_UNICODE);
 
                             return parent::render($request, $newException);
                         }
@@ -218,7 +219,7 @@ class Handler extends ExceptionHandler
             }
 
             if ($exception instanceof \Mallto\Tool\Exception\HttpException) {
-                return response()->json($exception->getResponseContent(), $exception->getStatusCode(), [],
+                return response()->json($this->responseData($exception->getResponseContent(), $exception), $exception->getStatusCode(), [],
                     JSON_UNESCAPED_UNICODE);
             } else {
                 //其他系统定义的异常
@@ -230,7 +231,7 @@ class Handler extends ExceptionHandler
                     $data["code"] = $code;
                 }
 
-                return response()->json($this->responseData($data, $exception->getMessage()),
+                return response()->json($this->responseData($data, $exception),
                     $exception->getStatusCode(), [], JSON_UNESCAPED_UNICODE);
             }
         } else {
@@ -240,7 +241,7 @@ class Handler extends ExceptionHandler
 //                Log::warning($exception);
 
                 return response()->json($this->responseData([
-                    "error" => trans("errors.not_found"),
+                    "error" => trans("errors.not_found")??$exception->getMessage(),
                 ], $exception), '404', [], JSON_UNESCAPED_UNICODE);
 
             } elseif ($exception instanceof ClientException) {
@@ -372,9 +373,11 @@ class Handler extends ExceptionHandler
     {
         $protocolVersion = $request->header("protocol_version", 1);
         if ($protocolVersion == 2) {
+            $message = $this->nonEmptyMessage($exception->getMessage(), array_first($exception->errors())[0] ?? null);
+
             return response()->json([
                 'errors' => $exception->errors(),
-                "message" => $exception->getMessage(),
+                "message" => $message,
             ], $exception->status, [], JSON_UNESCAPED_UNICODE);
         } else {
 //            return response()->json($exception->errors(), $exception->status, [], JSON_UNESCAPED_UNICODE);
@@ -388,9 +391,85 @@ class Handler extends ExceptionHandler
 
     protected function responseData($data, $exception)
     {
-        return array_merge($data, [
-            "message" => $data["error"] ?? $exception->getMessage(),
+        if (array_key_exists('error', $data)) {
+            $data['error'] = $this->nonEmptyMessage($data['error'], $data['message'] ?? $exception);
+        }
+
+        $data['message'] = $this->nonEmptyMessage($data['message'] ?? null, $data['error'] ?? $exception);
+        $this->logWarningStackWhenUsingGenericMessage($data['message'], $exception);
+
+        return $data;
+    }
+
+
+    protected function responseContentMessage(array $data, Throwable $exception): string
+    {
+        return $this->nonEmptyMessage($data['error'] ?? null, $data['message'] ?? $exception);
+    }
+
+
+    protected function nonEmptyMessage($message, $fallback = null): string
+    {
+        foreach ([$message, $fallback] as $candidate) {
+            if ($candidate instanceof Throwable) {
+                $candidate = $candidate->getMessage();
+            }
+
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return $candidate;
+            }
+        }
+
+        $message = $this->translatedInternalErrorMessage();
+        if ($message !== null) {
+            return $message;
+        }
+
+        return $this->fallbackInternalErrorMessage();
+    }
+
+
+    protected function logWarningStackWhenUsingGenericMessage(string $message, Throwable $exception): void
+    {
+        if (!$this->shouldLogWarningStackForGenericMessage($message)) {
+            return;
+        }
+
+        Log::warning('Handler responded with generic internal error message', [
+            'resolved_message' => $message,
+            'exception_class' => get_class($exception),
+            'exception_message' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
         ]);
+    }
+
+
+    protected function shouldLogWarningStackForGenericMessage(string $message): bool
+    {
+        $genericMessages = [$this->fallbackInternalErrorMessage()];
+        $translatedInternalErrorMessage = $this->translatedInternalErrorMessage();
+        if ($translatedInternalErrorMessage !== null) {
+            $genericMessages[] = $translatedInternalErrorMessage;
+        }
+
+        return in_array($message, $genericMessages, true);
+    }
+
+
+    protected function translatedInternalErrorMessage(): ?string
+    {
+        $message = trans('errors.internal_error');
+        if (is_string($message) && trim($message) !== '' && $message !== 'errors.internal_error') {
+            return $message;
+        }
+
+        return null;
+    }
+
+
+    protected function fallbackInternalErrorMessage(): string
+    {
+        return '系统繁忙,请稍后重试...';
     }
 
 
