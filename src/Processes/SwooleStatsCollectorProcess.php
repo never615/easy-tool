@@ -22,6 +22,9 @@ use Swoole\Process;
  *   swoole_stats:collecting  — String，TTL = 采集持续时间，存在即表示"正在采集"
  *   swoole_stats:pods        — Hash，Field = hostname，Value = JSON({hostname, stats, updated_at})
  *
+ * 扩展方式：在业务包中继承本类并覆盖 collectExtraStats()，
+ * 然后在 config/laravels.php 的 processes 中将 class 替换为子类。
+ *
  * User: never615 <never615.com>
  * Date: 2026/3/22
  */
@@ -71,7 +74,7 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
                     // 采集本 pod 的 Swoole 指标并写入 Redis Hash
                     $stats = $swoole->stats();
 
-                    $data = json_encode([
+                    $payload = [
                         'hostname'   => $hostname,
                         'updated_at' => time(),
                         'stats'      => [
@@ -86,7 +89,20 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
                             'request_count'       => $stats['request_count'] ?? 0,
                             'tasking_num'         => $stats['tasking_num'] ?? 0,
                         ],
-                    ], JSON_UNESCAPED_UNICODE);
+                    ];
+
+                    // 子类可覆盖 collectExtraStats() 追加业务指标（与 stats 同级）
+                    // 独立 try/catch：extra stats 失败不影响主 Swoole 指标的写入
+                    try {
+                        $extra = static::collectExtraStats($swoole, $hostname);
+                        foreach ($extra as $key => $value) {
+                            $payload[$key] = $value;
+                        }
+                    } catch (\Throwable $extraException) {
+                        Log::warning('[SwooleStatsCollector] collectExtraStats 异常: ' . $extraException->getMessage());
+                    }
+
+                    $data = json_encode($payload, JSON_UNESCAPED_UNICODE);
 
                     Redis::hset(self::PODS_HASH_KEY, $hostname, $data);
                 }
@@ -107,6 +123,21 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
             // ignore
         }
         Log::info("[SwooleStatsCollector] 进程退出，hostname: {$hostname}");
+    }
+
+    /**
+     * 额外业务指标采集扩展点，子类覆盖此方法以追加自定义指标。
+     *
+     * 返回关联数组，每个 key 会作为独立字段写入 per-pod payload（与 'stats' 同级）。
+     * 例如：['skylab_tcp' => ['skylab_connection_count' => 12, ...]]
+     *
+     * @param Server $swoole
+     * @param string $hostname
+     * @return array<string, array>
+     */
+    protected static function collectExtraStats(Server $swoole, string $hostname): array
+    {
+        return [];
     }
 
     /**
