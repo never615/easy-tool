@@ -179,6 +179,7 @@ class LoggerAliyun implements Logger
      */
     public function logSchedule($content)
     {
+        return ;
         if (!$this->switch) {
             return;
         }
