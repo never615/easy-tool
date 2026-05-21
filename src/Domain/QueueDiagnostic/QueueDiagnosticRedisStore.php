@@ -45,6 +45,10 @@ class QueueDiagnosticRedisStore
             'meta' => Redis::hgetall($this->config->windowKey($windowStart, 'meta')) ?: [],
             'events' => Redis::hgetall($this->config->windowKey($windowStart, 'events')) ?: [],
             'queues' => Redis::hgetall($this->config->windowKey($windowStart, 'queues')) ?: [],
+            'redis_memory' => Redis::hgetall($this->config->windowKey($windowStart, 'redis')) ?: [],
+            'keyspace' => Redis::hgetall($this->config->windowKey($windowStart, 'keyspace')) ?: [],
+            'queue_sizes' => Redis::hgetall($this->config->windowKey($windowStart, 'queue_sizes')) ?: [],
+            'anomaly' => Redis::hgetall($this->config->windowKey($windowStart, 'anomaly')) ?: [],
             'jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'jobs'), $limit),
             'payload_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'payload'), $limit),
             'slow_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'slow'), $limit),
@@ -53,6 +57,32 @@ class QueueDiagnosticRedisStore
             'duration' => Redis::hgetall($this->config->windowKey($windowStart, 'duration')) ?: [],
             'last_event' => $this->decodeJson((string)Redis::get($this->config->windowKey($windowStart, 'last_event'))),
         ];
+    }
+
+    public function recordResourceSnapshot(int $windowStart, array $redisMemory, array $keyspace, array $queueSizes, array $anomaly): void
+    {
+        $keys = [
+            $this->config->windowKey($windowStart, 'meta'),
+            $this->config->windowKey($windowStart, 'redis'),
+            $this->config->windowKey($windowStart, 'keyspace'),
+            $this->config->windowKey($windowStart, 'queue_sizes'),
+            $this->config->windowKey($windowStart, 'anomaly'),
+        ];
+
+        Redis::hset($keys[0], 'window_started_at', $windowStart);
+        Redis::hset($keys[0], 'snapshot_updated_at', time());
+        $this->writeHash($keys[1], $redisMemory);
+        $this->writeHash($keys[2], $keyspace);
+        $this->writeHash($keys[3], $queueSizes);
+        $this->writeHash($keys[4], [
+            'level' => $anomaly['level'] ?? '',
+            'reasons' => json_encode($anomaly['reasons'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'checked_at' => $anomaly['checked_at'] ?? time(),
+        ]);
+
+        foreach ($keys as $key) {
+            Redis::expire($key, $this->config->retentionSeconds());
+        }
     }
 
     private function incrementWindow(
@@ -146,6 +176,17 @@ class QueueDiagnosticRedisStore
         $current = (int)Redis::hget($key, $field);
         if ($value > $current) {
             Redis::hset($key, $field, $value);
+        }
+    }
+
+    private function writeHash(string $key, array $values): void
+    {
+        foreach ($values as $field => $value) {
+            if (is_array($value)) {
+                $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+
+            Redis::hset($key, (string)$field, (string)$value);
         }
     }
 

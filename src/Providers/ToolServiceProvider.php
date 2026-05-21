@@ -23,6 +23,7 @@ use Illuminate\Support\ServiceProvider;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
+use Mallto\Tool\Commands\QueueDiagnosticSnapshotCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
@@ -58,6 +59,7 @@ class ToolServiceProvider extends ServiceProvider
         RedisDelPrefixCommand::class,
         CreateTableIdSeqCommand::class,
         DeleteFailedJobsCommand::class,
+        QueueDiagnosticSnapshotCommand::class,
     ];
 
     /**
@@ -536,6 +538,12 @@ class ToolServiceProvider extends ServiceProvider
                 ->onOneServer()
                 ->everyMinute();
 //                ->everySecond();
+
+            $schedule->command('tool:queue_diagnostic_snapshot')
+                ->name('queue diagnostic snapshot')
+                ->onOneServer()
+                ->withoutOverlapping()
+                ->everyMinute();
         });
     }
 }
