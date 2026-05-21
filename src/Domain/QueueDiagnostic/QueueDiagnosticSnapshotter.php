@@ -2,9 +2,11 @@
 
 namespace Mallto\Tool\Domain\QueueDiagnostic;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
+use Mallto\Tool\Data\QueueDiagnosticSnapshot;
 
 class QueueDiagnosticSnapshotter
 {
@@ -33,6 +35,7 @@ class QueueDiagnosticSnapshotter
         ]);
 
         $this->logAnomaly($snapshot);
+        $this->persistSnapshot($snapshot);
 
         return $snapshot;
     }
@@ -136,6 +139,45 @@ class QueueDiagnosticSnapshotter
         }
 
         Log::warning('Queue diagnostic anomaly detected', $context);
+    }
+
+    private function persistSnapshot(array $snapshot): void
+    {
+        if (!$this->config->dbSnapshotEnabled()) {
+            return;
+        }
+
+        try {
+            $windowStartedAt = Carbon::createFromTimestamp((int)$snapshot['window_started_at']);
+            $redisMemory = $snapshot['redis_memory'] ?? [];
+            $anomaly = $snapshot['anomaly'] ?? [];
+
+            QueueDiagnosticSnapshot::query()->updateOrCreate([
+                'env' => (string)config('app.env', 'local'),
+                'app_unique' => (string)(config('app.unique') ?: config('app.name', 'app')),
+                'window_started_at' => $windowStartedAt,
+            ], [
+                'window_seconds' => $this->config->windowSeconds(),
+                'redis_used_memory' => (int)($redisMemory['used_memory'] ?? 0),
+                'redis_used_memory_peak' => (int)($redisMemory['used_memory_peak'] ?? 0),
+                'redis_mem_fragmentation_ratio' => isset($redisMemory['mem_fragmentation_ratio'])
+                    ? (string)$redisMemory['mem_fragmentation_ratio']
+                    : null,
+                'queue_sizes' => $snapshot['queue_sizes'] ?? [],
+                'top_jobs' => $snapshot['jobs'] ?? [],
+                'slow_jobs' => $snapshot['slow_jobs'] ?? [],
+                'large_payload_jobs' => $snapshot['large_payload_jobs'] ?? [],
+                'failed_jobs' => $snapshot['failed_jobs'] ?? [],
+                'keyspace' => $snapshot['keyspace'] ?? [],
+                'scan_patterns' => null,
+                'anomaly_level' => $anomaly['level'] ?? null,
+                'anomaly_reasons' => $anomaly['reasons'] ?? [],
+            ]);
+        } catch (\Throwable $throwable) {
+            Log::warning('Queue diagnostic snapshot persist failed', [
+                'error' => $throwable->getMessage(),
+            ]);
+        }
     }
 
     private function flattenInfo(array $info): array
