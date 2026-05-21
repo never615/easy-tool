@@ -31,6 +31,7 @@ use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -208,6 +209,14 @@ class ToolServiceProvider extends ServiceProvider
             }
         });
 
+        Queue::before(function (JobProcessing $event) {
+            app(QueueDiagnosticRecorder::class)->before($event);
+        });
+
+        Queue::after(function (JobProcessed $event) {
+            app(QueueDiagnosticRecorder::class)->after($event);
+        });
+
         if (\config('app.log.queue')) {
 
             Queue::before(function (JobProcessing $event) {
@@ -234,6 +243,7 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务失败后
         Queue::failing(function (JobFailed $event) {
+            app(QueueDiagnosticRecorder::class)->failed($event);
 
             $exception = $event->exception;
 
@@ -267,6 +277,8 @@ class ToolServiceProvider extends ServiceProvider
 
         //异常发生后
         Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
+            app(QueueDiagnosticRecorder::class)->exceptionOccurred($event);
+
             $exception = $event->exception;
 
             // 自动清理反序列化失败的残留队列任务（类已不存在），直接删除并跳过重试
