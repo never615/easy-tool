@@ -84,6 +84,7 @@ class QueueDiagnosticRecorder
             'payload_bytes' => $this->payloadBytes($job, $payload),
             'payload_job' => $this->safeString($payload['job'] ?? null, ''),
             'payload_command_name' => $this->safeString($payload['data']['commandName'] ?? null, ''),
+            'diagnostic_context' => $this->normalizeContext($payload['queue_diagnostic_context'] ?? []),
         ];
     }
 
@@ -139,6 +140,24 @@ class QueueDiagnosticRecorder
         }
 
         return (string)$value;
+    }
+
+    private function normalizeContext($context): array
+    {
+        if (!is_array($context)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($context as $key => $value) {
+            if (is_array($value) || is_object($value)) {
+                continue;
+            }
+
+            $normalized[(string)$key] = mb_substr((string)$value, 0, 120);
+        }
+
+        return array_slice($normalized, 0, 20, true);
     }
 
     private function safeRecord(\Closure $callback): void

@@ -50,6 +50,7 @@ class QueueDiagnosticRedisStore
             'queue_sizes' => Redis::hgetall($this->config->windowKey($windowStart, 'queue_sizes')) ?: [],
             'anomaly' => Redis::hgetall($this->config->windowKey($windowStart, 'anomaly')) ?: [],
             'jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'jobs'), $limit),
+            'sources' => $this->zsetTop($this->config->windowKey($windowStart, 'sources'), $limit),
             'payload_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'payload'), $limit),
             'slow_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'slow'), $limit),
             'large_payload_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'large_payload'), $limit),
@@ -100,6 +101,7 @@ class QueueDiagnosticRedisStore
             $this->config->windowKey($windowStart, 'events'),
             $this->config->windowKey($windowStart, 'queues'),
             $this->config->windowKey($windowStart, 'jobs'),
+            $this->config->windowKey($windowStart, 'sources'),
             $this->config->windowKey($windowStart, 'payload'),
             $this->config->windowKey($windowStart, 'duration'),
             $this->config->windowKey($windowStart, 'slow'),
@@ -114,24 +116,29 @@ class QueueDiagnosticRedisStore
         Redis::hIncrBy($keys[1], $status, 1);
         Redis::hIncrBy($keys[2], $queue, 1);
         Redis::zIncrBy($keys[3], 1, $jobName);
-        Redis::zIncrBy($keys[4], $payloadBytes, $jobName);
-        Redis::hIncrBy($keys[5], $jobName . ':count', 1);
-        Redis::hIncrBy($keys[5], $jobName . ':total_ms', $durationMs);
-        $this->recordMax($keys[5], $jobName . ':max_ms', $durationMs);
-
-        if ($durationMs >= $this->config->slowJobMs()) {
-            Redis::zIncrBy($keys[6], 1, $jobName);
+        $sourceLabel = $this->sourceLabel($meta['diagnostic_context'] ?? []);
+        if ($sourceLabel !== '') {
+            Redis::zIncrBy($keys[4], 1, $sourceLabel);
         }
 
-        if ($payloadBytes >= $this->config->largePayloadBytes()) {
+        Redis::zIncrBy($keys[5], $payloadBytes, $jobName);
+        Redis::hIncrBy($keys[6], $jobName . ':count', 1);
+        Redis::hIncrBy($keys[6], $jobName . ':total_ms', $durationMs);
+        $this->recordMax($keys[6], $jobName . ':max_ms', $durationMs);
+
+        if ($durationMs >= $this->config->slowJobMs()) {
             Redis::zIncrBy($keys[7], 1, $jobName);
         }
 
-        if (in_array($status, ['failed', 'exception'], true)) {
+        if ($payloadBytes >= $this->config->largePayloadBytes()) {
             Redis::zIncrBy($keys[8], 1, $jobName);
         }
 
-        Redis::setex($keys[9], $this->config->retentionSeconds(), json_encode([
+        if (in_array($status, ['failed', 'exception'], true)) {
+            Redis::zIncrBy($keys[9], 1, $jobName);
+        }
+
+        Redis::setex($keys[10], $this->config->retentionSeconds(), json_encode([
             'status' => $status,
             'job' => $jobName,
             'queue' => $queue,
@@ -139,6 +146,7 @@ class QueueDiagnosticRedisStore
             'payload_bytes' => $payloadBytes,
             'duration_ms' => $durationMs,
             'attempts' => $meta['attempts'] ?? null,
+            'diagnostic_context' => $meta['diagnostic_context'] ?? [],
             'exception' => $exception,
             'finished_at' => time(),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -188,6 +196,22 @@ class QueueDiagnosticRedisStore
 
             Redis::hset($key, (string)$field, (string)$value);
         }
+    }
+
+    private function sourceLabel($context): string
+    {
+        if (!is_array($context) || empty($context)) {
+            return '';
+        }
+
+        $parts = [];
+        foreach ([ 'source', 'job_stage', 'location_solution', 'location_mode', 'subject_id', 'gateway_mac', 'locator_id', 'target_slug' ] as $field) {
+            if (isset($context[$field]) && $context[$field] !== '') {
+                $parts[] = $field . '=' . $context[$field];
+            }
+        }
+
+        return mb_substr(implode('|', $parts), 0, 240);
     }
 
     private function zsetTop(string $key, int $limit): array

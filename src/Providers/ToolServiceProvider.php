@@ -32,6 +32,8 @@ use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
+use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Middleware\AuthenticateSign;
@@ -202,6 +204,21 @@ class ToolServiceProvider extends ServiceProvider
 
     private function queueBoot()
     {
+        Queue::createPayloadUsing(function ($connection, $queue, array $payload) {
+            if (!app(QueueDiagnosticConfig::class)->enabled()) {
+                return [];
+            }
+
+            $job = $payload['data']['commandName'] ?? null;
+            if (!$job instanceof ProvidesQueueDiagnosticContext) {
+                return [];
+            }
+
+            return [
+                'queue_diagnostic_context' => $job->queueDiagnosticContext(),
+            ];
+        });
+
         //任务循环前
         Queue::looping(function () {
             while (DB::transactionLevel() > 0) {

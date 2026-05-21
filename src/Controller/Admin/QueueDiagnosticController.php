@@ -110,19 +110,19 @@ class QueueDiagnosticController extends Controller
         {$this->renderTopRows($snapshot['jobs'] ?? [])}
     </div>
     <div class="queue-diag-panel">
-        <h3>Payload Top</h3>
-        {$this->renderTopRows($snapshot['payload_jobs'] ?? [])}
+        <h3>数据来源</h3>
+        {$this->renderTopRows($snapshot['sources'] ?? [])}
     </div>
 </div>
 
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
-        <h3>慢任务</h3>
-        {$this->renderTopRows($snapshot['slow_jobs'] ?? [])}
+        <h3>Payload Top</h3>
+        {$this->renderTopRows($snapshot['payload_jobs'] ?? [])}
     </div>
     <div class="queue-diag-panel">
-        <h3>失败任务</h3>
-        {$this->renderTopRows($snapshot['failed_jobs'] ?? [])}
+        <h3>慢任务</h3>
+        {$this->renderTopRows($snapshot['slow_jobs'] ?? [])}
     </div>
 </div>
 
@@ -132,8 +132,19 @@ class QueueDiagnosticController extends Controller
         {$this->renderTopRows($snapshot['large_payload_jobs'] ?? [])}
     </div>
     <div class="queue-diag-panel">
+        <h3>失败任务</h3>
+        {$this->renderTopRows($snapshot['failed_jobs'] ?? [])}
+    </div>
+</div>
+
+<div class="queue-diag-grid">
+    <div class="queue-diag-panel">
         <h3>异常状态</h3>
         {$this->renderTable($snapshot['anomaly'] ?? [])}
+    </div>
+    <div class="queue-diag-panel">
+        <h3>Keyspace</h3>
+        {$this->renderTable($snapshot['keyspace'] ?? [])}
     </div>
 </div>
 

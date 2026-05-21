@@ -19,6 +19,7 @@ class CreateQueueDiagnosticSnapshotsTable extends Migration
             $table->string('redis_mem_fragmentation_ratio')->nullable();
             $table->json('queue_sizes')->nullable();
             $table->json('top_jobs')->nullable();
+            $table->json('sources')->nullable();
             $table->json('slow_jobs')->nullable();
             $table->json('large_payload_jobs')->nullable();
             $table->json('failed_jobs')->nullable();

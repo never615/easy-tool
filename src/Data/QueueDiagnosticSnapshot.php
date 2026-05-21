@@ -8,6 +8,7 @@ class QueueDiagnosticSnapshot extends BaseModel
         'window_started_at' => 'datetime',
         'queue_sizes' => 'array',
         'top_jobs' => 'array',
+        'sources' => 'array',
         'slow_jobs' => 'array',
         'large_payload_jobs' => 'array',
         'failed_jobs' => 'array',

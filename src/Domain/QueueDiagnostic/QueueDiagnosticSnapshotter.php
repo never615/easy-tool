@@ -165,6 +165,7 @@ class QueueDiagnosticSnapshotter
                     : null,
                 'queue_sizes' => $snapshot['queue_sizes'] ?? [],
                 'top_jobs' => $snapshot['jobs'] ?? [],
+                'sources' => $snapshot['sources'] ?? [],
                 'slow_jobs' => $snapshot['slow_jobs'] ?? [],
                 'large_payload_jobs' => $snapshot['large_payload_jobs'] ?? [],
                 'failed_jobs' => $snapshot['failed_jobs'] ?? [],
