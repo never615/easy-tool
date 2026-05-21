@@ -33,6 +33,9 @@ class BaseMenuSeeder extends Seeder
         $this->updateOrCreate(
             "configs.index", $adminManagerMenu->id, $order++, "全局配置", "fa-bullseye");
 
+        $this->updateOrCreate(
+            "queue_diagnostics.index", $adminManagerMenu->id, $order++, "队列诊断监控", "fa-line-chart");
+
         $systemManagerMenu = $this->updateOrCreate(
             "system_manager", 0, $order++, "系统管理", "fa-windows");
 
