@@ -19,6 +19,7 @@ class QueueDiagnosticController extends Controller
         $snapshot = $this->snapshot($config, $store, $snapshotter);
         $payload = [
             'config' => $config->snapshot(),
+            'settings' => $config->currentSettings(),
             'snapshot' => $snapshot,
         ];
 
@@ -32,6 +33,13 @@ class QueueDiagnosticController extends Controller
             $content->description('Redis / Horizon');
             $content->body($this->renderHtml($payload));
         });
+    }
+
+    public function saveSettings(QueueDiagnosticConfig $config)
+    {
+        $config->saveSettings(request()->all());
+
+        return redirect()->route('queue_diagnostics.index', [ 'saved' => 1 ]);
     }
 
     private function snapshot(
@@ -57,6 +65,9 @@ class QueueDiagnosticController extends Controller
         $statusText = $enabled ? '已开启' : '未开启';
         $captureUrl = request()->url() . '?capture=1';
         $jsonUrl = request()->url() . '?json=1';
+        $savedAlert = request()->boolean('saved')
+            ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
+            : '';
         $windowTime = !empty($snapshot['window_started_at'])
             ? date('Y-m-d H:i:s', (int)$snapshot['window_started_at'])
             : '-';
@@ -71,9 +82,15 @@ class QueueDiagnosticController extends Controller
     .queue-diag-table th { width: 36%; color: #5f6b7a; font-weight: 600; background: #fafbfc; }
     .queue-diag-actions { margin: 0 0 14px; }
     .queue-diag-actions a { margin-right: 10px; }
+    .queue-diag-alert { margin-bottom: 14px; }
+    .queue-diag-form-table input[type="text"], .queue-diag-form-table input[type="number"] { max-width: 360px; }
+    .queue-diag-help { color: #8a94a6; font-size: 12px; margin-top: 4px; }
+    .queue-diag-form-actions { margin-top: 12px; }
     .queue-diag-empty { color: #8a94a6; padding: 8px 0; }
     @media (max-width: 900px) { .queue-diag-grid { grid-template-columns: 1fr; } }
 </style>
+
+{$savedAlert}
 
 <div class="queue-diag-actions">
     <span class="label {$statusClass}">{$statusText}</span>
@@ -91,6 +108,11 @@ class QueueDiagnosticController extends Controller
         <h3>窗口事件</h3>
         {$this->renderTable($snapshot['events'] ?? [])}
     </div>
+</div>
+
+<div class="queue-diag-panel">
+    <h3>配置管理</h3>
+    {$this->renderSettingsForm($payload['settings'] ?? [])}
 </div>
 
 <div class="queue-diag-grid">
@@ -153,6 +175,70 @@ class QueueDiagnosticController extends Controller
     {$this->renderTable($snapshot['last_event'] ?? [])}
 </div>
 HTML;
+    }
+
+    private function renderSettingsForm(array $settings): string
+    {
+        if (empty($settings)) {
+            return '<div class="queue-diag-empty">暂无配置定义</div>';
+        }
+
+        $saveUrl = route('queue_diagnostics.settings');
+        $html = '<form method="POST" action="' . $this->escape($saveUrl) . '">';
+        $html .= csrf_field();
+        $html .= '<table class="queue-diag-table queue-diag-form-table"><thead><tr><th>配置项</th><th>当前值</th><th>说明</th></tr></thead><tbody>';
+
+        foreach ($settings as $setting) {
+            $key = (string)($setting['key'] ?? '');
+            $label = (string)($setting['label'] ?? $key);
+            $type = (string)($setting['type'] ?? 'string');
+            $value = (string)($setting['value'] ?? '');
+            $remark = (string)($setting['remark'] ?? '');
+            $default = (string)($setting['default'] ?? '');
+            $source = !empty($setting['is_default'])
+                ? '<span class="label label-default">默认值</span>'
+                : '<span class="label label-info">已覆盖</span>';
+
+            $html .= '<tr>';
+            $html .= '<th>' . $this->escape($label) . '<div class="queue-diag-help">' . $this->escape($key) . '</div></th>';
+            $html .= '<td>' . $this->renderSettingInput($key, $type, $value, $setting) . '</td>';
+            $html .= '<td>' . $this->escape($remark)
+                . '<div class="queue-diag-help">默认值: ' . $this->escape($default) . ' ' . $source . '</div></td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody></table>';
+        $html .= '<div class="queue-diag-form-actions">'
+            . '<button type="submit" class="btn btn-primary">保存配置</button> '
+            . '<span class="queue-diag-help">配置保存在专用表中，不进入全局 configs 页面；等于默认值的项不会额外落库。</span>'
+            . '</div>';
+
+        return $html . '</form>';
+    }
+
+    private function renderSettingInput(string $key, string $type, string $value, array $setting): string
+    {
+        $escapedKey = $this->escape($key);
+
+        if ($type === 'boolean') {
+            $checked = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? ' checked' : '';
+
+            return '<input type="hidden" name="' . $escapedKey . '" value="0">'
+                . '<label style="font-weight:400">'
+                . '<input type="checkbox" name="' . $escapedKey . '" value="1"' . $checked . '> 开启'
+                . '</label>';
+        }
+
+        if ($type === 'integer') {
+            $min = array_key_exists('min', $setting) ? ' min="' . $this->escape((string)$setting['min']) . '"' : '';
+            $max = array_key_exists('max', $setting) ? ' max="' . $this->escape((string)$setting['max']) . '"' : '';
+
+            return '<input class="form-control input-sm" type="number" name="' . $escapedKey . '" value="'
+                . $this->escape($value) . '"' . $min . $max . '>';
+        }
+
+        return '<input class="form-control input-sm" type="text" name="' . $escapedKey . '" value="'
+            . $this->escape($value) . '">';
     }
 
     private function renderTable(array $rows): string
