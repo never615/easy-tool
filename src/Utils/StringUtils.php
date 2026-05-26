@@ -199,12 +199,10 @@ class StringUtils
      */
     public static function hex2binStr($hexValue)
     {
-        // 将十六进制数转换为十进制数
-        $decimalValue = hexdec($hexValue);
-
-        // 将十进制数转换为二进制字符串
-        $binaryString = decbin($decimalValue);
-
+        $binaryString = '';
+        foreach (str_split((string)$hexValue) as $hexChar) {
+            $binaryString .= str_pad(decbin(hexdec($hexChar)), 4, '0', STR_PAD_LEFT);
+        }
 
         // 确保二进制字符串具有固定的长度（8位）
         return str_pad($binaryString, 8, '0', STR_PAD_LEFT);
