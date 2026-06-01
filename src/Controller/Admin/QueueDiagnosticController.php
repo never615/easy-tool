@@ -23,8 +23,7 @@ class QueueDiagnosticController extends Controller
             'snapshot' => $snapshot,
         ];
 
-        $accept = request()->header('accept');
-        if (request()->ajax() || request()->boolean('json') || strpos($accept, 'application/json') !== false) {
+        if ($this->wantsJsonResponse()) {
             return response()->json($payload);
         }
 
@@ -33,6 +32,22 @@ class QueueDiagnosticController extends Controller
             $content->description('Redis / Horizon');
             $content->body($this->renderHtml($payload));
         });
+    }
+
+    private function wantsJsonResponse(): bool
+    {
+        if (request()->boolean('json')) {
+            return true;
+        }
+
+        if (request()->pjax()) {
+            return false;
+        }
+
+        $accept = (string)request()->header('accept');
+
+        return strpos($accept, 'application/json') !== false
+            && strpos($accept, 'text/html') === false;
     }
 
     public function saveSettings(QueueDiagnosticConfig $config)
@@ -115,15 +130,14 @@ class QueueDiagnosticController extends Controller
     {$this->renderSettingsForm($payload['settings'] ?? [])}
 </div>
 
-<div class="queue-diag-grid">
-    <div class="queue-diag-panel">
-        <h3>Redis Memory</h3>
-        {$this->renderTable($snapshot['redis_memory'] ?? [])}
-    </div>
-    <div class="queue-diag-panel">
-        <h3>队列 Backlog</h3>
-        {$this->renderTable($snapshot['queue_sizes'] ?? [])}
-    </div>
+<div class="queue-diag-panel">
+    <h3>Redis Memory</h3>
+    {$this->renderRedisMemoryTable($snapshot['redis_memory'] ?? [])}
+</div>
+
+<div class="queue-diag-panel">
+    <h3>队列 Backlog</h3>
+    {$this->renderTable($snapshot['queue_sizes'] ?? [])}
 </div>
 
 <div class="queue-diag-grid">
@@ -253,6 +267,79 @@ HTML;
         }
 
         return $html . '</tbody></table>';
+    }
+
+    private function renderRedisMemoryTable(array $rows): string
+    {
+        if (empty($rows)) {
+            return '<div class="queue-diag-empty">暂无数据</div>';
+        }
+
+        $descriptions = $this->redisMemoryDescriptions();
+        $html = '<table class="queue-diag-table"><thead><tr><th>参数</th><th>当前值</th><th>作用</th></tr></thead><tbody>';
+
+        foreach ($rows as $key => $value) {
+            $key = (string)$key;
+            $html .= '<tr><th>' . $this->escape($key) . '</th><td>' . $this->escapeValue($value) . '</td><td>'
+                . $this->escape($descriptions[$key] ?? 'Redis INFO memory 返回字段，用于补充判断 Redis 内存状态。') . '</td></tr>';
+        }
+
+        return $html . '</tbody></table>';
+    }
+
+    private function redisMemoryDescriptions(): array
+    {
+        return [
+            'error' => 'Redis INFO memory 采样失败原因；出现该字段时需要先确认 Redis 权限、网络或命令兼容性。',
+            'used_memory' => 'Redis 分配器已分配的内存总量，排查 Redis 内存告警时最核心的观察值。',
+            'used_memory_human' => 'used_memory 的可读格式，便于页面快速查看。',
+            'used_memory_rss' => '操作系统视角下 Redis 进程占用的物理内存，常用于判断实际驻留内存。',
+            'used_memory_rss_human' => 'used_memory_rss 的可读格式。',
+            'used_memory_peak' => 'Redis 启动以来 used_memory 的历史峰值，用于判断是否曾经冲高。',
+            'used_memory_peak_human' => 'used_memory_peak 的可读格式。',
+            'used_memory_peak_perc' => '当前 used_memory 相对历史峰值的比例，用于判断是否仍处在高位。',
+            'used_memory_overhead' => 'Redis 元数据开销，例如 key 字典、过期字典、客户端缓冲等，不含主要数据集。',
+            'used_memory_startup' => 'Redis 启动后基础空实例占用的内存。',
+            'used_memory_dataset' => '估算的数据集本体内存，通常更接近业务 key/value 占用。',
+            'used_memory_dataset_perc' => '数据集本体占可用内存的比例，用于区分业务数据和 Redis 元数据开销。',
+            'allocator_allocated' => '内存分配器实际分配给 Redis 的内存。',
+            'allocator_active' => '内存分配器已激活的内存页，通常大于 allocator_allocated。',
+            'allocator_resident' => '内存分配器驻留在物理内存中的页，常用于分析分配器层面的碎片。',
+            'total_system_memory' => 'Redis 所在系统可见的总内存。',
+            'total_system_memory_human' => 'total_system_memory 的可读格式。',
+            'used_memory_lua' => 'Lua 引擎占用的内存。',
+            'used_memory_lua_human' => 'used_memory_lua 的可读格式。',
+            'used_memory_scripts' => '缓存脚本占用的内存。',
+            'used_memory_scripts_human' => 'used_memory_scripts 的可读格式。',
+            'number_of_cached_scripts' => 'Redis 缓存的 Lua 脚本数量。',
+            'maxmemory' => 'Redis 配置的最大内存上限；阿里云 1GB 实例通常接近 1073741824。',
+            'maxmemory_human' => 'maxmemory 的可读格式。',
+            'maxmemory_policy' => '达到 maxmemory 后的淘汰策略，用于判断是否会淘汰带 TTL 的 key。',
+            'allocator_frag_ratio' => '分配器活跃内存和已分配内存的比值，偏高表示分配器碎片较多。',
+            'allocator_frag_bytes' => '分配器碎片估算字节数。',
+            'allocator_rss_ratio' => '分配器驻留内存和活跃内存的比值，偏高表示分配器保留了更多物理页。',
+            'allocator_rss_bytes' => '分配器 RSS 开销估算字节数。',
+            'rss_overhead_ratio' => 'Redis RSS 与分配器 resident 的比值，用于观察分配器之外的进程内存开销。',
+            'rss_overhead_bytes' => 'Redis RSS 中分配器之外的额外开销估算字节数。',
+            'mem_fragmentation_ratio' => 'Redis 整体内存碎片率，常用来判断 RSS 明显大于 used_memory 的原因。',
+            'mem_fragmentation_bytes' => 'Redis 整体内存碎片估算字节数。',
+            'mem_not_counted_for_evict' => '不计入 maxmemory 淘汰判断的内存，例如 AOF、复制积压等缓冲。',
+            'mem_replication_backlog' => '主从复制 backlog 占用内存。',
+            'mem_clients_slaves' => '从库客户端输出缓冲占用内存，旧版 Redis 字段名。',
+            'mem_clients_slaves_human' => 'mem_clients_slaves 的可读格式。',
+            'mem_clients_normal' => '普通客户端连接缓冲占用内存，连接数或慢客户端异常时会升高。',
+            'mem_clients_normal_human' => 'mem_clients_normal 的可读格式。',
+            'mem_cluster_links' => 'Redis Cluster 节点链路占用内存。',
+            'mem_cluster_links_human' => 'mem_cluster_links 的可读格式。',
+            'mem_aof_buffer' => 'AOF 缓冲占用内存。',
+            'mem_allocator' => 'Redis 使用的内存分配器，例如 jemalloc。',
+            'mem_overhead_db_hashtable_rehashing' => '数据库 hash 表 rehash 过程中额外占用的内存。',
+            'active_defrag_running' => '主动碎片整理是否正在运行。',
+            'lazyfree_pending_objects' => '等待异步释放的对象数量，持续升高可能说明释放压力较大。',
+            'mem_overhead_hashtable_main' => '主 key 字典 hash 表占用内存。',
+            'mem_overhead_hashtable_expires' => '过期时间字典 hash 表占用内存；TTL key 多时会升高。',
+            'oom_err_count' => 'Redis 发生 OOM 错误的累计次数，是判断是否触顶的重要信号。',
+        ];
     }
 
     private function renderTopRows(array $rows): string
