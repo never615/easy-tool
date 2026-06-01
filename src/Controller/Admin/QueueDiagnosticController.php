@@ -140,21 +140,20 @@ class QueueDiagnosticController extends Controller
     {$this->renderTable($snapshot['queue_sizes'] ?? [])}
 </div>
 
-<div class="queue-diag-grid">
-    <div class="queue-diag-panel">
-        <h3>Top Jobs</h3>
-        {$this->renderTopRows($snapshot['jobs'] ?? [])}
-    </div>
-    <div class="queue-diag-panel">
-        <h3>数据来源</h3>
-        {$this->renderTopRows($snapshot['sources'] ?? [])}
-    </div>
+<div class="queue-diag-panel">
+    <h3>Top Jobs</h3>
+    {$this->renderTopRows($snapshot['jobs'] ?? [])}
+</div>
+
+<div class="queue-diag-panel">
+    <h3>Payload Top</h3>
+    {$this->renderTopRows($snapshot['payload_jobs'] ?? [])}
 </div>
 
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
-        <h3>Payload Top</h3>
-        {$this->renderTopRows($snapshot['payload_jobs'] ?? [])}
+        <h3>数据来源</h3>
+        {$this->renderTopRows($snapshot['sources'] ?? [])}
     </div>
     <div class="queue-diag-panel">
         <h3>慢任务</h3>
