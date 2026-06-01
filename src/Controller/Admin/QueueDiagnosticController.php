@@ -80,6 +80,9 @@ class QueueDiagnosticController extends Controller
         $statusText = $enabled ? '已开启' : '未开启';
         $captureUrl = request()->url() . '?capture=1';
         $jsonUrl = request()->url() . '?json=1';
+        $copyText = $this->diagnosticCopyText($payload);
+        $escapedCopyText = $this->escape($copyText);
+        $copyScript = $this->renderCopyScript();
         $savedAlert = request()->boolean('saved')
             ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
             : '';
@@ -96,12 +99,15 @@ class QueueDiagnosticController extends Controller
     .queue-diag-table th, .queue-diag-table td { border-bottom: 1px solid #edf0f5; padding: 7px 8px; text-align: left; vertical-align: top; }
     .queue-diag-table th { width: 36%; color: #5f6b7a; font-weight: 600; background: #fafbfc; }
     .queue-diag-actions { margin: 0 0 14px; }
-    .queue-diag-actions a { margin-right: 10px; }
+    .queue-diag-actions a, .queue-diag-actions button { margin-right: 10px; }
     .queue-diag-alert { margin-bottom: 14px; }
     .queue-diag-form-table input[type="text"], .queue-diag-form-table input[type="number"] { max-width: 360px; }
     .queue-diag-help { color: #8a94a6; font-size: 12px; margin-top: 4px; }
     .queue-diag-form-actions { margin-top: 12px; }
     .queue-diag-empty { color: #8a94a6; padding: 8px 0; }
+    .queue-diag-copy-source { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; opacity: 0; }
+    .queue-diag-copy-source.is-visible { position: static; width: 100%; height: 260px; opacity: 1; margin: 10px 0 14px; font-family: Menlo, Consolas, monospace; font-size: 12px; }
+    .queue-diag-copy-status { color: #667085; font-size: 12px; }
     @media (max-width: 900px) { .queue-diag-grid { grid-template-columns: 1fr; } }
 </style>
 
@@ -112,7 +118,10 @@ class QueueDiagnosticController extends Controller
     <span style="margin-left:8px;color:#667085">当前窗口: {$windowTime}</span>
     <a class="btn btn-xs btn-primary" href="{$captureUrl}">采样并刷新</a>
     <a class="btn btn-xs btn-default" href="{$jsonUrl}">JSON</a>
+    <button type="button" class="btn btn-xs btn-success queue-diag-copy-button" data-target="queue-diag-copy-source">复制诊断结果</button>
+    <span class="queue-diag-copy-status" id="queue-diag-copy-status"></span>
 </div>
+<textarea id="queue-diag-copy-source" class="queue-diag-copy-source" readonly>{$escapedCopyText}</textarea>
 
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
@@ -187,7 +196,182 @@ class QueueDiagnosticController extends Controller
     <h3>最近事件</h3>
     {$this->renderTable($snapshot['last_event'] ?? [])}
 </div>
+{$copyScript}
 HTML;
+    }
+
+    private function renderCopyScript(): string
+    {
+        return <<<HTML
+<script>
+(function () {
+    if (window.queueDiagnosticCopyBound) {
+        return;
+    }
+
+    window.queueDiagnosticCopyBound = true;
+
+    function setStatus(message, isError) {
+        var status = document.getElementById('queue-diag-copy-status');
+        if (!status) {
+            return;
+        }
+
+        status.textContent = message;
+        status.style.color = isError ? '#b42318' : '#027a48';
+    }
+
+    function showManualCopy(textarea) {
+        textarea.classList.add('is-visible');
+        textarea.focus();
+        textarea.select();
+        setStatus('浏览器未允许自动复制，请在下方文本框手动复制。', true);
+    }
+
+    function fallbackCopy(textarea) {
+        textarea.focus();
+        textarea.select();
+
+        try {
+            if (document.execCommand('copy')) {
+                setStatus('已复制诊断结果，可以直接粘贴发送。', false);
+                return;
+            }
+        } catch (e) {
+        }
+
+        showManualCopy(textarea);
+    }
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest('.queue-diag-copy-button');
+        if (!button) {
+            return;
+        }
+
+        var textarea = document.getElementById(button.getAttribute('data-target'));
+        if (!textarea) {
+            setStatus('没有找到可复制的诊断内容。', true);
+            return;
+        }
+
+        var text = textarea.value;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function () {
+                setStatus('已复制诊断结果，可以直接粘贴发送。', false);
+            }).catch(function () {
+                fallbackCopy(textarea);
+            });
+            return;
+        }
+
+        fallbackCopy(textarea);
+    });
+})();
+</script>
+HTML;
+    }
+
+    private function diagnosticCopyText(array $payload): string
+    {
+        $config = $payload['config'] ?? [];
+        $snapshot = $payload['snapshot'] ?? [];
+        $windowTime = !empty($snapshot['window_started_at'])
+            ? date('Y-m-d H:i:s', (int)$snapshot['window_started_at'])
+            : '-';
+        $fullJson = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $text = '# 队列诊断结果' . "\n\n";
+        $text .= '- 复制时间: ' . date('Y-m-d H:i:s') . "\n";
+        $text .= '- 页面地址: ' . request()->fullUrl() . "\n";
+        $text .= '- 当前窗口: ' . $windowTime . "\n";
+        $text .= '- 说明: 本内容来自队列诊断状态页，不包含完整 raw payload 或序列化 Job 对象。' . "\n\n";
+
+        $text .= $this->markdownKeyValueSection('配置状态', $config);
+        $text .= $this->markdownKeyValueSection('窗口事件', $snapshot['events'] ?? []);
+        $text .= $this->markdownKeyValueSection('异常状态', $snapshot['anomaly'] ?? []);
+        $text .= $this->markdownKeyValueSection('Redis Memory', $snapshot['redis_memory'] ?? [], true);
+        $text .= $this->markdownKeyValueSection('队列 Backlog', $snapshot['queue_sizes'] ?? []);
+        $text .= $this->markdownTopRowsSection('Top Jobs', $snapshot['jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('Payload Top', $snapshot['payload_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('数据来源', $snapshot['sources'] ?? []);
+        $text .= $this->markdownTopRowsSection('慢任务', $snapshot['slow_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('大 Payload', $snapshot['large_payload_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('失败任务', $snapshot['failed_jobs'] ?? []);
+        $text .= $this->markdownKeyValueSection('Keyspace', $snapshot['keyspace'] ?? []);
+        $text .= $this->markdownKeyValueSection('最近事件', $snapshot['last_event'] ?? []);
+        $text .= '## 完整 JSON' . "\n\n";
+        $text .= "```json\n" . ($fullJson ?: '{}') . "\n```\n";
+
+        return $text;
+    }
+
+    private function markdownKeyValueSection(string $title, array $rows, bool $formatRedisMemory = false): string
+    {
+        $text = '## ' . $title . "\n\n";
+
+        if (empty($rows)) {
+            return $text . '暂无数据' . "\n\n";
+        }
+
+        $text .= '| 参数 | 当前值 |' . "\n";
+        $text .= '| --- | --- |' . "\n";
+
+        foreach ($rows as $key => $value) {
+            $key = (string)$key;
+            $text .= '| ' . $this->markdownInline($key) . ' | '
+                . $this->markdownInline($this->plainDiagnosticValue($value, $formatRedisMemory ? $key : null)) . ' |' . "\n";
+        }
+
+        return $text . "\n";
+    }
+
+    private function markdownTopRowsSection(string $title, array $rows): string
+    {
+        $text = '## ' . $title . "\n\n";
+
+        if (empty($rows)) {
+            return $text . '暂无数据' . "\n\n";
+        }
+
+        $text .= '| 名称 | 分数 |' . "\n";
+        $text .= '| --- | --- |' . "\n";
+
+        foreach ($rows as $row) {
+            $text .= '| ' . $this->markdownInline((string)($row['name'] ?? '-')) . ' | '
+                . $this->markdownInline((string)($row['score'] ?? 0)) . ' |' . "\n";
+        }
+
+        return $text . "\n";
+    }
+
+    private function plainDiagnosticValue($value, ?string $redisMemoryKey = null): string
+    {
+        if ($redisMemoryKey !== null && $this->isRedisMemoryByteKey($redisMemoryKey) && is_numeric($value)) {
+            return $this->formatBytes((int)$value);
+        }
+
+        if (is_array($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if ($value === null) {
+            return 'null';
+        }
+
+        return (string)$value;
+    }
+
+    private function markdownInline(string $value): string
+    {
+        $value = str_replace([ "\r", "\n" ], ' ', $value);
+        $value = str_replace('|', '\\|', $value);
+
+        return trim($value) === '' ? '-' : $value;
     }
 
     private function renderSettingsForm(array $settings): string
