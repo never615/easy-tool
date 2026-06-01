@@ -19,7 +19,7 @@
     "ext-mongodb": "*",
     "laravel/framework": "^11.31",
     "laravel/helpers": "^1.7",
-    "laravel/horizon": "v5.29.3",
+    "laravel/horizon": "^5.47.0",
     "laravel/sanctum": "^4.0",
     "laravel/tinker": "^2.9",
     "laravel/ui": "^4.6",
@@ -37,8 +37,7 @@
     "alibabacloud/aliyun-log-php-sdk": "^0.6.7",
     "symfony/console": "v7.2.0"
   },
-  "require-dev": {
-  },
+  "require-dev": {},
   "autoload": {
     "psr-4": {
       "Mallto\\Tool\\": "src/"
