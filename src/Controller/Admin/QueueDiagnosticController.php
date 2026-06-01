@@ -280,11 +280,73 @@ HTML;
 
         foreach ($rows as $key => $value) {
             $key = (string)$key;
-            $html .= '<tr><th>' . $this->escape($key) . '</th><td>' . $this->escapeValue($value) . '</td><td>'
+            $html .= '<tr><th>' . $this->escape($key) . '</th><td>' . $this->renderRedisMemoryValue($key, $value) . '</td><td>'
                 . $this->escape($descriptions[$key] ?? 'Redis INFO memory 返回字段，用于补充判断 Redis 内存状态。') . '</td></tr>';
         }
 
         return $html . '</tbody></table>';
+    }
+
+    private function renderRedisMemoryValue(string $key, $value): string
+    {
+        if ($this->isRedisMemoryByteKey($key) && is_numeric($value)) {
+            return $this->escape($this->formatBytes((int)$value));
+        }
+
+        return $this->escapeValue($value);
+    }
+
+    private function isRedisMemoryByteKey(string $key): bool
+    {
+        return in_array($key, [
+            'used_memory',
+            'used_memory_rss',
+            'used_memory_peak',
+            'used_memory_overhead',
+            'used_memory_startup',
+            'used_memory_dataset',
+            'allocator_allocated',
+            'allocator_active',
+            'allocator_resident',
+            'total_system_memory',
+            'used_memory_lua',
+            'used_memory_scripts',
+            'maxmemory',
+            'allocator_frag_bytes',
+            'allocator_rss_bytes',
+            'rss_overhead_bytes',
+            'mem_fragmentation_bytes',
+            'mem_not_counted_for_evict',
+            'mem_replication_backlog',
+            'mem_clients_slaves',
+            'mem_clients_normal',
+            'mem_cluster_links',
+            'mem_aof_buffer',
+            'mem_overhead_db_hashtable_rehashing',
+            'mem_overhead_hashtable_main',
+            'mem_overhead_hashtable_expires',
+        ], true);
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        $sign = $bytes < 0 ? '-' : '';
+        $absoluteBytes = abs($bytes);
+        $units = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
+        $value = (float)$absoluteBytes;
+        $unitIndex = 0;
+
+        while ($value >= 1024 && $unitIndex < count($units) - 1) {
+            $value /= 1024;
+            $unitIndex++;
+        }
+
+        if ($unitIndex === 0) {
+            return $sign . number_format($value, 0) . ' B';
+        }
+
+        return $sign . number_format($value, 2) . ' ' . $units[$unitIndex]
+            . ' (' . number_format($bytes) . ' B)';
     }
 
     private function redisMemoryDescriptions(): array
