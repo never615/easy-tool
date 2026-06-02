@@ -83,6 +83,7 @@ class QueueDiagnosticController extends Controller
         $copyText = $this->diagnosticCopyText($payload);
         $escapedCopyText = $this->escape($copyText);
         $copyScript = $this->renderCopyScript();
+        $resourceHint = $this->renderResourceSnapshotHint($snapshot);
         $savedAlert = request()->boolean('saved')
             ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
             : '';
@@ -105,6 +106,7 @@ class QueueDiagnosticController extends Controller
     .queue-diag-help { color: #8a94a6; font-size: 12px; margin-top: 4px; }
     .queue-diag-form-actions { margin-top: 12px; }
     .queue-diag-empty { color: #8a94a6; padding: 8px 0; }
+    .queue-diag-resource-hint { color: #667085; margin-bottom: 14px; }
     .queue-diag-copy-source { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; opacity: 0; }
     .queue-diag-copy-source.is-visible { position: static; width: 100%; height: 260px; opacity: 1; margin: 10px 0 14px; font-family: Menlo, Consolas, monospace; font-size: 12px; }
     .queue-diag-copy-status { color: #667085; font-size: 12px; }
@@ -122,6 +124,7 @@ class QueueDiagnosticController extends Controller
     <span class="queue-diag-copy-status" id="queue-diag-copy-status"></span>
 </div>
 <textarea id="queue-diag-copy-source" class="queue-diag-copy-source" readonly>{$escapedCopyText}</textarea>
+{$resourceHint}
 
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
@@ -157,6 +160,11 @@ class QueueDiagnosticController extends Controller
 <div class="queue-diag-panel">
     <h3>Payload Top</h3>
     {$this->renderTopRows($snapshot['payload_jobs'] ?? [])}
+</div>
+
+<div class="queue-diag-panel">
+    <h3>任务耗时</h3>
+    {$this->renderDurationRows($snapshot['duration'] ?? [])}
 </div>
 
 <div class="queue-diag-grid">
@@ -286,6 +294,9 @@ HTML;
         $text .= '- 页面地址: ' . request()->fullUrl() . "\n";
         $text .= '- 当前窗口: ' . $windowTime . "\n";
         $text .= '- 说明: 本内容来自队列诊断状态页，不包含完整 raw payload 或序列化 Job 对象。' . "\n\n";
+        if ($this->resourceSnapshotMissing($snapshot)) {
+            $text .= '- 快照提示: 当前报告不包含 Redis Memory / 队列 Backlog / Keyspace；排查 Redis 内存告警时请先点击“采样并刷新”后再复制。' . "\n\n";
+        }
 
         $text .= $this->markdownKeyValueSection('配置状态', $config);
         $text .= $this->markdownKeyValueSection('窗口事件', $snapshot['events'] ?? []);
@@ -294,6 +305,7 @@ HTML;
         $text .= $this->markdownKeyValueSection('队列 Backlog', $snapshot['queue_sizes'] ?? []);
         $text .= $this->markdownTopRowsSection('Top Jobs', $snapshot['jobs'] ?? []);
         $text .= $this->markdownTopRowsSection('Payload Top', $snapshot['payload_jobs'] ?? []);
+        $text .= $this->markdownDurationSection('任务耗时', $snapshot['duration'] ?? []);
         $text .= $this->markdownTopRowsSection('数据来源', $snapshot['sources'] ?? []);
         $text .= $this->markdownTopRowsSection('慢任务', $snapshot['slow_jobs'] ?? []);
         $text .= $this->markdownTopRowsSection('大 Payload', $snapshot['large_payload_jobs'] ?? []);
@@ -340,6 +352,29 @@ HTML;
         foreach ($rows as $row) {
             $text .= '| ' . $this->markdownInline((string)($row['name'] ?? '-')) . ' | '
                 . $this->markdownInline((string)($row['score'] ?? 0)) . ' |' . "\n";
+        }
+
+        return $text . "\n";
+    }
+
+    private function markdownDurationSection(string $title, array $duration): string
+    {
+        $rows = $this->durationRows($duration);
+        $text = '## ' . $title . "\n\n";
+
+        if (empty($rows)) {
+            return $text . '暂无数据' . "\n\n";
+        }
+
+        $text .= '| 任务 | 次数 | 平均耗时 | 最大耗时 | 总耗时 |' . "\n";
+        $text .= '| --- | --- | --- | --- | --- |' . "\n";
+
+        foreach ($rows as $row) {
+            $text .= '| ' . $this->markdownInline((string)$row['job']) . ' | '
+                . $this->markdownInline((string)$row['count']) . ' | '
+                . $this->markdownInline($this->formatMilliseconds((float)$row['avg_ms'])) . ' | '
+                . $this->markdownInline($this->formatMilliseconds((float)$row['max_ms'])) . ' | '
+                . $this->markdownInline($this->formatMilliseconds((float)$row['total_ms'])) . ' |' . "\n";
         }
 
         return $text . "\n";
@@ -468,6 +503,78 @@ HTML;
         }
 
         return $html . '</tbody></table>';
+    }
+
+    private function renderDurationRows(array $duration): string
+    {
+        $rows = $this->durationRows($duration);
+        if (empty($rows)) {
+            return '<div class="queue-diag-empty">暂无数据</div>';
+        }
+
+        $html = '<table class="queue-diag-table"><thead><tr><th>任务</th><th>次数</th><th>平均耗时</th><th>最大耗时</th><th>总耗时</th></tr></thead><tbody>';
+        foreach ($rows as $row) {
+            $html .= '<tr><td>' . $this->escape((string)$row['job']) . '</td>'
+                . '<td>' . $this->escape((string)$row['count']) . '</td>'
+                . '<td>' . $this->escape($this->formatMilliseconds((float)$row['avg_ms'])) . '</td>'
+                . '<td>' . $this->escape($this->formatMilliseconds((float)$row['max_ms'])) . '</td>'
+                . '<td>' . $this->escape($this->formatMilliseconds((float)$row['total_ms'])) . '</td></tr>';
+        }
+
+        return $html . '</tbody></table>';
+    }
+
+    private function durationRows(array $duration): array
+    {
+        $jobs = [];
+        foreach ($duration as $key => $value) {
+            $key = (string)$key;
+            foreach ([ ':count', ':total_ms', ':max_ms' ] as $suffix) {
+                if (!str_ends_with($key, $suffix)) {
+                    continue;
+                }
+
+                $job = substr($key, 0, -strlen($suffix));
+                $metric = substr($suffix, 1);
+                if (!isset($jobs[$job])) {
+                    $jobs[$job] = [
+                        'job' => $job,
+                        'count' => 0,
+                        'total_ms' => 0,
+                        'max_ms' => 0,
+                    ];
+                }
+
+                $jobs[$job][$metric] = max(0, (float)$value);
+                break;
+            }
+        }
+
+        foreach ($jobs as $job => $row) {
+            $count = max(0, (float)($row['count'] ?? 0));
+            $totalMs = max(0, (float)($row['total_ms'] ?? 0));
+            $jobs[$job]['avg_ms'] = $count > 0 ? $totalMs / $count : 0;
+        }
+
+        uasort($jobs, function (array $left, array $right) {
+            return ($right['total_ms'] <=> $left['total_ms'])
+                ?: ($right['max_ms'] <=> $left['max_ms']);
+        });
+
+        return array_values($jobs);
+    }
+
+    private function formatMilliseconds(float $milliseconds): string
+    {
+        if ($milliseconds >= 1000) {
+            return number_format($milliseconds / 1000, 2) . ' s (' . number_format($milliseconds, 0) . ' ms)';
+        }
+
+        if ($milliseconds > 0 && $milliseconds < 1) {
+            return number_format($milliseconds, 2) . ' ms';
+        }
+
+        return number_format($milliseconds, 0) . ' ms';
     }
 
     private function renderRedisMemoryValue(string $key, $value): string
@@ -599,6 +706,22 @@ HTML;
         }
 
         return $html . '</tbody></table>';
+    }
+
+    private function renderResourceSnapshotHint(array $snapshot): string
+    {
+        if (!$this->resourceSnapshotMissing($snapshot)) {
+            return '';
+        }
+
+        return '<div class="queue-diag-resource-hint">当前窗口没有 Redis Memory / 队列 Backlog / Keyspace 现场快照；排查 Redis 内存告警时，请先点击“采样并刷新”，再复制诊断结果。</div>';
+    }
+
+    private function resourceSnapshotMissing(array $snapshot): bool
+    {
+        return empty($snapshot['redis_memory'])
+            && empty($snapshot['queue_sizes'])
+            && empty($snapshot['keyspace']);
     }
 
     private function escapeValue($value): string
