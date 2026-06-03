@@ -9,5 +9,6 @@ class Config extends BaseModel
 
     const APP_SECRET = 'app_secret';
     const ALIYUN_SMS_TEMPLATE_CODES = 'aliyun_sms_template_codes';
+    const HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG = 'hytera_dmr_mock_locator_non_error_log';
 
 }
