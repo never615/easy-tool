@@ -15,11 +15,14 @@ class ConfigTablesSeeder extends Seeder
      */
     public function run()
     {
-        Config::query()->firstOrCreate([
+        $config = Config::query()->firstOrNew([
             'key' => Config::HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG,
-        ], [
-            'remark' => 'Hytera DMR 模拟定位进程非 error 日志开关，1开启，0关闭',
-            'value' => '1',
         ]);
+
+        $config->remark = '海能达模拟日志开关';
+        if (!$config->exists) {
+            $config->value = '1';
+        }
+        $config->save();
     }
 }
