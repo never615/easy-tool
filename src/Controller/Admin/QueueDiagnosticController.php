@@ -167,6 +167,11 @@ class QueueDiagnosticController extends Controller
     {$this->renderDurationRows($snapshot['duration'] ?? [])}
 </div>
 
+<div class="queue-diag-panel">
+    <h3>数据来源汇总</h3>
+    {$this->renderTopRows($snapshot['source_groups'] ?? [])}
+</div>
+
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
         <h3>数据来源</h3>
@@ -306,6 +311,7 @@ HTML;
         $text .= $this->markdownTopRowsSection('Top Jobs', $snapshot['jobs'] ?? []);
         $text .= $this->markdownTopRowsSection('Payload Top', $snapshot['payload_jobs'] ?? []);
         $text .= $this->markdownDurationSection('任务耗时', $snapshot['duration'] ?? []);
+        $text .= $this->markdownTopRowsSection('数据来源汇总', $snapshot['source_groups'] ?? []);
         $text .= $this->markdownTopRowsSection('数据来源', $snapshot['sources'] ?? []);
         $text .= $this->markdownTopRowsSection('慢任务', $snapshot['slow_jobs'] ?? []);
         $text .= $this->markdownTopRowsSection('大 Payload', $snapshot['large_payload_jobs'] ?? []);

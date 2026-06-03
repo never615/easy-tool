@@ -9,6 +9,7 @@ class QueueDiagnosticSnapshot extends BaseModel
         'queue_sizes' => 'array',
         'top_jobs' => 'array',
         'sources' => 'array',
+        'source_groups' => 'array',
         'slow_jobs' => 'array',
         'large_payload_jobs' => 'array',
         'failed_jobs' => 'array',

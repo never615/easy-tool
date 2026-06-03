@@ -51,6 +51,7 @@ class QueueDiagnosticRedisStore
             'anomaly' => Redis::hgetall($this->config->windowKey($windowStart, 'anomaly')) ?: [],
             'jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'jobs'), $limit),
             'sources' => $this->zsetTop($this->config->windowKey($windowStart, 'sources'), $limit),
+            'source_groups' => $this->zsetTop($this->config->windowKey($windowStart, 'source_groups'), $limit),
             'payload_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'payload'), $limit),
             'slow_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'slow'), $limit),
             'large_payload_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'large_payload'), $limit),
@@ -97,48 +98,53 @@ class QueueDiagnosticRedisStore
         array $meta
     ): void {
         $keys = [
-            $this->config->windowKey($windowStart, 'meta'),
-            $this->config->windowKey($windowStart, 'events'),
-            $this->config->windowKey($windowStart, 'queues'),
-            $this->config->windowKey($windowStart, 'jobs'),
-            $this->config->windowKey($windowStart, 'sources'),
-            $this->config->windowKey($windowStart, 'payload'),
-            $this->config->windowKey($windowStart, 'duration'),
-            $this->config->windowKey($windowStart, 'slow'),
-            $this->config->windowKey($windowStart, 'large_payload'),
-            $this->config->windowKey($windowStart, 'failures'),
-            $this->config->windowKey($windowStart, 'last_event'),
+            'meta' => $this->config->windowKey($windowStart, 'meta'),
+            'events' => $this->config->windowKey($windowStart, 'events'),
+            'queues' => $this->config->windowKey($windowStart, 'queues'),
+            'jobs' => $this->config->windowKey($windowStart, 'jobs'),
+            'sources' => $this->config->windowKey($windowStart, 'sources'),
+            'source_groups' => $this->config->windowKey($windowStart, 'source_groups'),
+            'payload' => $this->config->windowKey($windowStart, 'payload'),
+            'duration' => $this->config->windowKey($windowStart, 'duration'),
+            'slow' => $this->config->windowKey($windowStart, 'slow'),
+            'large_payload' => $this->config->windowKey($windowStart, 'large_payload'),
+            'failures' => $this->config->windowKey($windowStart, 'failures'),
+            'last_event' => $this->config->windowKey($windowStart, 'last_event'),
         ];
 
-        Redis::hset($keys[0], 'window_started_at', $windowStart);
-        Redis::hset($keys[0], 'updated_at', time());
-        Redis::hIncrBy($keys[1], 'total', 1);
-        Redis::hIncrBy($keys[1], $status, 1);
-        Redis::hIncrBy($keys[2], $queue, 1);
-        Redis::zIncrBy($keys[3], 1, $jobName);
+        Redis::hset($keys['meta'], 'window_started_at', $windowStart);
+        Redis::hset($keys['meta'], 'updated_at', time());
+        Redis::hIncrBy($keys['events'], 'total', 1);
+        Redis::hIncrBy($keys['events'], $status, 1);
+        Redis::hIncrBy($keys['queues'], $queue, 1);
+        Redis::zIncrBy($keys['jobs'], 1, $jobName);
         $sourceLabel = $this->sourceLabel($meta['diagnostic_context'] ?? []);
         if ($sourceLabel !== '') {
-            Redis::zIncrBy($keys[4], 1, $sourceLabel);
+            Redis::zIncrBy($keys['sources'], 1, $sourceLabel);
+        }
+        $sourceGroupLabel = $this->sourceGroupLabel($meta['diagnostic_context'] ?? []);
+        if ($sourceGroupLabel !== '') {
+            Redis::zIncrBy($keys['source_groups'], 1, $sourceGroupLabel);
         }
 
-        Redis::zIncrBy($keys[5], $payloadBytes, $jobName);
-        Redis::hIncrBy($keys[6], $jobName . ':count', 1);
-        Redis::hIncrBy($keys[6], $jobName . ':total_ms', $durationMs);
-        $this->recordMax($keys[6], $jobName . ':max_ms', $durationMs);
+        Redis::zIncrBy($keys['payload'], $payloadBytes, $jobName);
+        Redis::hIncrBy($keys['duration'], $jobName . ':count', 1);
+        Redis::hIncrBy($keys['duration'], $jobName . ':total_ms', $durationMs);
+        $this->recordMax($keys['duration'], $jobName . ':max_ms', $durationMs);
 
         if ($durationMs >= $this->config->slowJobMs()) {
-            Redis::zIncrBy($keys[7], 1, $jobName);
+            Redis::zIncrBy($keys['slow'], 1, $jobName);
         }
 
         if ($payloadBytes >= $this->config->largePayloadBytes()) {
-            Redis::zIncrBy($keys[8], 1, $jobName);
+            Redis::zIncrBy($keys['large_payload'], 1, $jobName);
         }
 
         if (in_array($status, ['failed', 'exception'], true)) {
-            Redis::zIncrBy($keys[9], 1, $jobName);
+            Redis::zIncrBy($keys['failures'], 1, $jobName);
         }
 
-        Redis::setex($keys[10], $this->config->retentionSeconds(), json_encode([
+        Redis::setex($keys['last_event'], $this->config->retentionSeconds(), json_encode([
             'status' => $status,
             'job' => $jobName,
             'queue' => $queue,
@@ -200,12 +206,38 @@ class QueueDiagnosticRedisStore
 
     private function sourceLabel($context): string
     {
+        return $this->contextLabel($context, [
+            'source',
+            'job_stage',
+            'location_solution',
+            'location_mode',
+            'subject_id',
+            'gateway_mac',
+            'locator_id',
+            'target_slug',
+        ]);
+    }
+
+    private function sourceGroupLabel($context): string
+    {
+        return $this->contextLabel($context, [
+            'source',
+            'job_stage',
+            'location_solution',
+            'location_mode',
+            'subject_id',
+            'gateway_mac',
+        ]);
+    }
+
+    private function contextLabel($context, array $fields): string
+    {
         if (!is_array($context) || empty($context)) {
             return '';
         }
 
         $parts = [];
-        foreach ([ 'source', 'job_stage', 'location_solution', 'location_mode', 'subject_id', 'gateway_mac', 'locator_id', 'target_slug' ] as $field) {
+        foreach ($fields as $field) {
             if (isset($context[$field]) && $context[$field] !== '') {
                 $parts[] = $field . '=' . $context[$field];
             }
