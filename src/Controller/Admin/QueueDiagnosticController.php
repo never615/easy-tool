@@ -153,6 +153,33 @@ class QueueDiagnosticController extends Controller
 </div>
 
 <div class="queue-diag-panel">
+    <h3>Backlog 样本</h3>
+    {$this->renderTable($snapshot['backlog_sample'] ?? [])}
+</div>
+
+<div class="queue-diag-grid">
+    <div class="queue-diag-panel">
+        <h3>Backlog Jobs</h3>
+        {$this->renderTopRows($snapshot['backlog_jobs'] ?? [])}
+    </div>
+    <div class="queue-diag-panel">
+        <h3>Backlog Payload Top</h3>
+        {$this->renderTopRows($snapshot['backlog_payload_jobs'] ?? [])}
+    </div>
+</div>
+
+<div class="queue-diag-grid">
+    <div class="queue-diag-panel">
+        <h3>Backlog 数据来源汇总</h3>
+        {$this->renderTopRows($snapshot['backlog_source_groups'] ?? [])}
+    </div>
+    <div class="queue-diag-panel">
+        <h3>Backlog 数据来源</h3>
+        {$this->renderTopRows($snapshot['backlog_sources'] ?? [])}
+    </div>
+</div>
+
+<div class="queue-diag-panel">
     <h3>Top Jobs</h3>
     {$this->renderTopRows($snapshot['jobs'] ?? [])}
 </div>
@@ -308,6 +335,11 @@ HTML;
         $text .= $this->markdownKeyValueSection('异常状态', $snapshot['anomaly'] ?? []);
         $text .= $this->markdownKeyValueSection('Redis Memory', $snapshot['redis_memory'] ?? [], true);
         $text .= $this->markdownKeyValueSection('队列 Backlog', $snapshot['queue_sizes'] ?? []);
+        $text .= $this->markdownKeyValueSection('Backlog 样本', $snapshot['backlog_sample'] ?? []);
+        $text .= $this->markdownTopRowsSection('Backlog Jobs', $snapshot['backlog_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('Backlog Payload Top', $snapshot['backlog_payload_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('Backlog 数据来源汇总', $snapshot['backlog_source_groups'] ?? []);
+        $text .= $this->markdownTopRowsSection('Backlog 数据来源', $snapshot['backlog_sources'] ?? []);
         $text .= $this->markdownTopRowsSection('Top Jobs', $snapshot['jobs'] ?? []);
         $text .= $this->markdownTopRowsSection('Payload Top', $snapshot['payload_jobs'] ?? []);
         $text .= $this->markdownDurationSection('任务耗时', $snapshot['duration'] ?? []);

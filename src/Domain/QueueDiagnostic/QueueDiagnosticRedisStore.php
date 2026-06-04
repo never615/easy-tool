@@ -39,6 +39,7 @@ class QueueDiagnosticRedisStore
     {
         $windowStart = $windowStart ?: $this->config->windowStart();
         $limit = $this->config->topLimit();
+        $backlogSample = $this->backlogSampleSnapshot($windowStart, $limit);
 
         return [
             'window_started_at' => $windowStart,
@@ -57,11 +58,23 @@ class QueueDiagnosticRedisStore
             'large_payload_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'large_payload'), $limit),
             'failed_jobs' => $this->zsetTop($this->config->windowKey($windowStart, 'failures'), $limit),
             'duration' => Redis::hgetall($this->config->windowKey($windowStart, 'duration')) ?: [],
+            'backlog_sample' => $backlogSample['meta'],
+            'backlog_jobs' => $backlogSample['jobs'],
+            'backlog_payload_jobs' => $backlogSample['payload_jobs'],
+            'backlog_source_groups' => $backlogSample['source_groups'],
+            'backlog_sources' => $backlogSample['sources'],
             'last_event' => $this->decodeJson((string)Redis::get($this->config->windowKey($windowStart, 'last_event'))),
         ];
     }
 
-    public function recordResourceSnapshot(int $windowStart, array $redisMemory, array $keyspace, array $queueSizes, array $anomaly): void
+    public function recordResourceSnapshot(
+        int $windowStart,
+        array $redisMemory,
+        array $keyspace,
+        array $queueSizes,
+        array $anomaly,
+        array $backlogSample = []
+    ): void
     {
         $keys = [
             $this->config->windowKey($windowStart, 'meta'),
@@ -81,10 +94,42 @@ class QueueDiagnosticRedisStore
             'reasons' => json_encode($anomaly['reasons'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'checked_at' => $anomaly['checked_at'] ?? time(),
         ]);
+        $this->recordBacklogSample($windowStart, $backlogSample);
 
         foreach ($keys as $key) {
             Redis::expire($key, $this->config->retentionSeconds());
         }
+    }
+
+    private function recordBacklogSample(int $windowStart, array $sample): void
+    {
+        if (empty($sample)) {
+            return;
+        }
+
+        $key = $this->config->windowKey($windowStart, 'backlog_sample');
+        Redis::del($key);
+        $this->writeHash($key, [
+            'meta' => $sample['meta'] ?? [],
+            'jobs' => $sample['jobs'] ?? [],
+            'payload_jobs' => $sample['payload_jobs'] ?? [],
+            'source_groups' => $sample['source_groups'] ?? [],
+            'sources' => $sample['sources'] ?? [],
+        ]);
+        Redis::expire($key, $this->config->retentionSeconds());
+    }
+
+    private function backlogSampleSnapshot(int $windowStart, int $limit): array
+    {
+        $raw = Redis::hgetall($this->config->windowKey($windowStart, 'backlog_sample')) ?: [];
+
+        return [
+            'meta' => $this->decodeJson((string)($raw['meta'] ?? '')) ?: [],
+            'jobs' => $this->scoreRows($this->decodeJson((string)($raw['jobs'] ?? '')) ?: [], $limit),
+            'payload_jobs' => $this->scoreRows($this->decodeJson((string)($raw['payload_jobs'] ?? '')) ?: [], $limit),
+            'source_groups' => $this->scoreRows($this->decodeJson((string)($raw['source_groups'] ?? '')) ?: [], $limit),
+            'sources' => $this->scoreRows($this->decodeJson((string)($raw['sources'] ?? '')) ?: [], $limit),
+        ];
     }
 
     private function incrementWindow(
@@ -263,6 +308,24 @@ class QueueDiagnosticRedisStore
         }
 
         return $result;
+    }
+
+    private function scoreRows(array $scores, int $limit): array
+    {
+        if ($limit <= 0 || empty($scores)) {
+            return [];
+        }
+
+        arsort($scores, SORT_NUMERIC);
+        $rows = [];
+        foreach (array_slice($scores, 0, $limit, true) as $name => $score) {
+            $rows[] = [
+                'name' => (string)$name,
+                'score' => (float)$score,
+            ];
+        }
+
+        return $rows;
     }
 
     private function decodeJson(string $raw): array

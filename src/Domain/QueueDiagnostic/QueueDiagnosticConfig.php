@@ -22,6 +22,8 @@ class QueueDiagnosticConfig
     public const KEY_QUEUE_ERROR_SIZE = 'queue_diagnostic_queue_error_size';
     public const KEY_SLOW_JOB_MS = 'queue_diagnostic_slow_job_ms';
     public const KEY_LARGE_PAYLOAD_BYTES = 'queue_diagnostic_large_payload_bytes';
+    public const KEY_BACKLOG_SAMPLE_ENABLED = 'queue_diagnostic_backlog_sample_enabled';
+    public const KEY_BACKLOG_SAMPLE_COUNT = 'queue_diagnostic_backlog_sample_count';
     public const KEY_SCAN_ENABLED = 'queue_diagnostic_scan_enabled';
     public const KEY_SCAN_COUNT = 'queue_diagnostic_scan_count';
 
@@ -50,6 +52,11 @@ class QueueDiagnosticConfig
     public function logAnomalyEnabled(): bool
     {
         return $this->boolValue(self::KEY_LOG_ANOMALY_ENABLED, true);
+    }
+
+    public function backlogSampleEnabled(): bool
+    {
+        return $this->boolValue(self::KEY_BACKLOG_SAMPLE_ENABLED, true);
     }
 
     public function scanEnabled(): bool
@@ -100,6 +107,11 @@ class QueueDiagnosticConfig
     public function largePayloadBytes(): int
     {
         return max(1, $this->intValue(self::KEY_LARGE_PAYLOAD_BYTES, 65536));
+    }
+
+    public function backlogSampleCount(): int
+    {
+        return max(10, min(1000, $this->intValue(self::KEY_BACKLOG_SAMPLE_COUNT, 200)));
     }
 
     public function scanCount(): int
@@ -253,6 +265,20 @@ class QueueDiagnosticConfig
                 'min' => 1,
                 'remark' => '默认 64KB。',
             ],
+            self::KEY_BACKLOG_SAMPLE_ENABLED => [
+                'label' => 'Backlog 样本',
+                'type' => 'boolean',
+                'default' => '1',
+                'remark' => '开启后 snapshot 抽样待消费队列 payload，统计 pending Job 构成；不保存 raw payload。',
+            ],
+            self::KEY_BACKLOG_SAMPLE_COUNT => [
+                'label' => 'Backlog 单队列样本数',
+                'type' => 'integer',
+                'default' => '200',
+                'min' => 10,
+                'max' => 1000,
+                'remark' => '每个队列最多抽样的 pending payload 数量；队列很大时不会全量遍历。',
+            ],
             self::KEY_SCAN_ENABLED => [
                 'label' => '低频 SCAN',
                 'type' => 'boolean',
@@ -334,6 +360,8 @@ class QueueDiagnosticConfig
             'queue_error_size' => $this->queueErrorSize(),
             'slow_job_ms' => $this->slowJobMs(),
             'large_payload_bytes' => $this->largePayloadBytes(),
+            'backlog_sample_enabled' => $this->backlogSampleEnabled(),
+            'backlog_sample_count' => $this->backlogSampleCount(),
             'scan_enabled' => $this->scanEnabled(),
             'scan_count' => $this->scanCount(),
             'redis_prefix' => $this->redisPrefix(),

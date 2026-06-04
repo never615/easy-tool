@@ -13,6 +13,7 @@ class QueueDiagnosticSnapshot extends BaseModel
         'slow_jobs' => 'array',
         'large_payload_jobs' => 'array',
         'failed_jobs' => 'array',
+        'backlog_sample' => 'array',
         'keyspace' => 'array',
         'scan_patterns' => 'array',
         'anomaly_reasons' => 'array',
