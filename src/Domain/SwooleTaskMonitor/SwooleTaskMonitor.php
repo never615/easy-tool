@@ -201,7 +201,7 @@ class SwooleTaskMonitor
             return false;
         }
 
-        $enabled = config('swoole_task_monitor.enabled', env('SWOOLE_TASK_MONITOR_ENABLED', true));
+        $enabled = config('swoole_task_monitor.enabled', env('SWOOLE_TASK_MONITOR_ENABLED', false));
         if (is_string($enabled)) {
             return !in_array(strtolower($enabled), ['0', 'false', 'off', 'no'], true);
         }
