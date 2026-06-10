@@ -141,7 +141,10 @@ class SwooleTaskMonitorController extends Controller
     .swoole-task-warn { color:#b54708; font-weight:600; }
     .swoole-task-good { color:#027a48; font-weight:600; }
     .swoole-task-empty { color:#8a94a6; padding:8px 0; }
-    .swoole-task-samples { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:12px; }
+    .swoole-task-samples { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
+    .swoole-task-sample-type { font-weight:600; }
+    .swoole-task-sample-reason { min-width:180px; white-space:normal !important; }
+    .swoole-task-sample-context { min-width:360px; max-width:760px; white-space:normal !important; }
     .swoole-task-code { font-family:Menlo, Consolas, monospace; font-size:12px; word-break:break-all; white-space:normal; }
     @media (max-width:1200px) { .swoole-task-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .swoole-task-samples { grid-template-columns:1fr; } }
     @media (max-width:700px) { .swoole-task-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -206,10 +209,11 @@ class SwooleTaskMonitorController extends Controller
         <h3>最近慢任务</h3>
         <div id="swoole-task-slow"></div>
     </div>
-    <div class="swoole-task-panel">
-        <h3>最近丢弃/直接处理</h3>
-        <div id="swoole-task-drops"></div>
-    </div>
+</div>
+
+<div class="swoole-task-panel">
+    <h3>最近丢弃/直接处理</h3>
+    <div id="swoole-task-drops"></div>
 </div>
 
 <script>
@@ -337,6 +341,43 @@ class SwooleTaskMonitorController extends Controller
             + '</tbody></table>';
     }
 
+    function renderDropSamples(rows) {
+        if (!rows || rows.length === 0) {
+            document.getElementById('swoole-task-drops').innerHTML = '<div class="swoole-task-empty">暂无数据</div>';
+            return;
+        }
+
+        document.getElementById('swoole-task-drops').innerHTML =
+            '<table class="swoole-task-table"><thead><tr><th>类型</th><th>时间</th><th>Task</th><th>原因</th><th>上下文</th></tr></thead><tbody>'
+            + rows.slice(0, 20).map(function (row) {
+                var type = row.__sample_type === 'direct' ? '直接处理' : '丢弃';
+                var typeClass = row.__sample_type === 'direct' ? 'swoole-task-good' : 'swoole-task-warn';
+                var reason = row.reason || row.stage || '-';
+                var context = row.context ? JSON.stringify(row.context) : '-';
+                return '<tr>'
+                    + '<td class="swoole-task-sample-type ' + typeClass + '">' + escapeHtml(type) + '</td>'
+                    + '<td>' + escapeHtml(row.created_at) + '</td>'
+                    + '<td><div>' + escapeHtml(shortName(row.task_class)) + '</div><div class="swoole-task-code swoole-task-muted">' + escapeHtml(row.task_class) + '</div></td>'
+                    + '<td class="swoole-task-code swoole-task-sample-reason">' + escapeHtml(reason) + '</td>'
+                    + '<td class="swoole-task-code swoole-task-sample-context">' + escapeHtml(context) + '</td>'
+                    + '</tr>';
+            }).join('')
+            + '</tbody></table>';
+    }
+
+    function markSamples(rows, type) {
+        return (rows || []).map(function (row) {
+            row.__sample_type = type;
+            return row;
+        });
+    }
+
+    function sortSamplesByTime(rows) {
+        return rows.sort(function (left, right) {
+            return text(right.created_at).localeCompare(text(left.created_at));
+        });
+    }
+
     function shortName(value) {
         value = text(value);
         var idx = value.lastIndexOf('\\\\');
@@ -355,7 +396,10 @@ class SwooleTaskMonitorController extends Controller
         renderRows(snapshot.rows || []);
         renderSamples('swoole-task-errors', snapshot.recent_errors || [], 'error');
         renderSamples('swoole-task-slow', snapshot.recent_slow || [], 'slow');
-        renderSamples('swoole-task-drops', (snapshot.recent_drops || []).concat(snapshot.recent_direct || []), 'drop');
+        renderDropSamples(sortSamplesByTime(
+            markSamples(snapshot.recent_drops || [], 'drop')
+                .concat(markSamples(snapshot.recent_direct || [], 'direct'))
+        ));
     }
 
     function monitorMode(config) {
