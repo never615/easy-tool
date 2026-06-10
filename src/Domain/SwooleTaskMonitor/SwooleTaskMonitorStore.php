@@ -88,6 +88,21 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    public function recordRateLimited(string $taskClass, string $reason, array $context = []): void
+    {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+        $this->increment($statsKey, $taskClass, 'rate_limited');
+        $this->pushSample($this->sampleKey($date, 'rate_limited'), [
+            'task_class' => $taskClass,
+            'reason' => $reason,
+            'context' => $context,
+            'created_at' => date('Y-m-d H:i:s'),
+            'pid' => getmypid() ?: null,
+        ]);
+        $this->touchMeta($date);
+    }
+
     public function recordDirectHandled(string $taskClass, string $reason, array $context = []): void
     {
         $date = $this->date();
@@ -236,6 +251,7 @@ class SwooleTaskMonitorStore
             'recent_errors' => $this->decodeListRows($this->sampleKey($date, 'errors')),
             'recent_slow' => $this->decodeListRows($this->sampleKey($date, 'slow')),
             'recent_drops' => $this->decodeListRows($this->sampleKey($date, 'drops')),
+            'recent_rate_limited' => $this->decodeListRows($this->sampleKey($date, 'rate_limited')),
             'recent_direct' => $this->decodeListRows($this->sampleKey($date, 'direct')),
         ];
     }
@@ -250,6 +266,7 @@ class SwooleTaskMonitorStore
             $this->sampleKey($date, 'errors'),
             $this->sampleKey($date, 'slow'),
             $this->sampleKey($date, 'drops'),
+            $this->sampleKey($date, 'rate_limited'),
             $this->sampleKey($date, 'direct')
         ];
 
@@ -437,6 +454,7 @@ class SwooleTaskMonitorStore
             'delivered' => 0,
             'deliver_failed' => 0,
             'dropped' => 0,
+            'rate_limited' => 0,
             'direct_handled' => 0,
             'started' => 0,
             'finished' => 0,

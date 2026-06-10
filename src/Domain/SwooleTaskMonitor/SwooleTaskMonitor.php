@@ -77,6 +77,15 @@ class SwooleTaskMonitor
         });
     }
 
+    public static function recordRateLimited(string|Task $task, string $reason, array $context = []): void
+    {
+        $taskClass = is_string($task) ? $task : get_class($task);
+
+        self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass, $reason, $context) {
+            $store->recordRateLimited($taskClass, $reason, $context);
+        });
+    }
+
     public static function recordDirectHandled(string|Task $task, string $reason, array $context = []): void
     {
         $taskClass = is_string($task) ? $task : get_class($task);
