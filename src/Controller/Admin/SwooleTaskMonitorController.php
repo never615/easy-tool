@@ -133,6 +133,8 @@ class SwooleTaskMonitorController extends Controller
     .swoole-task-card-value { font-size:22px; line-height:1.2; font-weight:600; color:#1f2937; }
     .swoole-task-panel { background:#fff; border:1px solid #d8dde6; border-radius:4px; padding:12px 14px; margin-bottom:12px; }
     .swoole-task-panel h3 { margin:0 0 10px; font-size:16px; font-weight:600; }
+    .swoole-task-panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .swoole-task-panel-head h3 { margin:0; }
     .swoole-task-table { width:100%; border-collapse:collapse; }
     .swoole-task-table th, .swoole-task-table td { border-bottom:1px solid #edf0f5; padding:7px 8px; text-align:left; vertical-align:top; white-space:nowrap; }
     .swoole-task-table th { background:#fafbfc; color:#5f6b7a; font-weight:600; }
@@ -213,14 +215,26 @@ class SwooleTaskMonitorController extends Controller
 </div>
 
 <div class="swoole-task-panel">
-    <h3>最近丢弃/限流/直接处理</h3>
+    <h3>最近丢弃/限流</h3>
     <div id="swoole-task-drops"></div>
+</div>
+
+<div class="swoole-task-panel">
+    <div class="swoole-task-panel-head">
+        <h3>最近直接处理</h3>
+        <button type="button" class="btn btn-xs btn-default" id="swoole-task-direct-toggle">显示直接处理</button>
+    </div>
+    <div id="swoole-task-direct-wrap" style="display:none">
+        <div id="swoole-task-direct"></div>
+    </div>
 </div>
 
 <script>
 (function () {
     var payload = {$payloadJson};
     var jsonUrl = {$this->jsonString($jsonUrl)};
+    var directSamplesVisible = false;
+    var directHandledTotal = 0;
 
     function text(value) {
         if (value === null || value === undefined || value === '') {
@@ -344,13 +358,13 @@ class SwooleTaskMonitorController extends Controller
             + '</tbody></table>';
     }
 
-    function renderDropSamples(rows) {
+    function renderEventSamples(id, rows) {
         if (!rows || rows.length === 0) {
-            document.getElementById('swoole-task-drops').innerHTML = '<div class="swoole-task-empty">暂无数据</div>';
+            document.getElementById(id).innerHTML = '<div class="swoole-task-empty">暂无数据</div>';
             return;
         }
 
-        document.getElementById('swoole-task-drops').innerHTML =
+        document.getElementById(id).innerHTML =
             '<table class="swoole-task-table"><thead><tr><th>类型</th><th>时间</th><th>Task</th><th>原因</th><th>上下文</th></tr></thead><tbody>'
             + rows.slice(0, 20).map(function (row) {
                 var type = row.__sample_type === 'direct'
@@ -370,6 +384,32 @@ class SwooleTaskMonitorController extends Controller
                     + '</tr>';
             }).join('')
             + '</tbody></table>';
+    }
+
+    function renderDropSamples(rows) {
+        renderEventSamples('swoole-task-drops', rows);
+    }
+
+    function renderDirectSamples(rows) {
+        renderEventSamples('swoole-task-direct', rows);
+        updateDirectToggle();
+    }
+
+    function setDirectSamplesVisible(visible) {
+        directSamplesVisible = visible;
+        document.getElementById('swoole-task-direct-wrap').style.display = visible ? '' : 'none';
+        updateDirectToggle();
+    }
+
+    function updateDirectToggle() {
+        var button = document.getElementById('swoole-task-direct-toggle');
+        if (!button) {
+            return;
+        }
+
+        button.textContent = directSamplesVisible
+            ? '隐藏直接处理'
+            : '显示直接处理 (' + number(directHandledTotal) + ')';
     }
 
     function markSamples(rows, type) {
@@ -395,6 +435,7 @@ class SwooleTaskMonitorController extends Controller
         payload = nextPayload || payload;
         var snapshot = payload.snapshot || {};
         var summary = snapshot.summary || {};
+        directHandledTotal = number(summary.direct_handled);
         document.getElementById('swoole-task-date').textContent = snapshot.date || '-';
         document.getElementById('swoole-task-mode').textContent = monitorMode(payload.monitor_config || {});
         document.getElementById('swoole-task-generated-at').textContent = payload.generated_at || '-';
@@ -406,8 +447,9 @@ class SwooleTaskMonitorController extends Controller
         renderDropSamples(sortSamplesByTime(
             markSamples(snapshot.recent_drops || [], 'drop')
                 .concat(markSamples(snapshot.recent_rate_limited || [], 'rate_limited'))
-                .concat(markSamples(snapshot.recent_direct || [], 'direct'))
         ));
+        renderDirectSamples(sortSamplesByTime(markSamples(snapshot.recent_direct || [], 'direct')));
+        setDirectSamplesVisible(directSamplesVisible);
     }
 
     function monitorMode(config) {
@@ -426,6 +468,10 @@ class SwooleTaskMonitorController extends Controller
 
         return config.mode;
     }
+
+    document.getElementById('swoole-task-direct-toggle').addEventListener('click', function () {
+        setDirectSamplesVisible(!directSamplesVisible);
+    });
 
     render(payload);
     setInterval(function () {
