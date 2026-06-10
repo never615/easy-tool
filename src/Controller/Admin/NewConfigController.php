@@ -30,12 +30,12 @@ class NewConfigController extends AdminCommonController
         $grid->name('配置项');
         $grid->key('Key')->copyable();
         $grid->type('类型')->label();
-        $grid->value('当前值')->editable()->limit(30);
+        $grid->value('当前值')->limit(30)->editable(); //limit必须放在 editable 之前
         $grid->default_value('默认值')->limit(30);
         $grid->remark('说明')->limit(40);
         $grid->sort('排序')->editable();
-        $grid->is_enabled('启用')->switch();
-        $grid->updated_at('更新时间');
+        $grid->is_enabled('启用')->switchE();
+//        $grid->updated_at('更新时间');
 
         $grid->filter(function ($filter) {
             $filter->ilike('key', 'Key');
