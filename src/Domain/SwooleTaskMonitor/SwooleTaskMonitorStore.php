@@ -12,6 +12,13 @@ class SwooleTaskMonitorStore
     private const START_TTL_SECONDS = 3600;
     private const SAMPLE_LIMIT = 50;
     private const SLOW_TASK_MS = 100;
+    private const KEY_EXPIRE_INTERVAL_SECONDS = 60;
+    private const META_TOUCH_INTERVAL_SECONDS = 1;
+    private const SAMPLE_THROTTLE_SECONDS = 5;
+
+    private static array $expireTouchedAt = [];
+    private static array $metaTouchedAt = [];
+    private static array $samplePushedAt = [];
 
     public function recordSubmitted(string $taskId, string $taskClass, int $payloadBytes, array $context = []): void
     {
@@ -34,6 +41,13 @@ class SwooleTaskMonitorStore
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
+    public function recordSubmittedSummary(string $taskClass): void
+    {
+        $date = $this->date();
+        $this->increment($this->statsKey($date), $taskClass, 'submitted');
+        $this->touchMeta($date);
+    }
+
     public function recordDelivered(string $taskClass): void
     {
         $date = $this->date();
@@ -42,12 +56,19 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
-    public function recordDeliverFailed(string $taskId, string $taskClass, string $reason, ?Throwable $exception = null): void
-    {
+    public function recordDeliverFailed(
+        string $taskId,
+        string $taskClass,
+        string $reason,
+        ?Throwable $exception = null,
+        bool $hasTraceState = true
+    ): void {
         $date = $this->date();
         $statsKey = $this->statsKey($date);
         $this->increment($statsKey, $taskClass, 'deliver_failed');
-        Redis::del($this->startKey($taskId));
+        if ($hasTraceState && $taskId !== '') {
+            Redis::del($this->startKey($taskId));
+        }
         $this->recordErrorSample($date, $taskClass, 'deliver_failed', $reason, $exception);
         $this->touchMeta($date);
     }
@@ -82,6 +103,13 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    public function recordStartedSummary(string $taskClass): void
+    {
+        $date = $this->date();
+        $this->increment($this->statsKey($date), $taskClass, 'started');
+        $this->touchMeta($date);
+    }
+
     public function recordStarted(string $taskId, string $taskClass, int $payloadBytes, array $context = []): void
     {
         $date = $this->date();
@@ -106,6 +134,19 @@ class SwooleTaskMonitorStore
             'started_at' => time(),
             'pid' => getmypid() ?: null,
         ]);
+        $this->touchMeta($date);
+    }
+
+    public function recordFinishedSummary(string $taskClass, int $durationMs): void
+    {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+
+        $this->increment($statsKey, $taskClass, 'finished');
+        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        if ($durationMs >= self::SLOW_TASK_MS) {
+            $this->increment($statsKey, $taskClass, 'slow_count');
+        }
         $this->touchMeta($date);
     }
 
@@ -139,6 +180,19 @@ class SwooleTaskMonitorStore
         }
 
         $this->clearRuntimeState($date, $taskId);
+        $this->touchMeta($date);
+    }
+
+    public function recordFailedSummary(string $taskClass, int $durationMs, Throwable $exception): void
+    {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+
+        $this->increment($statsKey, $taskClass, 'failed');
+        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        $this->recordErrorSample($date, $taskClass, 'runtime_failed', $exception->getMessage(), $exception, [
+            'duration_ms' => $durationMs,
+        ]);
         $this->touchMeta($date);
     }
 
@@ -189,7 +243,7 @@ class SwooleTaskMonitorStore
     public function reset(?string $date = null): void
     {
         $date = $date ?: $this->date();
-        Redis::del(
+        $keys = [
             $this->statsKey($date),
             $this->metaKey($date),
             $this->runningKey($date),
@@ -197,7 +251,22 @@ class SwooleTaskMonitorStore
             $this->sampleKey($date, 'slow'),
             $this->sampleKey($date, 'drops'),
             $this->sampleKey($date, 'direct')
-        );
+        ];
+
+        Redis::del(...$keys);
+
+        foreach ($keys as $key) {
+            unset(self::$expireTouchedAt[$key], self::$metaTouchedAt[$key]);
+        }
+
+        foreach (array_keys(self::$samplePushedAt) as $identity) {
+            foreach ($keys as $key) {
+                if (str_starts_with($identity, $key . '|')) {
+                    unset(self::$samplePushedAt[$identity]);
+                    break;
+                }
+            }
+        }
     }
 
     private function startMeta(string $taskId): array
@@ -222,7 +291,7 @@ class SwooleTaskMonitorStore
     {
         $key = $this->runningKey($date);
         Redis::hset($key, $taskId, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        Redis::expire($key, self::RETENTION_SECONDS);
+        $this->expireKey($key);
     }
 
     private function recordErrorSample(
@@ -247,15 +316,19 @@ class SwooleTaskMonitorStore
 
     private function pushSample(string $key, array $payload): void
     {
+        if (!$this->shouldPushSample($key, $payload)) {
+            return;
+        }
+
         Redis::lpush($key, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         Redis::ltrim($key, 0, self::SAMPLE_LIMIT - 1);
-        Redis::expire($key, self::RETENTION_SECONDS);
+        $this->expireKey($key);
     }
 
     private function increment(string $key, string $taskClass, string $metric, int $value = 1): void
     {
         Redis::hIncrBy($key, $this->field($taskClass, $metric), $value);
-        Redis::expire($key, self::RETENTION_SECONDS);
+        $this->expireKey($key);
     }
 
     private function recordMax(string $key, string $taskClass, string $metric, int $value): void
@@ -264,16 +337,51 @@ class SwooleTaskMonitorStore
         $current = (int)Redis::hget($key, $field);
         if ($value > $current) {
             Redis::hset($key, $field, $value);
-            Redis::expire($key, self::RETENTION_SECONDS);
+            $this->expireKey($key);
         }
     }
 
     private function touchMeta(string $date): void
     {
         $key = $this->metaKey($date);
+        $now = time();
+        if (($now - (self::$metaTouchedAt[$key] ?? 0)) < self::META_TOUCH_INTERVAL_SECONDS) {
+            return;
+        }
+
+        self::$metaTouchedAt[$key] = $now;
         Redis::hset($key, 'updated_at', time());
         Redis::hset($key, 'updated_at_text', date('Y-m-d H:i:s'));
+        $this->expireKey($key);
+    }
+
+    private function expireKey(string $key): void
+    {
+        $now = time();
+        if (($now - (self::$expireTouchedAt[$key] ?? 0)) < self::KEY_EXPIRE_INTERVAL_SECONDS) {
+            return;
+        }
+
+        self::$expireTouchedAt[$key] = $now;
         Redis::expire($key, self::RETENTION_SECONDS);
+    }
+
+    private function shouldPushSample(string $key, array $payload): bool
+    {
+        $identity = implode('|', [
+            $key,
+            (string)($payload['task_class'] ?? ''),
+            (string)($payload['stage'] ?? ''),
+            (string)($payload['reason'] ?? ''),
+        ]);
+        $now = time();
+        if (($now - (self::$samplePushedAt[$identity] ?? 0)) < self::SAMPLE_THROTTLE_SECONDS) {
+            return false;
+        }
+
+        self::$samplePushedAt[$identity] = $now;
+
+        return true;
     }
 
     private function rowsFromStats(array $stats): array

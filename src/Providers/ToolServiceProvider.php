@@ -397,6 +397,8 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
+
         $this->app->booting(function () {
         });
 

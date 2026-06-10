@@ -9,6 +9,7 @@ abstract class MonitoredSwooleTask extends Task
 {
     private ?string $swooleTaskMonitorId = null;
     private array $swooleTaskMonitorContext = [];
+    private bool $swooleTaskMonitorTraceSampled = false;
 
     final public function handle()
     {
@@ -28,10 +29,11 @@ abstract class MonitoredSwooleTask extends Task
 
     abstract protected function handleTask(): void;
 
-    public function setSwooleTaskMonitorContext(string $taskId, array $context = []): void
+    public function setSwooleTaskMonitorContext(string $taskId, array $context = [], bool $traceSampled = false): void
     {
         $this->swooleTaskMonitorId = $taskId;
         $this->swooleTaskMonitorContext = $context;
+        $this->swooleTaskMonitorTraceSampled = $traceSampled;
     }
 
     public function swooleTaskMonitorId(): string
@@ -46,6 +48,11 @@ abstract class MonitoredSwooleTask extends Task
     public function swooleTaskMonitorContext(): array
     {
         return $this->swooleTaskMonitorContext;
+    }
+
+    public function swooleTaskMonitorTraceSampled(): bool
+    {
+        return $this->swooleTaskMonitorTraceSampled;
     }
 
     public function swooleTaskMonitorPayloadBytes(): int

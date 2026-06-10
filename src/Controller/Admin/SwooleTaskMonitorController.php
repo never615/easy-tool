@@ -5,6 +5,7 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Layout\Content;
 use Illuminate\Routing\Controller;
+use Mallto\Tool\Domain\SwooleTaskMonitor\SwooleTaskMonitor;
 use Mallto\Tool\Domain\SwooleTaskMonitor\SwooleTaskMonitorStore;
 use Throwable;
 
@@ -37,6 +38,7 @@ class SwooleTaskMonitorController extends Controller
         return [
             'snapshot' => $store->snapshot($this->dateFromRequest()),
             'runtime' => $this->runtimeMetrics(),
+            'monitor_config' => SwooleTaskMonitor::config(),
             'generated_at' => date('Y-m-d H:i:s'),
         ];
     }
@@ -148,6 +150,7 @@ class SwooleTaskMonitorController extends Controller
 
 <div class="swoole-task-toolbar">
     <span class="label label-info">日期 <span id="swoole-task-date"></span></span>
+    <span class="label label-default">模式 <span id="swoole-task-mode"></span></span>
     <span class="swoole-task-muted">更新时间: <span id="swoole-task-generated-at"></span></span>
     <a class="btn btn-xs btn-default" href="{$this->escape($jsonUrl)}">JSON</a>
     <form method="POST" action="{$this->escape($resetUrl)}" style="display:inline" onsubmit="return confirm('确认重置当天 Swoole Task 监控数据?')">
@@ -343,6 +346,7 @@ class SwooleTaskMonitorController extends Controller
         var snapshot = payload.snapshot || {};
         var summary = snapshot.summary || {};
         document.getElementById('swoole-task-date').textContent = snapshot.date || '-';
+        document.getElementById('swoole-task-mode').textContent = monitorMode(payload.monitor_config || {});
         document.getElementById('swoole-task-generated-at').textContent = payload.generated_at || '-';
         renderKpis(summary);
         renderRuntime(payload.runtime || {});
@@ -350,6 +354,23 @@ class SwooleTaskMonitorController extends Controller
         renderSamples('swoole-task-errors', snapshot.recent_errors || [], 'error');
         renderSamples('swoole-task-slow', snapshot.recent_slow || [], 'slow');
         renderSamples('swoole-task-drops', (snapshot.recent_drops || []).concat(snapshot.recent_direct || []), 'drop');
+    }
+
+    function monitorMode(config) {
+        if (!config.enabled) {
+            return 'off';
+        }
+
+        var rate = parseFloat(config.trace_sample_rate || 0);
+        if (rate > 0 && rate < 1) {
+            return config.mode + ' / trace ' + (rate * 100).toFixed(2) + '%';
+        }
+
+        if (rate >= 1) {
+            return config.mode + ' / trace all';
+        }
+
+        return config.mode;
     }
 
     render(payload);
