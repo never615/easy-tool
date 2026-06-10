@@ -39,6 +39,9 @@ class BaseMenuSeeder extends Seeder
         $systemManagerMenu = $this->updateOrCreate(
             "system_manager", 0, $order++, "系统管理", "fa-windows");
 
+        $this->updateOrCreate(
+            "swoole_task_monitor.index", $systemManagerMenu->id, $order++, "Swoole Task监控", "fa-tasks");
+
         // 开放平台管理
         $thirdApiManagerMenu = $this->updateOrCreate('third_api_manager', $systemManagerMenu->id, $order++,
             '开放平台管理',

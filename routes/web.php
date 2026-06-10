@@ -91,6 +91,10 @@ Route::group($attributes, function ($router) {
                             ->name('queue_diagnostics.index');
                         Route::post('queue_diagnostics/settings', 'QueueDiagnosticController@saveSettings')
                             ->name('queue_diagnostics.settings');
+                        Route::get('swoole_task_monitor', 'SwooleTaskMonitorController@index')
+                            ->name('swoole_task_monitor.index');
+                        Route::post('swoole_task_monitor/reset', 'SwooleTaskMonitorController@reset')
+                            ->name('swoole_task_monitor.reset');
                         //Route::resource('sms_notifies', 'SmsNotifyController');
                         Route::resource('sms_templates', 'SmsTemplateController');
                         Route::resource('sms_codes', 'SmsCodeController');
