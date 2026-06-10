@@ -40,6 +40,9 @@ class BaseMenuSeeder extends Seeder
             "system_manager", 0, $order++, "系统管理", "fa-windows");
 
         $this->updateOrCreate(
+            "new_configs.index", $systemManagerMenu->id, $order++, "配置中心", "fa-sliders");
+
+        $this->updateOrCreate(
             "swoole_task_monitor.index", $systemManagerMenu->id, $order++, "Swoole Task监控", "fa-tasks");
 
         // 开放平台管理

@@ -23,6 +23,7 @@ class BasePermissionsSeeder extends Seeder
     {
         $this->createPermissions("微信模板消息管理", "wechat_template_ids");
         $this->createPermissions("全局配置", "configs");
+        $this->createPermissions("配置中心", "new_configs");
         $this->createPermissions("队列诊断监控", "queue_diagnostics.index", false, 0);
         $this->createPermissions("队列诊断配置保存", "queue_diagnostics.settings", false, 0);
         $this->createPermissions("Swoole Task监控", "swoole_task_monitor.index", false, 0);

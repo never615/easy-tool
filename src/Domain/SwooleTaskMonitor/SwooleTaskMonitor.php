@@ -4,6 +4,8 @@ namespace Mallto\Tool\Domain\SwooleTaskMonitor;
 
 use Hhxsv5\LaravelS\Swoole\Task\Task;
 use Illuminate\Support\Facades\Log;
+use Mallto\Tool\Data\NewConfig;
+use Mallto\Tool\Domain\NewConfig\NewConfigCenter;
 use Throwable;
 
 class SwooleTaskMonitor
@@ -201,7 +203,11 @@ class SwooleTaskMonitor
             return false;
         }
 
-        $enabled = config('swoole_task_monitor.enabled', env('SWOOLE_TASK_MONITOR_ENABLED', false));
+        $enabled = self::newConfig()->get(NewConfig::KEY_SWOOLE_TASK_MONITOR_ENABLED, null);
+        if ($enabled === null) {
+            $enabled = config('swoole_task_monitor.enabled', env('SWOOLE_TASK_MONITOR_ENABLED', false));
+        }
+
         if (is_string($enabled)) {
             return !in_array(strtolower($enabled), ['0', 'false', 'off', 'no'], true);
         }
@@ -229,10 +235,15 @@ class SwooleTaskMonitor
 
     private static function mode(): string
     {
-        $mode = strtolower(trim((string)config(
-            'swoole_task_monitor.mode',
-            env('SWOOLE_TASK_MONITOR_MODE', self::MODE_SUMMARY)
-        )));
+        $mode = self::newConfig()->string(NewConfig::KEY_SWOOLE_TASK_MONITOR_MODE, '');
+        if ($mode === '') {
+            $mode = (string)config(
+                'swoole_task_monitor.mode',
+                env('SWOOLE_TASK_MONITOR_MODE', self::MODE_SUMMARY)
+            );
+        }
+
+        $mode = strtolower(trim($mode));
 
         return in_array($mode, [self::MODE_OFF, self::MODE_SUMMARY, self::MODE_TRACE], true)
             ? $mode
@@ -242,11 +253,19 @@ class SwooleTaskMonitor
     private static function traceSampleRate(string $mode): float
     {
         $default = $mode === self::MODE_TRACE ? 1.0 : 0.0;
-        $rate = config('swoole_task_monitor.trace_sample_rate');
+        $rate = self::newConfig()->get(NewConfig::KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE, null);
+        if ($rate === null || $rate === '') {
+            $rate = config('swoole_task_monitor.trace_sample_rate');
+        }
         if ($rate === null || $rate === '') {
             $rate = env('SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE', $default);
         }
 
         return max(0.0, min(1.0, (float)$rate));
+    }
+
+    private static function newConfig(): NewConfigCenter
+    {
+        return app(NewConfigCenter::class);
     }
 }

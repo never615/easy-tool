@@ -87,6 +87,7 @@ Route::group($attributes, function ($router) {
 
                         //----------------------------  页面配置结束  -----------------------------------------------
                         Route::resource('configs', 'ConfigController');
+                        Route::resource('new_configs', 'NewConfigController');
                         Route::get('queue_diagnostics', 'QueueDiagnosticController@index')
                             ->name('queue_diagnostics.index');
                         Route::post('queue_diagnostics/settings', 'QueueDiagnosticController@saveSettings')

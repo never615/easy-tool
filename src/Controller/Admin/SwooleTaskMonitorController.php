@@ -113,6 +113,7 @@ class SwooleTaskMonitorController extends Controller
             'date' => $payload['snapshot']['date'] ?? null,
         ]));
         $resetUrl = route('swoole_task_monitor.reset');
+        $configUrl = route('new_configs.index');
         $payloadJson = json_encode(
             $payload,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
@@ -152,6 +153,7 @@ class SwooleTaskMonitorController extends Controller
     <span class="label label-info">日期 <span id="swoole-task-date"></span></span>
     <span class="label label-default">模式 <span id="swoole-task-mode"></span></span>
     <span class="swoole-task-muted">更新时间: <span id="swoole-task-generated-at"></span></span>
+    <a class="btn btn-xs btn-primary" href="{$this->escape($configUrl)}">配置中心</a>
     <a class="btn btn-xs btn-default" href="{$this->escape($jsonUrl)}">JSON</a>
     <form method="POST" action="{$this->escape($resetUrl)}" style="display:inline" onsubmit="return confirm('确认重置当天 Swoole Task 监控数据?')">
         {$this->csrfField()}
