@@ -215,8 +215,18 @@ class SwooleTaskMonitorController extends Controller
 </div>
 
 <div class="swoole-task-panel">
-    <h3>最近丢弃/限流</h3>
+    <h3>最近丢弃</h3>
     <div id="swoole-task-drops"></div>
+</div>
+
+<div class="swoole-task-panel">
+    <div class="swoole-task-panel-head">
+        <h3>最近限流跳过</h3>
+        <button type="button" class="btn btn-xs btn-default" id="swoole-task-rate-limited-toggle">显示限流跳过</button>
+    </div>
+    <div id="swoole-task-rate-limited-wrap" style="display:none">
+        <div id="swoole-task-rate-limited"></div>
+    </div>
 </div>
 
 <div class="swoole-task-panel">
@@ -233,6 +243,8 @@ class SwooleTaskMonitorController extends Controller
 (function () {
     var payload = {$payloadJson};
     var jsonUrl = {$this->jsonString($jsonUrl)};
+    var rateLimitedSamplesVisible = false;
+    var rateLimitedTotal = 0;
     var directSamplesVisible = false;
     var directHandledTotal = 0;
 
@@ -390,6 +402,28 @@ class SwooleTaskMonitorController extends Controller
         renderEventSamples('swoole-task-drops', rows);
     }
 
+    function renderRateLimitedSamples(rows) {
+        renderEventSamples('swoole-task-rate-limited', rows);
+        updateRateLimitedToggle();
+    }
+
+    function setRateLimitedSamplesVisible(visible) {
+        rateLimitedSamplesVisible = visible;
+        document.getElementById('swoole-task-rate-limited-wrap').style.display = visible ? '' : 'none';
+        updateRateLimitedToggle();
+    }
+
+    function updateRateLimitedToggle() {
+        var button = document.getElementById('swoole-task-rate-limited-toggle');
+        if (!button) {
+            return;
+        }
+
+        button.textContent = rateLimitedSamplesVisible
+            ? '隐藏限流跳过'
+            : '显示限流跳过 (' + number(rateLimitedTotal) + ')';
+    }
+
     function renderDirectSamples(rows) {
         renderEventSamples('swoole-task-direct', rows);
         updateDirectToggle();
@@ -435,6 +469,7 @@ class SwooleTaskMonitorController extends Controller
         payload = nextPayload || payload;
         var snapshot = payload.snapshot || {};
         var summary = snapshot.summary || {};
+        rateLimitedTotal = number(summary.rate_limited);
         directHandledTotal = number(summary.direct_handled);
         document.getElementById('swoole-task-date').textContent = snapshot.date || '-';
         document.getElementById('swoole-task-mode').textContent = monitorMode(payload.monitor_config || {});
@@ -444,10 +479,9 @@ class SwooleTaskMonitorController extends Controller
         renderRows(snapshot.rows || []);
         renderSamples('swoole-task-errors', snapshot.recent_errors || [], 'error');
         renderSamples('swoole-task-slow', snapshot.recent_slow || [], 'slow');
-        renderDropSamples(sortSamplesByTime(
-            markSamples(snapshot.recent_drops || [], 'drop')
-                .concat(markSamples(snapshot.recent_rate_limited || [], 'rate_limited'))
-        ));
+        renderDropSamples(sortSamplesByTime(markSamples(snapshot.recent_drops || [], 'drop')));
+        renderRateLimitedSamples(sortSamplesByTime(markSamples(snapshot.recent_rate_limited || [], 'rate_limited')));
+        setRateLimitedSamplesVisible(rateLimitedSamplesVisible);
         renderDirectSamples(sortSamplesByTime(markSamples(snapshot.recent_direct || [], 'direct')));
         setDirectSamplesVisible(directSamplesVisible);
     }
@@ -468,6 +502,10 @@ class SwooleTaskMonitorController extends Controller
 
         return config.mode;
     }
+
+    document.getElementById('swoole-task-rate-limited-toggle').addEventListener('click', function () {
+        setRateLimitedSamplesVisible(!rateLimitedSamplesVisible);
+    });
 
     document.getElementById('swoole-task-direct-toggle').addEventListener('click', function () {
         setDirectSamplesVisible(!directSamplesVisible);
