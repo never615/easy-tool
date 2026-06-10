@@ -92,14 +92,22 @@ class NewConfigCenter
     {
         try {
             $rows = NewConfig::query()
-                ->where('is_enabled', true)
-                ->get([ 'key', 'value', 'default_value' ]);
+                ->where(function ($query) {
+                    $query->where('is_enabled', true)
+                        ->orWhere('key', NewConfig::KEY_SWOOLE_TASK_MONITOR_ENABLED);
+                })
+                ->get([ 'key', 'value', 'default_value', 'is_enabled' ]);
         } catch (Throwable) {
             return [];
         }
 
         $values = [];
         foreach ($rows as $row) {
+            if ($row->key === NewConfig::KEY_SWOOLE_TASK_MONITOR_ENABLED && !$row->is_enabled) {
+                $values[$row->key] = '0';
+                continue;
+            }
+
             $value = $row->value;
             if ($value === null || $value === '') {
                 $value = $row->default_value;

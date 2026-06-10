@@ -39,7 +39,7 @@ class ConfigTablesSeeder extends Seeder
                 'type' => 'boolean',
                 'default_value' => '0',
                 'options' => '0,1',
-                'remark' => '默认关闭。开启后 Swoole task 监控开始写入运行时聚合指标。',
+                'remark' => '默认关闭。可直接切换本行启用开关；开启后 Swoole task 监控开始写入运行时聚合指标。',
                 'sort' => 100,
             ],
             [
