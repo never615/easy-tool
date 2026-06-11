@@ -7,10 +7,10 @@ use Symfony\Component\Process\Process;
 
 class LaravelConfigCacheService
 {
-    public function refreshIfCached(): array
+    public function refresh(array $env = [], bool $force = false): array
     {
         $cachedConfigPath = $this->cachedConfigPath();
-        if (!is_file($cachedConfigPath)) {
+        if (!$force && !is_file($cachedConfigPath)) {
             return [
                 'skipped' => true,
                 'reason' => 'laravel config cache does not exist',
@@ -22,7 +22,7 @@ class LaravelConfigCacheService
             PHP_BINARY,
             base_path('artisan'),
             'config:cache',
-        ], base_path(), null, null, 60);
+        ], base_path(), $this->normalizeEnv($env), null, 60);
         $process->run();
 
         $output = trim($process->getOutput() . PHP_EOL . $process->getErrorOutput());
@@ -39,6 +39,11 @@ class LaravelConfigCacheService
         ];
     }
 
+    public function refreshIfCached(array $env = []): array
+    {
+        return $this->refresh($env, false);
+    }
+
     private function cachedConfigPath(): string
     {
         if (method_exists(app(), 'getCachedConfigPath')) {
@@ -46,5 +51,20 @@ class LaravelConfigCacheService
         }
 
         return base_path('bootstrap/cache/config.php');
+    }
+
+    private function normalizeEnv(array $env): array
+    {
+        $normalized = [];
+        foreach ($env as $key => $value) {
+            $key = strtoupper(trim((string)$key));
+            if ($key === '' || preg_match('/^[A-Z_][A-Z0-9_]*$/', $key) !== 1) {
+                continue;
+            }
+
+            $normalized[$key] = (string)$value;
+        }
+
+        return $normalized;
     }
 }

@@ -23,6 +23,7 @@ use Illuminate\Support\ServiceProvider;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
+use Mallto\Tool\Commands\PublishNewConfigCommand;
 use Mallto\Tool\Commands\QueueDiagnosticSnapshotCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
@@ -62,6 +63,7 @@ class ToolServiceProvider extends ServiceProvider
         CreateTableIdSeqCommand::class,
         DeleteFailedJobsCommand::class,
         QueueDiagnosticSnapshotCommand::class,
+        PublishNewConfigCommand::class,
     ];
 
     /**

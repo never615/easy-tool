@@ -16,7 +16,7 @@ class NewConfigPublisher
     ) {
     }
 
-    public function publish(bool $reload = true): array
+    public function publish(bool $reload = true, bool $forceConfigCache = false): array
     {
         $rows = $this->publishableRows();
         $values = $this->envValues($rows);
@@ -27,12 +27,13 @@ class NewConfigPublisher
         try {
             $writeResult = $this->envFile->write($values);
             $configCacheResult = null;
-            if (($writeResult['changed'] ?? false) && !$this->isTestRun()) {
-                $configCacheResult = $this->configCacheService->refreshIfCached();
+            $shouldRefreshConfigCache = ($writeResult['changed'] ?? false) || $forceConfigCache;
+            if ($shouldRefreshConfigCache && !$this->isTestRun()) {
+                $configCacheResult = $this->configCacheService->refresh($values, $forceConfigCache);
             }
 
             $reloadResult = null;
-            if ($reload && $requiresReload && ($writeResult['changed'] ?? false) && !$this->isTestRun()) {
+            if ($reload && $requiresReload && $shouldRefreshConfigCache && !$this->isTestRun()) {
                 $reloadResult = $this->reloadService->reload();
             }
 
