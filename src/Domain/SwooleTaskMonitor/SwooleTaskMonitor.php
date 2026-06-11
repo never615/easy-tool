@@ -210,7 +210,7 @@ class SwooleTaskMonitor
             return false;
         }
 
-        $enabled = config('swoole_task_monitor.enabled', env('SWOOLE_TASK_MONITOR_ENABLED', false));
+        $enabled = config('swoole_task_monitor.enabled', false);
 
         if (is_string($enabled)) {
             return !in_array(strtolower($enabled), ['0', 'false', 'off', 'no'], true);
@@ -239,10 +239,7 @@ class SwooleTaskMonitor
 
     private static function mode(): string
     {
-        $mode = (string)config(
-            'swoole_task_monitor.mode',
-            env('SWOOLE_TASK_MONITOR_MODE', self::MODE_SUMMARY)
-        );
+        $mode = (string)config('swoole_task_monitor.mode', self::MODE_SUMMARY);
 
         $mode = strtolower(trim($mode));
 
@@ -254,9 +251,9 @@ class SwooleTaskMonitor
     private static function traceSampleRate(string $mode): float
     {
         $default = $mode === self::MODE_TRACE ? 1.0 : 0.0;
-        $rate = config('swoole_task_monitor.trace_sample_rate');
+        $rate = config('swoole_task_monitor.trace_sample_rate', $default);
         if ($rate === null || $rate === '') {
-            $rate = env('SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE', $default);
+            $rate = $default;
         }
 
         return max(0.0, min(1.0, (float)$rate));

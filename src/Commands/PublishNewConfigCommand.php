@@ -11,16 +11,18 @@ class PublishNewConfigCommand extends Command
     protected $signature = 'tool:new_config_publish
         {--reload : 发布后执行 LaravelS reload}
         {--force-config-cache : 即使配置缓存文件不存在，也重新生成 config cache}
+        {--env-file= : 运行期 shell env 文件路径，默认 storage/framework/new_configs.env}
         {--json : 输出 JSON}';
 
-    protected $description = 'Publish new_configs rows into .env and refresh Laravel config cache';
+    protected $description = 'Export new_configs rows as runtime env and refresh Laravel config cache';
 
     public function handle(NewConfigPublisher $publisher): int
     {
         try {
             $result = $publisher->publish(
                 (bool)$this->option('reload'),
-                (bool)$this->option('force-config-cache')
+                (bool)$this->option('force-config-cache'),
+                $this->option('env-file') ?: null
             );
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
@@ -38,12 +40,9 @@ class PublishNewConfigCommand extends Command
         $configCache = $result['config_cache'] ?? null;
         $reload = $result['reload'] ?? null;
 
-        $this->info('new_configs published: values=' . count($result['values'] ?? []));
-        $this->line('env changed: ' . (($write['changed'] ?? false) ? 'yes' : 'no'));
-
-        if (isset($write['backup_path']) && $write['backup_path']) {
-            $this->line('env backup: ' . $write['backup_path']);
-        }
+        $this->info('new_configs exported: values=' . count($result['values'] ?? []));
+        $this->line('runtime env changed: ' . (($write['changed'] ?? false) ? 'yes' : 'no'));
+        $this->line('runtime env file: ' . ($write['env_path'] ?? 'n/a'));
 
         if (is_array($configCache)) {
             $this->line('config cache: ' . (($configCache['skipped'] ?? false) ? 'skipped' : 'refreshed'));

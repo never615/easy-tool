@@ -4,6 +4,7 @@ namespace Mallto\Tool\Domain\NewConfig;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Mallto\Tool\Data\NewConfig;
 use Throwable;
 
@@ -16,16 +17,16 @@ class NewConfigPublisher
     ) {
     }
 
-    public function publish(bool $reload = true, bool $forceConfigCache = false): array
+    public function publish(bool $reload = true, bool $forceConfigCache = false, ?string $envFilePath = null): array
     {
         $rows = $this->publishableRows();
-        $values = $this->envValues($rows);
-        $requiresReload = $rows->contains(function (NewConfig $row) {
-            return $row->requires_reload && $this->publishValue($row) !== null;
-        });
 
         try {
-            $writeResult = $this->envFile->write($values);
+            $values = $this->envValues($rows);
+            $requiresReload = $rows->contains(function (NewConfig $row) {
+                return $row->requires_reload && $this->publishValue($row) !== null;
+            });
+            $writeResult = $this->envFile->write($values, $envFilePath);
             $configCacheResult = null;
             $shouldRefreshConfigCache = ($writeResult['changed'] ?? false) || $forceConfigCache;
             if ($shouldRefreshConfigCache && !$this->isTestRun()) {
@@ -53,6 +54,10 @@ class NewConfigPublisher
 
     private function publishableRows(): Collection
     {
+        if (!Schema::hasTable('new_configs') || !Schema::hasColumn('new_configs', 'env_key')) {
+            return collect();
+        }
+
         return NewConfig::query()
             ->whereNotNull('env_key')
             ->where('env_key', '<>', '')
@@ -71,7 +76,13 @@ class NewConfigPublisher
                 continue;
             }
 
-            $values[$row->env_key] = $this->normalizeValue($row, $value);
+            $envKey = NewConfigBootstrapKeyGuard::normalize($row->env_key);
+            NewConfigBootstrapKeyGuard::assertAllowed($envKey);
+            if ($envKey === null) {
+                continue;
+            }
+
+            $values[$envKey] = $this->normalizeValue($row, $value);
         }
 
         ksort($values);

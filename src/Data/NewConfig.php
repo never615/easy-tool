@@ -2,6 +2,7 @@
 
 namespace Mallto\Tool\Data;
 
+use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
 class NewConfig extends BaseModel
@@ -20,6 +21,11 @@ class NewConfig extends BaseModel
 
     protected static function booted(): void
     {
+        static::saving(function (NewConfig $config) {
+            $config->env_key = NewConfigBootstrapKeyGuard::normalize($config->env_key);
+            NewConfigBootstrapKeyGuard::assertAllowed($config->env_key);
+        });
+
         static::saved(function () {
             if (static::shouldAutoPublish()) {
                 app(NewConfigPublisher::class)->publish();
