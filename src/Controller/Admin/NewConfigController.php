@@ -5,6 +5,7 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
+use Illuminate\Support\Facades\Cache;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
@@ -14,6 +15,8 @@ use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 class NewConfigController extends AdminCommonController
 {
     private const ENV_PREVIEW_MODAL_ID = 'new-config-env-preview-modal';
+    private const RELOAD_THROTTLE_KEY = 'new_configs:manual_reload_throttle';
+    private const RELOAD_THROTTLE_SECONDS = 30;
 
     protected function getHeaderTitle()
     {
@@ -69,6 +72,12 @@ class NewConfigController extends AdminCommonController
 
     public function reload(NewConfigPublisher $publisher)
     {
+        if (!Cache::add(self::RELOAD_THROTTLE_KEY, time(), self::RELOAD_THROTTLE_SECONDS)) {
+            admin_toastr('Reload 操作过于频繁，请 30 秒后再试。', 'warning');
+
+            return redirect()->route('new_configs.index');
+        }
+
         $result = $publisher->publish(true, true);
         $reload = $result['reload'] ?? null;
 
@@ -127,7 +136,7 @@ class NewConfigController extends AdminCommonController
         $csrf = csrf_field();
 
         return <<<HTML
-<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="return confirm('确认发布配置中心 env、刷新 config cache，并执行 LaravelS reload？')">
+<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="if (!confirm('确认发布配置中心 env、刷新 config cache，并执行 LaravelS reload？')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> Reload 中...'; } return true;">
     {$csrf}
     <button type="submit" class="btn btn-sm btn-warning"><i class="fa fa-refresh"></i> 手动 Reload</button>
 </form>
