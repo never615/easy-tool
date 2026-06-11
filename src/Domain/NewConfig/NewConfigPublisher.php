@@ -13,17 +13,17 @@ class NewConfigPublisher
     public function __construct(
         private NewConfigEnvFile $envFile,
         private LaravelConfigCacheService $configCacheService,
-        private LaravelSReloadService $reloadService
+        private LaravelSRestartService $restartService
     ) {
     }
 
-    public function publish(bool $reload = false, bool $forceConfigCache = false, ?string $envFilePath = null): array
+    public function publish(bool $restart = false, bool $forceConfigCache = false, ?string $envFilePath = null): array
     {
         $rows = $this->publishableRows();
 
         try {
             $values = $this->envValues($rows);
-            $requiresReload = $rows->contains(function (NewConfig $row) {
+            $requiresRestart = $rows->contains(function (NewConfig $row) {
                 return $row->requires_reload && $this->publishValue($row) !== null;
             });
             $writeResult = $this->envFile->write($values, $envFilePath);
@@ -33,9 +33,9 @@ class NewConfigPublisher
                 $configCacheResult = $this->configCacheService->refresh($values, $forceConfigCache);
             }
 
-            $reloadResult = null;
-            if ($reload && $requiresReload && $shouldRefreshConfigCache && !$this->isTestRun()) {
-                $reloadResult = $this->reloadService->reload();
+            $restartResult = null;
+            if ($restart && $requiresRestart && $shouldRefreshConfigCache && !$this->isTestRun()) {
+                $restartResult = $this->restartService->restart();
             }
 
             $this->markPublished($rows, null);
@@ -44,7 +44,7 @@ class NewConfigPublisher
                 'values' => $values,
                 'write' => $writeResult,
                 'config_cache' => $configCacheResult,
-                'reload' => $reloadResult,
+                'restart' => $restartResult,
             ];
         } catch (Throwable $exception) {
             $this->markPublished($rows, $exception->getMessage());

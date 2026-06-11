@@ -45,7 +45,7 @@ class NewConfigController extends AdminCommonController
         $grid->remark('说明')->limit(40);
         $grid->sort('排序')->editable();
         $grid->is_enabled('启用')->switchE();
-        $grid->requires_reload('需 Reload')->switchE();
+        $grid->requires_reload('需重启')->switchE();
         $grid->last_published_at('发布时间');
         $grid->last_publish_error('发布错误')->limit(40);
 
@@ -73,20 +73,20 @@ class NewConfigController extends AdminCommonController
     public function reload(NewConfigPublisher $publisher)
     {
         if (!Cache::add(self::RELOAD_THROTTLE_KEY, time(), self::RELOAD_THROTTLE_SECONDS)) {
-            admin_toastr('Reload 操作过于频繁，请 30 秒后再试。', 'warning');
+            admin_toastr('重启操作过于频繁，请 30 秒后再试。', 'warning');
 
             return redirect()->route('new_configs.index');
         }
 
         $result = $publisher->publish(true, true);
-        $reload = $result['reload'] ?? null;
+        $restart = $result['restart'] ?? null;
 
-        if ($reload === null) {
-            admin_toastr('配置已发布；当前没有需要 reload 的已发布配置项，LaravelS reload 未执行。', 'warning');
-        } elseif (is_array($reload) && ($reload['skipped'] ?? false)) {
-            admin_toastr('配置已发布，但 LaravelS reload 跳过：' . ($reload['reason'] ?? 'unknown'), 'warning');
+        if ($restart === null) {
+            admin_toastr('配置已发布；当前没有需要重启的已发布配置项，服务重启未执行。', 'warning');
+        } elseif (is_array($restart) && ($restart['skipped'] ?? false)) {
+            admin_toastr('配置已发布，但服务重启跳过：' . ($restart['reason'] ?? 'unknown'), 'warning');
         } else {
-            admin_toastr('配置已发布，并已执行 LaravelS reload。');
+            admin_toastr('配置已发布，并已触发服务重启。');
         }
 
         return redirect()->route('new_configs.index');
@@ -118,8 +118,8 @@ class NewConfigController extends AdminCommonController
         $form->textarea('remark', '说明');
         $form->number('sort', '排序')->default(0);
         $form->switch('is_enabled', '启用')->default(1);
-        $form->switch('requires_reload', '需 Reload')->default(1)
-            ->help('开启时表示该配置需要 LaravelS reload 后才会被新 worker 读取。保存配置只发布运行期 env 并刷新 config cache，不会自动 reload；需要生效时请在列表页点击“手动 Reload”。');
+        $form->switch('requires_reload', '需重启')->default(1)
+            ->help('开启时表示该配置需要服务重启后才会被所有新进程读取。保存配置只发布运行期 env 并刷新 config cache，不会自动重启；需要生效时请在列表页点击“手动重启”。');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
     }
@@ -136,9 +136,9 @@ class NewConfigController extends AdminCommonController
         $csrf = csrf_field();
 
         return <<<HTML
-<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="if (!confirm('确认发布配置中心 env、刷新 config cache，并执行 LaravelS reload？')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> Reload 中...'; } return true;">
+<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="if (!confirm('确认发布配置中心 env、刷新 config cache，并触发服务重启？')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> 重启中...'; } return true;">
     {$csrf}
-    <button type="submit" class="btn btn-sm btn-warning"><i class="fa fa-refresh"></i> 手动 Reload</button>
+    <button type="submit" class="btn btn-sm btn-warning"><i class="fa fa-refresh"></i> 手动重启</button>
 </form>
 HTML;
     }

@@ -9,7 +9,8 @@ use Throwable;
 class PublishNewConfigCommand extends Command
 {
     protected $signature = 'tool:new_config_publish
-        {--reload : 发布后执行 LaravelS reload}
+        {--restart : 发布后触发服务重启}
+        {--reload : 兼容旧参数，等同于 --restart}
         {--force-config-cache : 即使配置缓存文件不存在，也重新生成 config cache}
         {--env-file= : 运行期 shell env 文件路径，默认 storage/framework/new_configs.env}
         {--json : 输出 JSON}';
@@ -20,7 +21,7 @@ class PublishNewConfigCommand extends Command
     {
         try {
             $result = $publisher->publish(
-                (bool)$this->option('reload'),
+                (bool)$this->option('restart') || (bool)$this->option('reload'),
                 (bool)$this->option('force-config-cache'),
                 $this->option('env-file') ?: null
             );
@@ -38,7 +39,7 @@ class PublishNewConfigCommand extends Command
 
         $write = $result['write'] ?? [];
         $configCache = $result['config_cache'] ?? null;
-        $reload = $result['reload'] ?? null;
+        $restart = $result['restart'] ?? null;
 
         $this->info('new_configs exported: values=' . count($result['values'] ?? []));
         $this->line('runtime env changed: ' . (($write['changed'] ?? false) ? 'yes' : 'no'));
@@ -48,8 +49,11 @@ class PublishNewConfigCommand extends Command
             $this->line('config cache: ' . (($configCache['skipped'] ?? false) ? 'skipped' : 'refreshed'));
         }
 
-        if (is_array($reload)) {
-            $this->line('laravels reload: ' . (($reload['skipped'] ?? false) ? 'skipped' : 'done'));
+        if (is_array($restart)) {
+            $this->line('service restart: ' . (($restart['skipped'] ?? false) ? 'skipped' : 'scheduled'));
+            if (isset($restart['strategy'])) {
+                $this->line('restart strategy: ' . $restart['strategy']);
+            }
         }
 
         return 0;
