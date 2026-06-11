@@ -28,13 +28,13 @@ class NewConfig extends BaseModel
 
         static::saved(function () {
             if (static::shouldAutoPublish()) {
-                app(NewConfigPublisher::class)->publish();
+                app(NewConfigPublisher::class)->publish(false);
             }
         });
 
         static::deleted(function () {
             if (static::shouldAutoPublish()) {
-                app(NewConfigPublisher::class)->publish();
+                app(NewConfigPublisher::class)->publish(false);
             }
         });
     }

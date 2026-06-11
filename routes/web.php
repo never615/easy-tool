@@ -89,6 +89,8 @@ Route::group($attributes, function ($router) {
                         Route::resource('configs', 'ConfigController');
                         Route::get('new_configs/env-preview', 'NewConfigController@envPreview')
                             ->name('new_configs.env_preview');
+                        Route::post('new_configs/reload', 'NewConfigController@reload')
+                            ->name('new_configs.reload');
                         Route::resource('new_configs', 'NewConfigController');
                         Route::get('queue_diagnostics', 'QueueDiagnosticController@index')
                             ->name('queue_diagnostics.index');

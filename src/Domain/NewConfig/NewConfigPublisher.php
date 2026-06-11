@@ -17,7 +17,7 @@ class NewConfigPublisher
     ) {
     }
 
-    public function publish(bool $reload = true, bool $forceConfigCache = false, ?string $envFilePath = null): array
+    public function publish(bool $reload = false, bool $forceConfigCache = false, ?string $envFilePath = null): array
     {
         $rows = $this->publishableRows();
 

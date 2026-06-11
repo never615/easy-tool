@@ -9,6 +9,7 @@ use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\NewConfigEffectiveEnv;
+use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
 class NewConfigController extends AdminCommonController
 {
@@ -41,7 +42,7 @@ class NewConfigController extends AdminCommonController
         $grid->remark('说明')->limit(40);
         $grid->sort('排序')->editable();
         $grid->is_enabled('启用')->switchE();
-        $grid->requires_reload('Reload')->switchE();
+        $grid->requires_reload('需 Reload')->switchE();
         $grid->last_published_at('发布时间');
         $grid->last_publish_error('发布错误')->limit(40);
 
@@ -53,6 +54,7 @@ class NewConfigController extends AdminCommonController
         });
 
         $grid->tools(function ($tools) {
+            $tools->append($this->reloadButton());
             $tools->append($this->envPreviewButton());
         });
 
@@ -63,6 +65,22 @@ class NewConfigController extends AdminCommonController
     public function envPreview(NewConfigEffectiveEnv $effectiveEnv)
     {
         return response()->json($effectiveEnv->snapshot(), 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    public function reload(NewConfigPublisher $publisher)
+    {
+        $result = $publisher->publish(true, true);
+        $reload = $result['reload'] ?? null;
+
+        if ($reload === null) {
+            admin_toastr('配置已发布；当前没有需要 reload 的已发布配置项，LaravelS reload 未执行。', 'warning');
+        } elseif (is_array($reload) && ($reload['skipped'] ?? false)) {
+            admin_toastr('配置已发布，但 LaravelS reload 跳过：' . ($reload['reason'] ?? 'unknown'), 'warning');
+        } else {
+            admin_toastr('配置已发布，并已执行 LaravelS reload。');
+        }
+
+        return redirect()->route('new_configs.index');
     }
 
     protected function formOption(Form $form)
@@ -91,8 +109,8 @@ class NewConfigController extends AdminCommonController
         $form->textarea('remark', '说明');
         $form->number('sort', '排序')->default(0);
         $form->switch('is_enabled', '启用')->default(1);
-        $form->switch('requires_reload', '保存后 Reload')->default(1)
-            ->help('开启时，后台保存配置后会导出运行期 env、刷新 config cache，并执行 bin/laravels reload。');
+        $form->switch('requires_reload', '需 Reload')->default(1)
+            ->help('开启时表示该配置需要 LaravelS reload 后才会被新 worker 读取。保存配置只发布运行期 env 并刷新 config cache，不会自动 reload；需要生效时请在列表页点击“手动 Reload”。');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
     }
@@ -101,6 +119,19 @@ class NewConfigController extends AdminCommonController
     {
         return '<button type="button" class="btn btn-sm btn-default new-config-env-preview-button">'
             . '<i class="fa fa-eye"></i> 查看生效 Env</button>';
+    }
+
+    private function reloadButton(): string
+    {
+        $url = route('new_configs.reload');
+        $csrf = csrf_field();
+
+        return <<<HTML
+<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="return confirm('确认发布配置中心 env、刷新 config cache，并执行 LaravelS reload？')">
+    {$csrf}
+    <button type="submit" class="btn btn-sm btn-warning"><i class="fa fa-refresh"></i> 手动 Reload</button>
+</form>
+HTML;
     }
 
     private function envPreviewModal(): string
