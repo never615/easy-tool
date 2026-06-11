@@ -54,6 +54,11 @@ class PublishNewConfigCommand extends Command
             if (isset($restart['strategy'])) {
                 $this->line('restart strategy: ' . $restart['strategy']);
             }
+
+            $horizon = $restart['horizon'] ?? null;
+            if (is_array($horizon)) {
+                $this->line('horizon terminate: ' . (($horizon['skipped'] ?? false) ? 'skipped' : 'requested'));
+            }
         }
 
         return 0;

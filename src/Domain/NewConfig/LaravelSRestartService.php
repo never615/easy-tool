@@ -7,6 +7,11 @@ use Symfony\Component\Process\Process;
 
 class LaravelSRestartService
 {
+    public function __construct(
+        private ?HorizonTerminateService $horizonTerminateService = null
+    ) {
+    }
+
     public function restart(): array
     {
         $strategy = (string)config('new_config.restart.strategy', 'supervisor_autorestart');
@@ -14,14 +19,27 @@ class LaravelSRestartService
             return [
                 'skipped' => true,
                 'reason' => 'new_config.restart.strategy is disabled',
+                'horizon' => [
+                    'skipped' => true,
+                    'reason' => 'new_config.restart.strategy is disabled',
+                    'masters' => [],
+                ],
             ];
         }
 
+        $horizon = $this->requestHorizonTerminate();
+
         if ($strategy === 'command') {
-            return $this->scheduleConfiguredCommand();
+            $result = $this->scheduleConfiguredCommand();
+            $result['horizon'] = $horizon;
+
+            return $result;
         }
 
-        return $this->scheduleSupervisorAutorestart();
+        $result = $this->scheduleSupervisorAutorestart();
+        $result['horizon'] = $horizon;
+
+        return $result;
     }
 
     private function scheduleConfiguredCommand(): array
@@ -191,5 +209,18 @@ SH;
         }
 
         return sys_get_temp_dir() . '/easy-admin-new-config-restart.log';
+    }
+
+    private function requestHorizonTerminate(): array
+    {
+        if (!(bool)config('new_config.restart.terminate_horizon', true)) {
+            return [
+                'skipped' => true,
+                'reason' => 'new_config.restart.terminate_horizon is disabled',
+                'masters' => [],
+            ];
+        }
+
+        return ($this->horizonTerminateService ?? app(HorizonTerminateService::class))->requestTerminate();
     }
 }

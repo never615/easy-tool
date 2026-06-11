@@ -86,7 +86,11 @@ class NewConfigController extends AdminCommonController
         } elseif (is_array($restart) && ($restart['skipped'] ?? false)) {
             admin_toastr('配置已发布，但服务重启跳过：' . ($restart['reason'] ?? 'unknown'), 'warning');
         } else {
-            admin_toastr('配置已发布，并已触发服务重启。');
+            $horizon = $restart['horizon'] ?? null;
+            $horizonMessage = is_array($horizon) && !($horizon['skipped'] ?? false)
+                ? '，并已请求 Horizon 重启'
+                : '';
+            admin_toastr('配置已发布，并已触发服务重启' . $horizonMessage . '。');
         }
 
         return redirect()->route('new_configs.index');
