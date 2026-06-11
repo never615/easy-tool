@@ -2,7 +2,7 @@
 
 namespace Mallto\Tool\Data;
 
-use Mallto\Tool\Domain\NewConfig\NewConfigCenter;
+use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
 class NewConfig extends BaseModel
 {
@@ -14,16 +14,27 @@ class NewConfig extends BaseModel
 
     protected $casts = [
         'is_enabled' => 'boolean',
+        'requires_reload' => 'boolean',
+        'last_published_at' => 'datetime',
     ];
 
     protected static function booted(): void
     {
         static::saved(function () {
-            app(NewConfigCenter::class)->clearCache();
+            if (static::shouldAutoPublish()) {
+                app(NewConfigPublisher::class)->publish();
+            }
         });
 
         static::deleted(function () {
-            app(NewConfigCenter::class)->clearCache();
+            if (static::shouldAutoPublish()) {
+                app(NewConfigPublisher::class)->publish();
+            }
         });
+    }
+
+    private static function shouldAutoPublish(): bool
+    {
+        return !app()->runningInConsole() && !app()->runningUnitTests();
     }
 }
