@@ -52,6 +52,11 @@ class NewConfigPublisher
         }
     }
 
+    public function exportValues(): array
+    {
+        return $this->envValues($this->publishableRows());
+    }
+
     private function publishableRows(): Collection
     {
         if (!Schema::hasTable('new_configs') || !Schema::hasColumn('new_configs', 'env_key')) {
