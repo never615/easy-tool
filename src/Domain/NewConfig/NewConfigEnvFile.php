@@ -11,9 +11,8 @@ class NewConfigEnvFile
         $filepath = $filepath ?: storage_path('framework/new_configs.env');
         $values = $this->normalizeValues($values);
         $content = $this->renderContent($values);
-        $original = is_file($filepath) ? (string)file_get_contents($filepath) : '';
 
-        if ($content === $original) {
+        if (is_file($filepath) && is_readable($filepath) && $content === (string)file_get_contents($filepath)) {
             return [
                 'changed' => false,
                 'backup_path' => null,
@@ -83,11 +82,17 @@ class NewConfigEnvFile
             throw new RuntimeException("Failed to write temporary runtime env file: {$tmpPath}");
         }
 
-        @chmod($tmpPath, 0600);
+        $directoryGroup = @filegroup($directory);
+        if ($directoryGroup !== false) {
+            @chgrp($tmpPath, $directoryGroup);
+        }
+        @chmod($tmpPath, 0660);
 
         if (!rename($tmpPath, $filepath)) {
             @unlink($tmpPath);
             throw new RuntimeException("Failed to replace runtime env file: {$filepath}");
         }
+
+        @chmod($filepath, 0660);
     }
 }

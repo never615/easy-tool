@@ -19,6 +19,8 @@ class NewConfig extends BaseModel
         'last_published_at' => 'datetime',
     ];
 
+    private static int $publishSuppressionCount = 0;
+
     protected static function booted(): void
     {
         static::saving(function (NewConfig $config) {
@@ -39,8 +41,27 @@ class NewConfig extends BaseModel
         });
     }
 
+    public static function withoutAutoPublish(callable $callback)
+    {
+        self::$publishSuppressionCount++;
+
+        try {
+            return $callback();
+        } finally {
+            self::$publishSuppressionCount--;
+        }
+    }
+
     private static function shouldAutoPublish(): bool
     {
-        return !app()->runningInConsole() && !app()->runningUnitTests();
+        return self::$publishSuppressionCount <= 0 && !self::isTestRun();
+    }
+
+    private static function isTestRun(): bool
+    {
+        return app()->runningUnitTests()
+            || defined('PHPUNIT_COMPOSER_INSTALL')
+            || defined('__PHPUNIT_PHAR__')
+            || class_exists(\PHPUnit\Framework\TestCase::class, false);
     }
 }

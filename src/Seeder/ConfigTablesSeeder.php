@@ -70,18 +70,20 @@ class ConfigTablesSeeder extends Seeder
             ],
         ];
 
-        foreach ($definitions as $definition) {
-            $config = NewConfig::query()->firstOrNew([
-                'key' => $definition['key'],
-            ]);
+        NewConfig::withoutAutoPublish(function () use ($definitions) {
+            foreach ($definitions as $definition) {
+                $config = NewConfig::query()->firstOrNew([
+                    'key' => $definition['key'],
+                ]);
 
-            $config->fill($definition);
-            if (!$config->exists) {
-                $config->value = $definition['default_value'];
+                $config->fill($definition);
+                if (!$config->exists) {
+                    $config->value = $definition['default_value'];
+                }
+
+                $config->is_enabled = true;
+                $config->save();
             }
-
-            $config->is_enabled = true;
-            $config->save();
-        }
+        });
     }
 }
