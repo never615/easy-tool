@@ -69,11 +69,14 @@ class BaseMenuSeeder extends Seeder
         $this->updateOrCreate(
             "new_configs.publish_restart", $configCenterMenu->id, 80, "发布与重启", "fa-refresh");
 
-        $this->updateOrCreate(
-            "configs.index", $configCenterMenu->id, 90, "全局配置列表", "fa-list");
+        $traditionalConfigMenu = $this->updateOrCreate(
+            "traditional_configs", $configCenterMenu->id, 90, "传统配置", "fa-archive");
 
         $this->updateOrCreate(
-            "new_configs.index", $configCenterMenu->id, 100, "运行期配置", "fa-sliders");
+            "configs.index", $traditionalConfigMenu->id, 30, "全局配置", "fa-list");
+
+        $this->updateOrCreate(
+            "new_configs.index", $traditionalConfigMenu->id, 40, "运行期配置", "fa-sliders");
 
         $this->updateOrCreate(
             "swoole_task_monitor.index", $systemManagerMenu->id, $order++, "Swoole Task监控", "fa-tasks");
