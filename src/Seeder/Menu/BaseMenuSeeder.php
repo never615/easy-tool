@@ -67,10 +67,13 @@ class BaseMenuSeeder extends Seeder
             "new_configs.swoole_task_monitor", $configCenterMenu->id, 70, "Swoole Task配置", "fa-tasks");
 
         $this->updateOrCreate(
-            "configs.index", $configCenterMenu->id, 80, "全局配置列表", "fa-list");
+            "new_configs.publish_restart", $configCenterMenu->id, 80, "发布与重启", "fa-refresh");
 
         $this->updateOrCreate(
-            "new_configs.index", $configCenterMenu->id, 90, "运行期配置", "fa-sliders");
+            "configs.index", $configCenterMenu->id, 90, "全局配置列表", "fa-list");
+
+        $this->updateOrCreate(
+            "new_configs.index", $configCenterMenu->id, 100, "运行期配置", "fa-sliders");
 
         $this->updateOrCreate(
             "swoole_task_monitor.index", $systemManagerMenu->id, $order++, "Swoole Task监控", "fa-tasks");

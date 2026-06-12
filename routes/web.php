@@ -111,6 +111,8 @@ Route::group($attributes, function ($router) {
                         Route::post('configs/location-debug', 'ConfigModuleController@saveLocationDebug')
                             ->name('configs.location_debug.save');
                         Route::resource('configs', 'ConfigController');
+                        Route::get('new_configs/publish-restart', 'NewConfigPublishController@index')
+                            ->name('new_configs.publish_restart');
                         Route::get('new_configs/env-preview', 'NewConfigController@envPreview')
                             ->name('new_configs.env_preview');
                         Route::post('new_configs/reload', 'NewConfigController@reload')
