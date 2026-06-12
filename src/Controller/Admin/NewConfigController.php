@@ -82,15 +82,17 @@ class NewConfigController extends AdminCommonController
         $restart = $result['restart'] ?? null;
 
         if ($restart === null) {
-            admin_toastr('配置已发布；当前没有需要重启的已发布配置项，服务重启未执行。', 'warning');
+            admin_toastr('配置已发布；当前没有需要重启的已发布配置项，服务广播未执行。', 'warning');
         } elseif (is_array($restart) && ($restart['skipped'] ?? false)) {
             admin_toastr('配置已发布，但服务重启跳过：' . ($restart['reason'] ?? 'unknown'), 'warning');
         } else {
+            $generation = $result['generation']['generation'] ?? null;
             $horizon = $restart['horizon'] ?? null;
             $horizonMessage = is_array($horizon) && !($horizon['skipped'] ?? false)
                 ? '，并已请求 Horizon 重启'
                 : '';
-            admin_toastr('配置已发布，并已触发服务重启' . $horizonMessage . '。');
+            $generationMessage = $generation ? "，配置版本 {$generation} 已广播" : '';
+            admin_toastr('配置已发布，并已触发服务重启' . $horizonMessage . $generationMessage . '。');
         }
 
         return redirect()->route('new_configs.index');
@@ -123,7 +125,7 @@ class NewConfigController extends AdminCommonController
         $form->number('sort', '排序')->default(0);
         $form->switch('is_enabled', '启用')->default(1);
         $form->switch('requires_reload', '需重启')->default(1)
-            ->help('开启时表示该配置需要服务重启后才会被所有新进程读取。保存配置只发布运行期 env 并刷新 config cache，不会自动重启；需要生效时请在列表页点击“手动重启”。');
+            ->help('开启时表示该配置需要服务重启后才会被所有新进程读取。保存配置只发布运行期 env 并刷新 config cache，不会自动重启；需要生效时请在列表页点击“发布并重启”。');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
     }
@@ -140,9 +142,9 @@ class NewConfigController extends AdminCommonController
         $csrf = csrf_field();
 
         return <<<HTML
-<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="if (!confirm('确认发布配置中心 env、刷新 config cache，并触发服务重启？')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> 重启中...'; } return true;">
+<form method="POST" action="{$url}" style="display:inline-block;margin-right:6px;" onsubmit="if (!confirm('确认发布配置中心 env、刷新 config cache，并广播配置版本触发各实例重启？')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> 发布中...'; } return true;">
     {$csrf}
-    <button type="submit" class="btn btn-sm btn-warning"><i class="fa fa-refresh"></i> 手动重启</button>
+    <button type="submit" class="btn btn-sm btn-warning"><i class="fa fa-refresh"></i> 发布并重启</button>
 </form>
 HTML;
     }

@@ -42,6 +42,31 @@ class LaravelSRestartService
         return $result;
     }
 
+    public function restartCurrentLaravelSInstance(): array
+    {
+        $strategy = (string)config('new_config.watcher.restart_strategy', 'supervisor_autorestart');
+        if ($strategy === 'disabled') {
+            return [
+                'skipped' => true,
+                'reason' => 'new_config.watcher.restart_strategy is disabled',
+            ];
+        }
+
+        if ($strategy === 'command') {
+            $command = trim((string)config('new_config.watcher.restart_command', ''));
+            if ($command === '') {
+                return [
+                    'skipped' => true,
+                    'reason' => 'new_config.watcher.restart_command is empty',
+                ];
+            }
+
+            return $this->scheduleShellCommand($command, 'watcher_command');
+        }
+
+        return $this->scheduleSupervisorAutorestart(false);
+    }
+
     private function scheduleConfiguredCommand(): array
     {
         $command = trim((string)config('new_config.restart.command', ''));
@@ -55,11 +80,11 @@ class LaravelSRestartService
         return $this->scheduleShellCommand($command, 'command');
     }
 
-    private function scheduleSupervisorAutorestart(): array
+    private function scheduleSupervisorAutorestart(?bool $includeHorizon = null): array
     {
         $scriptPath = storage_path('framework/new-config-restart-' . date('YmdHis') . '-' . getmypid() . '.sh');
         $delaySeconds = max(1, (int)config('new_config.restart.delay_seconds', 2));
-        $includeHorizon = (bool)config('new_config.restart.include_horizon', true);
+        $includeHorizon = $includeHorizon ?? (bool)config('new_config.restart.include_horizon', true);
         $logPath = $this->writableLogPath();
 
         $script = $this->renderSupervisorAutorestartScript(

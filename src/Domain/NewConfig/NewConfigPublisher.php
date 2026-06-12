@@ -13,7 +13,8 @@ class NewConfigPublisher
     public function __construct(
         private NewConfigEnvFile $envFile,
         private LaravelConfigCacheService $configCacheService,
-        private LaravelSRestartService $restartService
+        private LaravelSRestartService $restartService,
+        private ?NewConfigGenerationStore $generationStore = null
     ) {
     }
 
@@ -34,7 +35,9 @@ class NewConfigPublisher
             }
 
             $restartResult = null;
+            $generationResult = null;
             if ($restart && $requiresRestart && $shouldRefreshConfigCache && !$this->isTestRun()) {
+                $generationResult = $this->generationStore()->bump();
                 $restartResult = $this->restartService->restart();
             }
 
@@ -44,6 +47,7 @@ class NewConfigPublisher
                 'values' => $values,
                 'write' => $writeResult,
                 'config_cache' => $configCacheResult,
+                'generation' => $generationResult,
                 'restart' => $restartResult,
             ];
         } catch (Throwable $exception) {
@@ -139,5 +143,10 @@ class NewConfigPublisher
     private function isTestRun(): bool
     {
         return app()->runningUnitTests();
+    }
+
+    private function generationStore(): NewConfigGenerationStore
+    {
+        return $this->generationStore ?: app(NewConfigGenerationStore::class);
     }
 }

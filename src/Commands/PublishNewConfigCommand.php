@@ -39,6 +39,7 @@ class PublishNewConfigCommand extends Command
 
         $write = $result['write'] ?? [];
         $configCache = $result['config_cache'] ?? null;
+        $generation = $result['generation'] ?? null;
         $restart = $result['restart'] ?? null;
 
         $this->info('new_configs exported: values=' . count($result['values'] ?? []));
@@ -47,6 +48,10 @@ class PublishNewConfigCommand extends Command
 
         if (is_array($configCache)) {
             $this->line('config cache: ' . (($configCache['skipped'] ?? false) ? 'skipped' : 'refreshed'));
+        }
+
+        if (is_array($generation)) {
+            $this->line('config generation: ' . (($generation['skipped'] ?? false) ? 'skipped' : ($generation['generation'] ?? 'n/a')));
         }
 
         if (is_array($restart)) {
