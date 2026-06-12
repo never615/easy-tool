@@ -72,15 +72,20 @@ class ConfigTablesSeeder extends Seeder
 
         NewConfig::withoutAutoPublish(function () use ($definitions) {
             foreach ($definitions as $definition) {
-                $config = NewConfig::query()->firstOrNew([
+                $exists = NewConfig::query()
+                    ->where('key', $definition['key'])
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                $config = new NewConfig([
                     'key' => $definition['key'],
                 ]);
 
                 $config->fill($definition);
-                if (!$config->exists) {
-                    $config->value = $definition['default_value'];
-                }
-
+                $config->value = $definition['default_value'];
                 $config->is_enabled = true;
                 $config->save();
             }
