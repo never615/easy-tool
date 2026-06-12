@@ -39,7 +39,7 @@ class BaseMenuSeeder extends Seeder
         $configCenterMenu = Menu::where('uri', 'config_center')->first();
         $configCenterMenu = $this->updateOrCreate(
             'config_center',
-            $systemManagerMenu->id,
+            0,
             $configCenterMenu ? null : $order++,
             '配置中心',
             'fa-sliders'
