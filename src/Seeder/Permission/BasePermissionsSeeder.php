@@ -31,6 +31,8 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("定位算法配置保存", "configs.location_algorithm.save", false, 0);
         $this->createPermissions("定位维护配置", "configs.location_maintenance", false, 0);
         $this->createPermissions("定位维护配置保存", "configs.location_maintenance.save", false, 0);
+        $this->createPermissions("BeaconArea配置", "configs.beacon_area", false, 0);
+        $this->createPermissions("BeaconArea配置保存", "configs.beacon_area.save", false, 0);
         $this->createPermissions("定位日志配置", "configs.location_debug", false, 0);
         $this->createPermissions("定位日志配置保存", "configs.location_debug.save", false, 0);
         $this->createPermissions("配置中心", "new_configs");

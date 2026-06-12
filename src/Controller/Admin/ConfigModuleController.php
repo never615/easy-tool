@@ -51,6 +51,16 @@ class ConfigModuleController extends Controller
         return $this->save('location_maintenance', $request, $form);
     }
 
+    public function beaconArea(GlobalConfigModuleForm $form)
+    {
+        return $this->index('beacon_area', $form);
+    }
+
+    public function saveBeaconArea(Request $request, GlobalConfigModuleForm $form)
+    {
+        return $this->save('beacon_area', $request, $form);
+    }
+
     public function locationDebug(GlobalConfigModuleForm $form)
     {
         return $this->index('location_debug', $form);

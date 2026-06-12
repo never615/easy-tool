@@ -19,6 +19,16 @@ class GlobalConfigNewConfig
         return self::ENV_PREFIX . $slug . '_' . strtoupper(substr(sha1($key), 0, 8));
     }
 
+    public static function envKeyForDefinition(array $definition): string
+    {
+        $envKey = (string)($definition['env_key'] ?? '');
+        if ($envKey !== '') {
+            return $envKey;
+        }
+
+        return self::envKeyFor((string)$definition['key']);
+    }
+
     public static function attributesFor(string $key, ?string $value = null, ?string $remark = null): array
     {
         return [
@@ -47,6 +57,7 @@ class GlobalConfigNewConfig
         );
 
         $attributes['name'] = (string)($definition['name'] ?? $attributes['name']);
+        $attributes['env_key'] = self::envKeyForDefinition($definition);
         $attributes['type'] = (string)($definition['type'] ?? $attributes['type']);
         $attributes['default_value'] = (string)($definition['default_value'] ?? $attributes['default_value']);
         $attributes['options'] = $definition['options'] ?? $attributes['options'];

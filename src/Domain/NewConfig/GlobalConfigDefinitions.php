@@ -29,9 +29,15 @@ class GlobalConfigDefinitions
             ],
             'location_maintenance' => [
                 'title' => '定位维护配置',
-                'description' => '区域判定 / 报警日志清理 / 模拟定位',
+                'description' => '报警日志清理 / 模拟定位',
                 'route' => 'configs.location_maintenance',
                 'save_route' => 'configs.location_maintenance.save',
+            ],
+            'beacon_area' => [
+                'title' => 'BeaconArea配置',
+                'description' => '历史 BeaconArea 区域判断 / 报警 / 清理配置',
+                'route' => 'configs.beacon_area',
+                'save_route' => 'configs.beacon_area.save',
             ],
             'location_debug' => [
                 'title' => '定位日志配置',
@@ -49,6 +55,7 @@ class GlobalConfigDefinitions
             self::smsDefinitions(),
             self::locationAlgorithmDefinitions(),
             self::locationMaintenanceDefinitions(),
+            self::beaconAreaDefinitions(),
             self::locationDebugDefinitions()
         ));
 
@@ -91,7 +98,6 @@ class GlobalConfigDefinitions
             self::definition('rh_authorization_code', '融合通信授权码', 'sms', 'pdEKIusgG9', 'string', '融合通信 X-Sign 授权码。'),
             self::definition('log_sms_template_code', '系统日志短信模板', 'sms', 'API-ZWX-00001', 'string', '系统异常日志短信通知模板。'),
             self::definition('system_alarm_contact', '系统报警联系人', 'sms', '', 'string', '多个手机号用英文逗号分隔。'),
-            self::definition('area_template_code', '区域/拆除报警短信模板', 'sms', 'API-ZWX-00001', 'string', '区域报警和定位器拆除报警共用模板。'),
             self::definition('block_alarm_device_code', '遮挡报警短信模板', 'sms', 'SMS_460895020', 'string', '定位器遮挡报警短信模板。'),
         ];
     }
@@ -109,12 +115,21 @@ class GlobalConfigDefinitions
     private static function locationMaintenanceDefinitions(): array
     {
         return [
-            self::definition('area_check_times', '区域连续判定次数', 'location_maintenance', '6', 'integer', '定位器连续处于同一区域达到该次数后写区域日志。'),
             self::definition('location.fence_area_alarm_max_count', '报警日志每主体最大保留条数', 'location_maintenance', '100000', 'integer', '电子围栏和区域报警日志每个主体最多保留条数。'),
             self::definition('location.fence_area_alarm_max_months', '报警日志最长保留月数', 'location_maintenance', '12', 'integer', '电子围栏和区域报警日志最长保留月数。'),
             self::definition('location.fence_area_alarm_delete_batch_size', '报警日志清理批大小', 'location_maintenance', '10000', 'integer', '定时清理报警日志时每批删除数量。'),
             self::definition('online_debug_log', '定位器在线检查调试日志', 'location_maintenance', '0', 'boolean', '定位器在线状态检查任务调试日志。'),
             self::definition('mock_locator_log', '模拟定位调试日志', 'location_maintenance', '0', 'boolean', '模拟定位自定义进程调试日志。'),
+        ];
+    }
+
+    private static function beaconAreaDefinitions(): array
+    {
+        return [
+            self::definition('area_check_times', 'BeaconArea 连续判定次数', 'beacon_area', '6', 'integer', '定位器连续处于同一 BeaconArea 区域达到该次数后写区域日志。'),
+            self::definition('area_template_code', 'BeaconArea 报警短信模板', 'beacon_area', 'API-ZWX-00001', 'string', 'BeaconArea 区域报警短信模板；历史上也被定位器拆除报警复用。'),
+            self::definition('location.beacon_area_check_interval', 'BeaconArea 扫描间隔毫秒', 'beacon_area', '10000', 'integer', 'LaravelS 定时任务 LocatorBeaconAreaCron 的执行间隔。', 'BEACON_AREA_CHECK_INTERVAL'),
+            self::definition('location_delete_beacon_area_log', 'BeaconArea 日志默认保留天数', 'beacon_area', '365', 'integer', 'location:delete_beacon_area_log 的全局默认保留天数；主体 extra_config 中同名配置优先。'),
         ];
     }
 
@@ -192,10 +207,12 @@ class GlobalConfigDefinitions
         string $module,
         string $defaultValue,
         string $type,
-        string $remark
+        string $remark,
+        ?string $envKey = null
     ): array {
         return [
             'key' => $key,
+            'env_key' => $envKey,
             'name' => $name,
             'module' => $module,
             'type' => $type,

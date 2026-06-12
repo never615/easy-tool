@@ -102,6 +102,10 @@ Route::group($attributes, function ($router) {
                             ->name('configs.location_maintenance');
                         Route::post('configs/location-maintenance', 'ConfigModuleController@saveLocationMaintenance')
                             ->name('configs.location_maintenance.save');
+                        Route::get('configs/beacon-area', 'ConfigModuleController@beaconArea')
+                            ->name('configs.beacon_area');
+                        Route::post('configs/beacon-area', 'ConfigModuleController@saveBeaconArea')
+                            ->name('configs.beacon_area.save');
                         Route::get('configs/location-debug', 'ConfigModuleController@locationDebug')
                             ->name('configs.location_debug');
                         Route::post('configs/location-debug', 'ConfigModuleController@saveLocationDebug')

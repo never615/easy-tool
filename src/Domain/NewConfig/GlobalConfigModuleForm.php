@@ -84,7 +84,7 @@ class GlobalConfigModuleForm
 
         return [
             'key' => $key,
-            'env_key' => $row && $row->env_key ? $row->env_key : GlobalConfigNewConfig::envKeyFor($key),
+            'env_key' => $row && $row->env_key ? $row->env_key : GlobalConfigNewConfig::envKeyForDefinition($definition),
             'name' => (string)($definition['name'] ?? ($row->name ?? $key)),
             'value' => (string)$value,
             'type' => (string)($definition['type'] ?? 'string'),

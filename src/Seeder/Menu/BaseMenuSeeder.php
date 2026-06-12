@@ -58,10 +58,13 @@ class BaseMenuSeeder extends Seeder
             "configs.location_maintenance", $configCenterMenu->id, 40, "定位维护配置", "fa-wrench");
 
         $this->updateOrCreate(
-            "configs.location_debug", $configCenterMenu->id, 50, "定位日志配置", "fa-bug");
+            "configs.beacon_area", $configCenterMenu->id, 50, "BeaconArea配置", "fa-map-signs");
 
         $this->updateOrCreate(
-            "new_configs.swoole_task_monitor", $configCenterMenu->id, 60, "Swoole Task配置", "fa-tasks");
+            "configs.location_debug", $configCenterMenu->id, 60, "定位日志配置", "fa-bug");
+
+        $this->updateOrCreate(
+            "new_configs.swoole_task_monitor", $configCenterMenu->id, 70, "Swoole Task配置", "fa-tasks");
 
         $this->updateOrCreate(
             "configs.index", $configCenterMenu->id, 80, "全局配置列表", "fa-list");
