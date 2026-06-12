@@ -36,4 +36,22 @@ class GlobalConfigNewConfig
             'requires_reload' => true,
         ];
     }
+
+    public static function attributesForDefinition(array $definition, ?string $value = null): array
+    {
+        $key = (string)$definition['key'];
+        $attributes = self::attributesFor(
+            $key,
+            $value ?? (string)($definition['value'] ?? $definition['default_value'] ?? ''),
+            (string)($definition['remark'] ?? '')
+        );
+
+        $attributes['name'] = (string)($definition['name'] ?? $attributes['name']);
+        $attributes['type'] = (string)($definition['type'] ?? $attributes['type']);
+        $attributes['default_value'] = (string)($definition['default_value'] ?? $attributes['default_value']);
+        $attributes['options'] = $definition['options'] ?? $attributes['options'];
+        $attributes['sort'] = (int)($definition['sort'] ?? $attributes['sort']);
+
+        return $attributes;
+    }
 }

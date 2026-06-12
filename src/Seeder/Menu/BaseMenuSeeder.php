@@ -46,10 +46,25 @@ class BaseMenuSeeder extends Seeder
         );
 
         $this->updateOrCreate(
-            "configs.index", $configCenterMenu->id, 10, "全局配置", "fa-bullseye");
+            "configs.basic", $configCenterMenu->id, 10, "基础业务配置", "fa-bullseye");
 
         $this->updateOrCreate(
-            "new_configs.swoole_task_monitor", $configCenterMenu->id, 20, "Swoole Task配置", "fa-tasks");
+            "configs.sms", $configCenterMenu->id, 20, "短信与告警配置", "fa-envelope");
+
+        $this->updateOrCreate(
+            "configs.location_algorithm", $configCenterMenu->id, 30, "定位算法配置", "fa-map-marker");
+
+        $this->updateOrCreate(
+            "configs.location_maintenance", $configCenterMenu->id, 40, "定位维护配置", "fa-wrench");
+
+        $this->updateOrCreate(
+            "configs.location_debug", $configCenterMenu->id, 50, "定位日志配置", "fa-bug");
+
+        $this->updateOrCreate(
+            "new_configs.swoole_task_monitor", $configCenterMenu->id, 60, "Swoole Task配置", "fa-tasks");
+
+        $this->updateOrCreate(
+            "configs.index", $configCenterMenu->id, 80, "全局配置列表", "fa-list");
 
         $this->updateOrCreate(
             "new_configs.index", $configCenterMenu->id, 90, "运行期配置", "fa-sliders");

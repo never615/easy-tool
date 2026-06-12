@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Data\NewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
@@ -23,6 +24,7 @@ class ConfigTablesSeeder extends Seeder
         NewConfig::withoutAutoPublish(function () {
             $this->seedGlobalConfig(Config::HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG, '1', '海能达模拟日志开关');
         });
+        $this->seedGlobalConfigDefinitions();
         $this->seedNewConfigDefinitions();
     }
 
@@ -63,6 +65,30 @@ class ConfigTablesSeeder extends Seeder
 
         $config->fill(GlobalConfigNewConfig::attributesFor($key, $value, $remark));
         $config->save();
+    }
+
+    private function seedGlobalConfigDefinitions(): void
+    {
+        $definitions = GlobalConfigDefinitions::definitions();
+
+        NewConfig::withoutAutoPublish(function () use ($definitions) {
+            foreach ($definitions as $definition) {
+                $exists = NewConfig::query()
+                    ->where('key', $definition['key'])
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                $config = new NewConfig([
+                    'key' => $definition['key'],
+                ]);
+
+                $config->fill(GlobalConfigNewConfig::attributesForDefinition($definition));
+                $config->save();
+            }
+        });
     }
 
     private function seedNewConfigDefinitions(): void

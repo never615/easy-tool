@@ -23,6 +23,16 @@ class BasePermissionsSeeder extends Seeder
     {
         $this->createPermissions("微信模板消息管理", "wechat_template_ids");
         $this->createPermissions("全局配置", "configs");
+        $this->createPermissions("基础业务配置", "configs.basic", false, 0);
+        $this->createPermissions("基础业务配置保存", "configs.basic.save", false, 0);
+        $this->createPermissions("短信与告警配置", "configs.sms", false, 0);
+        $this->createPermissions("短信与告警配置保存", "configs.sms.save", false, 0);
+        $this->createPermissions("定位算法配置", "configs.location_algorithm", false, 0);
+        $this->createPermissions("定位算法配置保存", "configs.location_algorithm.save", false, 0);
+        $this->createPermissions("定位维护配置", "configs.location_maintenance", false, 0);
+        $this->createPermissions("定位维护配置保存", "configs.location_maintenance.save", false, 0);
+        $this->createPermissions("定位日志配置", "configs.location_debug", false, 0);
+        $this->createPermissions("定位日志配置保存", "configs.location_debug.save", false, 0);
         $this->createPermissions("配置中心", "new_configs");
         $this->createPermissions("配置中心 Env 预览", "new_configs.env_preview", false, 0);
         $this->createPermissions("配置中心手动重启", "new_configs.reload", false, 0);

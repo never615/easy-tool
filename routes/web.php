@@ -86,6 +86,26 @@ Route::group($attributes, function ($router) {
                         Route::resource('ads', 'AdController');
 
                         //----------------------------  页面配置结束  -----------------------------------------------
+                        Route::get('configs/basic', 'ConfigModuleController@basic')
+                            ->name('configs.basic');
+                        Route::post('configs/basic', 'ConfigModuleController@saveBasic')
+                            ->name('configs.basic.save');
+                        Route::get('configs/sms', 'ConfigModuleController@sms')
+                            ->name('configs.sms');
+                        Route::post('configs/sms', 'ConfigModuleController@saveSms')
+                            ->name('configs.sms.save');
+                        Route::get('configs/location-algorithm', 'ConfigModuleController@locationAlgorithm')
+                            ->name('configs.location_algorithm');
+                        Route::post('configs/location-algorithm', 'ConfigModuleController@saveLocationAlgorithm')
+                            ->name('configs.location_algorithm.save');
+                        Route::get('configs/location-maintenance', 'ConfigModuleController@locationMaintenance')
+                            ->name('configs.location_maintenance');
+                        Route::post('configs/location-maintenance', 'ConfigModuleController@saveLocationMaintenance')
+                            ->name('configs.location_maintenance.save');
+                        Route::get('configs/location-debug', 'ConfigModuleController@locationDebug')
+                            ->name('configs.location_debug');
+                        Route::post('configs/location-debug', 'ConfigModuleController@saveLocationDebug')
+                            ->name('configs.location_debug.save');
                         Route::resource('configs', 'ConfigController');
                         Route::get('new_configs/env-preview', 'NewConfigController@envPreview')
                             ->name('new_configs.env_preview');
