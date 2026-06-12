@@ -7,6 +7,8 @@ use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
 class NewConfig extends BaseModel
 {
+    public const GROUP_GLOBAL_CONFIG = 'global_config';
+
     public const GROUP_SWOOLE_TASK_MONITOR = 'swoole_task_monitor';
 
     public const KEY_SWOOLE_TASK_MONITOR_ENABLED = 'swoole_task_monitor.enabled';

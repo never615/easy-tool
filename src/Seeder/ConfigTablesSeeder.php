@@ -3,8 +3,10 @@
 namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Data\NewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
 class ConfigTablesSeeder extends Seeder
@@ -17,17 +19,50 @@ class ConfigTablesSeeder extends Seeder
      */
     public function run()
     {
-        $config = Config::query()->firstOrNew([
-            'key' => Config::HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG,
+        $this->migrateLegacyConfigs();
+        NewConfig::withoutAutoPublish(function () {
+            $this->seedGlobalConfig(Config::HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG, '1', '海能达模拟日志开关');
+        });
+        $this->seedNewConfigDefinitions();
+    }
+
+    private function migrateLegacyConfigs(): void
+    {
+        if (!Schema::hasTable('configs')) {
+            return;
+        }
+
+        NewConfig::withoutAutoPublish(function () {
+            Config::query()
+                ->orderBy('id')
+                ->chunkById(100, function ($configs) {
+                    foreach ($configs as $config) {
+                        $this->seedGlobalConfig(
+                            (string)$config->key,
+                            $config->value === null ? null : (string)$config->value,
+                            $config->remark === null ? null : (string)$config->remark
+                        );
+                    }
+                });
+        });
+    }
+
+    private function seedGlobalConfig(string $key, ?string $value, ?string $remark = null): void
+    {
+        $exists = NewConfig::query()
+            ->where('key', $key)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        $config = new NewConfig([
+            'key' => $key,
         ]);
 
-        $config->remark = '海能达模拟日志开关';
-        if (!$config->exists) {
-            $config->value = '1';
-        }
+        $config->fill(GlobalConfigNewConfig::attributesFor($key, $value, $remark));
         $config->save();
-
-        $this->seedNewConfigDefinitions();
     }
 
     private function seedNewConfigDefinitions(): void

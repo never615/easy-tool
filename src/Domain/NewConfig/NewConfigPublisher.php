@@ -14,7 +14,8 @@ class NewConfigPublisher
         private NewConfigEnvFile $envFile,
         private LaravelConfigCacheService $configCacheService,
         private LaravelSRestartService $restartService,
-        private ?NewConfigGenerationStore $generationStore = null
+        private ?NewConfigGenerationStore $generationStore = null,
+        private ?NewConfigValuesFile $valuesFile = null
     ) {
     }
 
@@ -24,12 +25,16 @@ class NewConfigPublisher
 
         try {
             $values = $this->envValues($rows);
+            $runtimeValues = $this->runtimeValues($rows);
             $requiresRestart = $rows->contains(function (NewConfig $row) {
                 return $row->requires_reload && $this->publishValue($row) !== null;
             });
             $writeResult = $this->envFile->write($values, $envFilePath);
+            $valuesWriteResult = $this->valuesFile()->write($runtimeValues);
             $configCacheResult = null;
-            $shouldRefreshConfigCache = ($writeResult['changed'] ?? false) || $forceConfigCache;
+            $shouldRefreshConfigCache = ($writeResult['changed'] ?? false)
+                || ($valuesWriteResult['changed'] ?? false)
+                || $forceConfigCache;
             if ($shouldRefreshConfigCache && !$this->isTestRun()) {
                 $configCacheResult = $this->configCacheService->refresh($values, $forceConfigCache);
             }
@@ -45,7 +50,9 @@ class NewConfigPublisher
 
             return [
                 'values' => $values,
+                'runtime_values' => $runtimeValues,
                 'write' => $writeResult,
+                'values_file' => $valuesWriteResult,
                 'config_cache' => $configCacheResult,
                 'generation' => $generationResult,
                 'restart' => $restartResult,
@@ -92,6 +99,28 @@ class NewConfigPublisher
             }
 
             $values[$envKey] = $this->normalizeValue($row, $value);
+        }
+
+        ksort($values);
+
+        return $values;
+    }
+
+    private function runtimeValues(Collection $rows): array
+    {
+        $values = [];
+        foreach ($rows as $row) {
+            $value = $this->publishValue($row);
+            if ($value === null) {
+                continue;
+            }
+
+            $key = trim((string)$row->key);
+            if ($key === '') {
+                continue;
+            }
+
+            $values[$key] = $this->normalizeValue($row, $value);
         }
 
         ksort($values);
@@ -148,5 +177,10 @@ class NewConfigPublisher
     private function generationStore(): NewConfigGenerationStore
     {
         return $this->generationStore ?: app(NewConfigGenerationStore::class);
+    }
+
+    private function valuesFile(): NewConfigValuesFile
+    {
+        return $this->valuesFile ?: app(NewConfigValuesFile::class);
     }
 }

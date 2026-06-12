@@ -1,6 +1,11 @@
 <?php
 
+use Mallto\Tool\Domain\NewConfig\NewConfigRuntimeValues;
+
 return [
+    'values_file' => env('NEW_CONFIG_VALUES_FILE', storage_path('framework/new_configs_values.php')),
+    'values' => NewConfigRuntimeValues::load(env('NEW_CONFIG_VALUES_FILE', storage_path('framework/new_configs_values.php'))),
+
     'generation' => [
         'store' => env('NEW_CONFIG_GENERATION_STORE', 'redis'),
         'redis_connection' => env('NEW_CONFIG_GENERATION_REDIS_CONNECTION'),

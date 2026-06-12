@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Domain\Config;
 
 use Mallto\Tool\Exception\ResourceException;
+use Mallto\Tool\Utils\ConfigUtils;
 
 /**
  * Created by PhpStorm.
@@ -27,20 +28,16 @@ class MtConfig
      */
     public function getConfig($key, $default = null, $type = null)
     {
-        $query = \Mallto\Tool\Data\Config::where("key", $key);
-        if ($type) {
-            $query = $query->where("type", $type);
+        $value = ConfigUtils::get($key, null, false);
+        if ($value !== null && $value !== '') {
+            return $value;
         }
-        $config = $query->first();
-        if ($config) {
-            return $config->value;
-        } else {
-            if ($default) {
-                return $default;
-            } else {
-                throw new ResourceException($key . "未配置");
-            }
+
+        if ($default) {
+            return $default;
         }
+
+        throw new ResourceException($key . "未配置");
     }
 
 }

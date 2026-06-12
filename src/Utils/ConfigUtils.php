@@ -5,10 +5,8 @@
 
 namespace Mallto\Tool\Utils;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
-use Mallto\Tool\Data\Config;
-use Psr\SimpleCache\InvalidArgumentException;
+use Mallto\Tool\Data\NewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 
 /**
  *
@@ -44,40 +42,17 @@ class ConfigUtils
      *
      * @param      $key
      * @param null $default
-     * @param null $ttl
      * @param bool $cacheNullValue 手机哦凑韩村
      * @return null
-     * @throws InvalidArgumentException
      */
     public static function get($key, $default = null, $cacheNullValue = true, $ttl = null)
     {
-        $value = Cache::store('local_redis')->get('c_' . $key);
-        if ($value === null) {
-            $query = Config::where('key', $key);
-            //if ($type) {
-            //    $query = $query->where("type", $type);
-            //}
-            $config = $query->first();
-            if ($config) {
-                $value = $config->value;
-            } else {
-                if (isset($default)) {
-                    $value = $default;
-                } else if ($cacheNullValue) {
-                    $value = '';
-                }
-            }
-
-            if (!$ttl) {
-                $ttl = Carbon::now()->endOfDay();
-            }
-
-            if ($value !== null) {
-                Cache::store('local_redis')->put('c_' . $key, $value, $ttl);
-            }
+        $values = config('new_config.values', []);
+        if (is_array($values) && array_key_exists($key, $values)) {
+            return $values[$key];
         }
 
-        return $value ?? $default ?? null;
+        return $default ?? ($cacheNullValue ? '' : null);
     }
 
 
@@ -91,14 +66,24 @@ class ConfigUtils
      */
     public static function set($key, $value, $ttl = null)
     {
-        if (!$ttl) {
-            $ttl = Carbon::now()->endOfDay();
-        }
-        Cache::store('local_redis')->put('c_' . $key, $value, $ttl);
-        return Config::updateOrCreate([
-                "key" => $key,
-        ], [
-                "value" => $value,
+        $attributes = GlobalConfigNewConfig::attributesFor((string)$key, (string)$value);
+        $config = NewConfig::query()->firstOrNew([
+            'key' => (string)$key,
         ]);
+
+        if (!$config->exists) {
+            $config->fill($attributes);
+        } else {
+            $config->env_key = $attributes['env_key'];
+            $config->group_key = $attributes['group_key'];
+            $config->type = $attributes['type'];
+            $config->is_enabled = $attributes['is_enabled'];
+            $config->requires_reload = $attributes['requires_reload'];
+        }
+
+        $config->value = $attributes['value'];
+        $config->save();
+
+        return $config;
     }
 }
