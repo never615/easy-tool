@@ -31,16 +31,25 @@ class BaseMenuSeeder extends Seeder
             "wechat_template_ids.index", $adminManagerMenu->id, 6, "微信模板消息管理", "fa-wechat");
 
         $this->updateOrCreate(
-            "configs.index", $adminManagerMenu->id, $order++, "全局配置", "fa-bullseye");
-
-        $this->updateOrCreate(
             "queue_diagnostics.index", $adminManagerMenu->id, $order++, "队列诊断监控", "fa-line-chart");
 
         $systemManagerMenu = $this->updateOrCreate(
             "system_manager", 0, $order++, "系统管理", "fa-windows");
 
+        $configCenterMenu = Menu::where('uri', 'config_center')->first();
+        $configCenterMenu = $this->updateOrCreate(
+            'config_center',
+            $systemManagerMenu->id,
+            $configCenterMenu ? null : $order++,
+            '配置中心',
+            'fa-sliders'
+        );
+
         $this->updateOrCreate(
-            "new_configs.index", $systemManagerMenu->id, $order++, "配置中心", "fa-sliders");
+            "configs.index", $configCenterMenu->id, 10, "全局配置", "fa-bullseye");
+
+        $this->updateOrCreate(
+            "new_configs.index", $configCenterMenu->id, 20, "运行期配置", "fa-sliders");
 
         $this->updateOrCreate(
             "swoole_task_monitor.index", $systemManagerMenu->id, $order++, "Swoole Task监控", "fa-tasks");
