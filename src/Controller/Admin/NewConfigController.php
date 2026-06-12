@@ -35,18 +35,26 @@ class NewConfigController extends AdminCommonController
             ->orderBy('sort')
             ->orderBy('id');
 
+        $grid->disableCreateButton();
+        $grid->actions(function (Grid\Displayers\Actions $actions) {
+            $actions->disableDelete();
+        });
+
         $grid->group_key('分组')->label();
         $grid->name('配置项');
-        $grid->key('Key')->copyable();
-        $grid->env_key('Env Key')->copyable();
         $grid->type('类型')->label();
         $grid->value('当前值')->limit(30)->editable(); //limit必须放在 editable 之前
         $grid->default_value('默认值')->limit(30);
         $grid->remark('说明')->limit(40);
-        $grid->sort('排序')->editable();
         $grid->is_enabled('启用')->switchE();
-        $grid->requires_reload('需重启')->switchE();
+        $grid->requires_reload('需重启')->display(function ($value) {
+            return $value
+                ? '<span class="label label-warning">是</span>'
+                : '<span class="label label-default">否</span>';
+        });
         $grid->last_published_at('发布时间');
+        $grid->key('Key')->copyable();
+        $grid->env_key('Env Key')->copyable();
         $grid->last_publish_error('发布错误')->limit(40);
 
         $grid->filter(function ($filter) {
@@ -100,34 +108,28 @@ class NewConfigController extends AdminCommonController
 
     protected function formOption(Form $form)
     {
-        $form->text('group_key', '分组')->required();
-        $form->text('key', 'Key')->required();
-        $form->text('env_key', 'Env Key')
-            ->help('导出为运行期环境变量名，例如 SWOOLE_TASK_MONITOR_ENABLED。留空则不导出。<br>' . NewConfigBootstrapKeyGuard::forbiddenHint());
-        $form->text('name', '配置项')->required();
-        $form->select('type', '类型')
-            ->options([
-                'boolean' => 'boolean',
-                'string' => 'string',
-                'integer' => 'integer',
-                'float' => 'float',
-                'select' => 'select',
-                'json' => 'json',
-            ])
-            ->default('string')
-            ->required();
+        $form->tools(function (Form\Tools $tools) {
+            $tools->disableDelete();
+        });
+
+        $form->display('group_key', '分组');
+        $form->display('name', '配置项');
+        $form->display('type', '类型');
         $form->textarea('value', '当前值')
             ->help('留空时使用默认值。boolean 建议填写 0/1；float 可填写 0.01。');
-        $form->textarea('default_value', '默认值');
-        $form->textarea('options', '选项')
-            ->help('可选，JSON 或逗号分隔，用于说明可选值。例如 ["summary","trace","off"]。');
-        $form->textarea('remark', '说明');
-        $form->number('sort', '排序')->default(0);
         $form->switch('is_enabled', '启用')->default(1);
-        $form->switch('requires_reload', '需重启')->default(1)
+        $form->display('default_value', '默认值');
+        $form->display('options', '选项');
+        $form->display('remark', '说明');
+        $form->display('requires_reload', '需重启')->with(function ($value) {
+            return $value ? '是' : '否';
+        })
             ->help('开启时表示该配置需要服务重启后才会被所有新进程读取。保存配置只发布运行期 env 并刷新 config cache，不会自动重启；需要生效时请在列表页点击“发布并重启”。');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
+        $form->display('key', 'Key');
+        $form->display('env_key', 'Env Key')
+            ->help('导出为运行期环境变量名，例如 SWOOLE_TASK_MONITOR_ENABLED。<br>' . NewConfigBootstrapKeyGuard::forbiddenHint());
     }
 
     private function envPreviewButton(): string
