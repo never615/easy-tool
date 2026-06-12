@@ -97,7 +97,10 @@ class ConfigModuleController extends Controller
         $runtimeConfigUrl = route('new_configs.index');
         $globalConfigUrl = route('configs.index');
         $errors = $this->renderErrors();
-        $rows = $this->renderRows($snapshot['rows'] ?? []);
+        $snapshotRows = $snapshot['rows'] ?? [];
+        $familyFilters = $this->renderFamilyFilters($snapshotRows);
+        $filterScript = $familyFilters === '' ? '' : $this->renderFamilyFilterScript();
+        $rows = $this->renderRows($snapshotRows);
 
         return <<<HTML
 <style>
@@ -111,6 +114,11 @@ class ConfigModuleController extends Controller
     .global-config-module-code { font-family:Menlo, Consolas, monospace; word-break:break-all; }
     .global-config-module-help { color:#8a94a6; font-size:12px; margin-top:4px; }
     .global-config-module-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .global-config-family-filters { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+    .global-config-family-filter { border-radius:3px; }
+    .global-config-family-filter.active { background:#3c8dbc; border-color:#367fa9; color:#fff; box-shadow:none; }
+    .global-config-family-filter.active .badge { background:rgba(255,255,255,.92); color:#3c8dbc; }
+    .global-config-family-badge { display:inline-block; margin-left:6px; font-weight:400; vertical-align:middle; }
     .global-config-module-error { color:#b42318; }
     .global-config-module-table textarea { min-height:110px; font-family:Menlo, Consolas, monospace; font-size:12px; }
 </style>
@@ -120,6 +128,7 @@ class ConfigModuleController extends Controller
 <div class="global-config-module-panel">
     <form method="POST" action="{$this->escape($action)}">
         {$this->csrfField()}
+        {$familyFilters}
         <div class="table-responsive">
             <table class="global-config-module-table">
                 <thead>
@@ -141,6 +150,77 @@ class ConfigModuleController extends Controller
         </div>
     </form>
 </div>
+{$filterScript}
+HTML;
+    }
+
+    private function renderFamilyFilters(array $rows): string
+    {
+        $families = [];
+        foreach ($rows as $row) {
+            $familyKey = (string)($row['family_key'] ?? '');
+            $familyLabel = (string)($row['family_label'] ?? '');
+            if ($familyKey === '') {
+                continue;
+            }
+
+            if (!isset($families[$familyKey])) {
+                $families[$familyKey] = [
+                    'label' => $familyLabel !== '' ? $familyLabel : $familyKey,
+                    'count' => 0,
+                ];
+            }
+
+            $families[$familyKey]['count']++;
+        }
+
+        if ($families === []) {
+            return '';
+        }
+
+        $total = array_sum(array_column($families, 'count'));
+        $html = '<div class="global-config-family-filters">'
+            . '<button type="button" class="btn btn-primary btn-xs global-config-family-filter active" data-family-filter="all">'
+            . '全部 <span class="badge">' . $this->escape((string)$total) . '</span></button>';
+
+        foreach ($families as $familyKey => $family) {
+            $html .= '<button type="button" class="btn btn-default btn-xs global-config-family-filter" data-family-filter="' . $this->escape($familyKey) . '">'
+                . $this->escape((string)$family['label']) . ' <span class="badge">' . $this->escape((string)$family['count']) . '</span></button>';
+        }
+
+        return $html . '</div>';
+    }
+
+    private function renderFamilyFilterScript(): string
+    {
+        return <<<HTML
+<script>
+(function () {
+    var buttons = document.querySelectorAll('.global-config-family-filter');
+    var rows = document.querySelectorAll('.global-config-module-row');
+    if (!buttons.length || !rows.length) {
+        return;
+    }
+
+    buttons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            var family = button.getAttribute('data-family-filter') || 'all';
+
+            buttons.forEach(function (item) {
+                item.classList.remove('active', 'btn-primary');
+                item.classList.add('btn-default');
+            });
+            button.classList.add('active', 'btn-primary');
+            button.classList.remove('btn-default');
+
+            rows.forEach(function (row) {
+                var rowFamily = row.getAttribute('data-family') || '';
+                row.style.display = family === 'all' || rowFamily === family ? '' : 'none';
+            });
+        });
+    });
+})();
+</script>
 HTML;
     }
 
@@ -154,8 +234,11 @@ HTML;
         foreach ($rows as $row) {
             $key = (string)$row['key'];
             $value = (string)$row['value'];
-            $html .= '<tr>'
-                . '<td class="config-name"><strong>' . $this->escape((string)$row['name']) . '</strong>'
+            $familyKey = (string)($row['family_key'] ?? '');
+            $familyBadge = $this->renderFamilyBadge($row);
+
+            $html .= '<tr class="global-config-module-row" data-family="' . $this->escape($familyKey) . '">'
+                . '<td class="config-name"><strong>' . $this->escape((string)$row['name']) . '</strong>' . $familyBadge
                 . '<div class="global-config-module-help global-config-module-code">' . $this->escape($key) . '</div>'
                 . '<div class="global-config-module-help">' . $this->escape((string)$row['remark']) . '</div></td>'
                 . '<td class="config-value">' . $this->renderInput($row, $key, $value)
@@ -167,6 +250,16 @@ HTML;
         }
 
         return $html;
+    }
+
+    private function renderFamilyBadge(array $row): string
+    {
+        $familyLabel = (string)($row['family_label'] ?? '');
+        if ($familyLabel === '') {
+            return '';
+        }
+
+        return '<span class="label label-default global-config-family-badge">' . $this->escape($familyLabel) . '</span>';
     }
 
     private function renderInput(array $row, string $key, string $value): string

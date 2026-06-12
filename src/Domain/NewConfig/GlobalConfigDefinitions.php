@@ -136,22 +136,25 @@ class GlobalConfigDefinitions
     private static function locationDebugDefinitions(): array
     {
         return array_merge(self::solutionLogDefinitions(), [
-            self::definition('hytera_debug', '海能达 DMR UDP 调试日志', 'location_debug', '0', 'boolean', '海能达 DMR UDP 数据收发调试日志。'),
-            self::definition('bolian_badge_error_log', '博联工卡异常日志', 'location_debug', '0', 'boolean', '博联 4G 工卡 UDP 处理异常时输出原始数据。'),
-            self::definition('bolian_badge_debug', '博联工卡调试日志', 'location_debug', '0', 'boolean', '博联 4G 工卡解析调试日志。'),
-            self::definition('ylwl_mwc_debug', '云里物里 MWC03 调试日志', 'location_debug', '0', 'boolean', '云里物里 MWC03 解析调试日志。'),
-            self::definition('lance_diy_data_log', '蓝测 DIY 数据日志', 'location_debug', '0', 'boolean', '蓝测 DIY MQTT 原始数据日志。'),
+            self::definition('hytera_debug', '海能达 DMR UDP 调试日志', 'location_debug', '0', 'boolean', '海能达 DMR UDP 数据收发调试日志。', null, self::familyMeta('hytera')),
+            self::definition('bolian_badge_error_log', '博联工卡异常日志', 'location_debug', '0', 'boolean', '博联 4G 工卡 UDP 处理异常时输出原始数据。', null, self::familyMeta('bolian')),
+            self::definition('bolian_badge_debug', '博联工卡调试日志', 'location_debug', '0', 'boolean', '博联 4G 工卡解析调试日志。', null, self::familyMeta('bolian')),
+            self::definition('ylwl_mwc_debug', '云里物里 MWC03 调试日志', 'location_debug', '0', 'boolean', '云里物里 MWC03 解析调试日志。', null, self::familyMeta('ylwl')),
+            self::definition('lance_diy_data_log', '蓝测 DIY 数据日志', 'location_debug', '0', 'boolean', '蓝测 DIY MQTT 原始数据日志。', null, self::familyMeta('lance')),
         ]);
     }
 
     private static function solutionLogDefinitions(): array
     {
         $definitions = [];
-        foreach (self::locationSolutions() as $solution => $label) {
-            $definitions[] = self::definition($solution . '_log_original_data', $label . ' 原始数据日志', 'location_debug', '0', 'boolean', '网关上报原始数据日志。');
-            $definitions[] = self::definition($solution . '_log_specify_gateway', $label . ' 指定网关日志', 'location_debug', '', 'string', '填写网关 MAC 时只输出该网关日志；留空关闭。');
-            $definitions[] = self::definition($solution . '_log_debug_data', $label . ' 调试数据日志', 'location_debug', '0', 'boolean', '网关解析过程调试日志。');
-            $definitions[] = self::definition($solution . '_error_log', $label . ' 异常日志', 'location_debug', '0', 'boolean', 'Socket 投递或解析异常时输出原始数据。');
+        foreach (self::locationSolutions() as $solution => $meta) {
+            $label = $meta['label'];
+            $familyMeta = self::familyMeta($meta['family_key']);
+
+            $definitions[] = self::definition($solution . '_log_original_data', $label . ' 原始数据日志', 'location_debug', '0', 'boolean', '网关上报原始数据日志。', null, $familyMeta);
+            $definitions[] = self::definition($solution . '_log_specify_gateway', $label . ' 指定网关日志', 'location_debug', '', 'string', '填写网关 MAC 时只输出该网关日志；留空关闭。', null, $familyMeta);
+            $definitions[] = self::definition($solution . '_log_debug_data', $label . ' 调试数据日志', 'location_debug', '0', 'boolean', '网关解析过程调试日志。', null, $familyMeta);
+            $definitions[] = self::definition($solution . '_error_log', $label . ' 异常日志', 'location_debug', '0', 'boolean', 'Socket 投递或解析异常时输出原始数据。', null, $familyMeta);
         }
 
         return $definitions;
@@ -160,28 +163,59 @@ class GlobalConfigDefinitions
     private static function locationSolutions(): array
     {
         return [
-            'skylab' => 'Skylab TCP 网关',
-            'skylab_mqtt' => 'Skylab MQTT 网关',
-            'skylab_watch' => 'Skylab 手表协议',
-            'skylab_new' => 'Skylab 新协议',
-            'skylab_new_gateway' => 'Skylab 新协议网关',
-            'sky_lab_aoa' => 'Skylab AOA',
-            'ylwl_aoa' => '云里物里 AOA',
-            'mallto1' => '墨兔协议 1',
-            'mallto3' => '墨兔协议 3',
-            'ylwl_gateway' => '云里物里网关',
-            'w_b_mapper' => '微信 Beacon',
-            'luojie_wristband_new' => '罗捷腕带',
-            'huawei_ap_ble' => '华为 AP BLE',
-            'bolian_badge' => '博联 4G 工卡',
-            'lance_aoa' => '蓝测 AOA',
-            'lance_aoa_mqtt' => '蓝测 AOA MQTT',
-            'bolian_lora' => '博联 LoRa',
+            'skylab' => self::solutionMeta('Skylab TCP 网关', 'skylab'),
+            'skylab_mqtt' => self::solutionMeta('Skylab MQTT 网关', 'skylab'),
+            'skylab_watch' => self::solutionMeta('Skylab 手表协议', 'skylab'),
+            'skylab_new' => self::solutionMeta('Skylab 新协议', 'skylab'),
+            'skylab_new_gateway' => self::solutionMeta('Skylab 新协议网关', 'skylab'),
+            'sky_lab_aoa' => self::solutionMeta('Skylab AOA', 'skylab'),
+            'ylwl_aoa' => self::solutionMeta('云里物里 AOA', 'ylwl'),
+            'mallto1' => self::solutionMeta('墨兔协议 1', 'mallto'),
+            'mallto3' => self::solutionMeta('墨兔协议 3', 'mallto'),
+            'ylwl_gateway' => self::solutionMeta('云里物里网关', 'ylwl'),
+            'w_b_mapper' => self::solutionMeta('微信 Beacon', 'wechat_beacon'),
+            'luojie_wristband_new' => self::solutionMeta('罗捷腕带', 'luojie'),
+            'huawei_ap_ble' => self::solutionMeta('华为 AP BLE', 'huawei'),
+            'bolian_badge' => self::solutionMeta('博联 4G 工卡', 'bolian'),
+            'lance_aoa' => self::solutionMeta('蓝测 AOA', 'lance'),
+            'lance_aoa_mqtt' => self::solutionMeta('蓝测 AOA MQTT', 'lance'),
+            'bolian_lora' => self::solutionMeta('博联 LoRa', 'bolian'),
+            'hytera' => self::solutionMeta('海能达', 'hytera'),
+            'Mwc03Mapper' => self::solutionMeta('云里物里 MWC03', 'ylwl'),
+            'lierda_lora' => self::solutionMeta('利尔达 LoRa', 'lierda'),
+            'ovi_b2315_lora' => self::solutionMeta('Ovi B2315 LoRa', 'ovi'),
+            'ovi_watch' => self::solutionMeta('Ovi Watch', 'ovi'),
+        ];
+    }
+
+    private static function solutionMeta(string $label, string $familyKey): array
+    {
+        return [
+            'label' => $label,
+            'family_key' => $familyKey,
+        ];
+    }
+
+    private static function familyMeta(string $familyKey): array
+    {
+        $labels = [
+            'skylab' => 'Skylab',
+            'ylwl' => '云里物里',
+            'mallto' => '墨兔',
+            'wechat_beacon' => '微信 Beacon',
+            'luojie' => '罗捷',
+            'huawei' => '华为 AP',
+            'bolian' => '博联',
+            'lance' => '蓝测',
             'hytera' => '海能达',
-            'Mwc03Mapper' => '云里物里 MWC03',
-            'lierda_lora' => '利尔达 LoRa',
-            'ovi_b2315_lora' => 'Ovi B2315 LoRa',
-            'ovi_watch' => 'Ovi Watch',
+            'lierda' => '利尔达',
+            'ovi' => 'Ovi',
+            'other' => '其他',
+        ];
+
+        return [
+            'family_key' => $familyKey,
+            'family_label' => $labels[$familyKey] ?? $labels['other'],
         ];
     }
 
@@ -208,9 +242,10 @@ class GlobalConfigDefinitions
         string $defaultValue,
         string $type,
         string $remark,
-        ?string $envKey = null
+        ?string $envKey = null,
+        array $meta = []
     ): array {
-        return [
+        return array_merge([
             'key' => $key,
             'env_key' => $envKey,
             'name' => $name,
@@ -222,7 +257,7 @@ class GlobalConfigDefinitions
             'remark' => $remark,
             'sort' => self::sortFor($module),
             'ui' => $type === 'json' ? 'textarea' : 'input',
-        ];
+        ], $meta);
     }
 
     private static function sortFor(string $module): int

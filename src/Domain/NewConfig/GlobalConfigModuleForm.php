@@ -89,6 +89,8 @@ class GlobalConfigModuleForm
             'value' => (string)$value,
             'type' => (string)($definition['type'] ?? 'string'),
             'ui' => (string)($definition['ui'] ?? 'input'),
+            'family_key' => (string)($definition['family_key'] ?? ''),
+            'family_label' => (string)($definition['family_label'] ?? ''),
             'default_value' => (string)($definition['default_value'] ?? ''),
             'remark' => (string)($definition['remark'] ?? ($row->remark ?? '')),
             'last_published_at' => $row && $row->last_published_at
