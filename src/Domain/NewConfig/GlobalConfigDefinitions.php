@@ -187,26 +187,10 @@ class GlobalConfigDefinitions
         return [
             'skylab' => self::solutionMeta('Skylab TCP 网关', 'skylab'),
             'skylab_mqtt' => self::solutionMeta('Skylab MQTT 网关', 'skylab'),
-            'skylab_watch' => self::solutionMeta('Skylab 手表协议', 'skylab'),
-            'skylab_new' => self::solutionMeta('Skylab 新协议', 'skylab'),
-            'skylab_new_gateway' => self::solutionMeta('Skylab 新协议网关', 'skylab'),
-            'sky_lab_aoa' => self::solutionMeta('Skylab AOA', 'skylab'),
-            'ylwl_aoa' => self::solutionMeta('云里物里 AOA', 'ylwl'),
-            'mallto1' => self::solutionMeta('墨兔协议 1', 'mallto'),
-            'mallto3' => self::solutionMeta('墨兔协议 3', 'mallto'),
             'ylwl_gateway' => self::solutionMeta('云里物里网关', 'ylwl'),
-            'w_b_mapper' => self::solutionMeta('微信 Beacon', 'wechat_beacon'),
             'luojie_wristband_new' => self::solutionMeta('罗捷腕带', 'luojie'),
             'huawei_ap_ble' => self::solutionMeta('华为 AP BLE', 'huawei'),
-            'bolian_badge' => self::solutionMeta('博联 4G 工卡', 'bolian'),
-            'lance_aoa' => self::solutionMeta('蓝测 AOA', 'lance'),
-            'lance_aoa_mqtt' => self::solutionMeta('蓝测 AOA MQTT', 'lance'),
             'bolian_lora' => self::solutionMeta('博联 LoRa', 'bolian'),
-            'hytera' => self::solutionMeta('海能达', 'hytera'),
-            'Mwc03Mapper' => self::solutionMeta('云里物里 MWC03', 'ylwl'),
-            'lierda_lora' => self::solutionMeta('利尔达 LoRa', 'lierda'),
-            'ovi_b2315_lora' => self::solutionMeta('Ovi B2315 LoRa', 'ovi'),
-            'ovi_watch' => self::solutionMeta('Ovi Watch', 'ovi'),
         ];
     }
 
