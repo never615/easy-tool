@@ -113,7 +113,7 @@ class SwooleTaskMonitorController extends Controller
             'date' => $payload['snapshot']['date'] ?? null,
         ]));
         $resetUrl = route('swoole_task_monitor.reset');
-        $configUrl = route('new_configs.index');
+        $configUrl = route('new_configs.swoole_task_monitor');
         $payloadJson = json_encode(
             $payload,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT

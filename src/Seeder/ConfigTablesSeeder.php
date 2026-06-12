@@ -5,6 +5,7 @@ namespace Mallto\Tool\Seeder;
 use Illuminate\Database\Seeder;
 use Mallto\Tool\Data\Config;
 use Mallto\Tool\Data\NewConfig;
+use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
 class ConfigTablesSeeder extends Seeder
 {
@@ -31,44 +32,7 @@ class ConfigTablesSeeder extends Seeder
 
     private function seedNewConfigDefinitions(): void
     {
-        $definitions = [
-            [
-                'key' => NewConfig::KEY_SWOOLE_TASK_MONITOR_ENABLED,
-                'env_key' => 'SWOOLE_TASK_MONITOR_ENABLED',
-                'group_key' => NewConfig::GROUP_SWOOLE_TASK_MONITOR,
-                'name' => 'Swoole Task 监控总开关',
-                'type' => 'boolean',
-                'default_value' => '0',
-                'options' => '0,1',
-                'remark' => '默认关闭。保存后发布运行期 env 并刷新 config cache，手动重启服务后生效。',
-                'requires_reload' => true,
-                'sort' => 100,
-            ],
-            [
-                'key' => NewConfig::KEY_SWOOLE_TASK_MONITOR_MODE,
-                'env_key' => 'SWOOLE_TASK_MONITOR_MODE',
-                'group_key' => NewConfig::GROUP_SWOOLE_TASK_MONITOR,
-                'name' => 'Swoole Task 监控模式',
-                'type' => 'select',
-                'default_value' => 'summary',
-                'options' => 'summary,trace,off',
-                'remark' => 'summary 只记录聚合指标；trace 记录逐条等待和运行中明细；off 关闭。手动重启服务后生效。',
-                'requires_reload' => true,
-                'sort' => 110,
-            ],
-            [
-                'key' => NewConfig::KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE,
-                'env_key' => 'SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE',
-                'group_key' => NewConfig::GROUP_SWOOLE_TASK_MONITOR,
-                'name' => 'Swoole Task trace 采样率',
-                'type' => 'float',
-                'default_value' => '0',
-                'options' => '0,0.001,0.01,0.1,1',
-                'remark' => '取值 0 到 1。summary 模式下可临时设置 0.01 追踪约 1% task。手动重启服务后生效。',
-                'requires_reload' => true,
-                'sort' => 120,
-            ],
-        ];
+        $definitions = SwooleTaskMonitorConfigForm::definitions();
 
         NewConfig::withoutAutoPublish(function () use ($definitions) {
             foreach ($definitions as $definition) {

@@ -49,7 +49,10 @@ class BaseMenuSeeder extends Seeder
             "configs.index", $configCenterMenu->id, 10, "全局配置", "fa-bullseye");
 
         $this->updateOrCreate(
-            "new_configs.index", $configCenterMenu->id, 20, "运行期配置", "fa-sliders");
+            "new_configs.swoole_task_monitor", $configCenterMenu->id, 20, "Swoole Task配置", "fa-tasks");
+
+        $this->updateOrCreate(
+            "new_configs.index", $configCenterMenu->id, 90, "运行期配置", "fa-sliders");
 
         $this->updateOrCreate(
             "swoole_task_monitor.index", $systemManagerMenu->id, $order++, "Swoole Task监控", "fa-tasks");

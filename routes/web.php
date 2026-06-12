@@ -91,6 +91,10 @@ Route::group($attributes, function ($router) {
                             ->name('new_configs.env_preview');
                         Route::post('new_configs/reload', 'NewConfigController@reload')
                             ->name('new_configs.reload');
+                        Route::get('new_configs/swoole-task-monitor', 'NewConfigSwooleTaskMonitorController@index')
+                            ->name('new_configs.swoole_task_monitor');
+                        Route::post('new_configs/swoole-task-monitor', 'NewConfigSwooleTaskMonitorController@save')
+                            ->name('new_configs.swoole_task_monitor.save');
                         Route::resource('new_configs', 'NewConfigController');
                         Route::get('queue_diagnostics', 'QueueDiagnosticController@index')
                             ->name('queue_diagnostics.index');
