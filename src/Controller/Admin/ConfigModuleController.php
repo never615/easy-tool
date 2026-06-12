@@ -266,6 +266,7 @@ HTML;
     {
         $name = 'values[' . $this->escape($key) . ']';
         $type = (string)($row['type'] ?? 'string');
+        $placeholder = $this->placeholderAttribute($row);
 
         if ($type === 'boolean') {
             return '<select class="form-control input-sm" name="' . $name . '">'
@@ -275,18 +276,28 @@ HTML;
         }
 
         if ($type === 'integer') {
-            return '<input class="form-control input-sm" type="number" step="1" name="' . $name . '" value="' . $this->escape($value) . '">';
+            return '<input class="form-control input-sm" type="number" step="1" name="' . $name . '" value="' . $this->escape($value) . '"' . $placeholder . '>';
         }
 
         if ($type === 'float') {
-            return '<input class="form-control input-sm" type="number" step="0.001" name="' . $name . '" value="' . $this->escape($value) . '">';
+            return '<input class="form-control input-sm" type="number" step="0.001" name="' . $name . '" value="' . $this->escape($value) . '"' . $placeholder . '>';
         }
 
         if (($row['ui'] ?? '') === 'textarea') {
-            return '<textarea class="form-control" name="' . $name . '">' . $this->escape($value) . '</textarea>';
+            return '<textarea class="form-control" name="' . $name . '"' . $placeholder . '>' . $this->escape($value) . '</textarea>';
         }
 
-        return '<input class="form-control input-sm" type="text" name="' . $name . '" value="' . $this->escape($value) . '">';
+        return '<input class="form-control input-sm" type="text" name="' . $name . '" value="' . $this->escape($value) . '"' . $placeholder . '>';
+    }
+
+    private function placeholderAttribute(array $row): string
+    {
+        $placeholder = (string)($row['placeholder'] ?? '');
+        if ($placeholder === '') {
+            return '';
+        }
+
+        return ' placeholder="' . $this->escape($placeholder) . '"';
     }
 
     private function option(string $value, string $label, string $current): string

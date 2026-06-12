@@ -89,6 +89,7 @@ class GlobalConfigModuleForm
             'value' => (string)$value,
             'type' => (string)($definition['type'] ?? 'string'),
             'ui' => (string)($definition['ui'] ?? 'input'),
+            'placeholder' => (string)($definition['placeholder'] ?? ''),
             'family_key' => (string)($definition['family_key'] ?? ''),
             'family_label' => (string)($definition['family_label'] ?? ''),
             'default_value' => (string)($definition['default_value'] ?? ''),

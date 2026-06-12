@@ -151,13 +151,35 @@ class GlobalConfigDefinitions
             $label = $meta['label'];
             $familyMeta = self::familyMeta($meta['family_key']);
 
-            $definitions[] = self::definition($solution . '_log_original_data', $label . ' 原始数据日志', 'location_debug', '0', 'boolean', '网关上报原始数据日志。', null, $familyMeta);
-            $definitions[] = self::definition($solution . '_log_specify_gateway', $label . ' 指定网关日志', 'location_debug', '', 'string', '填写网关 MAC 时只输出该网关日志；留空关闭。', null, $familyMeta);
-            $definitions[] = self::definition($solution . '_log_debug_data', $label . ' 调试数据日志', 'location_debug', '0', 'boolean', '网关解析过程调试日志。', null, $familyMeta);
-            $definitions[] = self::definition($solution . '_error_log', $label . ' 异常日志', 'location_debug', '0', 'boolean', 'Socket 投递或解析异常时输出原始数据。', null, $familyMeta);
+            $definitions[] = self::definition($solution . '_log_original_data', $label . ' 原始数据日志', 'location_debug', '0', 'boolean', self::logOriginalDataRemark($label), null, $familyMeta);
+            $definitions[] = self::definition($solution . '_log_specify_gateway', $label . ' 指定网关日志', 'location_debug', '', 'string', self::logSpecifyGatewayRemark($label), null, array_merge($familyMeta, [
+                'placeholder' => '填写解析后的网关蓝牙 MAC，例如 Skylab td_mac',
+            ]));
+            $definitions[] = self::definition($solution . '_log_debug_data', $label . ' 调试数据日志', 'location_debug', '0', 'boolean', self::logDebugDataRemark($label), null, $familyMeta);
+            $definitions[] = self::definition($solution . '_error_log', $label . ' 异常日志', 'location_debug', '0', 'boolean', self::errorLogRemark($label), null, $familyMeta);
         }
 
         return $definitions;
+    }
+
+    private static function logOriginalDataRemark(string $label): string
+    {
+        return $label . ' 开关型配置。开启后打印该定位方案所有网关上报的原始数据；二进制上报会转成 hex 后写日志。';
+    }
+
+    private static function logSpecifyGatewayRemark(string $label): string
+    {
+        return $label . ' 字符串配置。value 填解析后的网关蓝牙 MAC（代码中 BaseGatewayParse::gatewayMapper 返回的 gatewayBluetoothMac，例如 Skylab 协议的 td_mac）；系统会精确匹配该值，命中后只打印该网关的原始上报数据和设备数量；留空关闭。';
+    }
+
+    private static function logDebugDataRemark(string $label): string
+    {
+        return $label . ' 开关型配置。开启后打印网关解析过程调试摘要，例如 gateway mac、devices count 等信息；不是完整原始上报数据。';
+    }
+
+    private static function errorLogRemark(string $label): string
+    {
+        return $label . ' 开关型配置。开启后在 Socket 投递或协议解析异常时输出原始数据和错误上下文，便于排查异常包。';
     }
 
     private static function locationSolutions(): array
