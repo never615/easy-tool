@@ -129,6 +129,13 @@ Route::group($attributes, function ($router) {
                             ->name('swoole_task_monitor.index');
                         Route::post('swoole_task_monitor/reset', 'SwooleTaskMonitorController@reset')
                             ->name('swoole_task_monitor.reset');
+                        Route::get('monitor/horizon', function () {
+                            $horizonPath = '/' . trim(config('horizon.path', 'horizon'), '/');
+
+                            return redirect($horizonPath);
+                        })->name('admin_monitor.horizon');
+                        Route::get('monitor/swoole_stats', 'SwooleStatsController@index')
+                            ->name('admin_monitor.swoole_stats');
                         //Route::resource('sms_notifies', 'SmsNotifyController');
                         Route::resource('sms_templates', 'SmsTemplateController');
                         Route::resource('sms_codes', 'SmsCodeController');

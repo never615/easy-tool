@@ -5,7 +5,8 @@
 
 namespace Mallto\Tool\Controller\Admin;
 
-use Illuminate\Support\Facades\Log;
+use Encore\Admin\Facades\Admin;
+use Encore\Admin\Layout\Content;
 use Illuminate\Support\Facades\Redis;
 use Mallto\Tool\Processes\SwooleStatsCollectorProcess;
 
@@ -53,9 +54,19 @@ class SwooleStatsController
         $extraMetrics = $this->getExtraMetrics();
 
         // 判断请求类型，决定返回 JSON 还是 HTML 可视化页面
-        $accept = request()->header('accept');
-        if (request()->ajax() || strpos($accept, 'application/json') !== false) {
+        if ($this->wantsJsonResponse()) {
             return response()->json($this->getJsonPayload($swooleMetrics, $extraMetrics));
+        }
+
+        if ($this->shouldRenderAdminContent()) {
+            return $this->renderAdminContent(
+                'Swoole 运行状态',
+                $this->renderCurrentPodBodyHtml(
+                    $swooleMetrics,
+                    $this->getExtraHtml($extraMetrics),
+                    $this->getExtraScript($extraMetrics)
+                )
+            );
         }
 
         return $this->renderHtmlWithExtras(
@@ -157,8 +168,7 @@ class SwooleStatsController
         $isCollecting  = $collectingTtl > 0;
         $pods          = $this->getAllPodsStats();
 
-        $accept = request()->header('accept');
-        if (request()->ajax() || strpos($accept, 'application/json') !== false) {
+        if ($this->wantsJsonResponse()) {
             return response()->json([
                 'collecting'     => $isCollecting,
                 'collecting_ttl' => $collectingTtl,
@@ -166,13 +176,71 @@ class SwooleStatsController
             ]);
         }
 
+        if ($this->shouldRenderAdminContent()) {
+            return $this->renderAdminContent(
+                'Swoole 运行状态 — 所有 Pod',
+                $this->renderMultiPodBodyHtml($pods, $isCollecting, $collectingTtl)
+            );
+        }
+
         return $this->renderMultiPodHtml($pods, $isCollecting, $collectingTtl);
+    }
+
+    protected function wantsJsonResponse(): bool
+    {
+        if (request()->boolean('json')) {
+            return true;
+        }
+
+        if (request()->pjax()) {
+            return false;
+        }
+
+        $accept = (string)request()->header('accept');
+
+        return request()->ajax()
+            || (
+                strpos($accept, 'application/json') !== false
+                && strpos($accept, 'text/html') === false
+            );
+    }
+
+    protected function shouldRenderAdminContent(): bool
+    {
+        return request()->pjax()
+            || optional(request()->route())->named('admin_monitor.swoole_stats');
+    }
+
+    protected function renderAdminContent(string $header, string $body)
+    {
+        return Admin::content(function (Content $content) use ($header, $body) {
+            $content->header($header);
+            $content->description('LaravelS / Swoole');
+            $content->body($body);
+        });
     }
 
     /**
      * 渲染多 pod 聚合 HTML 页面
      */
     protected function renderMultiPodHtml(array $allPodsStats, bool $isCollecting, int $collectingTtl)
+    {
+        return response()->make(<<<HTML
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Swoole 运行状态 — 所有 Pod</title>
+</head>
+<body>
+    {$this->renderMultiPodBodyHtml($allPodsStats, $isCollecting, $collectingTtl)}
+</body>
+</html>
+HTML
+            , 200, ['Content-Type' => 'text/html']);
+    }
+
+    protected function renderMultiPodBodyHtml(array $allPodsStats, bool $isCollecting, int $collectingTtl): string
     {
         $podCount   = count($allPodsStats);
         $baseUrl    = request()->url();
@@ -238,34 +306,29 @@ HTML;
             ? '<p style="color:#999">暂无 pod 数据。请先点击「开始采集」，等待 2~3 秒后刷新页面。</p>'
             : '';
 
-        return response()->make(<<<HTML
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>Swoole 运行状态 — 所有 Pod</title>
+        return <<<HTML
     <style>
-        body { font-family: -apple-system, Arial, sans-serif; margin: 2em; }
-        h1   { margin-bottom: 0.4em; }
-        .nav { margin-bottom: 1em; }
-        .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
-        .pod-block { margin-bottom: 2em; }
-        h2 { margin-top: 0; margin-bottom: 0.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.4em; font-size: 1.1em; }
-        table { border-collapse: collapse; width: 60%; }
-        th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
-        th { background: #f5f5f5; }
-        select { padding: 2px 6px; }
+        .swoole-stats-page { font-family: -apple-system, Arial, sans-serif; margin: 2em; }
+        .swoole-stats-page h1 { margin-bottom: 0.4em; }
+        .swoole-stats-page .nav { margin-bottom: 1em; }
+        .swoole-stats-page .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
+        .swoole-stats-page .pod-block { margin-bottom: 2em; }
+        .swoole-stats-page h2 { margin-top: 0; margin-bottom: 0.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.4em; font-size: 1.1em; }
+        .swoole-stats-page table { border-collapse: collapse; width: 60%; }
+        .swoole-stats-page th, .swoole-stats-page td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
+        .swoole-stats-page th { background: #f5f5f5; }
+        .swoole-stats-page select { padding: 2px 6px; }
     </style>
-</head>
-<body>
-    <h1>Swoole 运行状态 — 所有 Pod ({$podCount})</h1>
-    <div class="nav">
-        <a href="{$baseUrl}">← 仅当前 Pod</a>
-    </div>
+    <div class="swoole-stats-page">
+        <h1>Swoole 运行状态 — 所有 Pod ({$podCount})</h1>
+        <div class="nav">
+            <a href="{$baseUrl}">← 仅当前 Pod</a>
+        </div>
 
-    {$collectControlHtml}
-    {$noDataHint}
-    {$tablesHtml}
+        {$collectControlHtml}
+        {$noDataHint}
+        {$tablesHtml}
+    </div>
 
     <script>
         // 开始采集按钮 → 带 duration 参数跳转
@@ -298,10 +361,7 @@ HTML;
             setTimeout(function() { window.location.reload(); }, 5000);
         }
     </script>
-</body>
-</html>
-HTML
-            , 200, ['Content-Type' => 'text/html']);
+HTML;
     }
 
     // =========================================================================
@@ -457,36 +517,48 @@ HTML
      */
     protected function renderHtmlWithExtras(array $swooleMetrics, string $extraHtml = '', string $extraScript = '')
     {
-        $swooleMetricsJson = addslashes(json_encode($swooleMetrics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         return response()->make(<<<HTML
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <title>Swoole 运行状态</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
-        h2 { margin-top: 2em; }
-        h2:first-of-type { margin-top: 0; }
-        table { border-collapse: collapse; width: 60%; margin-bottom: 2em; }
-        th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
-        th { background: #f5f5f5; }
-        .nav { margin-bottom: 1.5em; }
-        .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
-    </style>
 </head>
 <body>
-    <div class="nav">
-        <a href="?all_pods=1">⊞ 查看所有 Pod</a>
-        <a href="?">⟳ 刷新</a>
-    </div>
-    <h2>Swoole 运行状态</h2>
-    <table>
-        <thead><tr><th>指标</th><th>值</th></tr></thead>
-        <tbody id="swoole-metrics-table"></tbody>
-    </table>
+    {$this->renderCurrentPodBodyHtml($swooleMetrics, $extraHtml, $extraScript)}
+</body>
+</html>
+HTML
+            , 200, ['Content-Type' => 'text/html']);
+    }
 
-    {$extraHtml}
+    protected function renderCurrentPodBodyHtml(array $swooleMetrics, string $extraHtml = '', string $extraScript = ''): string
+    {
+        $swooleMetricsJson = addslashes(json_encode($swooleMetrics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return <<<HTML
+    <style>
+        .swoole-stats-page { font-family: Arial, sans-serif; margin: 2em; }
+        .swoole-stats-page h2 { margin-top: 2em; }
+        .swoole-stats-page h2:first-of-type { margin-top: 0; }
+        .swoole-stats-page table { border-collapse: collapse; width: 60%; margin-bottom: 2em; }
+        .swoole-stats-page th, .swoole-stats-page td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+        .swoole-stats-page th { background: #f5f5f5; }
+        .swoole-stats-page .nav { margin-bottom: 1.5em; }
+        .swoole-stats-page .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
+    </style>
+    <div class="swoole-stats-page">
+        <div class="nav">
+            <a href="?all_pods=1">⊞ 查看所有 Pod</a>
+            <a href="?">⟳ 刷新</a>
+        </div>
+        <h2>Swoole 运行状态</h2>
+        <table>
+            <thead><tr><th>指标</th><th>值</th></tr></thead>
+            <tbody id="swoole-metrics-table"></tbody>
+        </table>
+
+        {$extraHtml}
+    </div>
 
     <script>
         // 渲染 Swoole 指标表格
@@ -501,10 +573,7 @@ HTML
 
         {$extraScript}
     </script>
-</body>
-</html>
-HTML
-            , 200, ['Content-Type' => 'text/html']);
+HTML;
     }
 
     /**

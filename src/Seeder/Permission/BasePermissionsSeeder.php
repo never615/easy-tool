@@ -45,6 +45,10 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("队列诊断配置保存", "queue_diagnostics.settings", false, 0);
         $this->createPermissions("Swoole Task监控", "swoole_task_monitor.index", false, 0);
         $this->createPermissions("Swoole Task监控重置", "swoole_task_monitor.reset", false, 0);
-        $this->createPermissions("系统日志", "system_logs.index",false,0);
+        $this->createPermissions("horizon 监控", "admin_monitor.horizon", false, 0);
+        $this->createPermissions("swoole 监控", "admin_monitor.swoole_stats", false, 0);
+        $this->createPermissions("第三方接口通讯日志", "third_logs");
+        $this->createPermissions("自己上报的日志", "owner_logs");
+        $this->createPermissions("项目日志", "system_logs.index", false, 0);
     }
 }
