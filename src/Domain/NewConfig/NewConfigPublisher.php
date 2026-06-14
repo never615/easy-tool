@@ -15,7 +15,8 @@ class NewConfigPublisher
         private LaravelConfigCacheService $configCacheService,
         private LaravelSRestartService $restartService,
         private ?NewConfigGenerationStore $generationStore = null,
-        private ?NewConfigValuesFile $valuesFile = null
+        private ?NewConfigValuesFile $valuesFile = null,
+        private ?SubjectConfigPublisher $subjectConfigPublisher = null
     ) {
     }
 
@@ -31,9 +32,13 @@ class NewConfigPublisher
             });
             $writeResult = $this->envFile->write($values, $envFilePath);
             $valuesWriteResult = $this->valuesFile()->write($runtimeValues);
+            $subjectConfigResult = $this->subjectConfigPublisher()->publish();
+            $subjectConfigChanged = (bool)($subjectConfigResult['values_file']['changed'] ?? false);
+            $requiresRestart = $requiresRestart || $subjectConfigChanged;
             $configCacheResult = null;
             $shouldRefreshConfigCache = ($writeResult['changed'] ?? false)
                 || ($valuesWriteResult['changed'] ?? false)
+                || $subjectConfigChanged
                 || $forceConfigCache;
             if ($shouldRefreshConfigCache && !$this->isTestRun()) {
                 $configCacheResult = $this->configCacheService->refresh($values, $forceConfigCache);
@@ -53,6 +58,7 @@ class NewConfigPublisher
                 'runtime_values' => $runtimeValues,
                 'write' => $writeResult,
                 'values_file' => $valuesWriteResult,
+                'subject_config' => $subjectConfigResult,
                 'config_cache' => $configCacheResult,
                 'generation' => $generationResult,
                 'restart' => $restartResult,
@@ -182,5 +188,10 @@ class NewConfigPublisher
     private function valuesFile(): NewConfigValuesFile
     {
         return $this->valuesFile ?: app(NewConfigValuesFile::class);
+    }
+
+    private function subjectConfigPublisher(): SubjectConfigPublisher
+    {
+        return $this->subjectConfigPublisher ?: app(SubjectConfigPublisher::class);
     }
 }

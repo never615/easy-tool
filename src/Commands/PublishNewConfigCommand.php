@@ -15,7 +15,7 @@ class PublishNewConfigCommand extends Command
         {--env-file= : 运行期 shell env 文件路径，默认 storage/framework/new_configs.env}
         {--json : 输出 JSON}';
 
-    protected $description = 'Export new_configs rows as runtime env and refresh Laravel config cache';
+    protected $description = 'Export runtime config snapshots and refresh Laravel config cache';
 
     public function handle(NewConfigPublisher $publisher): int
     {
@@ -38,6 +38,7 @@ class PublishNewConfigCommand extends Command
         }
 
         $write = $result['write'] ?? [];
+        $subjectConfig = $result['subject_config'] ?? [];
         $configCache = $result['config_cache'] ?? null;
         $generation = $result['generation'] ?? null;
         $restart = $result['restart'] ?? null;
@@ -45,6 +46,10 @@ class PublishNewConfigCommand extends Command
         $this->info('new_configs exported: values=' . count($result['values'] ?? []));
         $this->line('runtime env changed: ' . (($write['changed'] ?? false) ? 'yes' : 'no'));
         $this->line('runtime env file: ' . ($write['env_path'] ?? 'n/a'));
+        $this->line('subject_configs exported: subjects=' . (int)($subjectConfig['counts']['subjects'] ?? 0)
+            . ', values=' . (int)($subjectConfig['counts']['values'] ?? 0));
+        $this->line('subject config values changed: ' . (($subjectConfig['values_file']['changed'] ?? false) ? 'yes' : 'no'));
+        $this->line('subject config values file: ' . ($subjectConfig['values_file']['values_path'] ?? 'n/a'));
 
         if (is_array($configCache)) {
             $this->line('config cache: ' . (($configCache['skipped'] ?? false) ? 'skipped' : 'refreshed'));
