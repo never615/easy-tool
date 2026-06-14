@@ -63,6 +63,34 @@ class SwooleTaskMonitorConfigForm
         ];
     }
 
+    public static function backfillMissingDefinitionAttributes(NewConfig $config, array $definition): bool
+    {
+        $changed = false;
+
+        foreach ([
+            'env_key',
+            'group_key',
+            'name',
+            'type',
+            'default_value',
+            'options',
+            'remark',
+        ] as $field) {
+            if (!array_key_exists($field, $definition)) {
+                continue;
+            }
+
+            if ($config->{$field} !== null && $config->{$field} !== '') {
+                continue;
+            }
+
+            $config->{$field} = $definition[$field];
+            $changed = true;
+        }
+
+        return $changed;
+    }
+
     public function snapshot(): array
     {
         $definitions = self::definitions();
@@ -145,6 +173,8 @@ class SwooleTaskMonitorConfigForm
 
         if (!$config->exists) {
             $config->fill($definitions[$key]);
+        } else {
+            self::backfillMissingDefinitionAttributes($config, $definitions[$key]);
         }
 
         $config->value = $value;

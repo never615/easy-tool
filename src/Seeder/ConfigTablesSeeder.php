@@ -97,11 +97,15 @@ class ConfigTablesSeeder extends Seeder
 
         NewConfig::withoutAutoPublish(function () use ($definitions) {
             foreach ($definitions as $definition) {
-                $exists = NewConfig::query()
+                $config = NewConfig::query()
                     ->where('key', $definition['key'])
-                    ->exists();
+                    ->first();
 
-                if ($exists) {
+                if ($config !== null) {
+                    if (SwooleTaskMonitorConfigForm::backfillMissingDefinitionAttributes($config, $definition)) {
+                        $config->save();
+                    }
+
                     continue;
                 }
 
