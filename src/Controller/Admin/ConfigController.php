@@ -62,6 +62,10 @@ class ConfigController extends AdminCommonController
             $filter->ilike('name', '配置项');
             $filter->ilike('env_key', 'Env Key');
         });
+
+        $grid->tools(function ($tools) {
+            $tools->append($this->usageNotice());
+        });
     }
 
 
@@ -134,6 +138,18 @@ class ConfigController extends AdminCommonController
     private static function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function usageNotice(): string
+    {
+        $publishRestartUrl = route('new_configs.publish_restart');
+
+        return '<div class="alert alert-warning" style="margin:10px 0 12px;">'
+            . '<strong>提示：</strong>当前页面是传统全局配置兜底入口，日常请优先使用“配置中心”下对应的模块化运行时配置页面。'
+            . '如果在这里临时修改配置值，保存后还需要到 '
+            . '<a href="' . self::escape($publishRestartUrl) . '">发布与重启</a>'
+            . ' 页面执行发布并重启，LaravelS/Horizon 新进程才会读取最新运行时配置。'
+            . '</div>';
     }
 
 }
