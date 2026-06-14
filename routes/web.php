@@ -45,8 +45,7 @@ Route::group($attributes, function ($router) {
                 Route::group(['middleware' => ['adminE.auto_permission']],
                     function ($router) {  //指定auth的guard为mall
 
-                        Route::get('log',
-                            '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')
+                        Route::get('log', 'SystemLogController@index')
                             ->name("system_logs.index");
 
                         //第三方接口请求日志
