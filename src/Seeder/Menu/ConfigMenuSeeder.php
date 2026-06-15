@@ -40,6 +40,9 @@ class ConfigMenuSeeder extends Seeder
         );
 
         $this->updateOrCreate(
+            "new_configs.usage", $configCenterMenu->id, 1, "使用说明", "fa-book");
+
+        $this->updateOrCreate(
             "configs.basic", $configCenterMenu->id, 10, "基础业务配置", "fa-bullseye");
 
         $this->updateOrCreate(

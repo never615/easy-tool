@@ -85,6 +85,7 @@ class LaravelSRestartService
         $scriptPath = storage_path('framework/new-config-restart-' . date('YmdHis') . '-' . getmypid() . '.sh');
         $delaySeconds = max(1, (int)config('new_config.restart.delay_seconds', 2));
         $includeHorizon = $includeHorizon ?? (bool)config('new_config.restart.include_horizon', true);
+        $listenPort = max(1, (int)config('laravels.listen_port', 5200));
         $logPath = $this->writableLogPath();
 
         $script = $this->renderSupervisorAutorestartScript(
@@ -92,6 +93,7 @@ class LaravelSRestartService
             storage_path('laravels.pid'),
             $logPath,
             $delaySeconds,
+            $listenPort,
             $includeHorizon
         );
 
@@ -141,6 +143,7 @@ class LaravelSRestartService
         string $pidFile,
         string $logPath,
         int $delaySeconds,
+        int $listenPort,
         bool $includeHorizon
     ): string {
         $appDir = $this->sh($appDir);
@@ -156,6 +159,7 @@ APP_DIR={$appDir}
 PID_FILE={$pidFile}
 LOG_FILE={$logPath}
 DELAY_SECONDS={$delaySeconds}
+LISTEN_PORT={$listenPort}
 INCLUDE_HORIZON={$includeHorizon}
 
 sleep "\$DELAY_SECONDS"
@@ -183,7 +187,13 @@ fi
         done
     }
 
-    LARAVELS_PIDS="\$(pgrep -f "\$APP_DIR laravels:" 2>/dev/null | tr '\\n' ' ')"
+    LARAVELS_BIN="\$APP_DIR/bin/laravels"
+    LARAVELS_PIDS="\$(
+        {
+            pgrep -f "\$APP_DIR laravels:" 2>/dev/null || true
+            pgrep -f "\$LARAVELS_BIN start" 2>/dev/null || true
+        } | tr '\\n' ' '
+    )"
     HORIZON_PIDS=""
 
     if [ -f "\$PID_FILE" ]; then
@@ -195,6 +205,17 @@ fi
                 LARAVELS_PIDS="\$LARAVELS_PIDS \$MASTER_PID"
                 ;;
         esac
+    fi
+
+    if command -v lsof >/dev/null 2>&1; then
+        for PID in \$(lsof -tiTCP:"\$LISTEN_PORT" -sTCP:LISTEN 2>/dev/null || true); do
+            COMMAND="\$(ps -p "\$PID" -o command= 2>/dev/null || true)"
+            case "\$COMMAND" in
+                *"\$LARAVELS_BIN"*)
+                    LARAVELS_PIDS="\$LARAVELS_PIDS \$PID"
+                    ;;
+            esac
+        done
     fi
 
     if [ "\$INCLUDE_HORIZON" = "1" ]; then

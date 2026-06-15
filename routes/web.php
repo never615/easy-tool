@@ -112,6 +112,8 @@ Route::group($attributes, function ($router) {
                         Route::resource('configs', 'ConfigController');
                         Route::get('new_configs/publish-restart', 'NewConfigPublishController@index')
                             ->name('new_configs.publish_restart');
+                        Route::get('new_configs/usage', 'NewConfigUsageController@index')
+                            ->name('new_configs.usage');
                         Route::get('new_configs/env-preview', 'NewConfigController@envPreview')
                             ->name('new_configs.env_preview');
                         Route::post('new_configs/reload', 'NewConfigController@reload')

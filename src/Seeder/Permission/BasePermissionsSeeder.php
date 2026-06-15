@@ -36,6 +36,7 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("定位日志配置", "configs.location_debug", false, 0);
         $this->createPermissions("定位日志配置保存", "configs.location_debug.save", false, 0);
         $this->createPermissions("配置中心", "new_configs");
+        $this->createPermissions("配置中心使用说明", "new_configs.usage", false, 0);
         $this->createPermissions("配置中心发布与重启", "new_configs.publish_restart", false, 0);
         $this->createPermissions("配置中心 Env 预览", "new_configs.env_preview", false, 0);
         $this->createPermissions("配置中心手动重启", "new_configs.reload", false, 0);
