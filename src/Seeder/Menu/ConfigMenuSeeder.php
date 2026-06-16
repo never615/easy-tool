@@ -49,18 +49,6 @@ class ConfigMenuSeeder extends Seeder
             "configs.sms", $configCenterMenu->id, 20, "短信与告警配置", "fa-envelope");
 
         $this->updateOrCreate(
-            "configs.location_algorithm", $configCenterMenu->id, 30, "定位算法配置", "fa-map-marker");
-
-        $this->updateOrCreate(
-            "configs.location_maintenance", $configCenterMenu->id, 40, "定位维护配置", "fa-wrench");
-
-        $this->updateOrCreate(
-            "configs.beacon_area", $configCenterMenu->id, 50, "BeaconArea配置", "fa-map-signs");
-
-        $this->updateOrCreate(
-            "configs.location_debug", $configCenterMenu->id, 60, "定位日志配置", "fa-bug");
-
-        $this->updateOrCreate(
             "new_configs.swoole_task_monitor", $configCenterMenu->id, 70, "Swoole Task配置", "fa-tasks");
 
         $this->updateOrCreate(

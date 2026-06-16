@@ -93,23 +93,9 @@ Route::group($attributes, function ($router) {
                             ->name('configs.sms');
                         Route::post('configs/sms', 'ConfigModuleController@saveSms')
                             ->name('configs.sms.save');
-                        Route::get('configs/location-algorithm', 'ConfigModuleController@locationAlgorithm')
-                            ->name('configs.location_algorithm');
-                        Route::post('configs/location-algorithm', 'ConfigModuleController@saveLocationAlgorithm')
-                            ->name('configs.location_algorithm.save');
-                        Route::get('configs/location-maintenance', 'ConfigModuleController@locationMaintenance')
-                            ->name('configs.location_maintenance');
-                        Route::post('configs/location-maintenance', 'ConfigModuleController@saveLocationMaintenance')
-                            ->name('configs.location_maintenance.save');
-                        Route::get('configs/beacon-area', 'ConfigModuleController@beaconArea')
-                            ->name('configs.beacon_area');
-                        Route::post('configs/beacon-area', 'ConfigModuleController@saveBeaconArea')
-                            ->name('configs.beacon_area.save');
-                        Route::get('configs/location-debug', 'ConfigModuleController@locationDebug')
-                            ->name('configs.location_debug');
-                        Route::post('configs/location-debug', 'ConfigModuleController@saveLocationDebug')
-                            ->name('configs.location_debug.save');
-                        Route::resource('configs', 'ConfigController');
+                        Route::resource('configs', 'ConfigController')->where([
+                            'config' => '[0-9]+',
+                        ]);
                         Route::get('new_configs/publish-restart', 'NewConfigPublishController@index')
                             ->name('new_configs.publish_restart');
                         Route::get('new_configs/usage', 'NewConfigUsageController@index')
@@ -122,7 +108,9 @@ Route::group($attributes, function ($router) {
                             ->name('new_configs.swoole_task_monitor');
                         Route::post('new_configs/swoole-task-monitor', 'NewConfigSwooleTaskMonitorController@save')
                             ->name('new_configs.swoole_task_monitor.save');
-                        Route::resource('new_configs', 'NewConfigController');
+                        Route::resource('new_configs', 'NewConfigController')->where([
+                            'new_config' => '[0-9]+',
+                        ]);
                         Route::get('queue_diagnostics', 'QueueDiagnosticController@index')
                             ->name('queue_diagnostics.index');
                         Route::post('queue_diagnostics/settings', 'QueueDiagnosticController@saveSettings')

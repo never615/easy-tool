@@ -31,44 +31,14 @@ class ConfigModuleController extends Controller
         return $this->save('sms', $request, $form);
     }
 
-    public function locationAlgorithm(GlobalConfigModuleForm $form)
+    public function showModule(string $module, GlobalConfigModuleForm $form)
     {
-        return $this->index('location_algorithm', $form);
+        return $this->index($module, $form);
     }
 
-    public function saveLocationAlgorithm(Request $request, GlobalConfigModuleForm $form)
+    public function saveModule(string $module, Request $request, GlobalConfigModuleForm $form)
     {
-        return $this->save('location_algorithm', $request, $form);
-    }
-
-    public function locationMaintenance(GlobalConfigModuleForm $form)
-    {
-        return $this->index('location_maintenance', $form);
-    }
-
-    public function saveLocationMaintenance(Request $request, GlobalConfigModuleForm $form)
-    {
-        return $this->save('location_maintenance', $request, $form);
-    }
-
-    public function beaconArea(GlobalConfigModuleForm $form)
-    {
-        return $this->index('beacon_area', $form);
-    }
-
-    public function saveBeaconArea(Request $request, GlobalConfigModuleForm $form)
-    {
-        return $this->save('beacon_area', $request, $form);
-    }
-
-    public function locationDebug(GlobalConfigModuleForm $form)
-    {
-        return $this->index('location_debug', $form);
-    }
-
-    public function saveLocationDebug(Request $request, GlobalConfigModuleForm $form)
-    {
-        return $this->save('location_debug', $request, $form);
+        return $this->save($module, $request, $form);
     }
 
     private function index(string $module, GlobalConfigModuleForm $form)

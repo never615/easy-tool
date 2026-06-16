@@ -8,6 +8,7 @@ use Mallto\Tool\Data\Config;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitionSyncer;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
 class ConfigTablesSeeder extends Seeder
@@ -69,26 +70,7 @@ class ConfigTablesSeeder extends Seeder
 
     private function seedGlobalConfigDefinitions(): void
     {
-        $definitions = GlobalConfigDefinitions::definitions();
-
-        NewConfig::withoutAutoPublish(function () use ($definitions) {
-            foreach ($definitions as $definition) {
-                $exists = NewConfig::query()
-                    ->where('key', $definition['key'])
-                    ->exists();
-
-                if ($exists) {
-                    continue;
-                }
-
-                $config = new NewConfig([
-                    'key' => $definition['key'],
-                ]);
-
-                $config->fill(GlobalConfigNewConfig::attributesForDefinition($definition));
-                $config->save();
-            }
-        });
+        app(GlobalConfigDefinitionSyncer::class)->sync(GlobalConfigDefinitions::definitions());
     }
 
     private function seedNewConfigDefinitions(): void
