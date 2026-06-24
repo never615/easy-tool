@@ -11,6 +11,8 @@ class NewConfig extends BaseModel
 
     public const GROUP_SWOOLE_TASK_MONITOR = 'swoole_task_monitor';
 
+    public const GROUP_RUNTIME_ENV_OVERRIDE = 'runtime_env_override';
+
     public const KEY_SWOOLE_TASK_MONITOR_ENABLED = 'swoole_task_monitor.enabled';
     public const KEY_SWOOLE_TASK_MONITOR_MODE = 'swoole_task_monitor.mode';
     public const KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE = 'swoole_task_monitor.trace_sample_rate';
@@ -41,6 +43,13 @@ class NewConfig extends BaseModel
                 app(NewConfigPublisher::class)->publish(false);
             }
         });
+    }
+
+    public static function runtimeEnvOverrideKey(string $envKey): string
+    {
+        $envKey = NewConfigBootstrapKeyGuard::normalize($envKey);
+
+        return self::GROUP_RUNTIME_ENV_OVERRIDE . '.' . $envKey;
     }
 
     public static function withoutAutoPublish(callable $callback)
