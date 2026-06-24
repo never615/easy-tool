@@ -34,6 +34,7 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("配置中心手动重启", "new_configs.reload", false, 0);
         $this->createPermissions("Swoole Task配置", "new_configs.swoole_task_monitor", false, 0);
         $this->createPermissions("Swoole Task配置保存", "new_configs.swoole_task_monitor.save", false, 0);
+        $this->createPermissions("运行期 Env 覆盖", "new_configs.runtime_env_overrides", false, 0);
         $this->createPermissions("队列诊断监控", "queue_diagnostics.index", false, 0);
         $this->createPermissions("队列诊断配置保存", "queue_diagnostics.settings", false, 0);
         $this->createPermissions("Swoole Task监控", "swoole_task_monitor.index", false, 0);
