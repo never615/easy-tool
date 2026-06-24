@@ -99,7 +99,11 @@ class NewConfigPublisher
             }
 
             $envKey = NewConfigBootstrapKeyGuard::normalize($row->env_key);
-            NewConfigBootstrapKeyGuard::assertAllowed($envKey);
+            if ($row->group_key === NewConfig::GROUP_RUNTIME_ENV_OVERRIDE) {
+                NewConfigBootstrapKeyGuard::assertAllowedForRuntimeOverride($envKey);
+            } else {
+                NewConfigBootstrapKeyGuard::assertAllowed($envKey);
+            }
             if ($envKey === null) {
                 continue;
             }

@@ -20,12 +20,6 @@ class GlobalConfigDefinitionSyncer
                     ->first();
 
                 if ($config !== null) {
-                    $value = $config->value;
-                    $isEnabled = $config->is_enabled;
-                    $config->fill(GlobalConfigNewConfig::attributesForDefinition($definition, $value));
-                    $config->value = $value;
-                    $config->is_enabled = $isEnabled;
-                    $config->save();
                     continue;
                 }
 

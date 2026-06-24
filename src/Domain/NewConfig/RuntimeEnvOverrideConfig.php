@@ -63,7 +63,7 @@ class RuntimeEnvOverrideConfig
             throw new ResourceException('Env Key 必须是大写字母、数字、下划线，且以字母或下划线开头。');
         }
 
-        NewConfigBootstrapKeyGuard::assertAllowed($envKey);
+        NewConfigBootstrapKeyGuard::assertAllowedForRuntimeOverride($envKey);
 
         return $envKey;
     }

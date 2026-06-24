@@ -29,7 +29,11 @@ class NewConfig extends BaseModel
     {
         static::saving(function (NewConfig $config) {
             $config->env_key = NewConfigBootstrapKeyGuard::normalize($config->env_key);
-            NewConfigBootstrapKeyGuard::assertAllowed($config->env_key);
+            if ($config->group_key === self::GROUP_RUNTIME_ENV_OVERRIDE) {
+                NewConfigBootstrapKeyGuard::assertAllowedForRuntimeOverride($config->env_key);
+            } else {
+                NewConfigBootstrapKeyGuard::assertAllowed($config->env_key);
+            }
         });
 
         static::saved(function () {

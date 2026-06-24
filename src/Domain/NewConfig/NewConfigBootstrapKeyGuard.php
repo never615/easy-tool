@@ -6,6 +6,8 @@ use Mallto\Tool\Exception\ResourceException;
 
 class NewConfigBootstrapKeyGuard
 {
+    private const GENERATED_GLOBAL_CONFIG_PREFIX = 'GLOBAL_CONFIG_';
+
     private const FORBIDDEN_EXACT_KEYS = [
         'DATABASE_URL',
         'DB_URL',
@@ -87,6 +89,16 @@ class NewConfigBootstrapKeyGuard
     public static function assertAllowed(?string $envKey): void
     {
         $envKey = self::normalize($envKey);
+        if ($envKey === null || !self::isForbidden($envKey, true)) {
+            return;
+        }
+
+        throw new ResourceException(self::forbiddenMessage($envKey));
+    }
+
+    public static function assertAllowedForRuntimeOverride(?string $envKey): void
+    {
+        $envKey = self::normalize($envKey);
         if ($envKey === null || !self::isForbiddenForRuntimeOverride($envKey)) {
             return;
         }
@@ -99,6 +111,20 @@ class NewConfigBootstrapKeyGuard
         $envKey = self::normalize($envKey);
         if ($envKey === null) {
             return false;
+        }
+
+        return self::isForbidden($envKey, false);
+    }
+
+    private static function isForbidden(string $envKey, bool $allowGeneratedGlobalConfigKeys): bool
+    {
+        $envKey = self::normalize($envKey);
+        if ($envKey === null) {
+            return false;
+        }
+
+        if (str_starts_with($envKey, self::GENERATED_GLOBAL_CONFIG_PREFIX)) {
+            return !$allowGeneratedGlobalConfigKeys;
         }
 
         if (in_array($envKey, self::FORBIDDEN_EXACT_KEYS, true)) {
@@ -122,7 +148,7 @@ class NewConfigBootstrapKeyGuard
 
     public static function forbiddenHint(): string
     {
-        return '禁止创建 APP_*、DB_*、REDIS_*、LOCAL_REDIS_*、MONGO_*、MONGODB_*、CACHE_*、SESSION_*、MAIL_*、QINIU_*、ALIYUN_*、WECHAT_*、MQTT_*、NEW_CONFIG_*、SUBJECT_CONFIG_*、LARAVELS_*、HORIZON_* 等启动、连接、密钥或配置中心自身 key；包含 PASSWORD、SECRET、TOKEN、ACCESS_KEY、PRIVATE_KEY、PASSPHRASE、CERT、KEY_PATH 的 key 也禁止配置。';
+        return '禁止创建 APP_*、DB_*、REDIS_*、LOCAL_REDIS_*、MONGO_*、MONGODB_*、CACHE_*、SESSION_*、MAIL_*、QINIU_*、ALIYUN_*、WECHAT_*、MQTT_*、NEW_CONFIG_*、SUBJECT_CONFIG_*、LARAVELS_*、HORIZON_*、GLOBAL_CONFIG_* 等启动、连接、密钥、配置中心自身或内部生成 key；包含 PASSWORD、SECRET、TOKEN、ACCESS_KEY、PRIVATE_KEY、PASSPHRASE、CERT、KEY_PATH 的 key 也禁止配置。';
     }
 
     private static function forbiddenMessage(string $envKey): string
