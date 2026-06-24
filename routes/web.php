@@ -108,6 +108,19 @@ Route::group($attributes, function ($router) {
                             ->name('new_configs.swoole_task_monitor');
                         Route::post('new_configs/swoole-task-monitor', 'NewConfigSwooleTaskMonitorController@save')
                             ->name('new_configs.swoole_task_monitor.save');
+                        Route::resource('new_configs/runtime-env-overrides', 'RuntimeEnvOverrideController', [
+                            'names' => [
+                                'index' => 'new_configs.runtime_env_overrides.index',
+                                'create' => 'new_configs.runtime_env_overrides.create',
+                                'store' => 'new_configs.runtime_env_overrides.store',
+                                'show' => 'new_configs.runtime_env_overrides.show',
+                                'edit' => 'new_configs.runtime_env_overrides.edit',
+                                'update' => 'new_configs.runtime_env_overrides.update',
+                                'destroy' => 'new_configs.runtime_env_overrides.destroy',
+                            ],
+                        ])->where([
+                            'runtime_env_override' => '[0-9]+',
+                        ]);
                         Route::resource('new_configs', 'NewConfigController')->where([
                             'new_config' => '[0-9]+',
                         ]);
