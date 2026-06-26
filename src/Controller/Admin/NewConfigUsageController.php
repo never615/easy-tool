@@ -5,7 +5,9 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Layout\Content;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Schema;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
+use Mallto\Tool\Data\NewConfigDocument;
 
 class NewConfigUsageController extends Controller
 {
@@ -48,15 +50,27 @@ HTML;
 
     private function usageMarkdown(): string
     {
-        $path = base_path('docs/configuration-usage.md');
-        if (is_file($path) && is_readable($path)) {
-            return (string)file_get_contents($path);
+        if (!Schema::hasTable('new_config_documents')) {
+            return <<<MARKDOWN
+# 配置使用说明
+
+数据库文档表 `new_config_documents` 还不存在。请先执行数据库迁移，然后执行 `php artisan tool:update` 写入默认文档。
+MARKDOWN;
+        }
+
+        $document = NewConfigDocument::query()
+            ->where('slug', NewConfigDocument::SLUG_USAGE)
+            ->where('is_enabled', true)
+            ->first();
+
+        if ($document !== null) {
+            return (string)$document->content;
         }
 
         return <<<MARKDOWN
 # 配置使用说明
 
-当前环境没有找到 `docs/configuration-usage.md`。请确认部署包是否包含项目文档目录，或在代码仓库中查看该文件。
+数据库中没有找到 slug 为 `configuration_usage` 的启用文档。请执行 `php artisan tool:update` 写入默认文档。
 MARKDOWN;
     }
 

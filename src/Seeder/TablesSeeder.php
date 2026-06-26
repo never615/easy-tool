@@ -23,5 +23,6 @@ class TablesSeeder extends Seeder
         $menuTablesSeeder->run();
         $permissionTablesSeeder->run();
         $this->call(ConfigTablesSeeder::class);
+        $this->call(NewConfigDocumentSeeder::class);
     }
 }
