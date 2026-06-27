@@ -56,7 +56,7 @@ class ConfigModuleController extends Controller
     {
         $form->save($module, $request->only('values'));
 
-        admin_toastr('配置已保存，运行期配置快照已发布；需要进程生效时请执行发布并重启。');
+        admin_toastr('配置已保存，运行期配置快照已发布；需要发布并重启 LaravelS/Horizon 才能让新进程读取最新值。');
 
         return redirect()->route(GlobalConfigDefinitions::module($module)['route']);
     }
@@ -68,6 +68,9 @@ class ConfigModuleController extends Controller
         $globalConfigUrl = route('configs.index');
         $errors = $this->renderErrors();
         $snapshotRows = $snapshot['rows'] ?? [];
+        $hasReloadRequiredRows = $this->hasReloadRequiredRows($snapshotRows);
+        $reloadNotice = $this->renderReloadNotice($snapshotRows);
+        $publishRestartAction = $hasReloadRequiredRows ? $this->publishRestartAction() : '';
         $familyFilters = $this->renderFamilyFilters($snapshotRows);
         $filterScript = $familyFilters === '' ? '' : $this->renderFamilyFilterScript();
         $rows = $this->renderRows($snapshotRows);
@@ -96,6 +99,7 @@ class ConfigModuleController extends Controller
 {$errors}
 
 <div class="global-config-module-panel">
+    {$reloadNotice}
     <form method="POST" action="{$this->escape($action)}">
         {$this->csrfField()}
         {$familyFilters}
@@ -115,6 +119,7 @@ class ConfigModuleController extends Controller
         </div>
         <div class="global-config-module-actions">
             <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> 保存配置</button>
+            {$publishRestartAction}
             <a class="btn btn-default" href="{$this->escape($globalConfigUrl)}"><i class="fa fa-list"></i> 全局配置列表</a>
             <a class="btn btn-default" href="{$this->escape($runtimeConfigUrl)}"><i class="fa fa-sliders"></i> 运行期配置</a>
         </div>
@@ -122,6 +127,39 @@ class ConfigModuleController extends Controller
 </div>
 {$filterScript}
 HTML;
+    }
+
+    private function hasReloadRequiredRows(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if (!empty($row['requires_reload'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function renderReloadNotice(array $rows): string
+    {
+        if (!$this->hasReloadRequiredRows($rows)) {
+            return '';
+        }
+
+        $publishRestartUrl = route('new_configs.publish_restart');
+
+        return '<div class="alert alert-warning global-config-module-reload-notice">'
+            . '<strong>保存后还需要发布并重启 LaravelS/Horizon 才会生效。</strong> '
+            . '本页包含需重启的新配置项；保存只写入运行期配置快照并刷新 config cache。'
+            . '请继续进入 <a href="' . $this->escape($publishRestartUrl) . '">发布与重启</a> 页面执行发布并重启，确保 LaravelS/Horizon 新进程读取最新值。'
+            . '</div>';
+    }
+
+    private function publishRestartAction(): string
+    {
+        $publishRestartUrl = route('new_configs.publish_restart');
+
+        return '<a class="btn btn-warning" href="' . $this->escape($publishRestartUrl) . '"><i class="fa fa-refresh"></i> 发布与重启</a>';
     }
 
     private function renderFamilyFilters(array $rows): string
@@ -206,6 +244,7 @@ HTML;
             $value = (string)$row['value'];
             $familyKey = (string)($row['family_key'] ?? '');
             $familyBadge = $this->renderFamilyBadge($row);
+            $reloadBadge = $this->renderReloadBadge($row);
 
             $html .= '<tr class="global-config-module-row" data-family="' . $this->escape($familyKey) . '">'
                 . '<td class="config-name"><strong>' . $this->escape((string)$row['name']) . '</strong>' . $familyBadge
@@ -215,11 +254,21 @@ HTML;
                 . '<div class="global-config-module-help">默认值: <span class="global-config-module-code">' . $this->escape((string)$row['default_value']) . '</span></div></td>'
                 . '<td class="config-meta"><div>Env Key: <span class="global-config-module-code">' . $this->escape((string)$row['env_key']) . '</span></div>'
                 . '<div>最近发布: ' . $this->escape((string)($row['last_published_at'] ?? '-')) . '</div>'
-                . '<div class="global-config-module-error">发布错误: ' . $this->escape((string)($row['last_publish_error'] ?: '-')) . '</div></td>'
+                . '<div class="global-config-module-error">发布错误: ' . $this->escape((string)($row['last_publish_error'] ?: '-')) . '</div>'
+                . $reloadBadge . '</td>'
                 . '</tr>';
         }
 
         return $html;
+    }
+
+    private function renderReloadBadge(array $row): string
+    {
+        if (empty($row['requires_reload'])) {
+            return '';
+        }
+
+        return '<div class="text-warning"><i class="fa fa-refresh"></i> 需发布并重启 LaravelS/Horizon</div>';
     }
 
     private function renderFamilyBadge(array $row): string

@@ -94,6 +94,7 @@ class GlobalConfigModuleForm
             'family_label' => (string)($definition['family_label'] ?? ''),
             'default_value' => (string)($definition['default_value'] ?? ''),
             'remark' => (string)($definition['remark'] ?? ($row->remark ?? '')),
+            'requires_reload' => $row ? (bool)$row->requires_reload : (bool)($definition['requires_reload'] ?? true),
             'last_published_at' => $row && $row->last_published_at
                 ? $row->last_published_at->format('Y-m-d H:i:s')
                 : null,
