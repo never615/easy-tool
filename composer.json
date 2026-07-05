@@ -35,7 +35,9 @@
     "codingyu/laravel-ueditor": "11.x-dev",
     "mongodb/laravel-mongodb": "^5.1",
     "alibabacloud/aliyun-log-php-sdk": "^0.6.7",
-    "symfony/console": "v7.2.0"
+    "symfony/console": "v7.2.0",
+    "php-mqtt/laravel-client": "^1.7",
+    "php-mqtt/client": "^2.3"
   },
   "require-dev": {},
   "autoload": {
