@@ -1,0 +1,179 @@
+<?php
+/**
+ * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ */
+
+namespace Mallto\Tool\Domain\Mqtt;
+
+use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Arr;
+use PhpMqtt\Client\ConnectionSettings;
+use PhpMqtt\Client\Contracts\MqttClient as MqttClientContract;
+use PhpMqtt\Client\Contracts\Repository;
+use PhpMqtt\Client\Exceptions\ConfigurationInvalidException;
+use PhpMqtt\Client\Exceptions\ConnectingToBrokerFailedException;
+use PhpMqtt\Client\Exceptions\ConnectionNotAvailableException;
+use PhpMqtt\Client\Exceptions\DataTransferException;
+use PhpMqtt\Client\Exceptions\ProtocolNotSupportedException;
+use PhpMqtt\Client\Exceptions\RepositoryException;
+use PhpMqtt\Client\MqttClient;
+
+class RuntimeClientIdConnectionManager
+{
+    private Application $application;
+
+    private array $config;
+
+    private string $defaultConnection;
+
+    /** @var MqttClientContract[] */
+    private array $connections = [];
+
+    public function __construct(Application $application, array $config)
+    {
+        $this->application = $application;
+        $this->config = $config;
+        $this->defaultConnection = Arr::get($config, 'default_connection', 'default');
+    }
+
+    /**
+     * @throws BindingResolutionException
+     * @throws ConfigurationInvalidException
+     * @throws ConnectingToBrokerFailedException
+     * @throws ConnectionNotAvailableException
+     * @throws ProtocolNotSupportedException
+     */
+    public function connection(?string $name = null): MqttClientContract
+    {
+        if ($name === null) {
+            $name = $this->defaultConnection;
+        }
+
+        if (array_key_exists($name, $this->connections) && !$this->connections[$name]->isConnected()) {
+            unset($this->connections[$name]);
+        }
+
+        if (!array_key_exists($name, $this->connections)) {
+            $this->connections[$name] = $this->createConnection($name);
+        }
+
+        return $this->connections[$name];
+    }
+
+    /**
+     * @throws DataTransferException
+     */
+    public function disconnect(?string $connection = null): void
+    {
+        if ($connection === null) {
+            $connection = $this->defaultConnection;
+        }
+
+        if (array_key_exists($connection, $this->connections)) {
+            $this->connections[$connection]->disconnect();
+            unset($this->connections[$connection]);
+        }
+    }
+
+    /**
+     * @throws BindingResolutionException
+     * @throws ConfigurationInvalidException
+     * @throws ConnectingToBrokerFailedException
+     * @throws ConnectionNotAvailableException
+     * @throws DataTransferException
+     * @throws ProtocolNotSupportedException
+     * @throws RepositoryException
+     */
+    public function publish(string $topic, string $message, bool $retain = false, ?string $connection = null): void
+    {
+        $client = $this->connection($connection);
+
+        $client->publish($topic, $message, MqttClient::QOS_AT_MOST_ONCE, $retain);
+    }
+
+    /**
+     * @throws BindingResolutionException
+     * @throws ConfigurationInvalidException
+     * @throws ConnectingToBrokerFailedException
+     * @throws ConnectionNotAvailableException
+     * @throws ProtocolNotSupportedException
+     */
+    protected function createConnection(string $name): MqttClientContract
+    {
+        $config = Arr::get($this->config, "connections.{$name}");
+
+        if ($config === null) {
+            throw new ConnectionNotAvailableException($name);
+        }
+
+        $host = (string)Arr::get($config, 'host');
+        $port = (int)Arr::get($config, 'port', 1883);
+        $clientId = Arr::get($config, 'client_id');
+        $protocol = (string)Arr::get($config, 'protocol', MqttClient::MQTT_3_1);
+        $cleanSession = (bool)Arr::get($config, 'use_clean_session', true);
+        $repository = Arr::get($config, 'repository', Repository::class);
+        $loggingEnabled = (bool)Arr::get($config, 'enable_logging', true);
+        $logChannel = Arr::get($config, 'log_channel', null);
+        $runtimeClientIdPrefix = Arr::get(
+            $config,
+            'runtime_client_id.prefix',
+            Arr::get($this->config, 'runtime_client_id.prefix')
+        );
+        $runtimeClientIdMaxLength = (int)Arr::get(
+            $config,
+            'runtime_client_id.max_length',
+            Arr::get($this->config, 'runtime_client_id.max_length', 23)
+        );
+
+        $settings = $this->buildConnectionSettings(Arr::get($config, 'connection_settings', []));
+        $repository = $this->application->make($repository);
+        $logger = $loggingEnabled ? $this->application->make('log') : null;
+
+        if ($logger && $logChannel) {
+            $logger = $logger->channel($logChannel);
+        }
+
+        $client = new RuntimePrefixedMqttClient(
+            $host,
+            $port,
+            $clientId,
+            $protocol,
+            $repository,
+            $logger,
+            $runtimeClientIdPrefix,
+            $runtimeClientIdMaxLength
+        );
+        $client->connect($settings, $cleanSession);
+
+        return $client;
+    }
+
+    protected function buildConnectionSettings(array $config): ConnectionSettings
+    {
+        return (new ConnectionSettings)
+            ->setConnectTimeout((int)Arr::get($config, 'connect_timeout', 60))
+            ->setSocketTimeout((int)Arr::get($config, 'socket_timeout', 5))
+            ->setResendTimeout((int)Arr::get($config, 'resend_timeout', 10))
+            ->setKeepAliveInterval((int)Arr::get($config, 'keep_alive_interval', 10))
+            ->setUsername(Arr::get($config, 'auth.username'))
+            ->setPassword(Arr::get($config, 'auth.password'))
+            ->setUseTls((bool)Arr::get($config, 'tls.enabled', false))
+            ->setTlsSelfSignedAllowed((bool)Arr::get($config, 'tls.allow_self_signed_certificate', false))
+            ->setTlsVerifyPeer((bool)Arr::get($config, 'tls.verify_peer', true))
+            ->setTlsVerifyPeerName((bool)Arr::get($config, 'tls.verify_peer_name', true))
+            ->setTlsCertificateAuthorityFile(Arr::get($config, 'tls.ca_file'))
+            ->setTlsCertificateAuthorityPath(Arr::get($config, 'tls.ca_path'))
+            ->setTlsClientCertificateFile(Arr::get($config, 'tls.client_certificate_file'))
+            ->setTlsClientCertificateKeyFile(Arr::get($config, 'tls.client_certificate_key_file'))
+            ->setTlsClientCertificateKeyPassphrase(Arr::get($config, 'tls.client_certificate_key_passphrase'))
+            ->setTlsAlpn(Arr::get($config, 'tls.alpn'))
+            ->setLastWillTopic(Arr::get($config, 'last_will.topic'))
+            ->setLastWillMessage(Arr::get($config, 'last_will.message'))
+            ->setLastWillQualityOfService((int)Arr::get($config, 'last_will.quality_of_service', MqttClient::QOS_AT_MOST_ONCE))
+            ->setRetainLastWill((bool)Arr::get($config, 'last_will.retain', false))
+            ->setReconnectAutomatically((bool)Arr::get($config, 'auto_reconnect.enabled', false))
+            ->setMaxReconnectAttempts((int)Arr::get($config, 'auto_reconnect.max_reconnect_attempts', 3))
+            ->setDelayBetweenReconnectAttempts((int)Arr::get($config, 'auto_reconnect.delay_between_reconnect_attempts', 0));
+    }
+}

@@ -5,6 +5,7 @@
 
 namespace Mallto\Tool\Providers;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Queue\Events\JobExceptionOccurred;
@@ -30,6 +31,7 @@ use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
 use Mallto\Tool\Domain\Config\Config;
+use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
@@ -47,6 +49,7 @@ use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Middleware\TokenFromQuery;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
+use PhpMqtt\Client\ConnectionManager;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -402,6 +405,16 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/new_config.php', 'new_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/subject_config_runtime.php', 'subject_config_runtime');
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
+
+        $this->app->bind(ConnectionManager::class, function (Application $app) {
+            $configRepository = $app->make('config');
+            $config = $configRepository->get('mqtt-client', []);
+            $config['runtime_client_id']['prefix'] = $config['runtime_client_id']['prefix']
+                ?? $configRepository->get('app.env');
+            $config['runtime_client_id']['max_length'] = (int)($config['runtime_client_id']['max_length'] ?? 23);
+
+            return new RuntimeClientIdConnectionManager($app, $config);
+        });
 
         $this->app->booting(function () {
         });
