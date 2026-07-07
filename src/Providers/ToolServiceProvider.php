@@ -405,6 +405,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/new_config.php', 'new_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/subject_config_runtime.php', 'subject_config_runtime');
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
 
         $this->app->bind(ConnectionManager::class, function (Application $app) {
             $configRepository = $app->make('config');

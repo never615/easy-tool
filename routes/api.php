@@ -37,6 +37,14 @@ Route::group($attributes, function ($router) {
     /**
      * 需要经过验证
      */
+    Route::group([ 'middleware' => [ 'requestCheck' ] ], function () {
+        Route::post('webview/params', 'WebviewParamController@store');
+        Route::post('webview/params/resolve', 'WebviewParamController@resolve');
+    });
+
+    /**
+     * 需要经过验证,并记录接口日志
+     */
     Route::group([ 'middleware' => [ 'requestCheck', 'owner_api' ] ], function () {
         //意见反馈
         Route::post("feedback", "FeedbackController@store");
@@ -83,5 +91,4 @@ Route::group($attributes, function ($router) {
         });
     });
 });
-
 
