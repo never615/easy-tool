@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Mallto\Admin\Facades\AdminE;
+use Mallto\Admin\Domain\SubjectConfig\SubjectConfigRegistry;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
 use Mallto\Tool\Commands\PublishNewConfigCommand;
@@ -38,6 +39,7 @@ use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
+use Mallto\Tool\Domain\SubjectConfig\ToolSubjectConfigDefinitions;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
@@ -407,6 +409,8 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
         $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
 
+        $this->registerSubjectConfigDefinitions();
+
         $this->app->bind(ConnectionManager::class, function (Application $app) {
             $configRepository = $app->make('config');
             $config = $configRepository->get('mqtt-client', []);
@@ -430,6 +434,15 @@ class ToolServiceProvider extends ServiceProvider
         //$this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
+    }
+
+    private function registerSubjectConfigDefinitions(): void
+    {
+        foreach (ToolSubjectConfigDefinitions::modules() as $key => $module) {
+            SubjectConfigRegistry::registerModule($key, $module);
+        }
+
+        SubjectConfigRegistry::registerDefinitions(ToolSubjectConfigDefinitions::definitions());
     }
 
 

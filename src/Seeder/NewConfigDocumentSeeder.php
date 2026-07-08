@@ -104,7 +104,7 @@ config('subject_config_runtime.values')
 
 保存 `项目动态配置` 表单时，会写入 `subject_configs` 表并发布 `subject_configs_values.php` 快照，同时刷新 Laravel config cache。这个保存动作不会自动重启所有长驻进程；如果定位、推送、Swoole process、Horizon job 等长驻进程需要立刻读取新值，继续进入 `配置中心 > 发布与重启` 执行发布并重启。
 
-新增主体项目动态配置 key 时，优先登记到 `SubjectConfigDefinitions`，这样后台会以固定分组、类型校验、默认值和中文说明展示。数据库中已经存在但尚未登记的历史 key 会出现在“历史/未归类”中，只允许修改已有 value，不提供任意新增。`sa_lo_st_` 前缀的临时定位基站开关属于“临时基站”，同一个项目最多 10 个，超过会拒绝保存。
+新增主体项目动态配置 key 时，优先在所属业务包的 `*SubjectConfigDefinitions` 中定义，并通过 `SubjectConfigRegistry` 注册，这样后台会以固定分组、类型校验、默认值和中文说明展示。数据库中已经存在但尚未登记的历史 key 会出现在“历史/未归类”中，只允许修改已有 value，不提供任意新增。`sa_lo_st_` 前缀的临时定位基站开关属于“临时基站”，同一个项目最多 10 个，超过会拒绝保存。
 
 `配置中心 > 传统配置 > 动态配置` 对应 `/admin/subject_configs`，是项目动态配置的原始 key/value 兜底入口。日常不建议直接使用它；只有遇到表单尚未覆盖的历史 key 或排查原始数据时再使用。保存后仍需要进入 `配置中心 > 发布与重启` 执行发布并重启，LaravelS/Horizon 新进程才会读取最新项目动态配置快照。
 
@@ -249,7 +249,7 @@ cp .env.integration .env
 5. DB/Redis/Mongo/bootstrap key 不允许进入配置中心。
 6. 新增模块化配置时，优先做成 `配置中心` 下的表单，不新增散落入口。
 7. `subject_configs` 中 `sa_lo_st_` 前缀的临时定位基站开关，同一个项目最多 10 个，超过会拒绝保存。
-8. 新增项目动态配置 key 时，优先登记到 `SubjectConfigDefinitions`，让后台以表单和中文说明展示；临时或历史 key 会在“历史/未归类”中按数据库已有记录展示。
+8. 新增项目动态配置 key 时，优先在所属业务包通过 `SubjectConfigRegistry` 注册定义，让后台以表单和中文说明展示；临时或历史 key 会在“历史/未归类”中按数据库已有记录展示。
 
 ## 常用排查
 
