@@ -5,6 +5,7 @@ namespace Mallto\Tool\Controller\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Crypt;
+use Mallto\Tool\Domain\LogViewer\LogFileMutationService;
 use Mallto\Tool\Domain\LogViewer\RootOnlyLaravelLogViewer;
 
 class SystemLogController extends Controller
@@ -20,6 +21,11 @@ class SystemLogController extends Controller
     private $logViewer;
 
     /**
+     * @var LogFileMutationService
+     */
+    private $logFileMutationService;
+
+    /**
      * @var string
      */
     protected $viewLog = 'laravel-log-viewer::log';
@@ -27,6 +33,10 @@ class SystemLogController extends Controller
     public function __construct()
     {
         $this->logViewer = new RootOnlyLaravelLogViewer();
+        $this->logFileMutationService = new LogFileMutationService(
+            app('files'),
+            config('logviewer.active_files', [])
+        );
         $this->request = app('request');
     }
 
@@ -79,15 +89,17 @@ class SystemLogController extends Controller
         if ($this->request->input('dl')) {
             return $this->download($this->pathFromInput('dl'));
         } elseif ($this->request->has('clean')) {
-            app('files')->put($this->pathFromInput('clean'), '');
+            $this->logFileMutationService->clean($this->pathFromInput('clean'));
             return $this->redirect(url()->previous());
         } elseif ($this->request->has('del')) {
-            app('files')->delete($this->pathFromInput('del'));
+            $this->logFileMutationService->delete($this->pathFromInput('del'));
             return $this->redirect($this->request->url());
         } elseif ($this->request->has('delall')) {
+            $paths = [];
             foreach ($this->logViewer->getFiles(true) as $file) {
-                app('files')->delete($this->logViewer->pathToLogFile($file));
+                $paths[] = $this->logViewer->pathToLogFile($file);
             }
+            $this->logFileMutationService->deleteAll($paths);
 
             return $this->redirect($this->request->url());
         }
