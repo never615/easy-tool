@@ -17,7 +17,7 @@ GET /admin/monitor/app_stats/data
 
 页面路由与数据路由分别受 `admin_monitor.app_stats`、
 `admin_monitor.app_stats.data` 权限保护。给角色授权时必须同时授予两项权限；只授予页面权限会导致
-页面外壳可以打开，但五秒一次的数据刷新被拒绝。
+页面外壳可以打开，但首屏、手动和自动刷新数据请求均会被拒绝。
 
 页面和数据接口只读取当前状态，不会执行修复、重试、内存采样、Pod 清理、Stream 消费或告警状态
 写入。打开页面不会启动进程，也不会增加 Swoole Task、Horizon Job 或 Scheduler 任务。Redis 内存
@@ -93,6 +93,17 @@ Pod store 以 hostname 作为 Hash field 和 ZSet member，因此同一 hostname
 快照：hostname 复用时，新快照会覆盖旧 field，`instance_id` 用来确认进程已经更换，而不是让新旧
 实例并存。正常退出并成功执行 stop hook 的旧 Pod 可以立即消失；异常退出或 stop hook 未执行时，
 旧样本才会依次进入 `delayed`、`expired`。
+
+### 3.1 页面刷新与详情展开
+
+管理页面打开时只请求一次最新快照，之后默认不自动刷新。需要持续观察时，由用户显式勾选
+“自动刷新”；轮询间隔使用数据接口返回的 `refresh_seconds`，默认五秒。取消勾选后立即清除页面
+定时器，但仍可使用“立即刷新”获取一次最新数据。自动刷新开关只在当前页面生命周期内有效，
+不会写入 Cookie、数据库或 Redis；重新进入页面时仍默认关闭。
+
+Pod 行内“查看 Swoole / SkyLab 完整指标”的展开状态按 `instance_id` 保存在当前页面内。手动刷新或
+自动刷新重新渲染 Pod 表格时，同一实例的详情保持展开；Pod 重启产生新的 `instance_id` 后按新实例
+处理，不沿用旧进程的展开状态。
 
 ## 4. 五项固定诊断命令
 

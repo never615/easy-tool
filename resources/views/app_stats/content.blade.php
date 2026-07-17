@@ -7,7 +7,11 @@
     .app-stats__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
     .app-stats__toolbar h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
     .app-stats__toolbar p { margin: 0; color: #666; }
+    .app-stats__toolbar-actions { display: flex; align-items: center; gap: 12px; }
+    .app-stats__auto-refresh { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #555; cursor: pointer; font-weight: 400; }
+    .app-stats__auto-refresh input { margin: 0; }
     .app-stats__toolbar button:focus-visible,
+    .app-stats__auto-refresh input:focus-visible,
     .app-stats details summary:focus-visible { outline: 3px solid #3c8dbc; outline-offset: 2px; }
     .app-stats__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
     .app-stats__card,
@@ -48,7 +52,7 @@
 
     @media (max-width: 767px) {
         .app-stats__toolbar { align-items: stretch; flex-direction: column; }
-        .app-stats__toolbar button { align-self: flex-start; }
+        .app-stats__toolbar-actions { align-items: flex-start; flex-wrap: wrap; }
         .app-stats__cards { grid-template-columns: 1fr; }
         .app-stats__sections { grid-template-columns: 1fr; }
     }
@@ -59,10 +63,20 @@
         <header class="app-stats__toolbar">
             <div>
                 <h2>全集群运行状态</h2>
-                <p id="app-stats-refresh-state" aria-live="polite">等待首次刷新</p>
+                <p id="app-stats-refresh-state" aria-live="polite">等待首次刷新；自动刷新已关闭</p>
             </div>
             @if($autoRefresh)
-                <button type="button" id="app-stats-refresh" class="btn btn-primary">立即刷新</button>
+                <div class="app-stats__toolbar-actions">
+                    {{--
+                        自动刷新默认关闭，避免用户查看展开指标时页面持续变动，也避免监控页在后台
+                        长时间产生无必要请求。该选择只影响当前页面生命周期，不写 Cookie 或 Redis。
+                    --}}
+                    <label class="app-stats__auto-refresh" for="app-stats-auto-refresh">
+                        <input type="checkbox" id="app-stats-auto-refresh" aria-describedby="app-stats-refresh-state">
+                        <span>自动刷新</span>
+                    </label>
+                    <button type="button" id="app-stats-refresh" class="btn btn-primary">立即刷新</button>
+                </div>
             @endif
         </header>
 
@@ -109,6 +123,7 @@
             const dataUrl = root.dataset.url;
             const showRedisMemory = @json((bool) $showRedisMemory);
             const refreshButton = document.getElementById('app-stats-refresh');
+            const autoRefreshToggle = document.getElementById('app-stats-auto-refresh');
             const refreshState = document.getElementById('app-stats-refresh-state');
             const alertBox = document.getElementById('app-stats-alert');
             const summaryRoot = document.getElementById('app-stats-summary');
@@ -119,6 +134,12 @@
             let lastSuccessAt = null;
             let destroyed = false;
             let refreshMilliseconds = 5000;
+            // 自动刷新是一次页面会话内的显式选择，默认关闭且不写入持久化存储。
+            // 用户下次进入监控页时仍需主动开启，避免长期占用浏览器与服务端资源。
+            let autoRefreshEnabled = false;
+            // 每个 Pod 的 instance_id 在一次进程生命周期内唯一。以它记录详情展开状态，
+            // 即使刷新重新创建整行 DOM，也不会把用户正在查看的完整指标收回去。
+            const expandedPodIds = new Set();
 
             // 动态数据一律通过 textContent 写入新建 DOM 节点，不把 API 值解释为标记文本。
             const text = (tag, value, className) => {
@@ -305,6 +326,16 @@
                     identity.append(text('small', pod.instance_id || '未知实例', 'app-stats__instance'));
 
                     const details = document.createElement('details');
+                    const podIdentity = String(pod.instance_id || pod.hostname || 'unknown-pod');
+                    details.dataset.podId = podIdentity;
+                    details.open = expandedPodIds.has(podIdentity);
+                    details.addEventListener('toggle', () => {
+                        if (details.open) {
+                            expandedPodIds.add(podIdentity);
+                        } else {
+                            expandedPodIds.delete(podIdentity);
+                        }
+                    });
                     details.append(text('summary', '查看 Swoole / SkyLab 完整指标'));
                     const detailMetrics = document.createElement('div');
                     detailMetrics.append(metricList(pod.stats || {}));
@@ -382,7 +413,8 @@
                 renderPods(payload.pods);
                 renderSections(payload.sections);
                 lastSuccessAt = new Date();
-                refreshState.textContent = '最近刷新：' + lastSuccessAt.toLocaleTimeString();
+                refreshState.textContent = '最近刷新：' + lastSuccessAt.toLocaleTimeString()
+                    + (autoRefreshEnabled ? '；自动刷新已开启' : '；自动刷新已关闭');
                 // HTTP 成功不代表所有数据源成功。Pod store 失败会通过 cluster.message 返回，
                 // 必须在页面内明确提示，不能只剩一条红色状态轨让用户猜测原因。
                 const clusterMessage = payload.cluster && payload.cluster.message;
@@ -397,14 +429,25 @@
 
             const setPollingInterval = (seconds) => {
                 const nextMilliseconds = Math.max(1, Number(seconds) || 5) * 1000;
-                if (timer !== null && nextMilliseconds === refreshMilliseconds) {
+                const intervalUnchanged = nextMilliseconds === refreshMilliseconds;
+                refreshMilliseconds = nextMilliseconds;
+
+                // 关闭开关时只保存服务端返回的推荐间隔，不创建定时器。下次开启时直接
+                // 使用最新间隔；这也保证首次页面加载只请求一次，不会暗中开始轮询。
+                if (!autoRefreshEnabled) {
+                    if (timer !== null) {
+                        window.clearInterval(timer);
+                        timer = null;
+                    }
                     return;
                 }
 
+                if (timer !== null && intervalUnchanged) {
+                    return;
+                }
                 if (timer !== null) {
                     window.clearInterval(timer);
                 }
-                refreshMilliseconds = nextMilliseconds;
                 timer = window.setInterval(refresh, refreshMilliseconds);
             };
 
@@ -463,18 +506,32 @@
             };
 
             const onRefreshClick = () => refresh();
+            const onAutoRefreshChange = () => {
+                autoRefreshEnabled = Boolean(autoRefreshToggle && autoRefreshToggle.checked);
+                setPollingInterval(refreshMilliseconds / 1000);
+                refreshState.textContent = lastSuccessAt
+                    ? '最近刷新：' + lastSuccessAt.toLocaleTimeString()
+                        + (autoRefreshEnabled ? '；自动刷新已开启' : '；自动刷新已关闭')
+                    : (autoRefreshEnabled ? '等待首次刷新；自动刷新已开启' : '等待首次刷新；自动刷新已关闭');
+            };
             const onVisibilityChange = () => {
                 if (document.hidden) {
                     if (controller) {
                         controller.abort();
                     }
-                    refreshState.textContent = lastSuccessAt
-                        ? '页面不可见，自动刷新已暂停；上次成功：' + lastSuccessAt.toLocaleTimeString()
-                        : '页面不可见，自动刷新已暂停';
+                    if (autoRefreshEnabled) {
+                        refreshState.textContent = lastSuccessAt
+                            ? '页面不可见，自动刷新已暂停；上次成功：' + lastSuccessAt.toLocaleTimeString()
+                            : '页面不可见，自动刷新已暂停';
+                    }
                     return;
                 }
 
-                refresh();
+                // 默认关闭时，切回浏览器标签页不能被当成一次隐式刷新；只有用户明确
+                // 开启自动刷新后，恢复可见才立即补取一次最新状态。
+                if (autoRefreshEnabled) {
+                    refresh();
+                }
             };
 
             const api = {
@@ -494,6 +551,9 @@
                     if (refreshButton) {
                         refreshButton.removeEventListener('click', onRefreshClick);
                     }
+                    if (autoRefreshToggle) {
+                        autoRefreshToggle.removeEventListener('change', onAutoRefreshChange);
+                    }
                     document.removeEventListener('visibilitychange', onVisibilityChange);
                     document.removeEventListener('pjax:beforeReplace', onPjaxBeforeReplace);
                     if (window.easyToolAppStats === api) {
@@ -506,13 +566,16 @@
             if (refreshButton) {
                 refreshButton.addEventListener('click', onRefreshClick);
             }
+            if (autoRefreshToggle) {
+                autoRefreshToggle.checked = false;
+                autoRefreshToggle.addEventListener('change', onAutoRefreshChange);
+            }
             document.addEventListener('visibilitychange', onVisibilityChange);
             document.addEventListener('pjax:beforeReplace', onPjaxBeforeReplace, {once: true});
             window.easyToolAppStats = api;
 
-            // 首次请求失败时仍需继续低频重试，因此先建立一个默认 interval；服务响应成功后
-            // 再用 API 返回的 refresh_seconds 调整，任意时刻都只保留这一个 interval。
-            setPollingInterval(5);
+            // 首屏始终主动请求一次，让页面有可读数据；后续是否继续轮询完全由自动刷新
+            // 开关决定。首次失败时也不自动重试，用户可手动刷新或主动开启自动刷新。
             refresh();
         })();
     </script>
