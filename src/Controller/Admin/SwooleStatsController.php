@@ -7,10 +7,15 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Layout\Content;
-use Illuminate\Support\Facades\Redis;
-use Mallto\Tool\Processes\SwooleStatsCollectorProcess;
+use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
 
 /**
+ * 旧 Swoole 监控入口的只读兼容适配器。
+ *
+ * 现有内部监控仍可通过旧 URL 获取原来的 JSON/Grafana 字段；HTML 管理端入口则统一跳转到
+ * AppStats。公开 HTML 入口只复用共享 Blade 展示旧接口已经公开的指标，不读取 Redis 内存
+ * 等新增管理端数据，也不再包含任何开始/停止采集控制。
+ *
  * Created by PhpStorm.
  * User: never615 <never615.com>
  * Date: 2019/2/13
@@ -18,172 +23,117 @@ use Mallto\Tool\Processes\SwooleStatsCollectorProcess;
  */
 class SwooleStatsController
 {
-    /**
-     * Pod 数据新鲜度阈值（秒）：超过此时间未更新视为下线
-     */
-    protected const POD_STALE_SECONDS = 15;
-
-    /**
-     * 默认采集持续时间（秒）
-     */
-    protected const DEFAULT_COLLECT_DURATION = 300;
-
     public function index()
     {
-        // ?start_collect=1&duration=300：开启全 pod 采集
-        if (request()->boolean('start_collect')) {
-            return $this->handleStartCollect();
-        }
-
-        // ?stop_collect=1：停止采集
-        if (request()->boolean('stop_collect')) {
-            return $this->handleStopCollect();
-        }
-
+        // Grafana 与旧 JSON 的判断必须先于 HTML 跳转，以保持既有机器调用的字段和响应类型。
         if ($this->isGrafanaRequest()) {
             return response()->json($this->getGrafanaPayload());
         }
 
-        // ?all_pods=1：显示所有 pod 聚合状态（从 Redis 读取）
+        if ($this->wantsJsonResponse()) {
+            if (request()->boolean('all_pods')) {
+                return $this->handleAllPods();
+            }
+
+            $swooleMetrics = $this->getSwooleMetrics();
+            $extraMetrics = $this->getExtraMetrics();
+
+            return response()->json($this->getJsonPayload($swooleMetrics, $extraMetrics));
+        }
+
+        // 旧管理端菜单、收藏或历史链接统一进入 AppStats，且刻意不透传 query string。
+        // start_collect、stop_collect、duration 已失效，不能让旧书签把控制参数带入新页面。
+        if ($this->shouldRenderAdminContent()) {
+            return redirect()->route('admin_monitor.app_stats');
+        }
+
+        // 连续低频采集不再由用户控制。公开兼容入口收到旧控制参数时只做无副作用跳转，
+        // duration 无论取值如何都不会写 Redis，也不会形成新的采集 TTL。
+        if (request()->boolean('start_collect') || request()->boolean('stop_collect')) {
+            return redirect(request()->url().'?all_pods=1');
+        }
+
         if (request()->boolean('all_pods')) {
             return $this->handleAllPods();
         }
 
-        // 默认：只显示当前 pod
         $swooleMetrics = $this->getSwooleMetrics();
         $extraMetrics = $this->getExtraMetrics();
 
-        // 判断请求类型，决定返回 JSON 还是 HTML 可视化页面
-        if ($this->wantsJsonResponse()) {
-            return response()->json($this->getJsonPayload($swooleMetrics, $extraMetrics));
-        }
-
-        if ($this->shouldRenderAdminContent()) {
-            return $this->renderAdminContent(
-                'Swoole 运行状态',
-                $this->renderCurrentPodBodyHtml(
-                    $swooleMetrics,
-                    $this->getExtraHtml($extraMetrics),
-                    $this->getExtraScript($extraMetrics)
-                )
-            );
-        }
-
-        return $this->renderHtmlWithExtras(
-            $swooleMetrics,
-            $this->getExtraHtml($extraMetrics),
-            $this->getExtraScript($extraMetrics)
+        return $this->renderCompatibilityPage(
+            'Swoole 运行状态',
+            array_merge(
+                [['title' => 'Swoole 运行状态', 'metrics' => $swooleMetrics]],
+                $this->getCompatibilityGroups($extraMetrics)
+            )
         );
     }
 
     // =========================================================================
-    // 多 Pod 支持（基于 Redis + SwooleStatsCollectorProcess）
+    // 多 Pod 只读兼容（数据来自持续采集的 AppStatsPodRepository）
     // =========================================================================
 
     /**
-     * 开启采集：设置 Redis 标志位，所有 pod 的 SwooleStatsCollectorProcess 会检测到并开始写入
+     * 保留一个兼容发布周期的旧扩展点。
+     *
+     * 旧行为会 SETEX 临时采集标志；现在只跳到只读的所有 Pod 页面。该方法不再读取 duration，
+     * 也绝不能恢复 Redis 写入，否则 GET 请求会重新变成运行态控制接口。
      */
     protected function handleStartCollect()
     {
-        $duration = (int) request()->get('duration', self::DEFAULT_COLLECT_DURATION);
-        $duration = max(10, min($duration, 3600)); // 限制 10秒 ~ 1小时
-
-        Redis::setex(SwooleStatsCollectorProcess::COLLECTING_KEY, $duration, time());
-
-        // 返回时自动跳转到 all_pods 页面
-        $allPodsUrl = request()->url() . '?all_pods=1';
-        return redirect($allPodsUrl);
+        return redirect(request()->url().'?all_pods=1');
     }
 
     /**
-     * 停止采集：删除 Redis 标志位
+     * 保留一个兼容发布周期的旧扩展点；停止参数与开始参数一样只做无副作用跳转。
      */
     protected function handleStopCollect()
     {
-        Redis::del(SwooleStatsCollectorProcess::COLLECTING_KEY);
-
-        $allPodsUrl = request()->url() . '?all_pods=1';
-        return redirect($allPodsUrl);
+        return redirect(request()->url().'?all_pods=1');
     }
 
     /**
-     * 查看当前采集剩余时间（秒），-2 表示未在采集
+     * 连续采集没有用户可控制的 TTL，固定返回 Redis TTL 语义中的“不存在”值 -2。
+     *
+     * 子类可能仍调用本方法，因此本期保留签名；返回值只用于旧响应结构，不触发 Redis 查询。
      */
     protected function getCollectingTtl(): int
     {
-        $ttl = Redis::ttl(SwooleStatsCollectorProcess::COLLECTING_KEY);
-        return $ttl > 0 ? $ttl : -2;
+        return -2;
     }
 
     /**
-     * 从 Redis Hash 读取所有 pod 的指标数据，过滤掉过期条目
+     * 从共享 Pod 仓储取得已完成新鲜度分类的只读结果。
      *
-     * @return array [['hostname'=>..., 'stats'=>[...], 'updated_at'=>..., 'stale'=>bool], ...]
+     * 仓储读取固定 Hash/ZSet，不在 HTTP 路径执行 HDEL、DEL、ZREM 或过期清理；异常和非法
+     * payload 已由仓储转换为安全结果，因此兼容端点只返回 pods 列表。
+     *
+     * @return array<int, array<string, mixed>>
      */
     protected function getAllPodsStats(): array
     {
-        $raw = Redis::hgetall(SwooleStatsCollectorProcess::PODS_HASH_KEY);
-        if (!$raw) {
-            return [];
-        }
-
-        $cutoff    = time() - self::POD_STALE_SECONDS;
-        $result    = [];
-        $staleKeys = [];
-
-        foreach ($raw as $hostname => $json) {
-            $pod = json_decode($json, true);
-            if (!$pod) {
-                $staleKeys[] = $hostname;
-                continue;
-            }
-
-            $updatedAt = $pod['updated_at'] ?? 0;
-            if ($updatedAt < $cutoff) {
-                // 已过期（pod 下线 / 重新部署后旧 pod），从 Hash 中清除，不显示
-                $staleKeys[] = $hostname;
-                continue;
-            }
-
-            $result[] = $pod;
-        }
-
-        // 清理过期 & 无法解析的条目
-        if ($staleKeys) {
-            Redis::hdel(SwooleStatsCollectorProcess::PODS_HASH_KEY, ...$staleKeys);
-        }
-
-        // 按 hostname 排序，保证显示顺序稳定
-        usort($result, fn($a, $b) => ($a['hostname'] ?? '') <=> ($b['hostname'] ?? ''));
-
-        return $result;
+        return app(AppStatsPodRepository::class)->read()['pods'];
     }
 
     /**
-     * 聚合所有 pod 的指标页面
+     * 聚合所有 Pod 的旧兼容响应。
+     *
+     * collecting/collecting_ttl 字段继续存在，避免旧调用方因字段缺失报错；它们明确表示当前
+     * 已不存在临时采集会话，而不是表示后台持续采集已停止。
      */
     protected function handleAllPods()
     {
-        $collectingTtl = $this->getCollectingTtl();
-        $isCollecting  = $collectingTtl > 0;
-        $pods          = $this->getAllPodsStats();
+        $pods = $this->getAllPodsStats();
 
         if ($this->wantsJsonResponse()) {
             return response()->json([
-                'collecting'     => $isCollecting,
-                'collecting_ttl' => $collectingTtl,
-                'pods'           => $pods,
+                'collecting' => false,
+                'collecting_ttl' => -2,
+                'pods' => $pods,
             ]);
         }
 
-        if ($this->shouldRenderAdminContent()) {
-            return $this->renderAdminContent(
-                'Swoole 运行状态 — 所有 Pod',
-                $this->renderMultiPodBodyHtml($pods, $isCollecting, $collectingTtl)
-            );
-        }
-
-        return $this->renderMultiPodHtml($pods, $isCollecting, $collectingTtl);
+        return $this->renderMultiPodHtml($pods, false, -2);
     }
 
     protected function wantsJsonResponse(): bool
@@ -196,7 +146,7 @@ class SwooleStatsController
             return false;
         }
 
-        $accept = (string)request()->header('accept');
+        $accept = (string) request()->header('accept');
 
         return request()->ajax()
             || (
@@ -211,6 +161,11 @@ class SwooleStatsController
             || optional(request()->route())->named('admin_monitor.swoole_stats');
     }
 
+    /**
+     * 旧子类可能仍引用该 protected 方法，因此本期保留签名。
+     *
+     * 基类路由已不再使用它渲染监控内容；管理端 HTML 统一跳转 AppStats。
+     */
     protected function renderAdminContent(string $header, string $body)
     {
         return Admin::content(function (Content $content) use ($header, $body) {
@@ -221,151 +176,85 @@ class SwooleStatsController
     }
 
     /**
-     * 渲染多 pod 聚合 HTML 页面
+     * 子类通过结构化 groups 扩展公开兼容页，避免重新注入任意 HTML 或 JavaScript 字符串。
+     *
+     * @param  array<string, mixed>  $extraMetrics
+     * @return array<int, array{title: string, metrics: array<string, mixed>}>
+     */
+    protected function getCompatibilityGroups(array $extraMetrics): array
+    {
+        return [];
+    }
+
+    /**
+     * 把各 Pod 的兼容 stats 和随 Pod 快照写入的 SkyLab 指标转换为共享 Blade 数据。
+     *
+     * @param  array<int, array<string, mixed>>  $pods
+     * @return array<int, array{title: string, metrics: array<string, mixed>}>
+     */
+    protected function podCompatibilityGroups(array $pods): array
+    {
+        $groups = [];
+        foreach ($pods as $pod) {
+            $hostname = (string) ($pod['hostname'] ?? 'unknown');
+            $groups[] = [
+                'title' => $hostname.' / Swoole',
+                'metrics' => is_array($pod['stats'] ?? null) ? $pod['stats'] : [],
+            ];
+
+            if (is_array($pod['skylab_tcp'] ?? null)) {
+                $groups[] = [
+                    'title' => $hostname.' / SkyLab TCP',
+                    'metrics' => $pod['skylab_tcp'],
+                ];
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * 渲染共享 standalone 外壳。Blade 使用转义输出，且兼容模式不会加载 AppStats 数据 API，
+     * 所以公开旧入口不会因此获得 Redis 内存等仅管理端可见的新指标。
+     *
+     * @param  array<int, array{title: string, metrics: array<string, mixed>}>  $groups
+     */
+    protected function renderCompatibilityPage(string $title, array $groups)
+    {
+        return response()->view('easy-tool::app_stats.standalone', [
+            'compatibilityTitle' => $title,
+            'compatibilityGroups' => $groups,
+        ]);
+    }
+
+    /**
+     * 保留原 protected 签名供下游包平滑升级；isCollecting/collectingTtl 不再控制页面或进程。
      */
     protected function renderMultiPodHtml(array $allPodsStats, bool $isCollecting, int $collectingTtl)
     {
-        return response()->make(<<<HTML
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>Swoole 运行状态 — 所有 Pod</title>
-</head>
-<body>
-    {$this->renderMultiPodBodyHtml($allPodsStats, $isCollecting, $collectingTtl)}
-</body>
-</html>
-HTML
-            , 200, ['Content-Type' => 'text/html']);
+        return $this->renderCompatibilityPage(
+            'Swoole 运行状态 — 所有 Pod',
+            $this->podCompatibilityGroups($allPodsStats)
+        );
     }
 
+    /**
+     * 保留旧 body 扩展点，但只返回结构化共享视图，不恢复开始/停止按钮或控制脚本。
+     */
     protected function renderMultiPodBodyHtml(array $allPodsStats, bool $isCollecting, int $collectingTtl): string
     {
-        $podCount   = count($allPodsStats);
-        $baseUrl    = request()->url();
-        $tablesHtml = '';
-
-        foreach ($allPodsStats as $pod) {
-            $hostname  = htmlspecialchars($pod['hostname'] ?? '');
-            $updatedAt = isset($pod['updated_at']) ? date('H:i:s', $pod['updated_at']) : '-';
-
-            $rowsHtml = '';
-            if (!empty($pod['stats'])) {
-                foreach ($pod['stats'] as $k => $v) {
-                    $rowsHtml .= '<tr><td>' . htmlspecialchars($k) . '</td>'
-                        . '<td>' . htmlspecialchars((string) $v) . '</td></tr>';
-                }
-            } else {
-                $rowsHtml = '<tr><td colspan="2" style="color:#999">暂无数据</td></tr>';
-            }
-
-            $tablesHtml .= <<<HTML
-
-            <div class="pod-block">
-                <h2>{$hostname}
-                    <span style="color:green">● live</span>
-                    <small style="font-size:0.6em;color:#888;font-weight:normal">更新于 {$updatedAt}</small>
-                </h2>
-                <table>
-                    <thead><tr><th>指标</th><th>值</th></tr></thead>
-                    <tbody>{$rowsHtml}</tbody>
-                </table>
-            </div>
-HTML;
-        }
-
-        // 采集控制区
-        if ($isCollecting) {
-            $collectControlHtml = <<<HTML
-            <div class="collect-status" style="background:#e8f5e9;padding:12px 18px;border-radius:6px;margin-bottom:1.5em">
-                <strong style="color:green">✓ 正在采集</strong>
-                <span style="margin-left:8px">剩余 <strong id="ttl-countdown">{$collectingTtl}</strong> 秒</span>
-                <a href="{$baseUrl}?stop_collect=1" style="margin-left:16px;color:#cc0000">■ 停止采集</a>
-                <a href="{$baseUrl}?all_pods=1" style="margin-left:16px">⟳ 刷新</a>
-            </div>
-HTML;
-        } else {
-            $collectControlHtml = <<<HTML
-            <div class="collect-status" style="background:#fff3e0;padding:12px 18px;border-radius:6px;margin-bottom:1.5em">
-                <strong style="color:#e65100">○ 未在采集</strong>
-                <span style="margin-left:12px">持续时间:</span>
-                <select id="duration-select" style="margin-left:4px">
-                    <option value="60">1 分钟</option>
-                    <option value="300" selected>5 分钟</option>
-                    <option value="600">10 分钟</option>
-                    <option value="1800">30 分钟</option>
-                    <option value="3600">1 小时</option>
-                </select>
-                <a id="start-btn" href="#" style="margin-left:12px;color:green;font-weight:bold">▶ 开始采集</a>
-            </div>
-HTML;
-        }
-
-        $noDataHint = $podCount === 0
-            ? '<p style="color:#999">暂无 pod 数据。请先点击「开始采集」，等待 2~3 秒后刷新页面。</p>'
-            : '';
-
-        return <<<HTML
-    <style>
-        .swoole-stats-page { font-family: -apple-system, Arial, sans-serif; margin: 2em; }
-        .swoole-stats-page h1 { margin-bottom: 0.4em; }
-        .swoole-stats-page .nav { margin-bottom: 1em; }
-        .swoole-stats-page .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
-        .swoole-stats-page .pod-block { margin-bottom: 2em; }
-        .swoole-stats-page h2 { margin-top: 0; margin-bottom: 0.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.4em; font-size: 1.1em; }
-        .swoole-stats-page table { border-collapse: collapse; width: 60%; }
-        .swoole-stats-page th, .swoole-stats-page td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
-        .swoole-stats-page th { background: #f5f5f5; }
-        .swoole-stats-page select { padding: 2px 6px; }
-    </style>
-    <div class="swoole-stats-page">
-        <h1>Swoole 运行状态 — 所有 Pod ({$podCount})</h1>
-        <div class="nav">
-            <a href="{$baseUrl}">← 仅当前 Pod</a>
-        </div>
-
-        {$collectControlHtml}
-        {$noDataHint}
-        {$tablesHtml}
-    </div>
-
-    <script>
-        // 开始采集按钮 → 带 duration 参数跳转
-        var startBtn = document.getElementById('start-btn');
-        if (startBtn) {
-            startBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var duration = document.getElementById('duration-select').value;
-                window.location.href = '{$baseUrl}?start_collect=1&duration=' + duration;
-            });
-        }
-
-        // 倒计时显示
-        var ttlEl = document.getElementById('ttl-countdown');
-        if (ttlEl) {
-            var ttl = parseInt(ttlEl.textContent);
-            var timer = setInterval(function() {
-                ttl--;
-                if (ttl <= 0) {
-                    clearInterval(timer);
-                    ttlEl.textContent = '0';
-                    // 自动刷新
-                    setTimeout(function() { window.location.reload(); }, 1000);
-                } else {
-                    ttlEl.textContent = ttl;
-                }
-            }, 1000);
-
-            // 采集中自动刷新（每 5 秒）
-            setTimeout(function() { window.location.reload(); }, 5000);
-        }
-    </script>
-HTML;
+        return view('easy-tool::app_stats.content', [
+            'mode' => 'compatibility',
+            'dataUrl' => null,
+            'showRedisMemory' => false,
+            'autoRefresh' => false,
+            'compatibilityTitle' => 'Swoole 运行状态 — 所有 Pod',
+            'compatibilityGroups' => $this->podCompatibilityGroups($allPodsStats),
+        ])->render();
     }
 
     // =========================================================================
-    // 原有方法
+    // 原有机器接口方法：Grafana 名称与旧 JSON 顶层结构必须保持不变
     // =========================================================================
 
     /**
@@ -375,7 +264,7 @@ HTML;
      */
     protected function isGrafanaRequest(): bool
     {
-        return (string)request()->get('grafana') === '1';
+        return (string) request()->get('grafana') === '1';
     }
 
     /**
@@ -395,13 +284,13 @@ HTML;
      */
     protected function getGrafanaMetrics(): array
     {
-        $server  = app('swoole');
-        $stats   = $server->stats();
+        $server = app('swoole');
+        $stats = $server->stats();
         $setting = $server->setting;
-        if (!isset($stats['worker_num'])) {
+        if (! isset($stats['worker_num'])) {
             $stats['worker_num'] = $setting['worker_num'];
         }
-        if (!isset($stats['task_worker_num'])) {
+        if (! isset($stats['task_worker_num'])) {
             $stats['task_worker_num'] = isset($setting['task_worker_num']) ? $setting['task_worker_num'] : 0;
         }
 
@@ -436,22 +325,22 @@ HTML;
     protected function getSwooleMetrics(): array
     {
         $server = app('swoole');
-        $stats  = $server->stats();
+        $stats = $server->stats();
 
         return array_merge([
-            'hostname'       => gethostname(),
+            'hostname' => gethostname(),
             'swoole_cpu_num' => swoole_cpu_num(),
         ], [
-            'worker_num_use'      => ($stats['worker_num'] - $stats['idle_worker_num']) . '/' . $stats['worker_num'],
-            'task_worker_num_use' => ($stats['task_worker_num'] - $stats['task_idle_worker_num']) . '/' . $stats['task_worker_num'],
+            'worker_num_use' => ($stats['worker_num'] - $stats['idle_worker_num']).'/'.$stats['worker_num'],
+            'task_worker_num_use' => ($stats['task_worker_num'] - $stats['task_idle_worker_num']).'/'.$stats['task_worker_num'],
 //            'worker_num' => $stats['worker_num'],
 //            'idle_worker_num' => $stats['idle_worker_num'],
 //            'task_worker_num' => $stats['task_worker_num'],
 //            'task_idle_worker_num' => $stats['task_idle_worker_num'],
-            'start_time'          => $stats['start_time'] . ' (' . date('Y-m-d H:i:s', $stats['start_time']) . ')',
-            'connection_num'      => $stats['connection_num'],
-            'request_count'       => $stats['request_count'],
-            'tasking_num'         => $stats['tasking_num'],
+            'start_time' => $stats['start_time'].' ('.date('Y-m-d H:i:s', $stats['start_time']).')',
+            'connection_num' => $stats['connection_num'],
+            'request_count' => $stats['request_count'],
+            'tasking_num' => $stats['tasking_num'],
         ], []);
     }
 
@@ -468,8 +357,8 @@ HTML;
     /**
      * JSON 响应结构（子类可重写）
      *
-     * @param array $swooleMetrics
-     * @param array $extraMetrics
+     * @param  array  $swooleMetrics
+     * @param  array  $extraMetrics
      * @return array
      */
     protected function getJsonPayload(array $swooleMetrics, array $extraMetrics): array
@@ -477,16 +366,17 @@ HTML;
         if (empty($extraMetrics)) {
             return $swooleMetrics;
         }
+
         return [
             'swoole' => $swooleMetrics,
-            'extra'  => $extraMetrics,
+            'extra' => $extraMetrics,
         ];
     }
 
     /**
-     * 额外 HTML 区块（子类可重写）
+     * 旧字符串 HTML 扩展点保留一个兼容发布周期，但新路由渲染链不再调用该返回值。
      *
-     * @param array $extraMetrics
+     * @param  array  $extraMetrics
      * @return string
      */
     protected function getExtraHtml(array $extraMetrics): string
@@ -495,9 +385,9 @@ HTML;
     }
 
     /**
-     * 额外脚本（子类可重写）
+     * 旧字符串脚本扩展点保留一个兼容发布周期，但新路由渲染链不再调用该返回值。
      *
-     * @param array $extraMetrics
+     * @param  array  $extraMetrics
      * @return string
      */
     protected function getExtraScript(array $extraMetrics): string
@@ -506,80 +396,46 @@ HTML;
     }
 
     /**
-     * 渲染 HTML 页面（可扩展额外区块）
+     * 保留旧签名供下游子类兼容；extraHtml/extraScript 被有意忽略，防止任意字符串注入共享页。
      *
-     * 顶部增加「查看所有 Pod」快捷入口，方便多 pod 场景一键切换。
-     *
-     * @param array  $swooleMetrics
-     * @param string $extraHtml
-     * @param string $extraScript
+     * @param  array  $swooleMetrics
+     * @param  string  $extraHtml
+     * @param  string  $extraScript
      * @return \Illuminate\Http\Response
      */
     protected function renderHtmlWithExtras(array $swooleMetrics, string $extraHtml = '', string $extraScript = '')
     {
-        return response()->make(<<<HTML
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>Swoole 运行状态</title>
-</head>
-<body>
-    {$this->renderCurrentPodBodyHtml($swooleMetrics, $extraHtml, $extraScript)}
-</body>
-</html>
-HTML
-            , 200, ['Content-Type' => 'text/html']);
+        return $this->renderCompatibilityPage('Swoole 运行状态', [[
+            'title' => 'Swoole 运行状态',
+            'metrics' => $swooleMetrics,
+        ]]);
     }
 
-    protected function renderCurrentPodBodyHtml(array $swooleMetrics, string $extraHtml = '', string $extraScript = ''): string
-    {
-        $swooleMetricsJson = addslashes(json_encode($swooleMetrics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        return <<<HTML
-    <style>
-        .swoole-stats-page { font-family: Arial, sans-serif; margin: 2em; }
-        .swoole-stats-page h2 { margin-top: 2em; }
-        .swoole-stats-page h2:first-of-type { margin-top: 0; }
-        .swoole-stats-page table { border-collapse: collapse; width: 60%; margin-bottom: 2em; }
-        .swoole-stats-page th, .swoole-stats-page td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
-        .swoole-stats-page th { background: #f5f5f5; }
-        .swoole-stats-page .nav { margin-bottom: 1.5em; }
-        .swoole-stats-page .nav a { margin-right: 1.2em; text-decoration: none; color: #0066cc; }
-    </style>
-    <div class="swoole-stats-page">
-        <div class="nav">
-            <a href="?all_pods=1">⊞ 查看所有 Pod</a>
-            <a href="?">⟳ 刷新</a>
-        </div>
-        <h2>Swoole 运行状态</h2>
-        <table>
-            <thead><tr><th>指标</th><th>值</th></tr></thead>
-            <tbody id="swoole-metrics-table"></tbody>
-        </table>
-
-        {$extraHtml}
-    </div>
-
-    <script>
-        // 渲染 Swoole 指标表格
-        const swooleMetrics = JSON.parse('$swooleMetricsJson');
-        const swooleTableBody = document.getElementById('swoole-metrics-table');
-        Object.entries(swooleMetrics).forEach(function(entry) {
-            var k = entry[0], v = entry[1];
-            var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + k + '</td><td>' + v + '</td>';
-            swooleTableBody.appendChild(tr);
-        });
-
-        {$extraScript}
-    </script>
-HTML;
+    /**
+     * 保留旧 body 签名供下游子类兼容；只渲染结构化指标，不执行传入的字符串扩展。
+     */
+    protected function renderCurrentPodBodyHtml(
+        array $swooleMetrics,
+        string $extraHtml = '',
+        string $extraScript = ''
+    ): string {
+        return view('easy-tool::app_stats.content', [
+            'mode' => 'compatibility',
+            'dataUrl' => null,
+            'showRedisMemory' => false,
+            'autoRefresh' => false,
+            'compatibilityTitle' => 'Swoole 运行状态',
+            'compatibilityGroups' => [[
+                'title' => 'Swoole 运行状态',
+                'metrics' => $swooleMetrics,
+            ]],
+        ])->render();
     }
 
     /**
      * 把 key/value 指标转换为 Grafana/Prometheus 结构
      *
-     * @param array $metrics
+     * @param  array  $metrics
      * @return array
      */
     protected function buildGrafanaMetricsFromMap(array $metrics): array
@@ -588,12 +444,13 @@ HTML;
         foreach ($metrics as $key => $value) {
             if (is_numeric($value)) {
                 $result[] = [
-                    'name'  => $key,
-                    'type'  => 'gauge',
+                    'name' => $key,
+                    'type' => 'gauge',
                     'value' => $value + 0,
                 ];
             }
         }
+
         return $result;
     }
 }

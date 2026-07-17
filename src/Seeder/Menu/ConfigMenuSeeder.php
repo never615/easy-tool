@@ -80,8 +80,39 @@ class ConfigMenuSeeder extends Seeder
         $this->updateOrCreate(
             "admin_monitor.horizon", $monitorCenterMenu->id, 30, "horizon 监控", "fa-dashboard");
 
+        /*
+         * 先把同一“监控中心”下的旧 Swoole 菜单原地迁移，再执行统一的 upsert。
+         *
+         * 正常升级时，新 URI 尚不存在，原地更新会保留菜单主键及其既有角色关联；限定
+         * parent_id 可避免误改其他模块碰巧复用同 URI 的历史数据。若部分发布或手工操作已
+         * 同时留下旧、新两行，则不能再把旧行 update 成重复的新 URI：此时保留现有新行并
+         * 删除旧行。最后统一 upsert，使后续重复执行 Seeder 始终只维护一个 AppStats 菜单。
+         */
+        $appStatsMenuExists = Menu::query()
+            ->where('uri', 'admin_monitor.app_stats')
+            ->where('parent_id', $monitorCenterMenu->id)
+            ->exists();
+
+        if (! $appStatsMenuExists) {
+            Menu::query()
+                ->where('uri', 'admin_monitor.swoole_stats')
+                ->where('parent_id', $monitorCenterMenu->id)
+                ->update([
+                    'uri' => 'admin_monitor.app_stats',
+                    'title' => '应用运行监控',
+                    'icon' => 'fa-area-chart',
+                    'order' => 40,
+                ]);
+        }
+
+        // 清除异常部分发布留下的旧行；正常原地迁移后此查询为空，重复执行同样无副作用。
+        Menu::query()
+            ->where('uri', 'admin_monitor.swoole_stats')
+            ->where('parent_id', $monitorCenterMenu->id)
+            ->delete();
+
         $this->updateOrCreate(
-            "admin_monitor.swoole_stats", $monitorCenterMenu->id, 40, "swoole 监控", "fa-area-chart");
+            "admin_monitor.app_stats", $monitorCenterMenu->id, 40, "应用运行监控", "fa-area-chart");
 
         //--------------------- 日志中心
 

@@ -40,7 +40,13 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("Swoole Task监控", "swoole_task_monitor.index", false, 0);
         $this->createPermissions("Swoole Task监控重置", "swoole_task_monitor.reset", false, 0);
         $this->createPermissions("horizon 监控", "admin_monitor.horizon", false, 0);
-        $this->createPermissions("swoole 监控", "admin_monitor.swoole_stats", false, 0);
+        $this->createPermissions("应用运行监控", "admin_monitor.app_stats", false, 0);
+        $this->createPermissions("应用运行监控数据", "admin_monitor.app_stats.data", false, 0);
+        /*
+         * 旧路由仍为现有 Grafana/JSON 调用、历史角色授权和内部链接提供兼容入口。
+         * 本期新增 AppStats 权限时不能删除它，否则升级后旧调用会在路由仍存在的情况下被拒绝。
+         */
+        $this->createPermissions("swoole 监控兼容入口", "admin_monitor.swoole_stats", false, 0);
         $this->createPermissions("第三方接口通讯日志", "third_logs");
         $this->createPermissions("自己上报的日志", "owner_logs");
         $this->createPermissions("项目日志", "system_logs.index", false, 0);
