@@ -33,6 +33,11 @@ use Mallto\Tool\Commands\RedisMemoryMonitorCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
+use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
+use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
+use Mallto\Tool\Domain\AppStats\AppStatsSnapshotService;
+use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
 use Mallto\Tool\Domain\Config\MtConfig;
@@ -415,6 +420,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
         $this->mergeConfigFrom(__DIR__ . '/../../config/app_stats.php', 'app_stats');
 
+        $this->registerAppStats();
         $this->registerRedisMemoryMonitor();
         $this->registerSubjectConfigDefinitions();
 
@@ -441,6 +447,28 @@ class ToolServiceProvider extends ServiceProvider
         //$this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
+    }
+
+    /**
+     * 注册 AppStats 只读聚合服务。
+     *
+     * singleton 定义本身不会解析 RedisFactory 或建立 Redis 连接。SnapshotService 第一次被请求时
+     * 才解析 repository 与 tagged providers；此时其他业务包的 register() 已完成，后注册的 tag
+     * 也会进入同一快照，而 EasyTool 不需要反向依赖 EasyLocation。
+     */
+    private function registerAppStats(): void
+    {
+        $this->app->singleton(AppStatsPodWriter::class);
+        $this->app->singleton(AppStatsPodRepository::class);
+        $this->app->singleton(SwooleStatsSnapshotFactory::class);
+        $this->app->singleton(AppStatsSnapshotService::class, static function (Application $app) {
+            return new AppStatsSnapshotService(
+                $app->make(AppStatsPodRepository::class),
+                $app->tagged(AppStatsSectionProvider::class),
+                $app->make('config'),
+                $app->make(LoggerInterface::class)
+            );
+        });
     }
 
     /**
