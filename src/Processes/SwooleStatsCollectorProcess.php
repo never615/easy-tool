@@ -8,19 +8,21 @@ namespace Mallto\Tool\Processes;
 
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
+use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
+use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
 use Swoole\Http\Server;
 use Swoole\Process;
+use Throwable;
 
 /**
  * Swoole 状态采集进程
  *
- * 每个 pod 中各运行一个实例。检查 Redis 中的采集开关（由 SwooleStatsController 触发），
- * 开关打开时每 2 秒将本 pod 的 Swoole stats 写入 Redis Hash，供 Controller 读取聚合。
+ * 每个 Pod 中各运行一个实例。进程持续每 5 秒采集本实例的 Swoole stats，并把 schema-v2
+ * 快照写入共享 Redis，供只读监控页面跨 Pod 聚合。页面请求不会启动、停止或驱动采集。
  *
  * Redis 键：
- *   swoole_stats:collecting  — String，TTL = 采集持续时间，存在即表示"正在采集"
- *   swoole_stats:pods        — Hash，Field = hostname，Value = JSON({hostname, stats, updated_at})
+ *   swoole_stats:pods            — Hash，Field = hostname，Value = schema-v2 Pod JSON
+ *   swoole_stats:pods:last_seen  — ZSet，Member = hostname，Score = 最近采样 Unix 时间
  *
  * 扩展方式：在业务包中继承本类并覆盖 collectExtraStats()，
  * 然后在 config/laravels.php 的 processes 中将 class 替换为子类。
@@ -31,7 +33,9 @@ use Swoole\Process;
 class SwooleStatsCollectorProcess implements CustomProcessInterface
 {
     /**
-     * 采集开关 Redis 键
+     * 已废弃的采集开关 Redis 键，仅保留一个发布周期供旧 Controller 常量引用。
+     *
+     * 新采集进程不会读取或写入此 Key。
      */
     public const COLLECTING_KEY = 'swoole_stats:collecting';
 
@@ -41,9 +45,9 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
     public const PODS_HASH_KEY = 'swoole_stats:pods';
 
     /**
-     * 轮询间隔（秒）：检查采集开关 + 写入指标
+     * 各 Pod 最近采样时间 Redis ZSet 键。
      */
-    protected const POLL_INTERVAL = 2;
+    public const PODS_LAST_SEEN_KEY = 'swoole_stats:pods:last_seen';
 
     /**
      * pod 数据过期时间（秒）：超过此时间未更新则视为下线
@@ -62,67 +66,74 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
     public static function callback(Server $swoole, Process $process)
     {
         self::$running = true;
-        $hostname = gethostname();
+        // 常驻进程内只解析一次依赖，避免每 5 秒通过容器重复构造 Writer/Factory。
+        $writer = app(AppStatsPodWriter::class);
+        $factory = app(SwooleStatsSnapshotFactory::class);
+        $hostname = gethostname() ?: 'unknown';
+        $lastCleanupAt = 0;
+
         Log::info("[SwooleStatsCollector] 进程启动，hostname: {$hostname}");
 
         while (self::$running) {
+            $now = time();
+
             try {
-                // 检查采集开关
-                $collecting = Redis::exists(self::COLLECTING_KEY);
+                $stats = $swoole->stats();
+                $extra = [];
 
-                if ($collecting) {
-                    // 采集本 pod 的 Swoole 指标并写入 Redis Hash
-                    $stats = $swoole->stats();
-
-                    $payload = [
-                        'hostname'   => $hostname,
-                        'updated_at' => time(),
-                        'stats'      => [
-                            'swoole_cpu_num'      => swoole_cpu_num(),
-                            'worker_num_use'      => ($stats['worker_num'] - ($stats['idle_worker_num'] ?? 0))
-                                . '/' . $stats['worker_num'],
-                            'task_worker_num_use' => (($stats['task_worker_num'] ?? 0) - ($stats['task_idle_worker_num'] ?? 0))
-                                . '/' . ($stats['task_worker_num'] ?? 0),
-                            'start_time'          => ($stats['start_time'] ?? 0)
-                                . ' (' . date('Y-m-d H:i:s', $stats['start_time'] ?? 0) . ')',
-                            'connection_num'      => $stats['connection_num'] ?? 0,
-                            'request_count'       => $stats['request_count'] ?? 0,
-                            'tasking_num'         => $stats['tasking_num'] ?? 0,
-                        ],
-                    ];
-
-                    // 子类可覆盖 collectExtraStats() 追加业务指标（与 stats 同级）
-                    // 独立 try/catch：extra stats 失败不影响主 Swoole 指标的写入
-                    try {
-                        $extra = static::collectExtraStats($swoole, $hostname);
-                        foreach ($extra as $key => $value) {
-                            $payload[$key] = $value;
-                        }
-                    } catch (\Throwable $extraException) {
-                        Log::warning('[SwooleStatsCollector] collectExtraStats 异常: ' . $extraException->getMessage());
-                    }
-
-                    $data = json_encode($payload, JSON_UNESCAPED_UNICODE);
-
-                    Redis::hset(self::PODS_HASH_KEY, $hostname, $data);
+                // 业务扩展采集失败时仍写入基础 Swoole 快照；日志只记录异常类型，避免泄露连接信息。
+                try {
+                    $extra = static::collectExtraStats($swoole, $hostname);
+                } catch (Throwable $exception) {
+                    Log::warning('[SwooleStatsCollector] extra stats failed', [
+                        'error_type' => $exception::class,
+                    ]);
                 }
-            } catch (\Throwable $e) {
-                Log::warning('[SwooleStatsCollector] 采集异常: ' . $e->getMessage());
+
+                $writer->store($hostname, $factory->make(
+                    $hostname,
+                    (int)($swoole->master_pid ?? getmypid()),
+                    swoole_cpu_num(),
+                    $stats,
+                    $extra,
+                    $now
+                ), $now);
+
+                if (($now - $lastCleanupAt) >= max(1, (int)config('app_stats.cleanup_interval_seconds', 60))) {
+                    // 在执行前记录尝试时间：即使共享 Redis 短暂失败，也不会退化为每 5 秒清理一次。
+                    $lastCleanupAt = $now;
+                    $writer->cleanup($now);
+                }
+            } catch (Throwable $exception) {
+                // 不记录底层异常消息，防止 Redis 地址、凭据或业务扩展 payload 进入日志。
+                Log::warning('[SwooleStatsCollector] sample failed', [
+                    'error_type' => $exception::class,
+                ]);
             }
 
-            // 将 sleep 拆分为短间隔，以便更快响应 reload/stop 信号
-            for ($i = 0; $i < self::POLL_INTERVAL * 10 && self::$running; $i++) {
-                \Swoole\Coroutine::sleep(0.1);
-            }
+            self::sleepWhileRunning(max(1, (int)config('app_stats.collect_interval_seconds', 5)));
         }
 
-        // 主循环退出后，在协程上下文中安全清理 Redis 数据
+        // 主循环退出后，在协程上下文中同时清理 Hash 与 ZSet；信号回调本身不做阻塞 IO。
         try {
-            Redis::hdel(self::PODS_HASH_KEY, $hostname);
-        } catch (\Throwable $e) {
-            // ignore
+            $writer->forget($hostname);
+        } catch (Throwable $exception) {
+            Log::warning('[SwooleStatsCollector] forget failed', [
+                'error_type' => $exception::class,
+            ]);
         }
+
         Log::info("[SwooleStatsCollector] 进程退出，hostname: {$hostname}");
+    }
+
+    /**
+     * 将较长的采集间隔拆成 0.1 秒短休眠，使 LaravelS reload/stop 能快速终止主循环。
+     */
+    private static function sleepWhileRunning(int $seconds): void
+    {
+        for ($tick = 0; $tick < $seconds * 10 && self::$running; $tick++) {
+            \Swoole\Coroutine::sleep(0.1);
+        }
     }
 
     /**
@@ -162,4 +173,3 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
         self::$running = false;
     }
 }
-

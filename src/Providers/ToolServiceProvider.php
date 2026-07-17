@@ -413,6 +413,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/subject_config_runtime.php', 'subject_config_runtime');
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
         $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/app_stats.php', 'app_stats');
 
         $this->registerRedisMemoryMonitor();
         $this->registerSubjectConfigDefinitions();
