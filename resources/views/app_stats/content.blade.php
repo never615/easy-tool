@@ -201,11 +201,13 @@
                 evicted_keys: '累计淘汰 Key（evicted_keys）',
                 evicted_keys_delta: '本次淘汰增量（evicted_keys_delta）',
                 rejected_connections: '拒绝连接（rejected_connections）',
-                stream_length: 'Stream 长度（stream_length）',
+                stream_total: 'Stream 当前长度（stream_total）',
                 pending: '待确认消息（pending）',
+                consumed_retained: '已确认但仍保留（consumed_retained）',
                 consumers: '消费者数量（consumers）',
                 last_delivered_id: '最后投递 ID（last_delivered_id）',
-                dead_stream_length: 'Dead Stream 长度（dead_stream_length）'
+                dead_stream_total: '预留 Dead Stream 长度（dead_stream_total）',
+                dead_stream_enabled: 'Dead Stream 自动写入（dead_stream_enabled）'
             };
 
             const metricValue = (key, value) => {
@@ -336,7 +338,8 @@
                 redis_memory_waiting_for_first_sample: '等待 Redis 内存首次采样',
                 redis_memory_waiting_for_complete_sample: '等待下一次完整 Redis 内存采样',
                 redis_memory_sample_delayed: 'Redis 内存采样延迟',
-                redis_memory_state_read_failed: 'Redis 内存状态读取失败'
+                redis_memory_state_read_failed: 'Redis 内存状态读取失败',
+                mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败'
             }[message] || '运行状态异常');
 
             const renderSections = (sectionsValue) => {
