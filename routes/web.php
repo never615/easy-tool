@@ -137,6 +137,13 @@ Route::group($attributes, function ($router) {
 
                             return redirect($horizonPath);
                         })->name('admin_monitor.horizon');
+                        // 统一应用监控的页面与数据接口必须同时保留在 adminE_base 和
+                        // adminE.auto_permission 中。两者均为只读 GET：页面读取不得顺带执行
+                        // Redis INFO、Pod 清理、采集开关或其他会改变运行状态的动作。
+                        Route::get('monitor/app_stats', 'AppStatsController@index')
+                            ->name('admin_monitor.app_stats');
+                        Route::get('monitor/app_stats/data', 'AppStatsController@data')
+                            ->name('admin_monitor.app_stats.data');
                         Route::get('monitor/swoole_stats', 'SwooleStatsController@index')
                             ->name('admin_monitor.swoole_stats');
                         //Route::resource('sms_notifies', 'SmsNotifyController');

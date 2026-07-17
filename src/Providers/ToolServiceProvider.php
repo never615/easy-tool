@@ -118,6 +118,10 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->loadViewsFrom(__DIR__ . '/../../resources/errors_view', 'tooL_errors');
 
+        // AppStats 的管理页与旧入口兼容页共享同一组 Blade。命名空间避免与宿主页面重名，
+        // 也使 EasyLocation 后续可以复用兼容视图而不复制 HTML、CSS 和脚本。
+        $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'easy-tool');
+
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/adminapi.php');
