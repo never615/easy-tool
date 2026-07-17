@@ -146,7 +146,7 @@ class Handler extends ExceptionHandler
         } else {
             //走到这大概率是管理端请求
             if ($exception instanceof TokenMismatchException) {
-                return redirect()->guest(config('app.url') . config("admin.admin_login"));
+                return redirect(config('app.url') . config("admin.admin_login"));
             }
 
             //如果是管理端请求
