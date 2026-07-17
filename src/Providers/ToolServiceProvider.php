@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Providers;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Queue\Events\JobExceptionOccurred;
@@ -28,6 +29,7 @@ use Mallto\Tool\Commands\DeleteFailedJobsCommand;
 use Mallto\Tool\Commands\PublishNewConfigCommand;
 use Mallto\Tool\Commands\QueueDiagnosticSnapshotCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
+use Mallto\Tool\Commands\RedisMemoryMonitorCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
@@ -39,6 +41,7 @@ use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
+use Mallto\Tool\Domain\RedisMonitor\RedisMemoryMonitor;
 use Mallto\Tool\Domain\SubjectConfig\ToolSubjectConfigDefinitions;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Middleware\AuthenticateSign;
@@ -52,6 +55,7 @@ use Mallto\Tool\Middleware\TokenFromQuery;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
 use PhpMqtt\Client\ConnectionManager;
+use Psr\Log\LoggerInterface;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -68,6 +72,7 @@ class ToolServiceProvider extends ServiceProvider
         CreateTableIdSeqCommand::class,
         DeleteFailedJobsCommand::class,
         QueueDiagnosticSnapshotCommand::class,
+        RedisMemoryMonitorCommand::class,
         PublishNewConfigCommand::class,
     ];
 
@@ -409,6 +414,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
         $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
 
+        $this->registerRedisMemoryMonitor();
         $this->registerSubjectConfigDefinitions();
 
         $this->app->bind(ConnectionManager::class, function (Application $app) {
@@ -436,6 +442,23 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(Config::class, MtConfig::class);
     }
 
+    /**
+     * 注册一次性 Redis 内存采样器，不在 Provider 启动阶段建立 Redis socket。
+     *
+     * Factory、Logger 和配置都只保存到 singleton 定义中，直到命令真正执行才解析实例。
+     * 监控配置统一归宿主 database.php；EasyTool 不读取 env()，从而兼容 config:cache 和
+     * LaravelS 常驻进程。该服务不创建循环、进程、Horizon Job 或 Swoole Task。
+     */
+    private function registerRedisMemoryMonitor(): void
+    {
+        $this->app->singleton(RedisMemoryMonitor::class, static function (Application $app) {
+            return new RedisMemoryMonitor(
+                $app->make(RedisFactory::class),
+                $app->make(LoggerInterface::class),
+                (array)$app->make('config')->get('database.redis_monitor', [])
+            );
+        });
+    }
     private function registerSubjectConfigDefinitions(): void
     {
         foreach (ToolSubjectConfigDefinitions::modules() as $key => $module) {
@@ -594,6 +617,39 @@ class ToolServiceProvider extends ServiceProvider
                 ->onOneServer()
                 ->withoutOverlapping()
                 ->everyMinute();
+
+            $this->scheduleRedisMemoryMonitor($schedule);
         });
+    }
+
+    /**
+     * 把 Redis 内存采样注册到项目已有 Laravel Scheduler。
+     *
+     * `onOneServer()` 避免多 Pod 重复采样，`withoutOverlapping(5)` 防止上一次异常悬挂时
+     * 继续叠加；五分钟锁过期又不会像默认 24 小时那样让一次进程崩溃长期关闭监控。
+     * 刻意不调用 runInBackground()：命令只有四个固定规模 Redis 操作，应由 schedule:run
+     * 直接等待完成，避免每分钟再派生一个难以统一跟踪的后台进程。
+     */
+    private function scheduleRedisMemoryMonitor(Schedule $schedule): void
+    {
+        if (!(bool)\config('database.redis_monitor.enabled', false)) {
+            return;
+        }
+
+        $connection = (string)\config('database.redis_monitor.connection', 'redis-monitor');
+        if (!is_array(\config('database.redis.' . $connection))) {
+            // 启用开关却缺少命名 profile 属于部署配置错误；只在应用启动时写一次，不进入每分钟循环。
+            Log::error('Redis memory monitor schedule not registered: connection profile missing', [
+                'connection' => $connection,
+            ]);
+
+            return;
+        }
+
+        $schedule->command('tool:redis_memory_monitor')
+            ->name('redis memory monitor')
+            ->onOneServer()
+            ->withoutOverlapping(5)
+            ->everyMinute();
     }
 }
