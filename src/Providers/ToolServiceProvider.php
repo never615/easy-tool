@@ -37,6 +37,7 @@ use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
 use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
 use Mallto\Tool\Domain\AppStats\AppStatsSnapshotService;
 use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\AppStats\Sections\RedisMemoryAppStatsSection;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
@@ -461,6 +462,14 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(AppStatsPodWriter::class);
         $this->app->singleton(AppStatsPodRepository::class);
         $this->app->singleton(SwooleStatsSnapshotFactory::class);
+        // Redis 内存区块只读 Scheduler 已持久化的一个状态 Key。singleton 与 tag 只登记定义，
+        // 不会在 Provider 启动时连接 Redis，也不会创建新的 Scheduler、进程或队列任务。
+        // 测试、package discovery 或特殊 bootstrap 可能重复调用 register()；Container::tag() 会
+        // 追加而不是去重，因此仅在首次绑定时打 tag，避免聚合层出现两个同名 redis_memory 区块。
+        if (! $this->app->bound(RedisMemoryAppStatsSection::class)) {
+            $this->app->singleton(RedisMemoryAppStatsSection::class);
+            $this->app->tag([RedisMemoryAppStatsSection::class], AppStatsSectionProvider::class);
+        }
         $this->app->singleton(AppStatsSnapshotService::class, static function (Application $app) {
             return new AppStatsSnapshotService(
                 $app->make(AppStatsPodRepository::class),

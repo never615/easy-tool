@@ -108,10 +108,13 @@ final class RedisMemoryMonitor
                         $reasons,
                         $snapshot,
                         $previousState,
+                        $evictedKeysDelta,
                         $logged,
                         $now
                     ),
-                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                    // 百分比在 schema v2 中是浮点指标；保留 75.0 的小数类型，避免解码后
+                    // 同一字段在整百分比与非整百分比之间来回变成 int/float。
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION
                 )
             );
 
@@ -283,12 +286,20 @@ final class RedisMemoryMonitor
         array $reasons,
         RedisMemorySnapshot $snapshot,
         array $previousState,
+        int $evictedKeysDelta,
         bool $logged,
         int $now
     ): array {
+        // 旧版本只保存告警冷却字段；schema v2 在同一次 SETEX 中写入完整快照，保证页面不会
+        // 读到“采样时间已更新但 snapshot 仍是上一轮”的半更新状态。保留顶层累计计数和冷却
+        // 字段是为了滚动发布与回滚兼容，旧代码无需理解新增字段也能继续计算淘汰增量。
         return [
+            'schema_version' => 2,
             'level' => $level,
+            'reasons' => array_values($reasons),
+            'snapshot' => $snapshot->toArray(),
             'evicted_keys' => $snapshot->evictedKeys,
+            'evicted_keys_delta' => $evictedKeysDelta,
             'rejected_connections' => $snapshot->rejectedConnections,
             'last_logged_at' => $logged ? $now : max(0, (int) ($previousState['last_logged_at'] ?? 0)),
             'last_logged_usage_percent' => $logged
