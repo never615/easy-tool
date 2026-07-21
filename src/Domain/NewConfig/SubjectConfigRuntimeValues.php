@@ -4,8 +4,15 @@ namespace Mallto\Tool\Domain\NewConfig;
 
 use Throwable;
 
+/**
+ * SubjectConfigRuntimeValues：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class SubjectConfigRuntimeValues
 {
+    /**
+     * 处理「load」相关的内部协作步骤。
+     */
     public static function load(?string $filepath = null): array
     {
         $filepath = $filepath ?: storage_path('framework/subject_configs_values.php');
@@ -22,6 +29,9 @@ class SubjectConfigRuntimeValues
         return is_array($values) ? self::normalizeValues($values) : [];
     }
 
+    /**
+     * 处理「normalizeValues」相关的内部协作步骤。
+     */
     private static function normalizeValues(array $values): array
     {
         $normalized = [];

@@ -39,6 +39,9 @@ final class RedisMemoryMonitor
 
     private readonly Closure $clock;
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly RedisFactory $redis,
         private readonly LoggerInterface $logger,
@@ -186,6 +189,9 @@ final class RedisMemoryMonitor
         return $normalized;
     }
 
+    /**
+     * 处理「decodeState」相关的内部协作步骤。
+     */
     private function decodeState($raw): array
     {
         if (! is_string($raw) || $raw === '') {
@@ -229,6 +235,9 @@ final class RedisMemoryMonitor
         return [$level, $reasons, $evictedKeysDelta];
     }
 
+    /**
+     * 处理「logWhenNeeded」相关的内部协作步骤。
+     */
     private function logWhenNeeded(
         string $level,
         array $reasons,
@@ -281,6 +290,9 @@ final class RedisMemoryMonitor
         return true;
     }
 
+    /**
+     * 处理「nextState」相关的内部协作步骤。
+     */
     private function nextState(
         string $level,
         array $reasons,
@@ -330,6 +342,9 @@ final class RedisMemoryMonitor
         ];
     }
 
+    /**
+     * 处理「reasonsHash」相关的内部协作步骤。
+     */
     private function reasonsHash(array $reasons): string
     {
         return hash('sha256', json_encode(array_values($reasons)));

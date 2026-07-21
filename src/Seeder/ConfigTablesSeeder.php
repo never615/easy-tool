@@ -11,6 +11,10 @@ use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitionSyncer;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
+/**
+ * ConfigTablesSeeder：初始化 config tables seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class ConfigTablesSeeder extends Seeder
 {
 
@@ -29,6 +33,9 @@ class ConfigTablesSeeder extends Seeder
         $this->seedNewConfigDefinitions();
     }
 
+    /**
+     * 处理「migrateLegacyConfigs」相关的内部协作步骤。
+     */
     private function migrateLegacyConfigs(): void
     {
         if (!Schema::hasTable('configs')) {
@@ -50,6 +57,9 @@ class ConfigTablesSeeder extends Seeder
         });
     }
 
+    /**
+     * 处理「seedGlobalConfig」相关的内部协作步骤。
+     */
     private function seedGlobalConfig(string $key, ?string $value, ?string $remark = null): void
     {
         $exists = NewConfig::query()
@@ -68,11 +78,17 @@ class ConfigTablesSeeder extends Seeder
         $config->save();
     }
 
+    /**
+     * 处理「seedGlobalConfigDefinitions」相关的内部协作步骤。
+     */
     private function seedGlobalConfigDefinitions(): void
     {
         app(GlobalConfigDefinitionSyncer::class)->sync(GlobalConfigDefinitions::definitions());
     }
 
+    /**
+     * 处理「seedNewConfigDefinitions」相关的内部协作步骤。
+     */
     private function seedNewConfigDefinitions(): void
     {
         $definitions = SwooleTaskMonitorConfigForm::definitions();

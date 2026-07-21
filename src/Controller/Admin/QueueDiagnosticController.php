@@ -9,8 +9,15 @@ use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRedisStore;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticSnapshotter;
 
+/**
+ * QueueDiagnosticController：处理 queue diagnostic controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class QueueDiagnosticController extends Controller
 {
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(
         QueueDiagnosticConfig $config,
         QueueDiagnosticRedisStore $store,
@@ -34,6 +41,9 @@ class QueueDiagnosticController extends Controller
         });
     }
 
+    /**
+     * 处理「wantsJsonResponse」相关的内部协作步骤。
+     */
     private function wantsJsonResponse(): bool
     {
         if (request()->boolean('json')) {
@@ -50,6 +60,9 @@ class QueueDiagnosticController extends Controller
             && strpos($accept, 'text/html') === false;
     }
 
+    /**
+     * 处理「saveSettings」相关的内部协作步骤。
+     */
     public function saveSettings(QueueDiagnosticConfig $config)
     {
         $config->saveSettings(request()->all());
@@ -57,6 +70,9 @@ class QueueDiagnosticController extends Controller
         return redirect()->route('queue_diagnostics.index', [ 'saved' => 1 ]);
     }
 
+    /**
+     * 处理「snapshot」相关的内部协作步骤。
+     */
     private function snapshot(
         QueueDiagnosticConfig $config,
         QueueDiagnosticRedisStore $store,
@@ -71,6 +87,9 @@ class QueueDiagnosticController extends Controller
         return $store->windowSnapshot($windowStart);
     }
 
+    /**
+     * 处理「renderHtml」相关的内部协作步骤。
+     */
     private function renderHtml(array $payload): string
     {
         $config = $payload['config'];
@@ -240,6 +259,9 @@ class QueueDiagnosticController extends Controller
 HTML;
     }
 
+    /**
+     * 处理「renderCopyScript」相关的内部协作步骤。
+     */
     private function renderCopyScript(): string
     {
         return <<<HTML
@@ -312,6 +334,9 @@ HTML;
 HTML;
     }
 
+    /**
+     * 处理「diagnosticCopyText」相关的内部协作步骤。
+     */
     private function diagnosticCopyText(array $payload): string
     {
         $config = $payload['config'] ?? [];
@@ -356,6 +381,9 @@ HTML;
         return $text;
     }
 
+    /**
+     * 处理「markdownKeyValueSection」相关的内部协作步骤。
+     */
     private function markdownKeyValueSection(string $title, array $rows, bool $formatRedisMemory = false): string
     {
         $text = '## ' . $title . "\n\n";
@@ -376,6 +404,9 @@ HTML;
         return $text . "\n";
     }
 
+    /**
+     * 处理「markdownTopRowsSection」相关的内部协作步骤。
+     */
     private function markdownTopRowsSection(string $title, array $rows): string
     {
         $text = '## ' . $title . "\n\n";
@@ -395,6 +426,9 @@ HTML;
         return $text . "\n";
     }
 
+    /**
+     * 处理「markdownDurationSection」相关的内部协作步骤。
+     */
     private function markdownDurationSection(string $title, array $duration): string
     {
         $rows = $this->durationRows($duration);
@@ -418,6 +452,9 @@ HTML;
         return $text . "\n";
     }
 
+    /**
+     * 处理「plainDiagnosticValue」相关的内部协作步骤。
+     */
     private function plainDiagnosticValue($value, ?string $redisMemoryKey = null): string
     {
         if ($redisMemoryKey !== null && $this->isRedisMemoryByteKey($redisMemoryKey) && is_numeric($value)) {
@@ -439,6 +476,9 @@ HTML;
         return (string)$value;
     }
 
+    /**
+     * 处理「markdownInline」相关的内部协作步骤。
+     */
     private function markdownInline(string $value): string
     {
         $value = str_replace([ "\r", "\n" ], ' ', $value);
@@ -447,6 +487,9 @@ HTML;
         return trim($value) === '' ? '-' : $value;
     }
 
+    /**
+     * 处理「renderSettingsForm」相关的内部协作步骤。
+     */
     private function renderSettingsForm(array $settings): string
     {
         if (empty($settings)) {
@@ -486,6 +529,9 @@ HTML;
         return $html . '</form>';
     }
 
+    /**
+     * 处理「renderSettingInput」相关的内部协作步骤。
+     */
     private function renderSettingInput(string $key, string $type, string $value, array $setting): string
     {
         $escapedKey = $this->escape($key);
@@ -511,6 +557,9 @@ HTML;
             . $this->escape($value) . '">';
     }
 
+    /**
+     * 处理「renderTable」相关的内部协作步骤。
+     */
     private function renderTable(array $rows): string
     {
         if (empty($rows)) {
@@ -525,6 +574,9 @@ HTML;
         return $html . '</tbody></table>';
     }
 
+    /**
+     * 处理「renderRedisMemoryTable」相关的内部协作步骤。
+     */
     private function renderRedisMemoryTable(array $rows): string
     {
         if (empty($rows)) {
@@ -543,6 +595,9 @@ HTML;
         return $html . '</tbody></table>';
     }
 
+    /**
+     * 处理「renderDurationRows」相关的内部协作步骤。
+     */
     private function renderDurationRows(array $duration): string
     {
         $rows = $this->durationRows($duration);
@@ -562,6 +617,9 @@ HTML;
         return $html . '</tbody></table>';
     }
 
+    /**
+     * 处理「durationRows」相关的内部协作步骤。
+     */
     private function durationRows(array $duration): array
     {
         $jobs = [];
@@ -602,6 +660,9 @@ HTML;
         return array_values($jobs);
     }
 
+    /**
+     * 处理「formatMilliseconds」相关的内部协作步骤。
+     */
     private function formatMilliseconds(float $milliseconds): string
     {
         if ($milliseconds >= 1000) {
@@ -615,6 +676,9 @@ HTML;
         return number_format($milliseconds, 0) . ' ms';
     }
 
+    /**
+     * 处理「renderRedisMemoryValue」相关的内部协作步骤。
+     */
     private function renderRedisMemoryValue(string $key, $value): string
     {
         if ($this->isRedisMemoryByteKey($key) && is_numeric($value)) {
@@ -624,6 +688,9 @@ HTML;
         return $this->escapeValue($value);
     }
 
+    /**
+     * 处理「isRedisMemoryByteKey」相关的内部协作步骤。
+     */
     private function isRedisMemoryByteKey(string $key): bool
     {
         return in_array($key, [
@@ -656,6 +723,9 @@ HTML;
         ], true);
     }
 
+    /**
+     * 处理「formatBytes」相关的内部协作步骤。
+     */
     private function formatBytes(int $bytes): string
     {
         $sign = $bytes < 0 ? '-' : '';
@@ -677,6 +747,9 @@ HTML;
             . ' (' . number_format($bytes) . ' B)';
     }
 
+    /**
+     * 处理「redisMemoryDescriptions」相关的内部协作步骤。
+     */
     private function redisMemoryDescriptions(): array
     {
         return [
@@ -732,6 +805,9 @@ HTML;
         ];
     }
 
+    /**
+     * 处理「renderTopRows」相关的内部协作步骤。
+     */
     private function renderTopRows(array $rows): string
     {
         if (empty($rows)) {
@@ -746,6 +822,9 @@ HTML;
         return $html . '</tbody></table>';
     }
 
+    /**
+     * 处理「renderResourceSnapshotHint」相关的内部协作步骤。
+     */
     private function renderResourceSnapshotHint(array $snapshot): string
     {
         if (!$this->resourceSnapshotMissing($snapshot)) {
@@ -755,6 +834,9 @@ HTML;
         return '<div class="queue-diag-resource-hint">当前窗口没有 Redis Memory / 队列 Backlog / Keyspace 现场快照；排查 Redis 内存告警时，请先点击“采样并刷新”，再复制诊断结果。</div>';
     }
 
+    /**
+     * 处理「resourceSnapshotMissing」相关的内部协作步骤。
+     */
     private function resourceSnapshotMissing(array $snapshot): bool
     {
         return empty($snapshot['redis_memory'])
@@ -762,6 +844,9 @@ HTML;
             && empty($snapshot['keyspace']);
     }
 
+    /**
+     * 处理「escapeValue」相关的内部协作步骤。
+     */
     private function escapeValue($value): string
     {
         if (is_array($value)) {
@@ -775,6 +860,9 @@ HTML;
         return $this->escape((string)$value);
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

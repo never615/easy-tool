@@ -4,8 +4,15 @@ namespace Mallto\Tool\Domain\NewConfig;
 
 use RuntimeException;
 
+/**
+ * SubjectConfigValuesFile：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class SubjectConfigValuesFile
 {
+    /**
+     * 处理「write」相关的内部协作步骤。
+     */
     public function write(array $values, ?string $filepath = null): array
     {
         $filepath = $filepath ?: storage_path('framework/subject_configs_values.php');
@@ -27,6 +34,9 @@ class SubjectConfigValuesFile
         ];
     }
 
+    /**
+     * 处理「renderContent」相关的内部协作步骤。
+     */
     public function renderContent(array $values): string
     {
         $values = $this->normalizeValues($values);
@@ -34,6 +44,9 @@ class SubjectConfigValuesFile
         return "<?php\n\nreturn " . var_export($values, true) . ";\n";
     }
 
+    /**
+     * 处理「normalizeValues」相关的内部协作步骤。
+     */
     private function normalizeValues(array $values): array
     {
         $normalized = [];
@@ -61,6 +74,9 @@ class SubjectConfigValuesFile
         return $normalized;
     }
 
+    /**
+     * 处理「atomicWrite」相关的内部协作步骤。
+     */
     private function atomicWrite(string $filepath, string $content): void
     {
         $directory = dirname($filepath);

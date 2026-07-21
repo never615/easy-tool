@@ -5,6 +5,10 @@ namespace Mallto\Tool\Domain\NewConfig;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Exception\ResourceException;
 
+/**
+ * RuntimeEnvOverrideConfig：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class RuntimeEnvOverrideConfig
 {
     public const TYPES = [
@@ -14,6 +18,9 @@ class RuntimeEnvOverrideConfig
         'string' => 'string',
     ];
 
+    /**
+     * 处理「attributesFor」相关的内部协作步骤。
+     */
     public static function attributesFor(
         string $envKey,
         string $name,
@@ -42,6 +49,9 @@ class RuntimeEnvOverrideConfig
         ];
     }
 
+    /**
+     * 处理「assertUniqueEnvKey」相关的内部协作步骤。
+     */
     public static function assertUniqueEnvKey(string $envKey, ?int $ignoreId = null): void
     {
         $envKey = self::normalizeEnvKey($envKey);
@@ -56,6 +66,9 @@ class RuntimeEnvOverrideConfig
         }
     }
 
+    /**
+     * 处理「normalizeEnvKey」相关的内部协作步骤。
+     */
     public static function normalizeEnvKey(string $envKey): string
     {
         $envKey = NewConfigBootstrapKeyGuard::normalize($envKey);
@@ -68,6 +81,9 @@ class RuntimeEnvOverrideConfig
         return $envKey;
     }
 
+    /**
+     * 处理「normalizeType」相关的内部协作步骤。
+     */
     private static function normalizeType(string $type): string
     {
         $type = strtolower(trim($type));
@@ -78,6 +94,9 @@ class RuntimeEnvOverrideConfig
         return $type;
     }
 
+    /**
+     * 处理「normalizeValue」相关的内部协作步骤。
+     */
     private static function normalizeValue(string $type, ?string $value): ?string
     {
         if ($value === null || $value === '') {

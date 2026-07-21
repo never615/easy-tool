@@ -19,6 +19,9 @@ class TpApiPermissionBaseSeeder extends \Illuminate\Database\Seeder
 
     // 是否全局生成子权限
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct()
     {
         $this->setRouteNamePrefix('tp_api');

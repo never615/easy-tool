@@ -23,6 +23,9 @@ use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
  */
 class SwooleStatsController
 {
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index()
     {
         // Grafana 与旧 JSON 的判断必须先于 HTML 跳转，以保持既有机器调用的字段和响应类型。
@@ -136,6 +139,9 @@ class SwooleStatsController
         return $this->renderMultiPodHtml($pods, false, -2);
     }
 
+    /**
+     * 处理「wantsJsonResponse」相关的内部协作步骤。
+     */
     protected function wantsJsonResponse(): bool
     {
         if (request()->boolean('json')) {
@@ -155,6 +161,9 @@ class SwooleStatsController
             );
     }
 
+    /**
+     * 处理「shouldRenderAdminContent」相关的内部协作步骤。
+     */
     protected function shouldRenderAdminContent(): bool
     {
         return request()->pjax()

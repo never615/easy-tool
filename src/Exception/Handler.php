@@ -389,6 +389,9 @@ class Handler extends ExceptionHandler
     }
 
 
+    /**
+     * 处理「responseData」相关的内部协作步骤。
+     */
     protected function responseData($data, $exception)
     {
         if (array_key_exists('error', $data)) {
@@ -402,12 +405,18 @@ class Handler extends ExceptionHandler
     }
 
 
+    /**
+     * 处理「responseContentMessage」相关的内部协作步骤。
+     */
     protected function responseContentMessage(array $data, Throwable $exception): string
     {
         return $this->nonEmptyMessage($data['error'] ?? null, $data['message'] ?? $exception);
     }
 
 
+    /**
+     * 处理「nonEmptyMessage」相关的内部协作步骤。
+     */
     protected function nonEmptyMessage($message, $fallback = null): string
     {
         foreach ([$message, $fallback] as $candidate) {
@@ -429,6 +438,9 @@ class Handler extends ExceptionHandler
     }
 
 
+    /**
+     * 处理「logWarningStackWhenUsingGenericMessage」相关的内部协作步骤。
+     */
     protected function logWarningStackWhenUsingGenericMessage(string $message, Throwable $exception): void
     {
         if (!$this->shouldLogWarningStackForGenericMessage($message)) {
@@ -444,6 +456,9 @@ class Handler extends ExceptionHandler
     }
 
 
+    /**
+     * 处理「shouldLogWarningStackForGenericMessage」相关的内部协作步骤。
+     */
     protected function shouldLogWarningStackForGenericMessage(string $message): bool
     {
         $genericMessages = [$this->fallbackInternalErrorMessage()];
@@ -456,6 +471,9 @@ class Handler extends ExceptionHandler
     }
 
 
+    /**
+     * 处理「translatedInternalErrorMessage」相关的内部协作步骤。
+     */
     protected function translatedInternalErrorMessage(): ?string
     {
         $message = trans('errors.internal_error');
@@ -467,6 +485,9 @@ class Handler extends ExceptionHandler
     }
 
 
+    /**
+     * 处理「fallbackInternalErrorMessage」相关的内部协作步骤。
+     */
     protected function fallbackInternalErrorMessage(): string
     {
         return '系统繁忙,请稍后重试...';

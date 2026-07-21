@@ -63,6 +63,10 @@ use Mallto\Tool\Msg\MobileDevicePush;
 use PhpMqtt\Client\ConnectionManager;
 use Psr\Log\LoggerInterface;
 
+/**
+ * ToolServiceProvider：easy-tool 的 Laravel 服务提供者。
+ * 它统一注册路由、命令、容器绑定和框架事件。
+ */
 class ToolServiceProvider extends ServiceProvider
 {
 
@@ -165,6 +169,9 @@ class ToolServiceProvider extends ServiceProvider
     }
 
 
+    /**
+     * 处理「appBoot」相关的内部协作步骤。
+     */
     private function appBoot()
     {
         //日历默认一个月30天,执行这个,回归真实 carbon升级后模式处理了
@@ -218,12 +225,18 @@ class ToolServiceProvider extends ServiceProvider
     }
 
 
+    /**
+     * 处理「routeBoot」相关的内部协作步骤。
+     */
     private function routeBoot()
     {
         Route::pattern('id', '[0-9]+');
     }
 
 
+    /**
+     * 处理「queueBoot」相关的内部协作步骤。
+     */
     private function queueBoot()
     {
         Queue::createPayloadUsing(function ($connection, $queue, array $payload) {
@@ -501,6 +514,9 @@ class ToolServiceProvider extends ServiceProvider
             );
         });
     }
+    /**
+     * 处理「registerSubjectConfigDefinitions」相关的内部协作步骤。
+     */
     private function registerSubjectConfigDefinitions(): void
     {
         foreach (ToolSubjectConfigDefinitions::modules() as $key => $module) {

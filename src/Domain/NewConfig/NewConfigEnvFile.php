@@ -4,8 +4,15 @@ namespace Mallto\Tool\Domain\NewConfig;
 
 use RuntimeException;
 
+/**
+ * NewConfigEnvFile：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class NewConfigEnvFile
 {
+    /**
+     * 处理「write」相关的内部协作步骤。
+     */
     public function write(array $values, ?string $filepath = null): array
     {
         $filepath = $filepath ?: storage_path('framework/new_configs.env');
@@ -29,6 +36,9 @@ class NewConfigEnvFile
         ];
     }
 
+    /**
+     * 处理「renderContent」相关的内部协作步骤。
+     */
     public function renderContent(array $values): string
     {
         $values = $this->normalizeValues($values);
@@ -44,6 +54,9 @@ class NewConfigEnvFile
         return implode(PHP_EOL, $lines) . PHP_EOL;
     }
 
+    /**
+     * 处理「normalizeValues」相关的内部协作步骤。
+     */
     private function normalizeValues(array $values): array
     {
         $normalized = [];
@@ -65,11 +78,17 @@ class NewConfigEnvFile
         return $normalized;
     }
 
+    /**
+     * 处理「shellQuote」相关的内部协作步骤。
+     */
     private function shellQuote(string $value): string
     {
         return "'" . str_replace("'", "'\"'\"'", $value) . "'";
     }
 
+    /**
+     * 处理「atomicWrite」相关的内部协作步骤。
+     */
     private function atomicWrite(string $filepath, string $content): void
     {
         $directory = dirname($filepath);

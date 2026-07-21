@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * DatabasesTrait：databases trait 对应的数据模型或持久化边界。
+ * 它集中声明字段、关联和查询语义，供领域服务与管理界面复用。
+ */
 trait DatabasesTrait
 {
 

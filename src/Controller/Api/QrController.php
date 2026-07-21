@@ -26,6 +26,9 @@ use Illuminate\Support\Facades\Log;
 class QrController extends Controller
 {
 
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(Request $request)
     {
 

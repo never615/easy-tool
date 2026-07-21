@@ -41,6 +41,9 @@ class Timecount
     }
 
 
+    /**
+     * 处理「formatTime」相关的内部协作步骤。
+     */
     public static function formatTime($time)
     {
         $time = round($time, 3) . "s";

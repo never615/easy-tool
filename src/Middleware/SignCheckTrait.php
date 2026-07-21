@@ -27,9 +27,16 @@ use Mallto\Tool\Utils\SignUtils;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
+/**
+ * SignCheckTrait：在请求进入业务代码前执行 sign check trait 约束。
+ * 它仅承担请求边界校验与上下文补充。
+ */
 trait SignCheckTrait
 {
 
+    /**
+     * 处理「check」相关的内部协作步骤。
+     */
     protected function check(Request $request, Closure $next)
     {
         if (!config('other.auth_sign')) {
@@ -188,6 +195,9 @@ trait SignCheckTrait
     }
 
 
+    /**
+     * 处理「subjectCheck」相关的内部协作步骤。
+     */
     public function subjectCheck($appSecret)
     {
         if ($appSecret->app_id == '999' && AppUtils::isTestEnv()) {

@@ -61,6 +61,9 @@ class SelectSourceExtend implements SelectSourceExtendInterface
 
     }
 
+    /**
+     * 处理「adTypesSelect」相关的内部协作步骤。
+     */
     protected function adTypesSelect($id, $childSubjectIds, $q, $perPage)
     {
         $pagePvManager = PagePvManager::query()
@@ -89,6 +92,9 @@ class SelectSourceExtend implements SelectSourceExtendInterface
         }
     }
 
+    /**
+     * 处理「tagSelect」相关的内部协作步骤。
+     */
     protected function tagSelect($id, $childSubjectIds, $q, $perPage)
     {
         $tagType = Request::get('tag_type');
@@ -122,5 +128,3 @@ class SelectSourceExtend implements SelectSourceExtendInterface
         }
     }
 }
-
-

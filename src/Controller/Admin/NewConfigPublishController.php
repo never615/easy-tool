@@ -7,8 +7,15 @@ use Encore\Admin\Layout\Content;
 use Illuminate\Routing\Controller;
 use Mallto\Tool\Domain\NewConfig\NewConfigEffectiveEnv;
 
+/**
+ * NewConfigPublishController：处理 new config publish controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class NewConfigPublishController extends Controller
 {
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(NewConfigEffectiveEnv $effectiveEnv)
     {
         $snapshot = $effectiveEnv->snapshot();
@@ -20,6 +27,9 @@ class NewConfigPublishController extends Controller
         });
     }
 
+    /**
+     * 处理「renderHtml」相关的内部协作步骤。
+     */
     private function renderHtml(array $snapshot): string
     {
         $reloadButton = $this->reloadButton();
@@ -78,6 +88,9 @@ class NewConfigPublishController extends Controller
 HTML;
     }
 
+    /**
+     * 处理「reloadButton」相关的内部协作步骤。
+     */
     private function reloadButton(): string
     {
         $url = route('new_configs.reload');
@@ -91,6 +104,9 @@ HTML;
 HTML;
     }
 
+    /**
+     * 处理「renderSummary」相关的内部协作步骤。
+     */
     private function renderSummary(array $snapshot): string
     {
         $counts = $snapshot['counts'] ?? [];
@@ -103,6 +119,9 @@ HTML;
         return '<div class="new-config-publish-summary">' . $this->escape($text) . '</div>';
     }
 
+    /**
+     * 处理「renderErrors」相关的内部协作步骤。
+     */
     private function renderErrors(array $errors): string
     {
         if ($errors === []) {
@@ -121,6 +140,9 @@ HTML;
         return $html;
     }
 
+    /**
+     * 处理「renderRows」相关的内部协作步骤。
+     */
     private function renderRows(array $rows): string
     {
         if ($rows === []) {
@@ -147,6 +169,9 @@ HTML;
         return $html;
     }
 
+    /**
+     * 处理「renderValue」相关的内部协作步骤。
+     */
     private function renderValue($value): string
     {
         if ($value === null) {
@@ -156,6 +181,9 @@ HTML;
         return $this->escape((string)$value);
     }
 
+    /**
+     * 处理「sourceClass」相关的内部协作步骤。
+     */
     private function sourceClass(string $source): string
     {
         return match ($source) {
@@ -165,6 +193,9 @@ HTML;
         };
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');

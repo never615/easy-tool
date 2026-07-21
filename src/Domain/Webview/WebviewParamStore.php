@@ -11,10 +11,17 @@ use Illuminate\Support\Str;
 use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\InvalidParamException;
 
+/**
+ * WebviewParamStore：easy-tool 的 webview param store 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class WebviewParamStore
 {
     private const KEY_PREFIX = 'webview_params';
 
+    /**
+     * 处理「store」相关的内部协作步骤。
+     */
     public function store(string $uuid, array $params): array
     {
         $this->assertPayloadSize($params);
@@ -35,6 +42,9 @@ class WebviewParamStore
         throw new InternalHttpException('WebView 参数标识生成失败，请重试');
     }
 
+    /**
+     * 处理「resolve」相关的内部协作步骤。
+     */
     public function resolve(string $uuid, string $id): ?array
     {
         $params = $this->cache()->get($this->key($uuid, $id));
@@ -42,6 +52,9 @@ class WebviewParamStore
         return is_array($params) ? $params : null;
     }
 
+    /**
+     * 处理「assertPayloadSize」相关的内部协作步骤。
+     */
     private function assertPayloadSize(array $params): void
     {
         $payload = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -54,31 +67,49 @@ class WebviewParamStore
         }
     }
 
+    /**
+     * 处理「cache」相关的内部协作步骤。
+     */
     private function cache(): Repository
     {
         return Cache::store($this->cacheStore());
     }
 
+    /**
+     * 处理「key」相关的内部协作步骤。
+     */
     private function key(string $uuid, string $id): string
     {
         return self::KEY_PREFIX . ':' . $this->sanitizeKeyPart($uuid) . ':' . $id;
     }
 
+    /**
+     * 处理「sanitizeKeyPart」相关的内部协作步骤。
+     */
     private function sanitizeKeyPart(string $value): string
     {
         return preg_replace('/[^A-Za-z0-9_-]/', '_', $value) ?: 'unknown';
     }
 
+    /**
+     * 处理「cacheStore」相关的内部协作步骤。
+     */
     private function cacheStore(): string
     {
         return (string)config('webview.params.cache_store', 'redis');
     }
 
+    /**
+     * 处理「ttlSeconds」相关的内部协作步骤。
+     */
     private function ttlSeconds(): int
     {
         return max(60, (int)config('webview.params.ttl_seconds', 86400));
     }
 
+    /**
+     * 处理「maxPayloadBytes」相关的内部协作步骤。
+     */
     private function maxPayloadBytes(): int
     {
         return max(1024, (int)config('webview.params.max_payload_bytes', 262144));

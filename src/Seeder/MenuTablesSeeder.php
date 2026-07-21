@@ -13,6 +13,10 @@ use Mallto\Tool\Seeder\Menu\FeedbackMenuSeeder;
 use Mallto\Tool\Seeder\Menu\PagePvManagerMenuSeeder;
 use Mallto\Tool\Seeder\Menu\SmsNotifyMenuSeeder;
 
+/**
+ * MenuTablesSeeder：初始化 menu tables seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class MenuTablesSeeder extends Seeder
 {
 

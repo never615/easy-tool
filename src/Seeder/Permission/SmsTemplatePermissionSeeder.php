@@ -6,6 +6,10 @@ use Encore\Admin\Auth\Database\Permission;
 use Illuminate\Database\Seeder;
 use Mallto\Admin\Seeder\SeederMaker;
 
+/**
+ * SmsTemplatePermissionSeeder：初始化 sms template permission seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class SmsTemplatePermissionSeeder extends Seeder
 {
 

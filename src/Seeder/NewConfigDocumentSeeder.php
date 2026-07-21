@@ -6,8 +6,15 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Mallto\Tool\Data\NewConfigDocument;
 
+/**
+ * NewConfigDocumentSeeder：初始化 new config document seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class NewConfigDocumentSeeder extends Seeder
 {
+    /**
+     * 处理「run」相关的内部协作步骤。
+     */
     public function run(): void
     {
         if (!Schema::hasTable('new_config_documents')) {
@@ -26,6 +33,9 @@ class NewConfigDocumentSeeder extends Seeder
         ]);
     }
 
+    /**
+     * 处理「configurationUsageMarkdown」相关的内部协作步骤。
+     */
     private function configurationUsageMarkdown(): string
     {
         return <<<'MARKDOWN'

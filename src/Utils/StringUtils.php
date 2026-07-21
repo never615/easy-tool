@@ -137,6 +137,9 @@ class StringUtils
     }
 
 
+    /**
+     * 处理「gbkString2Hex」相关的内部协作步骤。
+     */
     public static function gbkString2Hex($string)
     {
         $string = iconv("utf-8", "GBK", $string);
@@ -183,6 +186,9 @@ class StringUtils
     }
 
 
+    /**
+     * 处理「hexToBinary」相关的内部协作步骤。
+     */
     public static function hexToBinary($hex) {
         // 使用 base_convert 函数将十六进制转换为二进制
         $binary = base_convert($hex, 16, 2);
@@ -208,6 +214,9 @@ class StringUtils
         return str_pad($binaryString, 8, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * 处理「binStr2Hex」相关的内部协作步骤。
+     */
     public static function binStr2Hex($binaryString)
     {
         // 将二进制字符串转换为十进制数

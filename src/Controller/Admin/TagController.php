@@ -14,6 +14,10 @@ use Mallto\Admin\SubjectConfigConstants;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
+/**
+ * TagController：处理 tag controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class TagController extends AdminCommonController
 {
 
@@ -41,6 +45,9 @@ class TagController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「getSelectTagTypes」相关的内部协作步骤。
+     */
     private function getSelectTagTypes()
     {
         $tagTypes = SubjectUtils::getConfigByOwner(SubjectConfigConstants::OWNER_CONFIG_TAG_TYPES);

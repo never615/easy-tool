@@ -13,6 +13,9 @@ use UnexpectedValueException;
  */
 final class RedisMemorySnapshot
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         public readonly int $usedMemory,
         public readonly int $usedMemoryRss,
@@ -62,6 +65,9 @@ final class RedisMemorySnapshot
         ];
     }
 
+    /**
+     * 处理「integer」相关的内部协作步骤。
+     */
     private static function integer(array $info, string $field): int
     {
         $value = self::numeric($info, $field);
@@ -69,6 +75,9 @@ final class RedisMemorySnapshot
         return max(0, (int) $value);
     }
 
+    /**
+     * 处理「decimal」相关的内部协作步骤。
+     */
     private static function decimal(array $info, string $field): float
     {
         return max(0.0, (float) self::numeric($info, $field));
@@ -88,6 +97,9 @@ final class RedisMemorySnapshot
         return trim((string) $value);
     }
 
+    /**
+     * 处理「numeric」相关的内部协作步骤。
+     */
     private static function numeric(array $info, string $field)
     {
         if (! array_key_exists($field, $info) || ! is_numeric($info[$field])) {

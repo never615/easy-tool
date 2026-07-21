@@ -8,6 +8,10 @@ use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 
+/**
+ * ConfigController：处理 config controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class ConfigController extends AdminCommonController
 {
 
@@ -33,6 +37,9 @@ class ConfigController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->model()
@@ -114,6 +121,9 @@ class ConfigController extends AdminCommonController
         });
     }
 
+    /**
+     * 处理「plainRemarkText」相关的内部协作步骤。
+     */
     private static function plainRemarkText($value): string
     {
         $text = html_entity_decode((string)$value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -126,6 +136,9 @@ class ConfigController extends AdminCommonController
         return trim($text);
     }
 
+    /**
+     * 处理「limitText」相关的内部协作步骤。
+     */
     private static function limitText(string $value, int $limit): string
     {
         if (mb_strlen($value) <= $limit) {
@@ -135,11 +148,17 @@ class ConfigController extends AdminCommonController
         return mb_substr($value, 0, $limit) . '...';
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private static function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 
+    /**
+     * 处理「usageNotice」相关的内部协作步骤。
+     */
     private function usageNotice(): string
     {
         $publishRestartUrl = route('new_configs.publish_restart');

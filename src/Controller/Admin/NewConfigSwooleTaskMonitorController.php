@@ -8,8 +8,15 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
+/**
+ * NewConfigSwooleTaskMonitorController：处理 new config swoole task monitor controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class NewConfigSwooleTaskMonitorController extends Controller
 {
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(SwooleTaskMonitorConfigForm $configForm)
     {
         $snapshot = $configForm->snapshot();
@@ -21,6 +28,9 @@ class NewConfigSwooleTaskMonitorController extends Controller
         });
     }
 
+    /**
+     * 处理「save」相关的内部协作步骤。
+     */
     public function save(Request $request, SwooleTaskMonitorConfigForm $configForm)
     {
         $configForm->save($request->only([
@@ -34,6 +44,9 @@ class NewConfigSwooleTaskMonitorController extends Controller
         return redirect()->route('new_configs.swoole_task_monitor');
     }
 
+    /**
+     * 处理「renderHtml」相关的内部协作步骤。
+     */
     private function renderHtml(array $snapshot): string
     {
         $action = route('new_configs.swoole_task_monitor.save');
@@ -109,6 +122,9 @@ class NewConfigSwooleTaskMonitorController extends Controller
 HTML;
     }
 
+    /**
+     * 处理「renderOptions」相关的内部协作步骤。
+     */
     private function renderOptions(array $options, string $current): string
     {
         $html = '';
@@ -121,6 +137,9 @@ HTML;
         return $html;
     }
 
+    /**
+     * 处理「renderPublishRows」相关的内部协作步骤。
+     */
     private function renderPublishRows(array $rows): string
     {
         if ($rows === []) {
@@ -145,6 +164,9 @@ HTML;
         return $html . '</tbody></table>';
     }
 
+    /**
+     * 处理「renderErrors」相关的内部协作步骤。
+     */
     private function renderErrors(): string
     {
         $errors = session('errors');
@@ -160,11 +182,17 @@ HTML;
         return $html . '</ul></div>';
     }
 
+    /**
+     * 处理「csrfField」相关的内部协作步骤。
+     */
     private function csrfField(): string
     {
         return csrf_field();
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');

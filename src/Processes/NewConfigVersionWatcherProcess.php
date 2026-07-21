@@ -9,10 +9,17 @@ use Mallto\Tool\Domain\NewConfig\NewConfigVersionWatcher;
 use Swoole\Http\Server;
 use Swoole\Process;
 
+/**
+ * NewConfigVersionWatcherProcess：运行在 LaravelS/Swoole 长驻进程中的 new config version watcher process。
+ * 进程需要显式处理重载与停止事件，避免陈旧运行态影响其他 worker。
+ */
 class NewConfigVersionWatcherProcess implements CustomProcessInterface
 {
     private static bool $running = true;
 
+    /**
+     * 处理「callback」相关的内部协作步骤。
+     */
     public static function callback(Server $swoole, Process $process)
     {
         self::$running = true;
@@ -67,11 +74,17 @@ class NewConfigVersionWatcherProcess implements CustomProcessInterface
         Log::info('[NewConfigVersionWatcher] stopped');
     }
 
+    /**
+     * 处理「onReload」相关的内部协作步骤。
+     */
     public static function onReload(Server $swoole, Process $process)
     {
         self::$running = false;
     }
 
+    /**
+     * 处理「onStop」相关的内部协作步骤。
+     */
     public static function onStop(Server $swoole, Process $process)
     {
         self::$running = false;

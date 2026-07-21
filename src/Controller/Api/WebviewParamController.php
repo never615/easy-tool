@@ -11,8 +11,15 @@ use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Domain\Webview\WebviewParamStore;
 use Mallto\Tool\Exception\NotFoundException;
 
+/**
+ * WebviewParamController：处理 webview param controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class WebviewParamController extends Controller
 {
+    /**
+     * 处理「store」相关的内部协作步骤。
+     */
     public function store(Request $request, WebviewParamStore $store)
     {
         $this->validate($request, [
@@ -25,6 +32,9 @@ class WebviewParamController extends Controller
         ));
     }
 
+    /**
+     * 处理「resolve」相关的内部协作步骤。
+     */
     public function resolve(Request $request, WebviewParamStore $store)
     {
         $this->validate($request, [

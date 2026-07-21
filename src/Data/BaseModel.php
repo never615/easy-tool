@@ -30,6 +30,9 @@ abstract class BaseModel extends Model
 //        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
 //    }
 
+    /**
+     * 处理「serializeDate」相关的内部协作步骤。
+     */
     protected function serializeDate(\DateTimeInterface $date)
     {
         if (version_compare(app()->version(), '7.0.0') < 0) {

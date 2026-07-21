@@ -4,6 +4,10 @@ namespace Mallto\Tool\Domain\NewConfig;
 
 use Mallto\Tool\Exception\ResourceException;
 
+/**
+ * NewConfigBootstrapKeyGuard：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class NewConfigBootstrapKeyGuard
 {
     private const GENERATED_GLOBAL_CONFIG_PREFIX = 'GLOBAL_CONFIG_';
@@ -79,6 +83,9 @@ class NewConfigBootstrapKeyGuard
         'KEY_PATH',
     ];
 
+    /**
+     * 处理「normalize」相关的内部协作步骤。
+     */
     public static function normalize(?string $envKey): ?string
     {
         $envKey = strtoupper(trim((string)$envKey));
@@ -86,6 +93,9 @@ class NewConfigBootstrapKeyGuard
         return $envKey === '' ? null : $envKey;
     }
 
+    /**
+     * 处理「assertAllowed」相关的内部协作步骤。
+     */
     public static function assertAllowed(?string $envKey): void
     {
         $envKey = self::normalize($envKey);
@@ -96,6 +106,9 @@ class NewConfigBootstrapKeyGuard
         throw new ResourceException(self::forbiddenMessage($envKey));
     }
 
+    /**
+     * 处理「assertAllowedForRuntimeOverride」相关的内部协作步骤。
+     */
     public static function assertAllowedForRuntimeOverride(?string $envKey): void
     {
         $envKey = self::normalize($envKey);
@@ -106,6 +119,9 @@ class NewConfigBootstrapKeyGuard
         throw new ResourceException(self::forbiddenMessage($envKey));
     }
 
+    /**
+     * 处理「isForbiddenForRuntimeOverride」相关的内部协作步骤。
+     */
     public static function isForbiddenForRuntimeOverride(?string $envKey): bool
     {
         $envKey = self::normalize($envKey);
@@ -116,6 +132,9 @@ class NewConfigBootstrapKeyGuard
         return self::isForbidden($envKey, false);
     }
 
+    /**
+     * 处理「isForbidden」相关的内部协作步骤。
+     */
     private static function isForbidden(string $envKey, bool $allowGeneratedGlobalConfigKeys): bool
     {
         $envKey = self::normalize($envKey);
@@ -146,11 +165,17 @@ class NewConfigBootstrapKeyGuard
         return false;
     }
 
+    /**
+     * 处理「forbiddenHint」相关的内部协作步骤。
+     */
     public static function forbiddenHint(): string
     {
         return '禁止创建 APP_*、DB_*、REDIS_*、LOCAL_REDIS_*、MONGO_*、MONGODB_*、CACHE_*、SESSION_*、MAIL_*、QINIU_*、ALIYUN_*、WECHAT_*、MQTT_*、NEW_CONFIG_*、SUBJECT_CONFIG_*、LARAVELS_*、HORIZON_*、GLOBAL_CONFIG_* 等启动、连接、密钥、配置中心自身或内部生成 key；包含 PASSWORD、SECRET、TOKEN、ACCESS_KEY、PRIVATE_KEY、PASSPHRASE、CERT、KEY_PATH 的 key 也禁止配置。';
     }
 
+    /**
+     * 处理「forbiddenMessage」相关的内部协作步骤。
+     */
     private static function forbiddenMessage(string $envKey): string
     {
         return "Env Key [{$envKey}] 属于启动、连接、密钥或配置中心自身配置，不能在配置中心创建或发布。请继续通过 .env、docker-compose env_file 或 K8s Secret/ConfigMap 管理。";

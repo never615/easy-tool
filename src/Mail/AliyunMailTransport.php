@@ -15,6 +15,10 @@ use Illuminate\Mail\Transport\Transport;
 use Psr\Http\Message\ResponseInterface;
 use Swift_Mime_Message;
 
+/**
+ * AliyunMailTransport：easy-tool 的 aliyun mail transport 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class AliyunMailTransport extends Transport
 {
 

@@ -8,14 +8,24 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Mallto\Tool\Data\QueueDiagnosticSnapshot;
 
+/**
+ * QueueDiagnosticSnapshotter：队列诊断模块的 queue diagnostic snapshotter 组件。
+ * 诊断记录必须保持为旁路，不能影响实际队列任务的执行。
+ */
 class QueueDiagnosticSnapshotter
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly QueueDiagnosticConfig $config,
         private readonly QueueDiagnosticRedisStore $store
     ) {
     }
 
+    /**
+     * 处理「capture」相关的内部协作步骤。
+     */
     public function capture(?int $windowStart = null): array
     {
         $windowStart = $windowStart ?: $this->config->windowStart();
@@ -46,6 +56,9 @@ class QueueDiagnosticSnapshotter
         return $snapshot;
     }
 
+    /**
+     * 处理「redisInfo」相关的内部协作步骤。
+     */
     private function redisInfo(string $section): array
     {
         try {
@@ -62,6 +75,9 @@ class QueueDiagnosticSnapshotter
         }
     }
 
+    /**
+     * 处理「queueSizes」相关的内部协作步骤。
+     */
     private function queueSizes(): array
     {
         $sizes = [];
@@ -77,6 +93,9 @@ class QueueDiagnosticSnapshotter
         return $sizes;
     }
 
+    /**
+     * 处理「backlogSample」相关的内部协作步骤。
+     */
     private function backlogSample(array $queueSizes): array
     {
         $result = [
@@ -147,6 +166,9 @@ class QueueDiagnosticSnapshotter
         return $result;
     }
 
+    /**
+     * 处理「samplePayloads」相关的内部协作步骤。
+     */
     private function samplePayloads(array $payloads, string $queue, string $state, array &$result): int
     {
         $sampled = 0;
@@ -193,6 +215,9 @@ class QueueDiagnosticSnapshotter
         return $sampled;
     }
 
+    /**
+     * 处理「payloadJobName」相关的内部协作步骤。
+     */
     private function payloadJobName(array $payload): string
     {
         $name = $payload['displayName']
@@ -203,6 +228,9 @@ class QueueDiagnosticSnapshotter
         return is_string($name) && $name !== '' ? $name : 'unknown';
     }
 
+    /**
+     * 处理「contextLabel」相关的内部协作步骤。
+     */
     private function contextLabel(string $queue, string $state, $context, array $fields): string
     {
         if (!is_array($context) || empty($context)) {
@@ -223,6 +251,9 @@ class QueueDiagnosticSnapshotter
         return mb_substr(implode('|', $parts), 0, 240);
     }
 
+    /**
+     * 处理「scoreRows」相关的内部协作步骤。
+     */
     private function scoreRows(array $scores): array
     {
         if (empty($scores)) {
@@ -241,16 +272,25 @@ class QueueDiagnosticSnapshotter
         return $rows;
     }
 
+    /**
+     * 处理「incrementScore」相关的内部协作步骤。
+     */
     private function incrementScore(array &$scores, string $key, int $amount): void
     {
         $scores[$key] = (int)($scores[$key] ?? 0) + $amount;
     }
 
+    /**
+     * 处理「queueKey」相关的内部协作步骤。
+     */
     private function queueKey(string $queue): string
     {
         return 'queues:' . $queue;
     }
 
+    /**
+     * 处理「detectAnomaly」相关的内部协作步骤。
+     */
     private function detectAnomaly(array $redisMemory, array $queueSizes): array
     {
         $level = null;
@@ -287,6 +327,9 @@ class QueueDiagnosticSnapshotter
         ];
     }
 
+    /**
+     * 处理「logAnomaly」相关的内部协作步骤。
+     */
     private function logAnomaly(array $snapshot): void
     {
         $level = $snapshot['anomaly']['level'] ?? null;
@@ -328,6 +371,9 @@ class QueueDiagnosticSnapshotter
         Log::warning('Queue diagnostic anomaly detected', $context);
     }
 
+    /**
+     * 处理「persistSnapshot」相关的内部协作步骤。
+     */
     private function persistSnapshot(array $snapshot): void
     {
         if (!$this->config->dbSnapshotEnabled()) {
@@ -376,6 +422,9 @@ class QueueDiagnosticSnapshotter
         }
     }
 
+    /**
+     * 处理「flattenInfo」相关的内部协作步骤。
+     */
     private function flattenInfo(array $info): array
     {
         $flattened = [];

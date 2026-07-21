@@ -17,6 +17,9 @@ use Illuminate\Contracts\Redis\Factory as RedisFactory;
  */
 final class AppStatsPodWriter
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly RedisFactory $redis,
         private readonly ConfigRepository $config
@@ -73,6 +76,9 @@ final class AppStatsPodWriter
         });
     }
 
+    /**
+     * 处理「connection」相关的内部协作步骤。
+     */
     private function connection()
     {
         $name = $this->config->get('app_stats.redis_connection');
@@ -80,11 +86,17 @@ final class AppStatsPodWriter
         return $this->redis->connection(is_string($name) && $name !== '' ? $name : null);
     }
 
+    /**
+     * 处理「hashKey」相关的内部协作步骤。
+     */
     private function hashKey(): string
     {
         return (string)$this->config->get('app_stats.pods_hash_key', 'swoole_stats:pods');
     }
 
+    /**
+     * 处理「lastSeenKey」相关的内部协作步骤。
+     */
     private function lastSeenKey(): string
     {
         return (string)$this->config->get('app_stats.pods_last_seen_key', 'swoole_stats:pods:last_seen');

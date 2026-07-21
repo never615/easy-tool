@@ -37,6 +37,9 @@ class CastUtils
     }
 
 
+    /**
+     * 处理「castOnOrOff2Bool」相关的内部协作步骤。
+     */
     public static function castOnOrOff2Bool($value)
     {
         return $value == "on" ? true : false;

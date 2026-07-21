@@ -5,13 +5,23 @@ namespace Mallto\Tool\Domain\NewConfig;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
+/**
+ * LaravelSRestartService：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class LaravelSRestartService
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private ?HorizonTerminateService $horizonTerminateService = null
     ) {
     }
 
+    /**
+     * 处理「restart」相关的内部协作步骤。
+     */
     public function restart(): array
     {
         $strategy = (string)config('new_config.restart.strategy', 'supervisor_autorestart');
@@ -42,6 +52,9 @@ class LaravelSRestartService
         return $result;
     }
 
+    /**
+     * 处理「restartCurrentLaravelSInstance」相关的内部协作步骤。
+     */
     public function restartCurrentLaravelSInstance(): array
     {
         $strategy = (string)config('new_config.watcher.restart_strategy', 'supervisor_autorestart');
@@ -67,6 +80,9 @@ class LaravelSRestartService
         return $this->scheduleSupervisorAutorestart(false);
     }
 
+    /**
+     * 处理「scheduleConfiguredCommand」相关的内部协作步骤。
+     */
     private function scheduleConfiguredCommand(): array
     {
         $command = trim((string)config('new_config.restart.command', ''));
@@ -80,6 +96,9 @@ class LaravelSRestartService
         return $this->scheduleShellCommand($command, 'command');
     }
 
+    /**
+     * 处理「scheduleSupervisorAutorestart」相关的内部协作步骤。
+     */
     private function scheduleSupervisorAutorestart(?bool $includeHorizon = null): array
     {
         $scriptPath = storage_path('framework/new-config-restart-' . date('YmdHis') . '-' . getmypid() . '.sh');
@@ -111,6 +130,9 @@ class LaravelSRestartService
         return $result;
     }
 
+    /**
+     * 处理「scheduleShellCommand」相关的内部协作步骤。
+     */
     private function scheduleShellCommand(string $command, string $strategy): array
     {
         $process = Process::fromShellCommandline(
@@ -138,6 +160,9 @@ class LaravelSRestartService
         ];
     }
 
+    /**
+     * 处理「renderSupervisorAutorestartScript」相关的内部协作步骤。
+     */
     private function renderSupervisorAutorestartScript(
         string $appDir,
         string $pidFile,
@@ -237,11 +262,17 @@ fi
 SH;
     }
 
+    /**
+     * 处理「sh」相关的内部协作步骤。
+     */
     private function sh(string $value): string
     {
         return "'" . str_replace("'", "'\"'\"'", $value) . "'";
     }
 
+    /**
+     * 处理「writableLogPath」相关的内部协作步骤。
+     */
     private function writableLogPath(): string
     {
         $logPath = storage_path('logs/new-config-restart.log');
@@ -257,6 +288,9 @@ SH;
         return sys_get_temp_dir() . '/easy-admin-new-config-restart.log';
     }
 
+    /**
+     * 处理「requestHorizonTerminate」相关的内部协作步骤。
+     */
     private function requestHorizonTerminate(): array
     {
         if (!(bool)config('new_config.restart.terminate_horizon', true)) {

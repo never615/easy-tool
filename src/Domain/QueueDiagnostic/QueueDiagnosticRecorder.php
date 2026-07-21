@@ -8,14 +8,24 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * QueueDiagnosticRecorder：队列诊断模块的 queue diagnostic recorder 组件。
+ * 诊断记录必须保持为旁路，不能影响实际队列任务的执行。
+ */
 class QueueDiagnosticRecorder
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly QueueDiagnosticConfig $config,
         private readonly QueueDiagnosticRedisStore $store
     ) {
     }
 
+    /**
+     * 处理「before」相关的内部协作步骤。
+     */
     public function before(JobProcessing $event): void
     {
         if (!$this->config->enabled()) {
@@ -30,6 +40,9 @@ class QueueDiagnosticRecorder
         });
     }
 
+    /**
+     * 处理「after」相关的内部协作步骤。
+     */
     public function after(JobProcessed $event): void
     {
         if (!$this->config->enabled()) {
@@ -41,6 +54,9 @@ class QueueDiagnosticRecorder
         });
     }
 
+    /**
+     * 处理「failed」相关的内部协作步骤。
+     */
     public function failed(JobFailed $event): void
     {
         if (!$this->config->enabled()) {
@@ -56,6 +72,9 @@ class QueueDiagnosticRecorder
         });
     }
 
+    /**
+     * 处理「exceptionOccurred」相关的内部协作步骤。
+     */
     public function exceptionOccurred(JobExceptionOccurred $event): void
     {
         if (!$this->config->enabled()) {
@@ -71,6 +90,9 @@ class QueueDiagnosticRecorder
         });
     }
 
+    /**
+     * 处理「jobMeta」相关的内部协作步骤。
+     */
     private function jobMeta(string $connectionName, $job): array
     {
         $payload = $this->payload($job);
@@ -88,6 +110,9 @@ class QueueDiagnosticRecorder
         ];
     }
 
+    /**
+     * 处理「payload」相关的内部协作步骤。
+     */
     private function payload($job): array
     {
         try {
@@ -99,6 +124,9 @@ class QueueDiagnosticRecorder
         }
     }
 
+    /**
+     * 处理「payloadBytes」相关的内部协作步骤。
+     */
     private function payloadBytes($job, array $payload): int
     {
         try {
@@ -112,6 +140,9 @@ class QueueDiagnosticRecorder
         return strlen(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
     }
 
+    /**
+     * 处理「exceptionMeta」相关的内部协作步骤。
+     */
     private function exceptionMeta(?\Throwable $throwable): ?array
     {
         if (!$throwable) {
@@ -124,6 +155,9 @@ class QueueDiagnosticRecorder
         ];
     }
 
+    /**
+     * 处理「callJobMethod」相关的内部协作步骤。
+     */
     private function callJobMethod($job, string $method)
     {
         try {
@@ -133,6 +167,9 @@ class QueueDiagnosticRecorder
         }
     }
 
+    /**
+     * 处理「safeString」相关的内部协作步骤。
+     */
     private function safeString($value, string $fallback): string
     {
         if ($value === null || $value === '') {
@@ -142,6 +179,9 @@ class QueueDiagnosticRecorder
         return (string)$value;
     }
 
+    /**
+     * 处理「normalizeContext」相关的内部协作步骤。
+     */
     private function normalizeContext($context): array
     {
         if (!is_array($context)) {
@@ -160,6 +200,9 @@ class QueueDiagnosticRecorder
         return array_slice($normalized, 0, 20, true);
     }
 
+    /**
+     * 处理「safeRecord」相关的内部协作步骤。
+     */
     private function safeRecord(\Closure $callback): void
     {
         try {
@@ -171,6 +214,9 @@ class QueueDiagnosticRecorder
         }
     }
 
+    /**
+     * 处理「nowMs」相关的内部协作步骤。
+     */
     private function nowMs(): int
     {
         return (int)floor(microtime(true) * 1000);

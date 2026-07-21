@@ -5,6 +5,10 @@ namespace Mallto\Tool\Data;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
+/**
+ * NewConfig：new config 对应的数据模型或持久化边界。
+ * 它集中声明字段、关联和查询语义，供领域服务与管理界面复用。
+ */
 class NewConfig extends BaseModel
 {
     public const GROUP_GLOBAL_CONFIG = 'global_config';
@@ -25,6 +29,9 @@ class NewConfig extends BaseModel
 
     private static int $publishSuppressionCount = 0;
 
+    /**
+     * 处理「booted」相关的内部协作步骤。
+     */
     protected static function booted(): void
     {
         static::saving(function (NewConfig $config) {
@@ -49,6 +56,9 @@ class NewConfig extends BaseModel
         });
     }
 
+    /**
+     * 处理「runtimeEnvOverrideKey」相关的内部协作步骤。
+     */
     public static function runtimeEnvOverrideKey(string $envKey): string
     {
         $envKey = NewConfigBootstrapKeyGuard::normalize($envKey);
@@ -56,6 +66,9 @@ class NewConfig extends BaseModel
         return self::GROUP_RUNTIME_ENV_OVERRIDE . '.' . $envKey;
     }
 
+    /**
+     * 处理「withoutAutoPublish」相关的内部协作步骤。
+     */
     public static function withoutAutoPublish(callable $callback)
     {
         self::$publishSuppressionCount++;
@@ -67,11 +80,17 @@ class NewConfig extends BaseModel
         }
     }
 
+    /**
+     * 处理「shouldAutoPublish」相关的内部协作步骤。
+     */
     private static function shouldAutoPublish(): bool
     {
         return self::$publishSuppressionCount <= 0 && !self::isTestRun();
     }
 
+    /**
+     * 处理「isTestRun」相关的内部协作步骤。
+     */
     private static function isTestRun(): bool
     {
         return app()->runningUnitTests()

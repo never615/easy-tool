@@ -29,12 +29,18 @@ class LogController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「getHeaderTitle」相关的内部协作步骤。
+     */
     protected function getHeaderTitle()
     {
         return "自己上报的日志";
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->tag();

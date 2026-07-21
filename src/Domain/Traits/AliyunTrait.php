@@ -52,6 +52,9 @@ trait AliyunTrait
     }
 
 
+    /**
+     * 处理「encode」相关的内部协作步骤。
+     */
     protected function encode($str)
     {
         $res = urlencode($str);

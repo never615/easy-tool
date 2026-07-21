@@ -14,6 +14,10 @@ use Mallto\Tool\Exception\SignException;
 use Mallto\Tool\Utils\SignUtils;
 use Symfony\Component\HttpKernel\Exception\PreconditionRequiredHttpException;
 
+/**
+ * WebviewSignController：处理 webview sign controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class WebviewSignController extends \App\Http\Controllers\Controller
 {
     /**

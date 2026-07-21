@@ -24,6 +24,9 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
 {
     private readonly Closure $clock;
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly RedisFactory $redis,
         private readonly ConfigRepository $config,
@@ -32,6 +35,9 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
         $this->clock = $clock ?? static fn (): int => time();
     }
 
+    /**
+     * 处理「key」相关的内部协作步骤。
+     */
     public function key(): string
     {
         return 'redis_memory';

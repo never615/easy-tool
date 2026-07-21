@@ -10,6 +10,10 @@ use Mallto\Admin\Data\Traits\BaseModel;
 use Mallto\Mall\Data\Shop;
 use Mallto\User\Data\User;
 
+/**
+ * Tag：tag 对应的数据模型或持久化边界。
+ * 它集中声明字段、关联和查询语义，供领域服务与管理界面复用。
+ */
 class Tag extends BaseModel
 {
     protected $hidden = ['pivot', 'deleted_at'];
@@ -30,6 +34,9 @@ class Tag extends BaseModel
     ];
 
 
+    /**
+     * 处理「selectUserTags」相关的内部协作步骤。
+     */
     public static function selectUserTags()
     {
         return static::dynamicData()->where("type", "user")->pluck("name", "id");
@@ -68,12 +75,18 @@ class Tag extends BaseModel
     }
 
 
+    /**
+     * 处理「users」相关的内部协作步骤。
+     */
     public function users()
     {
         return $this->morphedByMany(User::class, "taggable");
     }
 
 
+    /**
+     * 处理「shops」相关的内部协作步骤。
+     */
     public function shops()
     {
         return $this->morphedByMany(Shop::class, "taggable");

@@ -30,6 +30,9 @@ class AppSecretUsecase extends AbstractAPI
     protected $slug = "open_platform";
 
 
+    /**
+     * 处理「update」相关的内部协作步骤。
+     */
     public function update()
     {
         $salt = "phfOtwKclusrHKwfgPtfIah1uT3xi";

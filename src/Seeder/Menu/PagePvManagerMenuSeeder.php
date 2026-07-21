@@ -9,6 +9,10 @@ use Illuminate\Database\Seeder;
 use Mallto\Admin\Data\Menu;
 use Mallto\Admin\Seeder\MenuSeederMaker;
 
+/**
+ * PagePvManagerMenuSeeder：初始化 page pv manager menu seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class PagePvManagerMenuSeeder extends Seeder
 {
 

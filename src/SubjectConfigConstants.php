@@ -5,6 +5,10 @@
 
 namespace Mallto\Tool;
 
+/**
+ * SubjectConfigConstants：easy-tool 的 subject config constants 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class SubjectConfigConstants extends \Mallto\Admin\SubjectConfigConstants
 {
 

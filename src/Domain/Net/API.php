@@ -16,6 +16,10 @@ use Mallto\Tool\Utils\AppUtils;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * API：easy-tool 的 api 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class API
 {
 

@@ -6,6 +6,10 @@ use Illuminate\Console\Command;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 use Throwable;
 
+/**
+ * PublishNewConfigCommand：publish new config command 对应的 Artisan 命令。
+ * 命令将运维入口收敛为可重复执行的流程。
+ */
 class PublishNewConfigCommand extends Command
 {
     protected $signature = 'tool:new_config_publish
@@ -17,6 +21,9 @@ class PublishNewConfigCommand extends Command
 
     protected $description = 'Export runtime config snapshots and refresh Laravel config cache';
 
+    /**
+     * 处理「handle」相关的内部协作步骤。
+     */
     public function handle(NewConfigPublisher $publisher): int
     {
         try {

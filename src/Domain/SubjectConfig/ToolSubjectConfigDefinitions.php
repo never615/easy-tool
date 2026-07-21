@@ -4,8 +4,15 @@ namespace Mallto\Tool\Domain\SubjectConfig;
 
 use Mallto\Admin\Domain\SubjectConfig\SubjectConfigDefinition;
 
+/**
+ * ToolSubjectConfigDefinitions：easy-tool 的 tool subject config definitions 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class ToolSubjectConfigDefinitions
 {
+    /**
+     * 处理「modules」相关的内部协作步骤。
+     */
     public static function modules(): array
     {
         return [
@@ -16,6 +23,9 @@ class ToolSubjectConfigDefinitions
         ];
     }
 
+    /**
+     * 处理「definitions」相关的内部协作步骤。
+     */
     public static function definitions(): array
     {
         return [
@@ -28,6 +38,9 @@ class ToolSubjectConfigDefinitions
         ];
     }
 
+    /**
+     * 处理「definition」相关的内部协作步骤。
+     */
     private static function definition(
         string $key,
         string $name,

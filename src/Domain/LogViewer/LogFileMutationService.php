@@ -5,6 +5,10 @@ namespace Mallto\Tool\Domain\LogViewer;
 use Illuminate\Filesystem\Filesystem;
 use RuntimeException;
 
+/**
+ * LogFileMutationService：easy-tool 的 log file mutation service 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class LogFileMutationService
 {
     /** @var array<string, bool> */
@@ -27,6 +31,9 @@ class LogFileMutationService
         }
     }
 
+    /**
+     * 处理「clean」相关的内部协作步骤。
+     */
     public function clean(string $path): void
     {
         if ($this->files->put($path, '') === false) {
@@ -34,6 +41,9 @@ class LogFileMutationService
         }
     }
 
+    /**
+     * 处理「delete」相关的内部协作步骤。
+     */
     public function delete(string $path): void
     {
         if ($this->isActive($path)) {
@@ -57,6 +67,9 @@ class LogFileMutationService
         }
     }
 
+    /**
+     * 处理「isActive」相关的内部协作步骤。
+     */
     private function isActive(string $path): bool
     {
         return isset($this->activeFiles[basename($path)]);

@@ -19,6 +19,10 @@ use PhpMqtt\Client\Exceptions\ProtocolNotSupportedException;
 use PhpMqtt\Client\Exceptions\RepositoryException;
 use PhpMqtt\Client\MqttClient;
 
+/**
+ * RuntimeClientIdConnectionManager：easy-tool 的 runtime client id connection manager 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class RuntimeClientIdConnectionManager
 {
     private Application $application;
@@ -30,6 +34,9 @@ class RuntimeClientIdConnectionManager
     /** @var MqttClientContract[] */
     private array $connections = [];
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(Application $application, array $config)
     {
         $this->application = $application;
@@ -149,6 +156,9 @@ class RuntimeClientIdConnectionManager
         return $client;
     }
 
+    /**
+     * 处理「buildConnectionSettings」相关的内部协作步骤。
+     */
     protected function buildConnectionSettings(array $config): ConnectionSettings
     {
         $settings = (new ConnectionSettings)

@@ -17,6 +17,9 @@ use ReflectionClass;
 trait HasParentModel
 {
 
+    /**
+     * 处理「getTable」相关的内部协作步骤。
+     */
     public function getTable()
     {
         if ( ! isset($this->table)) {
@@ -27,12 +30,18 @@ trait HasParentModel
     }
 
 
+    /**
+     * 处理「getForeignKey」相关的内部协作步骤。
+     */
     public function getForeignKey()
     {
         return Str::snake(class_basename($this->getParentClass())) . '_' . $this->primaryKey;
     }
 
 
+    /**
+     * 处理「joiningTable」相关的内部协作步骤。
+     */
     public function joiningTable($related, $instance = null)
     {
         $models = [
@@ -45,12 +54,18 @@ trait HasParentModel
     }
 
 
+    /**
+     * 处理「getParentClass」相关的内部协作步骤。
+     */
     protected function getParentClass()
     {
         return (new ReflectionClass($this))->getParentClass()->getName();
     }
 
 
+    /**
+     * 处理「getMorphClass」相关的内部协作步骤。
+     */
     public function getMorphClass()
     {
         $class = $this->getParentClass();

@@ -81,6 +81,9 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
     }
 
 
+    /**
+     * 处理「getResponseContent」相关的内部协作步骤。
+     */
     public function getResponseContent()
     {
         if ($this->errCode) {

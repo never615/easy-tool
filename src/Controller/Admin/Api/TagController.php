@@ -19,6 +19,9 @@ use Mallto\Tool\Data\Tag;
 class TagController extends Controller
 {
 
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(Request $request)
     {
         $type = $request->get('type');
@@ -73,6 +76,9 @@ class TagController extends Controller
     }
 
 
+    /**
+     * 处理「show」相关的内部协作步骤。
+     */
     public function show($id)
     {
         $subjectId = SubjectUtils::getSubjectId();
@@ -80,6 +86,9 @@ class TagController extends Controller
     }
 
 
+    /**
+     * 处理「store」相关的内部协作步骤。
+     */
     public function store(Request $request)
     {
         $this->validate($request, [
@@ -110,6 +119,9 @@ class TagController extends Controller
     }
 
 
+    /**
+     * 处理「update」相关的内部协作步骤。
+     */
     public function update(Request $request, $id)
     {
         $subjectId = SubjectUtils::getSubjectId();
@@ -141,6 +153,9 @@ class TagController extends Controller
     }
 
 
+    /**
+     * 处理「destroy」相关的内部协作步骤。
+     */
     public function destroy($id)
     {
         $subjectId = SubjectUtils::getSubjectId();

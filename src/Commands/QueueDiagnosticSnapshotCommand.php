@@ -6,12 +6,19 @@ use Illuminate\Console\Command;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticSnapshotter;
 
+/**
+ * QueueDiagnosticSnapshotCommand：queue diagnostic snapshot command 对应的 Artisan 命令。
+ * 命令将运维入口收敛为可重复执行的流程。
+ */
 class QueueDiagnosticSnapshotCommand extends Command
 {
     protected $signature = 'tool:queue_diagnostic_snapshot {--json : 输出 JSON}';
 
     protected $description = '采样 Redis 内存、keyspace 和队列 backlog，并写入队列诊断窗口';
 
+    /**
+     * 处理「handle」相关的内部协作步骤。
+     */
     public function handle(QueueDiagnosticConfig $config, QueueDiagnosticSnapshotter $snapshotter): int
     {
         if (!$config->enabled() || !$config->snapshotEnabled()) {

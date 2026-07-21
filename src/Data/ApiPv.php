@@ -23,6 +23,9 @@ class ApiPv extends BaseModel
     public $selectId = "path";
 
 
+    /**
+     * 处理「apiPvManager」相关的内部协作步骤。
+     */
     public function apiPvManager()
     {
         return $this->belongsTo(ApiPvManager::class, "path", "path");

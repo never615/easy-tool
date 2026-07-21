@@ -7,12 +7,22 @@ use Illuminate\Validation\Rule;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Exception\ResourceException;
 
+/**
+ * GlobalConfigModuleForm：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class GlobalConfigModuleForm
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(private NewConfigPublisher $publisher)
     {
     }
 
+    /**
+     * 处理「snapshot」相关的内部协作步骤。
+     */
     public function snapshot(string $module): array
     {
         $moduleMeta = $this->moduleMeta($module);
@@ -37,6 +47,9 @@ class GlobalConfigModuleForm
         ];
     }
 
+    /**
+     * 处理「save」相关的内部协作步骤。
+     */
     public function save(string $module, array $input): array
     {
         $this->moduleMeta($module);
@@ -62,6 +75,9 @@ class GlobalConfigModuleForm
         return $this->snapshot($module);
     }
 
+    /**
+     * 处理「saveValue」相关的内部协作步骤。
+     */
     private function saveValue(string $key, array $definition, string $value): void
     {
         $config = NewConfig::query()->firstOrNew([
@@ -75,6 +91,9 @@ class GlobalConfigModuleForm
         $config->save();
     }
 
+    /**
+     * 处理「rowSnapshot」相关的内部协作步骤。
+     */
     private function rowSnapshot(string $key, array $definition, ?NewConfig $row): array
     {
         $value = $row ? $row->value : null;
@@ -102,6 +121,9 @@ class GlobalConfigModuleForm
         ];
     }
 
+    /**
+     * 处理「rulesFor」相关的内部协作步骤。
+     */
     private function rulesFor(array $definition): array
     {
         return match ((string)($definition['type'] ?? 'string')) {
@@ -113,6 +135,9 @@ class GlobalConfigModuleForm
         };
     }
 
+    /**
+     * 处理「validateValue」相关的内部协作步骤。
+     */
     private function validateValue(string $key, array $definition, $value)
     {
         $name = (string)($definition['name'] ?? $key);
@@ -134,6 +159,9 @@ class GlobalConfigModuleForm
         return Validator::make($data, $rules, $messages)->validate()['value'] ?? '';
     }
 
+    /**
+     * 处理「normalizeValue」相关的内部协作步骤。
+     */
     private function normalizeValue(array $definition, $value): string
     {
         return match ((string)($definition['type'] ?? 'string')) {
@@ -144,6 +172,9 @@ class GlobalConfigModuleForm
         };
     }
 
+    /**
+     * 处理「moduleMeta」相关的内部协作步骤。
+     */
     private function moduleMeta(string $module): array
     {
         $meta = GlobalConfigDefinitions::module($module);

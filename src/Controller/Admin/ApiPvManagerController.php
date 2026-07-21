@@ -12,6 +12,10 @@ use Mallto\Tool\Data\ApiPv;
 use Mallto\Tool\Data\ApiPvManager;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
+/**
+ * ApiPvManagerController：处理 api pv manager controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class ApiPvManagerController extends AdminCommonController
 {
 
@@ -29,6 +33,9 @@ class ApiPvManagerController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「getIndexDesc」相关的内部协作步骤。
+     */
     protected function getIndexDesc()
     {
         return "主要用于模块统计";
@@ -46,6 +53,9 @@ class ApiPvManagerController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->path("接口");

@@ -16,6 +16,9 @@ use Illuminate\Http\Request;
 class ErrorController
 {
 
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index($code, Request $request)
     {
         return view("tooL_errors::$code");

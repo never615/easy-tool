@@ -14,6 +14,10 @@ use Mallto\Tool\Data\PagePv;
 use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Domain\Traits\SlugAutoSave;
 
+/**
+ * PagePvManagerController：处理 page pv manager controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class PagePvManagerController extends AdminCommonController
 {
 
@@ -41,6 +45,9 @@ class PagePvManagerController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->path("页面路径");

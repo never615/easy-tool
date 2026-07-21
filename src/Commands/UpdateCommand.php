@@ -8,6 +8,10 @@ namespace Mallto\Tool\Commands;
 use Illuminate\Console\Command;
 use Mallto\Tool\Seeder\TablesSeeder;
 
+/**
+ * UpdateCommand：update command 对应的 Artisan 命令。
+ * 命令将运维入口收敛为可重复执行的流程。
+ */
 class UpdateCommand extends Command
 {
 

@@ -18,6 +18,9 @@ class RedisMemoryMonitorCommand extends Command
 
     protected $description = '采样共享 Redis 内存水位，并按阈值写入 Laravel 日志';
 
+    /**
+     * 处理「handle」相关的内部协作步骤。
+     */
     public function handle(RedisMemoryMonitor $monitor): int
     {
         $result = $monitor->run();

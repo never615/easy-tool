@@ -19,6 +19,9 @@ class Ucs2Utils
      * @Param string $encod 输入字符串编码类型(UTF-8,GB2312,GBK)
      * @Return string 返回编码后的字符串
      */
+    /**
+     * 处理「ucs2Code」相关的内部协作步骤。
+     */
     public static function ucs2Code($str, $encode = "UTF-8")
     {
         $jumpbit = strtoupper($encode) == 'GB2312' ? 2 : 3;//跳转位数
@@ -45,6 +48,9 @@ class Ucs2Utils
      * @Param string $str   输入字符串
      * @Param string $encod 输入字符串编码类型(UTF-8,GB2312,GBK)
      * @Return string 返回解码后的字符串
+     */
+    /**
+     * 处理「unUcs2Code」相关的内部协作步骤。
      */
     public static function unUcs2Code($str, $encode = "UTF-8")
     {

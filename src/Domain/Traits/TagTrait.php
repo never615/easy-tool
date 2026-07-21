@@ -16,6 +16,9 @@ use Mallto\Tool\Data\Tag;
 trait TagTrait
 {
 
+    /**
+     * 处理「tags」相关的内部协作步骤。
+     */
     public function tags()
     {
 //        return $this->morphToMany(Tag::class, "taggable");

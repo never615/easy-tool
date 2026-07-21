@@ -4,12 +4,26 @@ namespace Mallto\Tool\Domain\QueueDiagnostic;
 
 use Illuminate\Support\Facades\Redis;
 
+/**
+ * QueueDiagnosticRedisStore：队列诊断模块的 queue diagnostic redis store 组件。
+ *
+ * 以配置的窗口和 TTL 聚合任务时长、失败、资源和 backlog 数据。所有 Redis 写入都服务于
+ * 管理诊断页，诊断记录必须保持为旁路，不能影响实际队列任务的执行。
+ */
 class QueueDiagnosticRedisStore
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(private readonly QueueDiagnosticConfig $config)
     {
     }
 
+    /**
+     * 在任务开始执行时保存关联元数据。
+     *
+     * 该临时记录供完成/失败事件计算耗时使用；TTL 至少覆盖队列 retry_after 及诊断保留期。
+     */
     public function recordStarted(array $meta): void
     {
         $uuid = (string)($meta['uuid'] ?? '');
@@ -21,6 +35,9 @@ class QueueDiagnosticRedisStore
         Redis::setex($this->config->startKey($uuid), $ttl, json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
+    /**
+     * 合并开始元数据并把任务最终状态计入所属诊断窗口。
+     */
     public function recordFinished(array $meta, string $status, ?array $exception = null): void
     {
         $nowMs = $this->nowMs();
@@ -35,6 +52,9 @@ class QueueDiagnosticRedisStore
         $this->incrementWindow($windowStart, $jobName, $queue, $payloadBytes, $durationMs, $status, $exception, $merged);
     }
 
+    /**
+     * 读取一个诊断窗口的聚合计数、排行榜、资源及 backlog 快照。
+     */
     public function windowSnapshot(?int $windowStart = null): array
     {
         $windowStart = $windowStart ?: $this->config->windowStart();
@@ -67,6 +87,9 @@ class QueueDiagnosticRedisStore
         ];
     }
 
+    /**
+     * 记录 Redis 内存、keyspace 与队列 backlog 的周期性资源快照。
+     */
     public function recordResourceSnapshot(
         int $windowStart,
         array $redisMemory,
@@ -101,6 +124,9 @@ class QueueDiagnosticRedisStore
         }
     }
 
+    /**
+     * 将单次 backlog 采样写入窗口 hash，并复用窗口的统一 TTL。
+     */
     private function recordBacklogSample(int $windowStart, array $sample): void
     {
         if (empty($sample)) {
@@ -119,6 +145,9 @@ class QueueDiagnosticRedisStore
         Redis::expire($key, $this->config->retentionSeconds());
     }
 
+    /**
+     * 读取受条数限制的 backlog 样本，供管理页展示和异常复盘。
+     */
     private function backlogSampleSnapshot(int $windowStart, int $limit): array
     {
         $raw = Redis::hgetall($this->config->windowKey($windowStart, 'backlog_sample')) ?: [];
@@ -132,6 +161,9 @@ class QueueDiagnosticRedisStore
         ];
     }
 
+    /**
+     * 原子累加窗口计数、耗时及各维度排行榜，并为所有生成的 key 续期。
+     */
     private function incrementWindow(
         int $windowStart,
         string $jobName,
@@ -207,6 +239,9 @@ class QueueDiagnosticRedisStore
         }
     }
 
+    /**
+     * 取回并删除开始阶段临时元数据，避免同一任务被重复计入耗时。
+     */
     private function pullStartMeta(string $uuid): array
     {
         if ($uuid === '') {
@@ -220,6 +255,9 @@ class QueueDiagnosticRedisStore
         return $this->decodeJson((string)$raw);
     }
 
+    /**
+     * 基于开始事件时间戳计算非负毫秒耗时；缺失元数据时安全回退为零。
+     */
     private function durationMs(array $startMeta, int $nowMs): int
     {
         $startedAtMs = (int)($startMeta['started_at_ms'] ?? 0);
@@ -230,6 +268,9 @@ class QueueDiagnosticRedisStore
         return max(0, $nowMs - $startedAtMs);
     }
 
+    /**
+     * 处理「recordMax」相关的内部协作步骤。
+     */
     private function recordMax(string $key, string $field, int $value): void
     {
         $current = (int)Redis::hget($key, $field);
@@ -238,6 +279,9 @@ class QueueDiagnosticRedisStore
         }
     }
 
+    /**
+     * 处理「writeHash」相关的内部协作步骤。
+     */
     private function writeHash(string $key, array $values): void
     {
         foreach ($values as $field => $value) {
@@ -249,6 +293,9 @@ class QueueDiagnosticRedisStore
         }
     }
 
+    /**
+     * 处理「sourceLabel」相关的内部协作步骤。
+     */
     private function sourceLabel($context): string
     {
         return $this->contextLabel($context, [
@@ -263,6 +310,9 @@ class QueueDiagnosticRedisStore
         ]);
     }
 
+    /**
+     * 处理「sourceGroupLabel」相关的内部协作步骤。
+     */
     private function sourceGroupLabel($context): string
     {
         return $this->contextLabel($context, [
@@ -275,6 +325,9 @@ class QueueDiagnosticRedisStore
         ]);
     }
 
+    /**
+     * 处理「contextLabel」相关的内部协作步骤。
+     */
     private function contextLabel($context, array $fields): string
     {
         if (!is_array($context) || empty($context)) {
@@ -291,6 +344,9 @@ class QueueDiagnosticRedisStore
         return mb_substr(implode('|', $parts), 0, 240);
     }
 
+    /**
+     * 处理「zsetTop」相关的内部协作步骤。
+     */
     private function zsetTop(string $key, int $limit): array
     {
         if ($limit <= 0) {
@@ -310,6 +366,9 @@ class QueueDiagnosticRedisStore
         return $result;
     }
 
+    /**
+     * 处理「scoreRows」相关的内部协作步骤。
+     */
     private function scoreRows(array $scores, int $limit): array
     {
         if ($limit <= 0 || empty($scores)) {
@@ -328,6 +387,9 @@ class QueueDiagnosticRedisStore
         return $rows;
     }
 
+    /**
+     * 处理「decodeJson」相关的内部协作步骤。
+     */
     private function decodeJson(string $raw): array
     {
         if ($raw === '') {
@@ -339,11 +401,17 @@ class QueueDiagnosticRedisStore
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * 计算开始元数据 TTL，确保延迟重试任务仍可在结束时关联到原始开始事件。
+     */
     private function startTtlSeconds(): int
     {
         return max($this->config->retentionSeconds(), (int)config('queue.connections.redis.retry_after', 30) + 3900);
     }
 
+    /**
+     * 处理「nowMs」相关的内部协作步骤。
+     */
     private function nowMs(): int
     {
         return (int)floor(microtime(true) * 1000);

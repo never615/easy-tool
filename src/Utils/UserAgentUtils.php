@@ -35,6 +35,9 @@ class UserAgentUtils
     }
 
 
+    /**
+     * 处理「getMobileSystemType」相关的内部协作步骤。
+     */
     public static function getMobileSystemType($userAgent)
     {
         $userAgent = strtolower($userAgent);

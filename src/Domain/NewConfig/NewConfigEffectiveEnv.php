@@ -5,12 +5,22 @@ namespace Mallto\Tool\Domain\NewConfig;
 use Dotenv\Parser\Parser;
 use Throwable;
 
+/**
+ * NewConfigEffectiveEnv：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class NewConfigEffectiveEnv
 {
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(private NewConfigPublisher $publisher)
     {
     }
 
+    /**
+     * 处理「snapshot」相关的内部协作步骤。
+     */
     public function snapshot(
         bool $mask = true,
         ?string $dotenvPath = null,
@@ -75,6 +85,9 @@ class NewConfigEffectiveEnv
         ];
     }
 
+    /**
+     * 处理「dotenvValues」相关的内部协作步骤。
+     */
     private function dotenvValues(string $path, array &$errors): array
     {
         if (!is_file($path)) {
@@ -108,6 +121,9 @@ class NewConfigEffectiveEnv
         return $values;
     }
 
+    /**
+     * 处理「processEnvValues」相关的内部协作步骤。
+     */
     private function processEnvValues(): array
     {
         $env = getenv();
@@ -115,6 +131,9 @@ class NewConfigEffectiveEnv
         return is_array($env) ? $env : [];
     }
 
+    /**
+     * 处理「normalizeValues」相关的内部协作步骤。
+     */
     private function normalizeValues(array $values): array
     {
         $normalized = [];
@@ -132,6 +151,9 @@ class NewConfigEffectiveEnv
         return $normalized;
     }
 
+    /**
+     * 处理「normalizeKey」相关的内部协作步骤。
+     */
     private function normalizeKey($key): ?string
     {
         $key = strtoupper(trim((string)$key));
@@ -142,6 +164,9 @@ class NewConfigEffectiveEnv
         return $key;
     }
 
+    /**
+     * 处理「displayValue」相关的内部协作步骤。
+     */
     private function displayValue(?string $value, bool $masked): ?string
     {
         if ($value === null) {
@@ -151,6 +176,9 @@ class NewConfigEffectiveEnv
         return $masked ? '******' : $value;
     }
 
+    /**
+     * 处理「isSensitiveKey」相关的内部协作步骤。
+     */
     private function isSensitiveKey(string $key): bool
     {
         if (preg_match('/^(DB|REDIS|MONGO|MONGODB)_/', $key) === 1) {
@@ -160,6 +188,9 @@ class NewConfigEffectiveEnv
         return preg_match('/(^|_)(PASSWORD|PASS|SECRET|TOKEN|KEY|PRIVATE|CREDENTIAL|AUTH|COOKIE|SESSION)(_|$)/', $key) === 1;
     }
 
+    /**
+     * 处理「sourceLabel」相关的内部协作步骤。
+     */
     private function sourceLabel(string $source): string
     {
         return match ($source) {

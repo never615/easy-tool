@@ -18,6 +18,9 @@ use Mallto\Tool\Data\PageBanner;
 class PageBannerController extends Controller
 {
 
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index()
     {
         $subjectId = SubjectUtils::getSubjectId();

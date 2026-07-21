@@ -8,6 +8,10 @@ namespace Mallto\Tool\Exception;
 use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * UnknownVersionException：用于表达 unknown version exception 场景的应用异常。
+ * 异常类型留给上层处理器识别，以输出符合调用方契约的错误响应。
+ */
 class UnknownVersionException extends HttpException
 {
 

@@ -17,6 +17,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class PermissionDeniedException extends HttpException
 {
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct($message = null, Exception $previous = null, $headers = [], $code = 0)
     {
         parent::__construct(403, $message ?: trans("errors.permission_denied"), $previous, $headers, $code);

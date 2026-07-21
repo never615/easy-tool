@@ -14,6 +14,10 @@ namespace Mallto\Tool\Utils;
 
 use Illuminate\Support\Facades\Log;
 
+/**
+ * TimeUtils：提供 time utils 相关的无状态工具方法。
+ * 调用方通过明确的输入和返回值使用这些方法。
+ */
 class TimeUtils
 {
 

@@ -15,8 +15,15 @@ use Closure;
 use Illuminate\Http\Request;
 use Str;
 
+/**
+ * ApiAuthMiddleware：在请求进入业务代码前执行 api auth middleware 约束。
+ * 它仅承担请求边界校验与上下文补充。
+ */
 class ApiAuthMiddleware
 {
+    /**
+     * 处理「handle」相关的内部协作步骤。
+     */
     public function handle(Request $request, Closure $next)
     {
         $authHeader = $request->header('Authorization');

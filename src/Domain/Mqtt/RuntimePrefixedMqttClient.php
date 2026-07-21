@@ -9,12 +9,19 @@ use PhpMqtt\Client\Contracts\Repository;
 use PhpMqtt\Client\MqttClient;
 use Psr\Log\LoggerInterface;
 
+/**
+ * RuntimePrefixedMqttClient：easy-tool 的 runtime prefixed mqtt client 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class RuntimePrefixedMqttClient extends MqttClient
 {
     protected ?string $runtimeClientIdPrefix = null;
 
     protected int $runtimeClientIdMaxLength = 23;
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         string $host,
         int $port = 1883,
@@ -32,6 +39,9 @@ class RuntimePrefixedMqttClient extends MqttClient
         parent::__construct($host, $port, $clientId, $protocol, $repository, $logger);
     }
 
+    /**
+     * 处理「generateRandomClientId」相关的内部协作步骤。
+     */
     protected function generateRandomClientId(): string
     {
         $randomClientId = parent::generateRandomClientId();
@@ -46,6 +56,9 @@ class RuntimePrefixedMqttClient extends MqttClient
         return $prefix . '-' . substr($randomClientId, 0, $suffixLength);
     }
 
+    /**
+     * 处理「normalizedClientIdPrefix」相关的内部协作步骤。
+     */
     protected function normalizedClientIdPrefix(): string
     {
         $prefix = trim((string)$this->runtimeClientIdPrefix);

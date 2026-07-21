@@ -5,6 +5,12 @@ namespace Mallto\Tool\Domain\SwooleTaskMonitor;
 use Illuminate\Support\Facades\Redis;
 use Throwable;
 
+/**
+ * SwooleTaskMonitorStore：Swoole Task 生命周期监控组件。
+ *
+ * Redis 中分别保存最近事件、聚合统计与可选追踪样本。写入失败必须被上层吞掉，
+ * 因为监控只提供可观测性，绝不能影响实际 Swoole Task 的投递和执行。
+ */
 class SwooleTaskMonitorStore
 {
     private const PREFIX = 'swoole_task_monitor';
@@ -20,6 +26,9 @@ class SwooleTaskMonitorStore
     private static array $metaTouchedAt = [];
     private static array $samplePushedAt = [];
 
+    /**
+     * 记录一次 Task 提交事件，并按采样策略决定是否保留追踪详情。
+     */
     public function recordSubmitted(string $taskId, string $taskClass, int $payloadBytes, array $context = []): void
     {
         $nowMs = $this->nowMs();
@@ -41,6 +50,9 @@ class SwooleTaskMonitorStore
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
+    /**
+     * 处理「recordSubmittedSummary」相关的内部协作步骤。
+     */
     public function recordSubmittedSummary(string $taskClass): void
     {
         $date = $this->date();
@@ -48,6 +60,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 更新已投递状态，使提交、投递和执行阶段可在诊断页区分。
+     */
     public function recordDelivered(string $taskClass): void
     {
         $date = $this->date();
@@ -56,6 +71,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordDeliverFailed」相关的内部协作步骤。
+     */
     public function recordDeliverFailed(
         string $taskId,
         string $taskClass,
@@ -73,6 +91,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordDropped」相关的内部协作步骤。
+     */
     public function recordDropped(string $taskClass, string $reason, array $context = []): void
     {
         $date = $this->date();
@@ -88,6 +109,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordRateLimited」相关的内部协作步骤。
+     */
     public function recordRateLimited(string $taskClass, string $reason, array $context = []): void
     {
         $date = $this->date();
@@ -103,6 +127,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordDirectHandled」相关的内部协作步骤。
+     */
     public function recordDirectHandled(string $taskClass, string $reason, array $context = []): void
     {
         $date = $this->date();
@@ -118,6 +145,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordStartedSummary」相关的内部协作步骤。
+     */
     public function recordStartedSummary(string $taskClass): void
     {
         $date = $this->date();
@@ -125,6 +155,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 记录 worker 开始执行的时间，用于后续计算排队和执行耗时。
+     */
     public function recordStarted(string $taskId, string $taskClass, int $payloadBytes, array $context = []): void
     {
         $date = $this->date();
@@ -152,6 +185,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordFinishedSummary」相关的内部协作步骤。
+     */
     public function recordFinishedSummary(string $taskClass, int $durationMs): void
     {
         $date = $this->date();
@@ -165,6 +201,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 写入成功完成状态并汇总耗时、负载与追踪信息。
+     */
     public function recordFinished(
         string $taskId,
         string $taskClass,
@@ -198,6 +237,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「recordFailedSummary」相关的内部协作步骤。
+     */
     public function recordFailedSummary(string $taskClass, int $durationMs, Throwable $exception): void
     {
         $date = $this->date();
@@ -211,6 +253,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 写入失败状态及可安全展示的异常摘要，不改变原始任务异常传播。
+     */
     public function recordFailed(
         string $taskId,
         string $taskClass,
@@ -235,6 +280,9 @@ class SwooleTaskMonitorStore
         $this->touchMeta($date);
     }
 
+    /**
+     * 处理「snapshot」相关的内部协作步骤。
+     */
     public function snapshot(?string $date = null): array
     {
         $date = $date ?: $this->date();
@@ -256,6 +304,9 @@ class SwooleTaskMonitorStore
         ];
     }
 
+    /**
+     * 处理「reset」相关的内部协作步骤。
+     */
     public function reset(?string $date = null): void
     {
         $date = $date ?: $this->date();
@@ -286,6 +337,9 @@ class SwooleTaskMonitorStore
         }
     }
 
+    /**
+     * 处理「startMeta」相关的内部协作步骤。
+     */
     private function startMeta(string $taskId): array
     {
         if ($taskId === '') {
@@ -298,12 +352,18 @@ class SwooleTaskMonitorStore
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * 处理「clearRuntimeState」相关的内部协作步骤。
+     */
     private function clearRuntimeState(string $date, string $taskId): void
     {
         Redis::hdel($this->runningKey($date), $taskId);
         Redis::del($this->startKey($taskId));
     }
 
+    /**
+     * 处理「runningSet」相关的内部协作步骤。
+     */
     private function runningSet(string $date, string $taskId, array $payload): void
     {
         $key = $this->runningKey($date);
@@ -311,6 +371,9 @@ class SwooleTaskMonitorStore
         $this->expireKey($key);
     }
 
+    /**
+     * 处理「recordErrorSample」相关的内部协作步骤。
+     */
     private function recordErrorSample(
         string $date,
         string $taskClass,
@@ -331,6 +394,9 @@ class SwooleTaskMonitorStore
         ], $extra));
     }
 
+    /**
+     * 处理「pushSample」相关的内部协作步骤。
+     */
     private function pushSample(string $key, array $payload): void
     {
         if (!$this->shouldPushSample($key, $payload)) {
@@ -342,12 +408,18 @@ class SwooleTaskMonitorStore
         $this->expireKey($key);
     }
 
+    /**
+     * 处理「increment」相关的内部协作步骤。
+     */
     private function increment(string $key, string $taskClass, string $metric, int $value = 1): void
     {
         Redis::hIncrBy($key, $this->field($taskClass, $metric), $value);
         $this->expireKey($key);
     }
 
+    /**
+     * 处理「recordMax」相关的内部协作步骤。
+     */
     private function recordMax(string $key, string $taskClass, string $metric, int $value): void
     {
         $field = $this->field($taskClass, $metric);
@@ -358,6 +430,9 @@ class SwooleTaskMonitorStore
         }
     }
 
+    /**
+     * 处理「touchMeta」相关的内部协作步骤。
+     */
     private function touchMeta(string $date): void
     {
         $key = $this->metaKey($date);
@@ -372,6 +447,9 @@ class SwooleTaskMonitorStore
         $this->expireKey($key);
     }
 
+    /**
+     * 处理「expireKey」相关的内部协作步骤。
+     */
     private function expireKey(string $key): void
     {
         $now = time();
@@ -383,6 +461,9 @@ class SwooleTaskMonitorStore
         Redis::expire($key, self::RETENTION_SECONDS);
     }
 
+    /**
+     * 处理「shouldPushSample」相关的内部协作步骤。
+     */
     private function shouldPushSample(string $key, array $payload): bool
     {
         $identity = implode('|', [
@@ -401,6 +482,9 @@ class SwooleTaskMonitorStore
         return true;
     }
 
+    /**
+     * 处理「rowsFromStats」相关的内部协作步骤。
+     */
     private function rowsFromStats(array $stats): array
     {
         $rows = [];
@@ -447,6 +531,9 @@ class SwooleTaskMonitorStore
         return array_values($rows);
     }
 
+    /**
+     * 处理「summaryFromRows」相关的内部协作步骤。
+     */
     private function summaryFromRows(array $rows): array
     {
         $summary = [
@@ -473,6 +560,9 @@ class SwooleTaskMonitorStore
         return $summary;
     }
 
+    /**
+     * 处理「decodeListRows」相关的内部协作步骤。
+     */
     private function decodeListRows(string $key): array
     {
         $items = Redis::lrange($key, 0, self::SAMPLE_LIMIT - 1) ?: [];
@@ -487,6 +577,9 @@ class SwooleTaskMonitorStore
         return $rows;
     }
 
+    /**
+     * 处理「decodeHashRows」相关的内部协作步骤。
+     */
     private function decodeHashRows(array $hash): array
     {
         $rows = [];
@@ -503,11 +596,17 @@ class SwooleTaskMonitorStore
         return array_slice($rows, 0, self::SAMPLE_LIMIT);
     }
 
+    /**
+     * 处理「field」相关的内部协作步骤。
+     */
     private function field(string $taskClass, string $metric): string
     {
         return $taskClass . '|' . $metric;
     }
 
+    /**
+     * 处理「shortClassName」相关的内部协作步骤。
+     */
     private function shortClassName(string $taskClass): string
     {
         $pos = strrpos($taskClass, '\\');
@@ -515,36 +614,57 @@ class SwooleTaskMonitorStore
         return $pos === false ? $taskClass : substr($taskClass, $pos + 1);
     }
 
+    /**
+     * 处理「statsKey」相关的内部协作步骤。
+     */
     private function statsKey(string $date): string
     {
         return self::PREFIX . ':stats:' . $date;
     }
 
+    /**
+     * 处理「metaKey」相关的内部协作步骤。
+     */
     private function metaKey(string $date): string
     {
         return self::PREFIX . ':meta:' . $date;
     }
 
+    /**
+     * 处理「startKey」相关的内部协作步骤。
+     */
     private function startKey(string $taskId): string
     {
         return self::PREFIX . ':start:' . $taskId;
     }
 
+    /**
+     * 处理「runningKey」相关的内部协作步骤。
+     */
     private function runningKey(string $date): string
     {
         return self::PREFIX . ':running:' . $date;
     }
 
+    /**
+     * 处理「sampleKey」相关的内部协作步骤。
+     */
     private function sampleKey(string $date, string $type): string
     {
         return self::PREFIX . ':sample:' . $type . ':' . $date;
     }
 
+    /**
+     * 处理「date」相关的内部协作步骤。
+     */
     private function date(): string
     {
         return date('Ymd');
     }
 
+    /**
+     * 处理「nowMs」相关的内部协作步骤。
+     */
     private function nowMs(): int
     {
         return (int)floor(microtime(true) * 1000);

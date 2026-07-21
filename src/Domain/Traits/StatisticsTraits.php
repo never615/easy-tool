@@ -110,6 +110,9 @@ trait StatisticsTraits
     }
 
 
+    /**
+     * 处理「getAddApipv」相关的内部协作步骤。
+     */
     private function getAddApipv($date_type, $apipvs, $start_at, $end_at, $method)
     {
         $data = [];

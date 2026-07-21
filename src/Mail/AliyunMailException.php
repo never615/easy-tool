@@ -11,6 +11,10 @@ namespace Mallto\Tool\Mail;
 
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * AliyunMailException：easy-tool 的 aliyun mail exception 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class AliyunMailException extends HttpException
 {
 

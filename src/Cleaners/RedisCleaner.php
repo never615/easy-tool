@@ -30,6 +30,9 @@ use Illuminate\Support\Facades\Log;
  */
 class RedisCleaner extends BaseCleaner
 {
+    /**
+     * 处理「clean」相关的内部协作步骤。
+     */
     public function clean()
     {
         // 通过 REDIS_CLEANER_ENABLED 环境变量控制是否启用（默认关闭）

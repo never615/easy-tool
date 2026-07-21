@@ -43,6 +43,9 @@ class VerifyCodeUtils
     }
 
 
+    /**
+     * 处理「hexXor」相关的内部协作步骤。
+     */
     private static function hexXor($hex1, $hex2)
     {
         $bin1 = str_pad(base_convert($hex1, 16, 2), 16, '0', STR_PAD_LEFT);

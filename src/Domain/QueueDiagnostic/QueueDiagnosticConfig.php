@@ -6,6 +6,10 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\QueueDiagnosticSetting;
 
+/**
+ * QueueDiagnosticConfig：队列诊断模块的 queue diagnostic config 组件。
+ * 诊断记录必须保持为旁路，不能影响实际队列任务的执行。
+ */
 class QueueDiagnosticConfig
 {
     public const KEY_ENABLED = 'queue_diagnostic_monitor_enabled';
@@ -34,91 +38,145 @@ class QueueDiagnosticConfig
     private const CONFIG_CACHE_SECONDS = 5;
     private const SETTINGS_CACHE_KEY = 'queue_diagnostic_settings';
 
+    /**
+     * 处理「enabled」相关的内部协作步骤。
+     */
     public function enabled(): bool
     {
         return $this->boolValue(self::KEY_ENABLED, false);
     }
 
+    /**
+     * 处理「snapshotEnabled」相关的内部协作步骤。
+     */
     public function snapshotEnabled(): bool
     {
         return $this->boolValue(self::KEY_SNAPSHOT_ENABLED, true);
     }
 
+    /**
+     * 处理「dbSnapshotEnabled」相关的内部协作步骤。
+     */
     public function dbSnapshotEnabled(): bool
     {
         return $this->boolValue(self::KEY_DB_SNAPSHOT_ENABLED, false);
     }
 
+    /**
+     * 处理「logAnomalyEnabled」相关的内部协作步骤。
+     */
     public function logAnomalyEnabled(): bool
     {
         return $this->boolValue(self::KEY_LOG_ANOMALY_ENABLED, true);
     }
 
+    /**
+     * 处理「backlogSampleEnabled」相关的内部协作步骤。
+     */
     public function backlogSampleEnabled(): bool
     {
         return $this->boolValue(self::KEY_BACKLOG_SAMPLE_ENABLED, true);
     }
 
+    /**
+     * 处理「scanEnabled」相关的内部协作步骤。
+     */
     public function scanEnabled(): bool
     {
         return $this->boolValue(self::KEY_SCAN_ENABLED, false);
     }
 
+    /**
+     * 处理「windowSeconds」相关的内部协作步骤。
+     */
     public function windowSeconds(): int
     {
         return max(10, $this->intValue(self::KEY_WINDOW_SECONDS, 60));
     }
 
+    /**
+     * 处理「retentionSeconds」相关的内部协作步骤。
+     */
     public function retentionSeconds(): int
     {
         return max(300, $this->intValue(self::KEY_RETENTION_SECONDS, 86400));
     }
 
+    /**
+     * 处理「topLimit」相关的内部协作步骤。
+     */
     public function topLimit(): int
     {
         return max(1, min(100, $this->intValue(self::KEY_TOP_LIMIT, 20)));
     }
 
+    /**
+     * 处理「memoryWarningBytes」相关的内部协作步骤。
+     */
     public function memoryWarningBytes(): int
     {
         return max(0, $this->intValue(self::KEY_MEMORY_WARNING_BYTES, 805306368));
     }
 
+    /**
+     * 处理「memoryErrorBytes」相关的内部协作步骤。
+     */
     public function memoryErrorBytes(): int
     {
         return max(0, $this->intValue(self::KEY_MEMORY_ERROR_BYTES, 943718400));
     }
 
+    /**
+     * 处理「queueWarningSize」相关的内部协作步骤。
+     */
     public function queueWarningSize(): int
     {
         return max(0, $this->intValue(self::KEY_QUEUE_WARNING_SIZE, 1000));
     }
 
+    /**
+     * 处理「queueErrorSize」相关的内部协作步骤。
+     */
     public function queueErrorSize(): int
     {
         return max(0, $this->intValue(self::KEY_QUEUE_ERROR_SIZE, 5000));
     }
 
+    /**
+     * 处理「slowJobMs」相关的内部协作步骤。
+     */
     public function slowJobMs(): int
     {
         return max(1, $this->intValue(self::KEY_SLOW_JOB_MS, 3000));
     }
 
+    /**
+     * 处理「largePayloadBytes」相关的内部协作步骤。
+     */
     public function largePayloadBytes(): int
     {
         return max(1, $this->intValue(self::KEY_LARGE_PAYLOAD_BYTES, 65536));
     }
 
+    /**
+     * 处理「backlogSampleCount」相关的内部协作步骤。
+     */
     public function backlogSampleCount(): int
     {
         return max(10, min(1000, $this->intValue(self::KEY_BACKLOG_SAMPLE_COUNT, 200)));
     }
 
+    /**
+     * 处理「scanCount」相关的内部协作步骤。
+     */
     public function scanCount(): int
     {
         return max(10, min(10000, $this->intValue(self::KEY_SCAN_COUNT, 500)));
     }
 
+    /**
+     * 处理「queues」相关的内部协作步骤。
+     */
     public function queues(): array
     {
         $value = $this->rawValue(self::KEY_QUEUES, 'high,pgsql-write,location-result-storage,mid,default');
@@ -137,6 +195,9 @@ class QueueDiagnosticConfig
         return $this->normalizeList(explode(',', (string)$value));
     }
 
+    /**
+     * 处理「redisPrefix」相关的内部协作步骤。
+     */
     public function redisPrefix(): string
     {
         $unique = config('app.unique') ?: config('app.name', 'app');
@@ -145,11 +206,17 @@ class QueueDiagnosticConfig
         return 'queue_diag:' . $this->sanitizeKeyPart((string)$unique) . ':' . $this->sanitizeKeyPart((string)$env) . ':';
     }
 
+    /**
+     * 处理「startKey」相关的内部协作步骤。
+     */
     public function startKey(string $uuid): string
     {
         return $this->redisPrefix() . 'job:' . $this->sanitizeKeyPart($uuid) . ':start';
     }
 
+    /**
+     * 处理「windowStart」相关的内部协作步骤。
+     */
     public function windowStart(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?: time();
@@ -158,16 +225,25 @@ class QueueDiagnosticConfig
         return $timestamp - ($timestamp % $windowSeconds);
     }
 
+    /**
+     * 处理「windowKey」相关的内部协作步骤。
+     */
     public function windowKey(int $windowStart, string $suffix): string
     {
         return $this->redisPrefix() . 'window:' . $windowStart . ':' . $suffix;
     }
 
+    /**
+     * 处理「allConfigKeys」相关的内部协作步骤。
+     */
     public function allConfigKeys(): array
     {
         return array_keys($this->settingDefinitions());
     }
 
+    /**
+     * 处理「settingDefinitions」相关的内部协作步骤。
+     */
     public function settingDefinitions(): array
     {
         return [
@@ -296,6 +372,9 @@ class QueueDiagnosticConfig
         ];
     }
 
+    /**
+     * 处理「currentSettings」相关的内部协作步骤。
+     */
     public function currentSettings(): array
     {
         $settings = $this->settings();
@@ -316,6 +395,9 @@ class QueueDiagnosticConfig
         return $rows;
     }
 
+    /**
+     * 处理「saveSettings」相关的内部协作步骤。
+     */
     public function saveSettings(array $input): void
     {
         foreach ($this->settingDefinitions() as $key => $definition) {
@@ -338,11 +420,17 @@ class QueueDiagnosticConfig
         $this->clearSettingsCache();
     }
 
+    /**
+     * 处理「clearSettingsCache」相关的内部协作步骤。
+     */
     public function clearSettingsCache(): void
     {
         Cache::store('local_redis')->forget(self::SETTINGS_CACHE_KEY);
     }
 
+    /**
+     * 处理「snapshot」相关的内部协作步骤。
+     */
     public function snapshot(): array
     {
         return [
@@ -368,16 +456,25 @@ class QueueDiagnosticConfig
         ];
     }
 
+    /**
+     * 处理「boolValue」相关的内部协作步骤。
+     */
     private function boolValue(string $key, bool $default): bool
     {
         return filter_var($this->rawValue($key, $default ? '1' : '0'), FILTER_VALIDATE_BOOLEAN);
     }
 
+    /**
+     * 处理「intValue」相关的内部协作步骤。
+     */
     private function intValue(string $key, int $default): int
     {
         return (int)$this->rawValue($key, $default);
     }
 
+    /**
+     * 处理「rawValue」相关的内部协作步骤。
+     */
     private function rawValue(string $key, $default)
     {
         $settings = $this->settings();
@@ -385,6 +482,9 @@ class QueueDiagnosticConfig
         return array_key_exists($key, $settings) ? $settings[$key] : $default;
     }
 
+    /**
+     * 处理「settings」相关的内部协作步骤。
+     */
     private function settings(): array
     {
         $settings = Cache::store('local_redis')->get(self::SETTINGS_CACHE_KEY);
@@ -402,6 +502,9 @@ class QueueDiagnosticConfig
         return $settings;
     }
 
+    /**
+     * 处理「loadSettings」相关的内部协作步骤。
+     */
     private function loadSettings(): array
     {
         try {
@@ -413,6 +516,9 @@ class QueueDiagnosticConfig
         }
     }
 
+    /**
+     * 处理「normalizeSettingForSave」相关的内部协作步骤。
+     */
     private function normalizeSettingForSave(string $key, $value, array $definition): string
     {
         $type = $definition['type'] ?? 'string';
@@ -447,6 +553,9 @@ class QueueDiagnosticConfig
         return trim((string)$value);
     }
 
+    /**
+     * 处理「normalizeList」相关的内部协作步骤。
+     */
     private function normalizeList(array $values): array
     {
         $normalized = [];
@@ -461,6 +570,9 @@ class QueueDiagnosticConfig
         return array_values(array_unique($normalized));
     }
 
+    /**
+     * 处理「sanitizeKeyPart」相关的内部协作步骤。
+     */
     private function sanitizeKeyPart(string $value): string
     {
         $value = preg_replace('/[^A-Za-z0-9_.-]/', '_', $value) ?: 'unknown';

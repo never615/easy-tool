@@ -58,6 +58,9 @@ class WechatTemplateMsgContoller extends AdminCommonController
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
 
@@ -83,6 +86,9 @@ class WechatTemplateMsgContoller extends AdminCommonController
     }
 
 
+    /**
+     * 处理「formOption」相关的内部协作步骤。
+     */
     protected function formOption(Form $form)
     {
 

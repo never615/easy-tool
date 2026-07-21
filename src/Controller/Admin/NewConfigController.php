@@ -11,21 +11,34 @@ use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\NewConfigEffectiveEnv;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
+/**
+ * NewConfigController：处理 new config controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class NewConfigController extends AdminCommonController
 {
     private const RELOAD_THROTTLE_KEY = 'new_configs:manual_reload_throttle';
     private const RELOAD_THROTTLE_SECONDS = 30;
 
+    /**
+     * 处理「getHeaderTitle」相关的内部协作步骤。
+     */
     protected function getHeaderTitle()
     {
         return '配置中心';
     }
 
+    /**
+     * 处理「getModel」相关的内部协作步骤。
+     */
     protected function getModel()
     {
         return NewConfig::class;
     }
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->model()
@@ -67,11 +80,17 @@ class NewConfigController extends AdminCommonController
         });
     }
 
+    /**
+     * 处理「envPreview」相关的内部协作步骤。
+     */
     public function envPreview(NewConfigEffectiveEnv $effectiveEnv)
     {
         return response()->json($effectiveEnv->snapshot(), 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
+    /**
+     * 处理「reload」相关的内部协作步骤。
+     */
     public function reload(NewConfigPublisher $publisher)
     {
         if (!Cache::add(self::RELOAD_THROTTLE_KEY, time(), self::RELOAD_THROTTLE_SECONDS)) {
@@ -100,6 +119,9 @@ class NewConfigController extends AdminCommonController
         return redirect()->route('new_configs.publish_restart');
     }
 
+    /**
+     * 处理「formOption」相关的内部协作步骤。
+     */
     protected function formOption(Form $form)
     {
         $form->tools(function (Form\Tools $tools) {

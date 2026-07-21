@@ -7,6 +7,10 @@ namespace Mallto\Tool\Seeder;
 
 use Illuminate\Database\Seeder;
 
+/**
+ * TablesSeeder：初始化 tables seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class TablesSeeder extends Seeder
 {
 

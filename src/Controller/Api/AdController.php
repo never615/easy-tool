@@ -18,6 +18,9 @@ use Mallto\Tool\Data\Ad;
 class AdController extends \App\Http\Controllers\Controller
 {
 
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(Request $request)
     {
         $subjectId = SubjectUtils::getSubjectId();

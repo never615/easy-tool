@@ -4,8 +4,15 @@ namespace Mallto\Tool\Domain\NewConfig;
 
 use Mallto\Tool\Data\Config;
 
+/**
+ * GlobalConfigDefinitions：配置中心发布与运行时生效链路的一环。
+ * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ */
 class GlobalConfigDefinitions
 {
+    /**
+     * 处理「modules」相关的内部协作步骤。
+     */
     public static function modules(): array
     {
         return array_merge([
@@ -24,6 +31,9 @@ class GlobalConfigDefinitions
         ], GlobalConfigRegistry::modules());
     }
 
+    /**
+     * 处理「definitions」相关的内部协作步骤。
+     */
     public static function definitions(?string $module = null): array
     {
         $definitions = GlobalConfigDefinition::keyByConfigKey(array_merge(
@@ -41,6 +51,9 @@ class GlobalConfigDefinitions
         });
     }
 
+    /**
+     * 处理「module」相关的内部协作步骤。
+     */
     public static function module(string $module): ?array
     {
         $modules = self::modules();
@@ -48,11 +61,17 @@ class GlobalConfigDefinitions
         return $modules[$module] ?? null;
     }
 
+    /**
+     * 处理「allowedModules」相关的内部协作步骤。
+     */
     public static function allowedModules(): array
     {
         return array_keys(self::modules());
     }
 
+    /**
+     * 处理「basicDefinitions」相关的内部协作步骤。
+     */
     private static function basicDefinitions(): array
     {
         return [
@@ -63,6 +82,9 @@ class GlobalConfigDefinitions
         ];
     }
 
+    /**
+     * 处理「smsDefinitions」相关的内部协作步骤。
+     */
     private static function smsDefinitions(): array
     {
         return [
@@ -74,6 +96,9 @@ class GlobalConfigDefinitions
         ];
     }
 
+    /**
+     * 处理「definition」相关的内部协作步骤。
+     */
     private static function definition(
         string $key,
         string $name,
@@ -98,6 +123,9 @@ class GlobalConfigDefinitions
         );
     }
 
+    /**
+     * 处理「sortFor」相关的内部协作步骤。
+     */
     private static function sortFor(string $module): int
     {
         $orders = array_flip(self::allowedModules());

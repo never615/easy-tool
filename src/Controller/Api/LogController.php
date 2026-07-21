@@ -21,6 +21,9 @@ use Mallto\User\Domain\OpenidUtils;
 class LogController extends Controller
 {
 
+    /**
+     * 处理「store」相关的内部协作步骤。
+     */
     public function store(Request $request)
     {
 

@@ -10,6 +10,10 @@ use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\AppSecretsPermission;
 
+/**
+ * AppSecretPermissionController：处理 app secret permission controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class AppSecretPermissionController extends AdminCommonController
 {
 
@@ -35,6 +39,9 @@ class AppSecretPermissionController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->column('name', '权限名称');
@@ -51,6 +58,9 @@ class AppSecretPermissionController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「formOption」相关的内部协作步骤。
+     */
     protected function formOption(Form $form)
     {
         $form->text('name');

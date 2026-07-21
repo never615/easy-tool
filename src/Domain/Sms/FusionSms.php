@@ -115,18 +115,27 @@ class FusionSms extends AbstractAPI implements Sms
     }
 
 
+    /**
+     * 处理「getAccount」相关的内部协作步骤。
+     */
     private function getAccount()
     {
         return ConfigUtils::get(self::SETTING_KEY_RH_SMS_ACCOUNT, 'znwx');
     }
 
 
+    /**
+     * 处理「getAuthorizationCode」相关的内部协作步骤。
+     */
     private function getAuthorizationCode()
     {
         return ConfigUtils::get(self::SETTING_KEY_RH_AUTHORIZATION_CODE, 'pdEKIusgG9');
     }
 
 
+    /**
+     * 处理「getUrl」相关的内部协作步骤。
+     */
     private function getUrl()
     {
         return ConfigUtils::get(self::SETTING_KEY_RH_SMS_URL,

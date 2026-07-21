@@ -64,6 +64,9 @@ class DESUtils
     }
 
 
+    /**
+     * 处理「unpadZero」相关的内部协作步骤。
+     */
     public static function unpadZero($data)
     {
         return rtrim($data, "\0");

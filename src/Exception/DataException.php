@@ -9,6 +9,10 @@ use Exception;
 use Illuminate\Support\MessageBag;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * DataException：用于表达 data exception 场景的应用异常。
+ * 异常类型留给上层处理器识别，以输出符合调用方契约的错误响应。
+ */
 class DataException extends HttpException
 {
 

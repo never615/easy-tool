@@ -4,6 +4,10 @@ namespace Mallto\Tool\Domain\LogViewer;
 
 use Rap2hpoutre\LaravelLogViewer\LaravelLogViewer;
 
+/**
+ * RootOnlyLaravelLogViewer：easy-tool 的 root only laravel log viewer 组件。
+ * 它通过明确的职责边界供包内其他模块复用。
+ */
 class RootOnlyLaravelLogViewer extends LaravelLogViewer
 {
     /**

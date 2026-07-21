@@ -68,6 +68,9 @@ class DingdingWebhookHandler extends AbstractProcessingHandler
     }
 
 
+    /**
+     * 处理「getWebhookUrl」相关的内部协作步骤。
+     */
     public function getWebhookUrl(): string
     {
         return $this->webhookUrl;

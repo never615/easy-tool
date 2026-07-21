@@ -20,6 +20,9 @@ use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 class ConfigUtils
 {
 
+    /**
+     * 处理「getJson2Array」相关的内部协作步骤。
+     */
     public static function getJson2Array($key, $default = [])
     {
         $result = self::get($key, $default);

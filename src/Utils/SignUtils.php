@@ -21,6 +21,10 @@ namespace Mallto\Tool\Utils;
 
 use Mallto\Tool\Exception\SignException;
 
+/**
+ * SignUtils：提供 sign utils 相关的无状态工具方法。
+ * 调用方通过明确的输入和返回值使用这些方法。
+ */
 class SignUtils
 {
 

@@ -27,6 +27,9 @@ class AppStatsSnapshotService
 
     private readonly Closure $clock;
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly AppStatsPodRepository $pods,
         iterable $sectionProviders,

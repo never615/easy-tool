@@ -9,8 +9,15 @@ use Mallto\Tool\Domain\SwooleTaskMonitor\SwooleTaskMonitor;
 use Mallto\Tool\Domain\SwooleTaskMonitor\SwooleTaskMonitorStore;
 use Throwable;
 
+/**
+ * SwooleTaskMonitorController：处理 swoole task monitor controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class SwooleTaskMonitorController extends Controller
 {
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index(SwooleTaskMonitorStore $store)
     {
         $payload = $this->payload($store);
@@ -26,6 +33,9 @@ class SwooleTaskMonitorController extends Controller
         });
     }
 
+    /**
+     * 处理「reset」相关的内部协作步骤。
+     */
     public function reset(SwooleTaskMonitorStore $store)
     {
         $store->reset($this->dateFromRequest());
@@ -33,6 +43,9 @@ class SwooleTaskMonitorController extends Controller
         return redirect()->route('swoole_task_monitor.index', [ 'reset' => 1 ]);
     }
 
+    /**
+     * 处理「payload」相关的内部协作步骤。
+     */
     private function payload(SwooleTaskMonitorStore $store): array
     {
         return [
@@ -43,6 +56,9 @@ class SwooleTaskMonitorController extends Controller
         ];
     }
 
+    /**
+     * 处理「dateFromRequest」相关的内部协作步骤。
+     */
     private function dateFromRequest(): ?string
     {
         $date = (string)request()->get('date', '');
@@ -50,6 +66,9 @@ class SwooleTaskMonitorController extends Controller
         return preg_match('/^\d{8}$/', $date) ? $date : null;
     }
 
+    /**
+     * 处理「wantsJsonResponse」相关的内部协作步骤。
+     */
     private function wantsJsonResponse(): bool
     {
         if (request()->boolean('json')) {
@@ -66,6 +85,9 @@ class SwooleTaskMonitorController extends Controller
             && strpos($accept, 'text/html') === false;
     }
 
+    /**
+     * 处理「runtimeMetrics」相关的内部协作步骤。
+     */
     private function runtimeMetrics(): array
     {
         $stats = [];
@@ -106,6 +128,9 @@ class SwooleTaskMonitorController extends Controller
         ];
     }
 
+    /**
+     * 处理「renderHtml」相关的内部协作步骤。
+     */
     private function renderHtml(array $payload): string
     {
         $jsonUrl = request()->url() . '?' . http_build_query(array_filter([
@@ -523,11 +548,17 @@ class SwooleTaskMonitorController extends Controller
 HTML;
     }
 
+    /**
+     * 处理「csrfField」相关的内部协作步骤。
+     */
     private function csrfField(): string
     {
         return csrf_field();
     }
 
+    /**
+     * 处理「jsonString」相关的内部协作步骤。
+     */
     private function jsonString(string $value): string
     {
         return json_encode(
@@ -536,6 +567,9 @@ HTML;
         );
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');

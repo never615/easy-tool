@@ -8,6 +8,10 @@ use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\AlertRule;
 
 
+/**
+ * AlertRuleController：处理 alert rule controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class AlertRuleController extends AdminCommonController
 {
 
@@ -32,6 +36,9 @@ class AlertRuleController extends AdminCommonController
         return AlertRule::class;
     }
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->alert_type();

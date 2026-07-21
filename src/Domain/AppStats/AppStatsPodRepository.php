@@ -21,6 +21,9 @@ class AppStatsPodRepository
 {
     private readonly Closure $clock;
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct(
         private readonly RedisFactory $redis,
         private readonly ConfigRepository $config,
@@ -214,6 +217,9 @@ class AppStatsPodRepository
         return [min($total, max(0, (int) $matches[1])), $total];
     }
 
+    /**
+     * 处理「statusForAge」相关的内部协作步骤。
+     */
     private function statusForAge(int $age): string
     {
         if ($age <= max(1, (int) $this->config->get('app_stats.online_seconds', 15))) {
@@ -251,6 +257,9 @@ class AppStatsPodRepository
         ];
     }
 
+    /**
+     * 处理「connection」相关的内部协作步骤。
+     */
     private function connection()
     {
         $name = $this->config->get('app_stats.redis_connection');
@@ -258,11 +267,17 @@ class AppStatsPodRepository
         return $this->redis->connection(is_string($name) && $name !== '' ? $name : null);
     }
 
+    /**
+     * 处理「hashKey」相关的内部协作步骤。
+     */
     private function hashKey(): string
     {
         return (string) $this->config->get('app_stats.pods_hash_key', 'swoole_stats:pods');
     }
 
+    /**
+     * 处理「lastSeenKey」相关的内部协作步骤。
+     */
     private function lastSeenKey(): string
     {
         return (string) $this->config->get('app_stats.pods_last_seen_key', 'swoole_stats:pods:last_seen');

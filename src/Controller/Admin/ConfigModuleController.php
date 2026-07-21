@@ -9,38 +9,63 @@ use Illuminate\Routing\Controller;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigModuleForm;
 
+/**
+ * ConfigModuleController：处理 config module controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class ConfigModuleController extends Controller
 {
+    /**
+     * 处理「basic」相关的内部协作步骤。
+     */
     public function basic(GlobalConfigModuleForm $form)
     {
         return $this->index('basic', $form);
     }
 
+    /**
+     * 处理「saveBasic」相关的内部协作步骤。
+     */
     public function saveBasic(Request $request, GlobalConfigModuleForm $form)
     {
         return $this->save('basic', $request, $form);
     }
 
+    /**
+     * 处理「sms」相关的内部协作步骤。
+     */
     public function sms(GlobalConfigModuleForm $form)
     {
         return $this->index('sms', $form);
     }
 
+    /**
+     * 处理「saveSms」相关的内部协作步骤。
+     */
     public function saveSms(Request $request, GlobalConfigModuleForm $form)
     {
         return $this->save('sms', $request, $form);
     }
 
+    /**
+     * 处理「showModule」相关的内部协作步骤。
+     */
     public function showModule(string $module, GlobalConfigModuleForm $form)
     {
         return $this->index($module, $form);
     }
 
+    /**
+     * 处理「saveModule」相关的内部协作步骤。
+     */
     public function saveModule(string $module, Request $request, GlobalConfigModuleForm $form)
     {
         return $this->save($module, $request, $form);
     }
 
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     private function index(string $module, GlobalConfigModuleForm $form)
     {
         $snapshot = $form->snapshot($module);
@@ -52,6 +77,9 @@ class ConfigModuleController extends Controller
         });
     }
 
+    /**
+     * 处理「save」相关的内部协作步骤。
+     */
     private function save(string $module, Request $request, GlobalConfigModuleForm $form)
     {
         $form->save($module, $request->only('values'));
@@ -61,6 +89,9 @@ class ConfigModuleController extends Controller
         return redirect()->route(GlobalConfigDefinitions::module($module)['route']);
     }
 
+    /**
+     * 处理「renderHtml」相关的内部协作步骤。
+     */
     private function renderHtml(array $snapshot): string
     {
         $action = route($snapshot['save_route']);
@@ -129,6 +160,9 @@ class ConfigModuleController extends Controller
 HTML;
     }
 
+    /**
+     * 处理「hasReloadRequiredRows」相关的内部协作步骤。
+     */
     private function hasReloadRequiredRows(array $rows): bool
     {
         foreach ($rows as $row) {
@@ -140,6 +174,9 @@ HTML;
         return false;
     }
 
+    /**
+     * 处理「renderReloadNotice」相关的内部协作步骤。
+     */
     private function renderReloadNotice(array $rows): string
     {
         if (!$this->hasReloadRequiredRows($rows)) {
@@ -156,6 +193,9 @@ HTML;
             . '</div>';
     }
 
+    /**
+     * 处理「publishRestartAction」相关的内部协作步骤。
+     */
     private function publishRestartAction(): string
     {
         $publishRestartUrl = route('new_configs.publish_restart');
@@ -163,6 +203,9 @@ HTML;
         return '<a class="btn btn-warning" href="' . $this->escape($publishRestartUrl) . '"><i class="fa fa-refresh"></i> 发布与重启</a>';
     }
 
+    /**
+     * 处理「renderFamilyFilters」相关的内部协作步骤。
+     */
     private function renderFamilyFilters(array $rows): string
     {
         $families = [];
@@ -200,6 +243,9 @@ HTML;
         return $html . '</div>';
     }
 
+    /**
+     * 处理「renderFamilyFilterScript」相关的内部协作步骤。
+     */
     private function renderFamilyFilterScript(): string
     {
         return <<<HTML
@@ -233,6 +279,9 @@ HTML;
 HTML;
     }
 
+    /**
+     * 处理「renderRows」相关的内部协作步骤。
+     */
     private function renderRows(array $rows): string
     {
         if ($rows === []) {
@@ -263,6 +312,9 @@ HTML;
         return $html;
     }
 
+    /**
+     * 处理「renderReloadBadge」相关的内部协作步骤。
+     */
     private function renderReloadBadge(array $row): string
     {
         if (empty($row['requires_reload'])) {
@@ -272,6 +324,9 @@ HTML;
         return '<div class="text-warning"><i class="fa fa-refresh"></i> 修改后需发布并重启 LaravelS/Horizon 生效</div>';
     }
 
+    /**
+     * 处理「renderFamilyBadge」相关的内部协作步骤。
+     */
     private function renderFamilyBadge(array $row): string
     {
         $familyLabel = (string)($row['family_label'] ?? '');
@@ -282,6 +337,9 @@ HTML;
         return '<span class="label label-default global-config-family-badge">' . $this->escape($familyLabel) . '</span>';
     }
 
+    /**
+     * 处理「renderInput」相关的内部协作步骤。
+     */
     private function renderInput(array $row, string $key, string $value): string
     {
         $name = 'values[' . $this->escape($key) . ']';
@@ -310,6 +368,9 @@ HTML;
         return '<input class="form-control input-sm" type="text" name="' . $name . '" value="' . $this->escape($value) . '"' . $placeholder . '>';
     }
 
+    /**
+     * 处理「placeholderAttribute」相关的内部协作步骤。
+     */
     private function placeholderAttribute(array $row): string
     {
         $placeholder = (string)($row['placeholder'] ?? '');
@@ -320,6 +381,9 @@ HTML;
         return ' placeholder="' . $this->escape($placeholder) . '"';
     }
 
+    /**
+     * 处理「option」相关的内部协作步骤。
+     */
     private function option(string $value, string $label, string $current): string
     {
         $selected = $value === $current ? ' selected' : '';
@@ -327,6 +391,9 @@ HTML;
         return '<option value="' . $this->escape($value) . '"' . $selected . '>' . $this->escape($label) . '</option>';
     }
 
+    /**
+     * 处理「renderErrors」相关的内部协作步骤。
+     */
     private function renderErrors(): string
     {
         $errors = session('errors');
@@ -342,11 +409,17 @@ HTML;
         return $html . '</ul></div>';
     }
 
+    /**
+     * 处理「csrfField」相关的内部协作步骤。
+     */
     private function csrfField(): string
     {
         return csrf_field();
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');

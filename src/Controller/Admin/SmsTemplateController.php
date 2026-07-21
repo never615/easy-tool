@@ -7,6 +7,10 @@ use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\SmsTemplate;
 
+/**
+ * SmsTemplateController：处理 sms template controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class SmsTemplateController extends AdminCommonController
 {
 
@@ -32,6 +36,9 @@ class SmsTemplateController extends AdminCommonController
     }
 
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->model()->where('type',1);

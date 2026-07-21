@@ -9,18 +9,31 @@ use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\RuntimeEnvOverrideConfig;
 
+/**
+ * RuntimeEnvOverrideController：处理 runtime env override controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class RuntimeEnvOverrideController extends AdminCommonController
 {
+    /**
+     * 处理「getHeaderTitle」相关的内部协作步骤。
+     */
     protected function getHeaderTitle()
     {
         return '运行期 Env 覆盖';
     }
 
+    /**
+     * 处理「getModel」相关的内部协作步骤。
+     */
     protected function getModel()
     {
         return NewConfig::class;
     }
 
+    /**
+     * 处理「gridOption」相关的内部协作步骤。
+     */
     protected function gridOption(Grid $grid)
     {
         $grid->model()
@@ -62,6 +75,9 @@ class RuntimeEnvOverrideController extends AdminCommonController
         });
     }
 
+    /**
+     * 处理「formOption」相关的内部协作步骤。
+     */
     protected function formOption(Form $form)
     {
         $form->tools(function (Form\Tools $tools) {
@@ -111,6 +127,9 @@ class RuntimeEnvOverrideController extends AdminCommonController
         });
     }
 
+    /**
+     * 处理「usageNotice」相关的内部协作步骤。
+     */
     private function usageNotice(): string
     {
         $publishRestartUrl = route('new_configs.publish_restart');
@@ -123,6 +142,9 @@ class RuntimeEnvOverrideController extends AdminCommonController
             . '</div>';
     }
 
+    /**
+     * 处理「normalizeEnabled」相关的内部协作步骤。
+     */
     private function normalizeEnabled($value): bool
     {
         $normalized = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
@@ -130,6 +152,9 @@ class RuntimeEnvOverrideController extends AdminCommonController
         return $normalized ?? false;
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');

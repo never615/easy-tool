@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Crypt;
 use Mallto\Tool\Domain\LogViewer\LogFileMutationService;
 use Mallto\Tool\Domain\LogViewer\RootOnlyLaravelLogViewer;
 
+/**
+ * SystemLogController：处理 system log controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class SystemLogController extends Controller
 {
     /**
@@ -30,6 +34,9 @@ class SystemLogController extends Controller
      */
     protected $viewLog = 'laravel-log-viewer::log';
 
+    /**
+     * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
+     */
     public function __construct()
     {
         $this->logViewer = new RootOnlyLaravelLogViewer();

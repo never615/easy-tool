@@ -9,6 +9,10 @@ use Illuminate\Database\Seeder;
 use Mallto\Tool\Seeder\Permission\BasePermissionsSeeder;
 use Mallto\Tool\Seeder\Permission\PagePermissionsSeeder;
 
+/**
+ * PermissionTablesSeeder：初始化 permission tables seeder 所需的基础数据。
+ * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ */
 class PermissionTablesSeeder extends Seeder
 {
 

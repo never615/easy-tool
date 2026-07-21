@@ -9,8 +9,15 @@ use Illuminate\Support\Facades\Schema;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Mallto\Tool\Data\NewConfigDocument;
 
+/**
+ * NewConfigUsageController：处理 new config usage controller 相关的 HTTP 请求。
+ * 控制器负责参数和响应边界，领域规则交由服务或模型处理。
+ */
 class NewConfigUsageController extends Controller
 {
+    /**
+     * 处理「index」相关的内部协作步骤。
+     */
     public function index()
     {
         return Admin::content(function (Content $content) {
@@ -20,6 +27,9 @@ class NewConfigUsageController extends Controller
         });
     }
 
+    /**
+     * 处理「renderHtml」相关的内部协作步骤。
+     */
     private function renderHtml(): string
     {
         $document = $this->markdownToHtml($this->usageMarkdown());
@@ -48,6 +58,9 @@ class NewConfigUsageController extends Controller
 HTML;
     }
 
+    /**
+     * 处理「usageMarkdown」相关的内部协作步骤。
+     */
     private function usageMarkdown(): string
     {
         if (!Schema::hasTable('new_config_documents')) {
@@ -74,6 +87,9 @@ MARKDOWN;
 MARKDOWN;
     }
 
+    /**
+     * 处理「markdownToHtml」相关的内部协作步骤。
+     */
     private function markdownToHtml(string $markdown): string
     {
         if (!class_exists(GithubFlavoredMarkdownConverter::class)) {
@@ -88,6 +104,9 @@ MARKDOWN;
         return (string)$converter->convert($markdown);
     }
 
+    /**
+     * 处理「escape」相关的内部协作步骤。
+     */
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
