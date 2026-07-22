@@ -27,7 +27,7 @@ class ConfigTablesSeeder extends Seeder
     {
         $this->migrateLegacyConfigs();
         NewConfig::withoutAutoPublish(function () {
-            $this->seedGlobalConfig(Config::HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG, '1', '海能达模拟日志开关');
+            $this->seedGlobalConfig(Config::HYTERA_DMR_MOCK_LOCATOR_NON_ERROR_LOG, '1', '墨兔海模拟日志开关');
         });
         $this->seedGlobalConfigDefinitions();
         $this->seedNewConfigDefinitions();
