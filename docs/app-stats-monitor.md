@@ -156,13 +156,13 @@ redis-cli --raw GET easy-tool:redis-memory-monitor:state
 
 ## 5. Redis 内存监控启用条件
 
-AppStats 页面不会开启 Redis 内存采样。若需要显示真实内存指标，发布配置必须满足：
+Redis 内存采样默认开启；若某个部署需要停用，可在 `.env` 显式设置
+`REDIS_MEMORY_MONITOR_ENABLED=false`。要显示真实内存指标，发布配置还必须满足：
 
-1. `REDIS_MEMORY_MONITOR_ENABLED=true`；
-2. `REDIS_MEMORY_MONITOR_CONNECTION` 指向 `database.redis.redis-monitor`（默认即
+1. `REDIS_MEMORY_MONITOR_CONNECTION` 指向 `database.redis.redis-monitor`（默认即
    `redis-monitor`），并与业务共享 Redis 使用同一 `REDIS_*` 端点/逻辑 DB；
-3. 配置缓存已经重新生成，LaravelS 已 reload；
-4. 项目既有 Laravel Scheduler 正常每分钟运行。
+2. 配置缓存已经重新生成，LaravelS 已 reload；
+3. 项目既有 Laravel Scheduler 正常每分钟运行。
 
 启用后只会向现有 Scheduler 注册一个 `tool:redis_memory_monitor` 命令，使用
 `onOneServer()` 和 `withoutOverlapping()` 限制多 Pod 重复与重叠执行。它每分钟执行固定规模的
