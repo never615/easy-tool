@@ -47,11 +47,12 @@ class NewConfigPublisher
             $valuesWriteResult = $this->valuesFile()->write($runtimeValues);
             $subjectConfigResult = $this->subjectConfigPublisher()->publish();
             $subjectConfigChanged = (bool)($subjectConfigResult['values_file']['changed'] ?? false);
-            $requiresRestart = $requiresRestart || $subjectConfigChanged;
+            $subjectConfigRequiresReload = (bool)($subjectConfigResult['requires_reload'] ?? false);
+            $requiresRestart = $requiresRestart || $subjectConfigRequiresReload;
             $configCacheResult = null;
             $shouldRefreshConfigCache = ($writeResult['changed'] ?? false)
                 || ($valuesWriteResult['changed'] ?? false)
-                || $subjectConfigChanged
+                || ($subjectConfigChanged && $subjectConfigRequiresReload)
                 || $forceConfigCache;
             if ($shouldRefreshConfigCache && !$this->isTestRun()) {
                 $configCacheResult = $this->configCacheService->refresh($values, $forceConfigCache);
@@ -59,7 +60,7 @@ class NewConfigPublisher
 
             $restartResult = null;
             $generationResult = null;
-            if ($restart && $requiresRestart && $shouldRefreshConfigCache && !$this->isTestRun()) {
+            if ($restart && ($requiresRestart || $forceConfigCache) && $shouldRefreshConfigCache && !$this->isTestRun()) {
                 $generationResult = $this->generationStore()->bump();
                 $restartResult = $this->restartService->restart();
             }

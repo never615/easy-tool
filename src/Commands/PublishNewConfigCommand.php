@@ -27,9 +27,10 @@ class PublishNewConfigCommand extends Command
     public function handle(NewConfigPublisher $publisher): int
     {
         try {
+            $restart = (bool)$this->option('restart') || (bool)$this->option('reload');
             $result = $publisher->publish(
-                (bool)$this->option('restart') || (bool)$this->option('reload'),
-                (bool)$this->option('force-config-cache'),
+                $restart,
+                $restart || (bool)$this->option('force-config-cache'),
                 $this->option('env-file') ?: null
             );
         } catch (Throwable $exception) {
@@ -55,8 +56,17 @@ class PublishNewConfigCommand extends Command
         $this->line('runtime env file: ' . ($write['env_path'] ?? 'n/a'));
         $this->line('subject_configs exported: subjects=' . (int)($subjectConfig['counts']['subjects'] ?? 0)
             . ', values=' . (int)($subjectConfig['counts']['values'] ?? 0));
+        $this->line('subject live values excluded: ' . (int)($subjectConfig['counts']['excluded_live_values'] ?? 0));
         $this->line('subject config values changed: ' . (($subjectConfig['values_file']['changed'] ?? false) ? 'yes' : 'no'));
         $this->line('subject config values file: ' . ($subjectConfig['values_file']['values_path'] ?? 'n/a'));
+        foreach ((array)($subjectConfig['snapshot_changed_keys'] ?? []) as $changedKey) {
+            $this->line('subject snapshot changed key: '
+                . (int)($changedKey['subject_id'] ?? 0) . ':'
+                . (string)($changedKey['key'] ?? '') . ':'
+                . (string)($changedKey['change'] ?? '') . ':'
+                . (string)($changedKey['apply_mode'] ?? ''));
+        }
+        $this->line('subject config requires reload: ' . (($subjectConfig['requires_reload'] ?? false) ? 'yes' : 'no'));
 
         if (is_array($configCache)) {
             $this->line('config cache: ' . (($configCache['skipped'] ?? false) ? 'skipped' : 'refreshed'));
