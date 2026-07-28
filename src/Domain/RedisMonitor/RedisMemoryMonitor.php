@@ -212,7 +212,8 @@ final class RedisMemoryMonitor
         $usedPercent = $snapshot->usedPercent();
 
         if ($snapshot->maxMemory <= 0) {
-            $level = self::LEVEL_ERROR;
+            // maxmemory=0 只表示 Redis 没有配置上限，无法计算使用率，并不等于已经存在
+            // 内存压力。保留原因供状态页识别，但不周期性写 pressure error。
             $reasons[] = 'maxmemory_not_configured';
         } elseif ($usedPercent >= $this->errorPercent) {
             $level = self::LEVEL_ERROR;
