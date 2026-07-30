@@ -209,6 +209,7 @@
             }[statusKey(status)]);
 
             const postgresSamplingDelayInfo = '“采样延迟”表示监控快照未在预期时间内刷新，仅代表当前展示的数据可能不是最新，不表示 PostgreSQL 查询、读写或业务接口出现延迟。';
+            const redisUnlimitedMemoryInfo = 'Redis 未配置 maxmemory 内存上限，当前仍可读取实际已用内存；“正常”表示未发现淘汰 Key 或拒绝连接等压力信号，不代表内存无限可用。';
 
             const displayStatusLabel = (status, sectionKey) => {
                 const safeStatus = statusKey(status);
@@ -305,6 +306,9 @@
                 if (value === null || value === undefined) {
                     return '未知';
                 }
+                if (key === 'maxmemory' && finiteNumber(value) && Number(value) === 0) {
+                    return '未设置上限';
+                }
                 if (['used_memory', 'used_memory_rss', 'maxmemory', 'locators_total_bytes'].includes(key)) {
                     return bytes(value);
                 }
@@ -375,9 +379,14 @@
                     ? Number(cluster.online_pods) + ' 在线 / ' + Number(cluster.delayed_pods) + ' 延迟'
                     : '未知';
                 const tasking = finiteNumber(summary.tasking_num) ? Number(summary.tasking_num) : '未知';
-                const redisPercent = finiteNumber(redis.metrics && redis.metrics.used_percent)
-                    ? Number(redis.metrics.used_percent).toFixed(2) + '%'
-                    : '未知';
+                const redisMetrics = redis.metrics || {};
+                const redisHasUnlimitedMemory = finiteNumber(redisMetrics.maxmemory)
+                    && Number(redisMetrics.maxmemory) === 0;
+                const redisMemoryDisplay = finiteNumber(redisMetrics.used_percent)
+                    ? Number(redisMetrics.used_percent).toFixed(2) + '%'
+                    : redisHasUnlimitedMemory && finiteNumber(redisMetrics.used_memory)
+                        ? bytes(redisMetrics.used_memory) + ' / 未设上限'
+                        : '未知';
                 const pending = finiteNumber(mqtt.metrics && mqtt.metrics.pending)
                     ? Number(mqtt.metrics.pending)
                     : '未知';
@@ -400,7 +409,9 @@
                         sectionKey: 'postgres_database',
                         info: postgresSamplingDelayInfo
                     }),
-                    summaryCard('Redis 内存', redisPercent, redis.status),
+                    summaryCard('Redis 内存', redisMemoryDisplay, redis.status, redisHasUnlimitedMemory ? {
+                        info: redisUnlimitedMemoryInfo
+                    } : null),
                     summaryCard('MQTT Pending', pending, mqtt.status)
                 ];
 
