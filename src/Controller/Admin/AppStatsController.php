@@ -27,7 +27,7 @@ final class AppStatsController extends Controller
     {
         return Admin::content(function (Content $content): void {
             $content->header('应用运行监控');
-            $content->description('LaravelS / Swoole / PostgreSQL / Redis / MQTT');
+            $content->description('LaravelS / Swoole / PostgreSQL / MongoDB / Redis / MQTT');
             $content->body(view('easy-tool::app_stats.content', [
                 'mode' => 'admin',
                 'dataUrl' => route('admin_monitor.app_stats.data'),

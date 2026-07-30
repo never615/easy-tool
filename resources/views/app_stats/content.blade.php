@@ -210,11 +210,13 @@
 
             const postgresSamplingDelayInfo = '“采样延迟”表示监控快照未在预期时间内刷新，仅代表当前展示的数据可能不是最新，不表示 PostgreSQL 查询、读写或业务接口出现延迟。';
             const redisUnlimitedMemoryInfo = 'Redis 未配置 maxmemory 内存上限，当前仍可读取实际已用内存；“正常”表示未发现淘汰 Key 或拒绝连接等压力信号，不代表内存无限可用。';
+            const mongodbSamplingInfo = 'MongoDB 数据来自每分钟一次的轻量采样；“采样延迟”只表示快照未及时刷新，不表示数据库业务读写存在延迟。“指标受限”表示账号无 serverStatus 权限，但 ping 与拓扑检查仍然成功。';
 
             const displayStatusLabel = (status, sectionKey) => {
                 const safeStatus = statusKey(status);
 
-                return sectionKey === 'postgres_database' && safeStatus === 'delayed'
+                return ['postgres_database', 'mongodb_database'].includes(sectionKey)
+                    && safeStatus === 'delayed'
                     ? '采样延迟'
                     : statusLabel(safeStatus);
             };
@@ -293,6 +295,23 @@
                 locators_autovacuum_count: 'locators 自动清理次数（locators_autovacuum_count）',
                 locators_last_autovacuum: 'locators 最近自动清理（locators_last_autovacuum）',
                 locators_total_bytes: 'locators 总占用（locators_total_bytes）',
+                monitoring_mode: '监控指标模式（monitoring_mode）',
+                version: 'MongoDB 版本（version）',
+                process: '进程类型（process）',
+                uptime_seconds: '运行时长秒数（uptime_seconds）',
+                is_writable_primary: '当前节点可写（is_writable_primary）',
+                secondary: '当前节点为 Secondary（secondary）',
+                replica_set_name: '副本集名称（replica_set_name）',
+                current_connections: '当前连接（current_connections）',
+                available_connections: '可用连接余量（available_connections）',
+                connection_capacity: '连接容量（connection_capacity）',
+                active_connections: '活跃连接（active_connections）',
+                resident_memory_bytes: '常驻内存（resident_memory_bytes）',
+                virtual_memory_bytes: '虚拟内存（virtual_memory_bytes）',
+                wiredtiger_cache_bytes: 'WiredTiger 缓存已用（wiredtiger_cache_bytes）',
+                wiredtiger_cache_max_bytes: 'WiredTiger 缓存上限（wiredtiger_cache_max_bytes）',
+                wiredtiger_cache_used_percent: 'WiredTiger 缓存使用率（wiredtiger_cache_used_percent）',
+                wiredtiger_cache_dirty_bytes: 'WiredTiger Dirty 缓存（wiredtiger_cache_dirty_bytes）',
                 stream_total: 'Stream 当前长度（stream_total）',
                 pending: '待确认消息（pending）',
                 consumed_retained: '已确认但仍保留（consumed_retained）',
@@ -309,11 +328,30 @@
                 if (key === 'maxmemory' && finiteNumber(value) && Number(value) === 0) {
                     return '未设置上限';
                 }
-                if (['used_memory', 'used_memory_rss', 'maxmemory', 'locators_total_bytes'].includes(key)) {
+                if ([
+                    'used_memory',
+                    'used_memory_rss',
+                    'maxmemory',
+                    'locators_total_bytes',
+                    'resident_memory_bytes',
+                    'virtual_memory_bytes',
+                    'wiredtiger_cache_bytes',
+                    'wiredtiger_cache_max_bytes',
+                    'wiredtiger_cache_dirty_bytes'
+                ].includes(key)) {
                     return bytes(value);
                 }
-                if (['used_percent', 'connection_used_percent', 'cache_hit_percent', 'locators_hot_update_percent'].includes(key)) {
+                if ([
+                    'used_percent',
+                    'connection_used_percent',
+                    'cache_hit_percent',
+                    'locators_hot_update_percent',
+                    'wiredtiger_cache_used_percent'
+                ].includes(key)) {
                     return finiteNumber(value) ? Number(value).toFixed(2) + '%' : '未知';
+                }
+                if (key === 'monitoring_mode') {
+                    return value === 'server_status' ? '完整指标' : '仅可用性（指标受限）';
                 }
                 if (key === 'locators_sampled_at') {
                     return formatTimestamp(value);
@@ -374,6 +412,7 @@
                 const sections = sectionsValue || {};
                 const redis = sections.redis_memory || {status: 'unavailable', metrics: {}};
                 const postgres = sections.postgres_database || {status: 'unavailable', metrics: {}};
+                const mongodb = sections.mongodb_database || {status: 'unavailable', metrics: {}};
                 const mqtt = sections.mqtt_publish_stream || {status: 'unavailable', metrics: {}};
                 const podCount = finiteNumber(cluster.online_pods) && finiteNumber(cluster.delayed_pods)
                     ? Number(cluster.online_pods) + ' 在线 / ' + Number(cluster.delayed_pods) + ' 延迟'
@@ -396,6 +435,15 @@
                         + ' / '
                         + Number(postgres.metrics.normal_connection_capacity)
                     : '未知';
+                const mongodbConnections = finiteNumber(
+                    mongodb.metrics && mongodb.metrics.current_connections
+                ) && finiteNumber(mongodb.metrics && mongodb.metrics.connection_capacity)
+                    ? Number(mongodb.metrics.current_connections)
+                        + ' / '
+                        + Number(mongodb.metrics.connection_capacity)
+                    : mongodb.metrics && mongodb.metrics.monitoring_mode === 'availability_only'
+                        ? '在线 / 指标受限'
+                        : '未知';
 
                 const cards = [
                     summaryCard('Pod', podCount, cluster.status),
@@ -408,6 +456,10 @@
                     summaryCard('PostgreSQL 连接', postgresConnections, postgres.status, {
                         sectionKey: 'postgres_database',
                         info: postgresSamplingDelayInfo
+                    }),
+                    summaryCard('MongoDB 连接', mongodbConnections, mongodb.status, {
+                        sectionKey: 'mongodb_database',
+                        info: mongodbSamplingInfo
                     }),
                     summaryCard('Redis 内存', redisMemoryDisplay, redis.status, redisHasUnlimitedMemory ? {
                         info: redisUnlimitedMemoryInfo
@@ -489,6 +541,13 @@
                 postgres_monitor_sample_delayed: 'PostgreSQL 采样延迟',
                 postgres_monitor_sampling_failed: 'PostgreSQL 采样失败',
                 postgres_monitor_state_read_failed: 'PostgreSQL 状态读取失败',
+                mongodb_monitor_disabled: 'MongoDB 监控未启用',
+                mongodb_monitor_waiting_for_first_sample: '等待 MongoDB 首次采样',
+                mongodb_monitor_waiting_for_complete_sample: '等待下一次完整 MongoDB 采样',
+                mongodb_monitor_sample_delayed: 'MongoDB 采样延迟',
+                mongodb_monitor_limited_metrics: 'MongoDB 在线，但 serverStatus 指标受限',
+                mongodb_monitor_sampling_failed: 'MongoDB 采样失败',
+                mongodb_monitor_state_read_failed: 'MongoDB 状态读取失败',
                 mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败'
             }[message] || '运行状态异常');
 

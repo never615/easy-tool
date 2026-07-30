@@ -6,6 +6,7 @@ AppStats 是 Laravel Admin“监控中心”下的只读集群运行状态页面
 
 - 每个 LaravelS Pod 的 Swoole Worker、Task Worker、连接数和 SkyLab TCP 快照；
 - 由现有 Laravel Scheduler 采集的 PostgreSQL 连接余量、锁等待、长事务和 `locators` 热表统计；
+- 由现有 Laravel Scheduler 采集的 MongoDB 可用性、连接容量和 WiredTiger 缓存状态；
 - 由现有 Laravel Scheduler 采集的共享 Redis 内存状态；
 - EasyLocation `mqtt-publish` 共享 Redis Stream 的长度、Pending 和消费者状态。
 
@@ -22,7 +23,7 @@ GET /admin/monitor/app_stats/data
 
 页面和数据接口只读取当前状态，不会执行修复、重试、内存采样、Pod 清理、Stream 消费或告警状态
 写入。打开页面不会启动进程，也不会增加 Swoole Task、Horizon Job 或 Scheduler 任务。PostgreSQL
-和 Redis 内存采样由既有 Scheduler 执行，Pod 写入和过期清理由既有
+、MongoDB 和 Redis 内存采样由既有 Scheduler 执行，Pod 写入和过期清理由既有
 `swoole-stats-collector` 进程执行，MQTT 失败重试由既有 MQTT 发布进程执行。
 
 排障时禁止对生产 Redis 使用 `KEYS`、全库 `SCAN` 或 `FLUSHDB`。本功能使用的 Key 都是固定
@@ -39,6 +40,7 @@ Pod 可见的同一套共享 `REDIS_*` 端点和逻辑数据库：
 | --- | --- | --- |
 | Pod 快照 | `app_stats.redis_connection`，默认 `null`，即 Laravel `default` | 所有 Pod 必须共享；若指向 Pod 本地 Redis，页面只能看到当前 Pod |
 | PostgreSQL 状态 | `database.postgres_monitor.state_redis_connection`，默认 `redis-monitor` | 只保存 Scheduler 生成的一个小快照；AppStats 页面不会直接查询 PostgreSQL |
+| MongoDB 状态 | `database.mongodb_monitor.state_redis_connection`，默认 `redis-monitor` | 只保存 Scheduler 生成的一个小快照；AppStats 页面不会直接查询 MongoDB |
 | Redis 内存状态 | `database.redis_monitor.connection`，默认 `redis-monitor` | 使用非持久、短超时连接观察同一共享 Redis，避免 Scheduler 采样占用业务 socket |
 | MQTT Publish Stream | `mqtt-publish` | 独立连接用于常驻发布进程，但端点仍是共享 `REDIS_*`，不能改为每个 Pod 的 `LOCAL_REDIS_*` |
 
@@ -54,6 +56,7 @@ swoole_stats:pods:last_seen       # ZSet：member 为 hostname，score 为最近
 ```text
 easy-tool:redis-memory-monitor:{APP_ENV}:state
 easy-tool:postgres-monitor:{APP_ENV}:state
+easy-tool:mongodb-monitor:{APP_ENV}:state
 ```
 
 实际值以 `config('database.redis_monitor.state_key')` 为准。例如 `APP_ENV=production` 时通常为
@@ -76,6 +79,7 @@ Key、Redis 内存状态 Key 和 MQTT Stream 都可能被淘汰；AppStats 是�
 - Pod Hash/ZSet 被淘汰后，健康的采集进程会在后续两个五秒采集周期内逐步重建当前 Pod 状态。
 - Redis 内存状态被淘汰后，页面应显示“等待首次采样”，下一次一分钟 Scheduler 采样会重建它。
 - PostgreSQL 状态被淘汰后也会显示“等待首次采样”，下一次一分钟 Scheduler 采样会重建它。
+- MongoDB 状态被淘汰后也会显示“等待首次采样”，下一次一分钟 Scheduler 采样会重建它。
 - MQTT Stream 或消费组异常会让 MQTT 区块显示错误；页面不会重建消费组或恢复已淘汰消息。
 - 状态 Key 缺失不能解释为“Redis 内存正常”。可能原因包括监控未启用、尚未首次采样、
   `allkeys-lru` 淘汰或 Scheduler 未运行。
@@ -200,6 +204,21 @@ normal_headroom = normal_capacity - 当前 client backend 数
 采样连接自身不计入当前客户端数。默认达到 70% 使用率告警、85% 报错；连接余量、锁等待、事务中
 空闲连接、最长事务、死锁增量、缓存命中率和 `locators` 的估算死元组/HOT 更新率会展示在
 AppStats。`pg_stat_user_tables.n_live_tup`、`n_dead_tup` 是估算值，不应当作精确业务行数。
+
+### 5.2 MongoDB 监控与 HDD 开销边界
+
+MongoDB 监控默认开启；可通过 `MONGODB_MONITOR_ENABLED=false` 关闭。采样使用独立的
+`mongodb-monitor` 短超时连接，每分钟执行固定规模的 `ping`、`hello` 和一次裁剪后的
+`serverStatus`。这些命令读取进程、连接与 WiredTiger 的内存态累计指标，不扫描数据库、集合、
+索引或业务文档，因此不会因数据量增长而增加 HDD 扫描压力。
+
+监控明确禁止周期执行 `dbStats`、`collStats`、集合枚举、文档计数、`validate`、`compact` 或
+业务聚合。`dbStats` 的成本可能随数据库和数据文件规模增长，尤其不适合 HDD 上的一分钟采样。
+
+`serverStatus` 可能需要额外监控权限。若业务账号没有该权限，但 `ping` 和 `hello` 成功，页面显示
+“MongoDB 在线，但 serverStatus 指标受限”，不会误报数据库离线；如需连接容量、常驻内存和
+WiredTiger 缓存指标，应为监控连接授予最小化的 `serverStatus`/`clusterMonitor` 权限，不需要写
+权限。页面上的“采样延迟”只表示 Redis 快照超过默认 120 秒未刷新，并非 MongoDB 业务读写延迟。
 
 ## 6. MQTT 指标与预留 dead stream
 

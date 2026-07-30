@@ -18,4 +18,5 @@ return [
     'page_refresh_seconds' => 5,
     'redis_memory_stale_seconds' => 120,
     'postgres_database_stale_seconds' => 120,
+    'mongodb_database_stale_seconds' => 120,
 ];

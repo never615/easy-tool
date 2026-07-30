@@ -26,6 +26,7 @@ use Mallto\Admin\Facades\AdminE;
 use Mallto\Admin\Domain\SubjectConfig\SubjectConfigRegistry;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
+use Mallto\Tool\Commands\MongoDatabaseMonitorCommand;
 use Mallto\Tool\Commands\PublishNewConfigCommand;
 use Mallto\Tool\Commands\PostgresDatabaseMonitorCommand;
 use Mallto\Tool\Commands\QueueDiagnosticSnapshotCommand;
@@ -38,6 +39,7 @@ use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
 use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
 use Mallto\Tool\Domain\AppStats\AppStatsSnapshotService;
 use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\AppStats\Sections\MongoDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\PostgresDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\RedisMemoryAppStatsSection;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
@@ -46,6 +48,7 @@ use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
 use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Domain\MongoMonitor\MongoDatabaseMonitor;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
@@ -85,6 +88,7 @@ class ToolServiceProvider extends ServiceProvider
         CreateTableIdSeqCommand::class,
         DeleteFailedJobsCommand::class,
         QueueDiagnosticSnapshotCommand::class,
+        MongoDatabaseMonitorCommand::class,
         PostgresDatabaseMonitorCommand::class,
         RedisMemoryMonitorCommand::class,
         PublishNewConfigCommand::class,
@@ -443,6 +447,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/app_stats.php', 'app_stats');
 
         $this->registerAppStats();
+        $this->registerMongoDatabaseMonitor();
         $this->registerPostgresDatabaseMonitor();
         $this->registerRedisMemoryMonitor();
         $this->registerSubjectConfigDefinitions();
@@ -498,12 +503,32 @@ class ToolServiceProvider extends ServiceProvider
             $this->app->singleton(PostgresDatabaseAppStatsSection::class);
             $this->app->tag([PostgresDatabaseAppStatsSection::class], AppStatsSectionProvider::class);
         }
+        // MongoDB 区块同样只读 Scheduler 写入的共享 Redis 快照，不在 HTTP 路径访问 MongoDB。
+        if (! $this->app->bound(MongoDatabaseAppStatsSection::class)) {
+            $this->app->singleton(MongoDatabaseAppStatsSection::class);
+            $this->app->tag([MongoDatabaseAppStatsSection::class], AppStatsSectionProvider::class);
+        }
         $this->app->singleton(AppStatsSnapshotService::class, static function (Application $app) {
             return new AppStatsSnapshotService(
                 $app->make(AppStatsPodRepository::class),
                 $app->tagged(AppStatsSectionProvider::class),
                 $app->make('config'),
                 $app->make(LoggerInterface::class)
+            );
+        });
+    }
+
+    /**
+     * 注册一次性 MongoDB 采样器，实际连接只在命令执行时创建。
+     */
+    private function registerMongoDatabaseMonitor(): void
+    {
+        $this->app->singleton(MongoDatabaseMonitor::class, static function (Application $app) {
+            return new MongoDatabaseMonitor(
+                $app->make('db'),
+                $app->make(RedisFactory::class),
+                $app->make(LoggerInterface::class),
+                (array)$app->make('config')->get('database.mongodb_monitor', [])
             );
         });
     }
@@ -704,6 +729,7 @@ class ToolServiceProvider extends ServiceProvider
 
             $this->scheduleRedisMemoryMonitor($schedule);
             $this->schedulePostgresDatabaseMonitor($schedule);
+            $this->scheduleMongoDatabaseMonitor($schedule);
         });
     }
 
@@ -776,6 +802,46 @@ class ToolServiceProvider extends ServiceProvider
 
         $schedule->command('tool:postgres_database_monitor')
             ->name('postgres database monitor')
+            ->onOneServer()
+            ->withoutOverlapping(5)
+            ->everyMinute();
+    }
+
+    /**
+     * 每分钟采样 MongoDB 内存态运行指标，不执行任何数据库、集合或文档扫描。
+     */
+    private function scheduleMongoDatabaseMonitor(Schedule $schedule): void
+    {
+        if (! (bool)\config('database.mongodb_monitor.enabled', false)) {
+            return;
+        }
+
+        $connection = (string)\config(
+            'database.mongodb_monitor.connection',
+            'mongodb-monitor'
+        );
+        if (\config('database.connections.' . $connection . '.driver') !== 'mongodb') {
+            Log::error('MongoDB monitor schedule not registered: connection is not mongodb', [
+                'connection' => $connection,
+            ]);
+
+            return;
+        }
+
+        $redisConnection = (string)\config(
+            'database.mongodb_monitor.state_redis_connection',
+            'redis-monitor'
+        );
+        if (! is_array(\config('database.redis.' . $redisConnection))) {
+            Log::error('MongoDB monitor schedule not registered: state Redis profile missing', [
+                'connection' => $redisConnection,
+            ]);
+
+            return;
+        }
+
+        $schedule->command('tool:mongo_database_monitor')
+            ->name('mongodb database monitor')
             ->onOneServer()
             ->withoutOverlapping(5)
             ->everyMinute();
