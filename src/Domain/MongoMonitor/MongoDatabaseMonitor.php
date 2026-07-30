@@ -99,6 +99,7 @@ final class MongoDatabaseMonitor
             $hello = $this->command($connection, ['hello' => 1]);
 
             $serverStatus = null;
+            $serverStatusStatus = 'available';
             try {
                 $serverStatus = $this->command($connection, [
                     'serverStatus' => 1,
@@ -113,14 +114,19 @@ final class MongoDatabaseMonitor
                     'logicalSessionRecordCache' => 0,
                     'opLatencies' => 0,
                 ]);
-            } catch (Throwable) {
-                // ping 与 hello 已成功时，serverStatus 权限不足只影响容量指标，不等于数据库不可用。
+            } catch (Throwable $throwable) {
+                // ping 与 hello 已成功时，serverStatus 失败只影响详细指标，不等于数据库不可用。
+                // MongoDB Unauthorized 固定使用错误码 13；不能把超时或服务端异常误报成账号无权限。
+                $serverStatusStatus = (int) $throwable->getCode() === 13
+                    ? 'permission_denied'
+                    : 'unavailable';
             }
 
             $sampleDurationMs = round((hrtime(true) - $startedAt) / 1_000_000, 2);
             $snapshot = $this->buildSnapshot(
                 $hello,
                 $serverStatus,
+                $serverStatusStatus,
                 $previous,
                 $sampleDurationMs
             );
@@ -194,6 +200,7 @@ final class MongoDatabaseMonitor
     private function buildSnapshot(
         array $hello,
         ?array $serverStatus,
+        string $serverStatusStatus,
         array $previous,
         float $sampleDurationMs
     ): array {
@@ -228,6 +235,7 @@ final class MongoDatabaseMonitor
 
         return [
             'monitoring_mode' => $serverStatus === null ? 'availability_only' : 'server_status',
+            'server_status_status' => $serverStatusStatus,
             'version' => is_string($serverStatus['version'] ?? null)
                 ? $serverStatus['version']
                 : null,
@@ -285,7 +293,9 @@ final class MongoDatabaseMonitor
         }
         if (($snapshot['monitoring_mode'] ?? null) === 'availability_only') {
             $level = $level === 'error' ? 'error' : 'warning';
-            $reasons[] = 'server_status_unavailable';
+            $reasons[] = ($snapshot['server_status_status'] ?? null) === 'permission_denied'
+                ? 'server_status_permission_denied'
+                : 'server_status_unavailable';
         }
 
         return [$level, array_values(array_unique($reasons))];

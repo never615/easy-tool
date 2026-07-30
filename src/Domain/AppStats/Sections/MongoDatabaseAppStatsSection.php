@@ -98,15 +98,23 @@ final class MongoDatabaseAppStatsSection implements AppStatsSectionProvider
                 (int) $this->config->get('app_stats.mongodb_database_stale_seconds', 120)
             );
             $delayed = (($this->clock)() - $sampledAt) > $staleSeconds;
-            $limited = ($metrics['monitoring_mode'] ?? null) === 'availability_only';
+            $availabilityOnly = ($metrics['monitoring_mode'] ?? null) === 'availability_only';
+            $permissionDenied = ($metrics['server_status_status'] ?? null)
+                === 'permission_denied';
+            $message = null;
+            if ($delayed) {
+                $message = 'mongodb_monitor_sample_delayed';
+            } elseif ($availabilityOnly) {
+                $message = $permissionDenied
+                    ? 'mongodb_monitor_limited_metrics'
+                    : 'mongodb_monitor_metrics_unavailable';
+            }
 
             return $this->result(
                 $delayed ? 'delayed' : $level,
                 date(DATE_ATOM, $sampledAt),
                 $metrics,
-                $delayed
-                    ? 'mongodb_monitor_sample_delayed'
-                    : ($limited ? 'mongodb_monitor_limited_metrics' : null)
+                $message
             );
         } catch (Throwable) {
             return $this->result('error', null, [], 'mongodb_monitor_state_read_failed');
@@ -131,6 +139,11 @@ final class MongoDatabaseAppStatsSection implements AppStatsSectionProvider
                 ['server_status', 'availability_only'],
                 true
             ) ? $snapshot['monitoring_mode'] : null,
+            'server_status_status' => in_array(
+                $snapshot['server_status_status'] ?? null,
+                ['available', 'permission_denied', 'unavailable'],
+                true
+            ) ? $snapshot['server_status_status'] : null,
             'version' => is_string($snapshot['version'] ?? null) ? $snapshot['version'] : null,
             'process' => is_string($snapshot['process'] ?? null) ? $snapshot['process'] : null,
             'uptime_seconds' => $integer('uptime_seconds'),
