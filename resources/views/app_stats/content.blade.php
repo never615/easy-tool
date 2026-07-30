@@ -20,6 +20,42 @@
     .app-stats__section h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
     .app-stats__card strong { display: block; margin-bottom: 6px; font-size: 22px; line-height: 1.2; }
     .app-stats__status { display: block; font-weight: 600; }
+    .app-stats__status-row { display: flex; align-items: center; gap: 6px; }
+    .app-stats__status-info { position: relative; color: #555; }
+    .app-stats__status-info summary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        list-style: none;
+        user-select: none;
+    }
+    .app-stats__status-info summary::-webkit-details-marker { display: none; }
+    .app-stats__status-info p {
+        position: absolute;
+        z-index: 20;
+        top: 100%;
+        left: 0;
+        width: 280px;
+        max-width: calc(100vw - 48px);
+        margin: 6px 0 0;
+        padding: 9px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #f8f8f8;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, .12);
+        color: #555;
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
     .app-stats__instance,
     .app-stats__data { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
     .app-stats__instance { display: block; margin-top: 3px; color: #666; font-size: 12px; overflow-wrap: anywhere; }
@@ -172,6 +208,16 @@
                 unavailable: '不可用'
             }[statusKey(status)]);
 
+            const postgresSamplingDelayInfo = '“采样延迟”表示监控快照未在预期时间内刷新，仅代表当前展示的数据可能不是最新，不表示 PostgreSQL 查询、读写或业务接口出现延迟。';
+
+            const displayStatusLabel = (status, sectionKey) => {
+                const safeStatus = statusKey(status);
+
+                return sectionKey === 'postgres_database' && safeStatus === 'delayed'
+                    ? '采样延迟'
+                    : statusLabel(safeStatus);
+            };
+
             const finiteNumber = (value) => value !== null
                 && value !== ''
                 && Number.isFinite(Number(value));
@@ -289,13 +335,31 @@
                 return list;
             };
 
-            const summaryCard = (title, value, status) => {
+            const summaryCard = (title, value, status, options) => {
                 const safeStatus = statusKey(status);
+                const settings = options || {};
                 const card = document.createElement('article');
                 card.className = 'app-stats__card status-' + safeStatus;
                 card.append(text('h3', title));
                 card.append(text('strong', value, 'app-stats__data'));
-                card.append(text('span', statusLabel(safeStatus), 'app-stats__status'));
+
+                const statusRow = document.createElement('div');
+                statusRow.className = 'app-stats__status-row';
+                statusRow.append(text(
+                    'span',
+                    displayStatusLabel(safeStatus, settings.sectionKey),
+                    'app-stats__status'
+                ));
+                if (settings.info) {
+                    const info = document.createElement('details');
+                    info.className = 'app-stats__status-info';
+                    const infoSummary = text('summary', 'i');
+                    infoSummary.setAttribute('aria-label', '查看状态说明');
+                    info.append(infoSummary);
+                    info.append(text('p', settings.info));
+                    statusRow.append(info);
+                }
+                card.append(statusRow);
 
                 return card;
             };
@@ -332,7 +396,10 @@
                         ratio(summary.task_worker_used, summary.task_worker_total) + '，Tasking ' + tasking,
                         cluster.status
                     ),
-                    summaryCard('PostgreSQL 连接', postgresConnections, postgres.status),
+                    summaryCard('PostgreSQL 连接', postgresConnections, postgres.status, {
+                        sectionKey: 'postgres_database',
+                        info: postgresSamplingDelayInfo
+                    }),
                     summaryCard('Redis 内存', redisPercent, redis.status),
                     summaryCard('MQTT Pending', pending, mqtt.status)
                 ];
@@ -434,7 +501,11 @@
                     const card = document.createElement('article');
                     card.className = 'app-stats__section status-' + safeStatus;
                     card.append(text('h3', section.title || key));
-                    card.append(text('p', statusLabel(safeStatus), 'app-stats__status'));
+                    card.append(text(
+                        'p',
+                        displayStatusLabel(safeStatus, key),
+                        'app-stats__status'
+                    ));
                     if (section.sampled_at) {
                         card.append(text('p', '采样时间：' + formatTimestamp(section.sampled_at)));
                     }
