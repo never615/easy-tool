@@ -27,6 +27,7 @@ use Mallto\Admin\Domain\SubjectConfig\SubjectConfigRegistry;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
 use Mallto\Tool\Commands\PublishNewConfigCommand;
+use Mallto\Tool\Commands\PostgresDatabaseMonitorCommand;
 use Mallto\Tool\Commands\QueueDiagnosticSnapshotCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Commands\RedisMemoryMonitorCommand;
@@ -37,6 +38,7 @@ use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
 use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
 use Mallto\Tool\Domain\AppStats\AppStatsSnapshotService;
 use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\AppStats\Sections\PostgresDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\RedisMemoryAppStatsSection;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
 use Mallto\Tool\Domain\Config\Config;
@@ -47,6 +49,7 @@ use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
+use Mallto\Tool\Domain\PostgresMonitor\PostgresDatabaseMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisMemoryMonitor;
 use Mallto\Tool\Domain\SubjectConfig\ToolSubjectConfigDefinitions;
 use Mallto\Tool\Jobs\LogJob;
@@ -82,6 +85,7 @@ class ToolServiceProvider extends ServiceProvider
         CreateTableIdSeqCommand::class,
         DeleteFailedJobsCommand::class,
         QueueDiagnosticSnapshotCommand::class,
+        PostgresDatabaseMonitorCommand::class,
         RedisMemoryMonitorCommand::class,
         PublishNewConfigCommand::class,
     ];
@@ -439,6 +443,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/app_stats.php', 'app_stats');
 
         $this->registerAppStats();
+        $this->registerPostgresDatabaseMonitor();
         $this->registerRedisMemoryMonitor();
         $this->registerSubjectConfigDefinitions();
 
@@ -487,12 +492,33 @@ class ToolServiceProvider extends ServiceProvider
             $this->app->singleton(RedisMemoryAppStatsSection::class);
             $this->app->tag([RedisMemoryAppStatsSection::class], AppStatsSectionProvider::class);
         }
+        // PostgreSQL 区块与 Redis 区块一样，只读 Scheduler 写入的单个共享 Redis Key。
+        // 它不会在 AppStats HTTP 请求中建立 PostgreSQL 连接。
+        if (! $this->app->bound(PostgresDatabaseAppStatsSection::class)) {
+            $this->app->singleton(PostgresDatabaseAppStatsSection::class);
+            $this->app->tag([PostgresDatabaseAppStatsSection::class], AppStatsSectionProvider::class);
+        }
         $this->app->singleton(AppStatsSnapshotService::class, static function (Application $app) {
             return new AppStatsSnapshotService(
                 $app->make(AppStatsPodRepository::class),
                 $app->tagged(AppStatsSectionProvider::class),
                 $app->make('config'),
                 $app->make(LoggerInterface::class)
+            );
+        });
+    }
+
+    /**
+     * 注册一次性 PostgreSQL 采样器，实际连接只在命令执行时创建。
+     */
+    private function registerPostgresDatabaseMonitor(): void
+    {
+        $this->app->singleton(PostgresDatabaseMonitor::class, static function (Application $app) {
+            return new PostgresDatabaseMonitor(
+                $app->make('db'),
+                $app->make(RedisFactory::class),
+                $app->make(LoggerInterface::class),
+                (array)$app->make('config')->get('database.postgres_monitor', [])
             );
         });
     }
@@ -677,6 +703,7 @@ class ToolServiceProvider extends ServiceProvider
                 ->everyMinute();
 
             $this->scheduleRedisMemoryMonitor($schedule);
+            $this->schedulePostgresDatabaseMonitor($schedule);
         });
     }
 
@@ -706,6 +733,49 @@ class ToolServiceProvider extends ServiceProvider
 
         $schedule->command('tool:redis_memory_monitor')
             ->name('redis memory monitor')
+            ->onOneServer()
+            ->withoutOverlapping(5)
+            ->everyMinute();
+    }
+
+    /**
+     * 每分钟采样 PostgreSQL 共享内存统计；locators 关系大小由采样器内部降频到五分钟。
+     *
+     * 不使用 runInBackground()，避免为一次亚秒级只读查询额外派生进程。连接与 SQL 均有
+     * 独立短超时，数据库异常不会阻断同一分钟的其它调度任务。
+     */
+    private function schedulePostgresDatabaseMonitor(Schedule $schedule): void
+    {
+        if (! (bool)\config('database.postgres_monitor.enabled', false)) {
+            return;
+        }
+
+        $connection = (string)\config(
+            'database.postgres_monitor.connection',
+            \config('database.default')
+        );
+        if (\config('database.connections.' . $connection . '.driver') !== 'pgsql') {
+            Log::error('PostgreSQL monitor schedule not registered: connection is not pgsql', [
+                'connection' => $connection,
+            ]);
+
+            return;
+        }
+
+        $redisConnection = (string)\config(
+            'database.postgres_monitor.state_redis_connection',
+            'redis-monitor'
+        );
+        if (! is_array(\config('database.redis.' . $redisConnection))) {
+            Log::error('PostgreSQL monitor schedule not registered: state Redis profile missing', [
+                'connection' => $redisConnection,
+            ]);
+
+            return;
+        }
+
+        $schedule->command('tool:postgres_database_monitor')
+            ->name('postgres database monitor')
             ->onOneServer()
             ->withoutOverlapping(5)
             ->everyMinute();

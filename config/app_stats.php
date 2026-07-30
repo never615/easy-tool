@@ -17,4 +17,5 @@ return [
     'cleanup_interval_seconds' => 60,
     'page_refresh_seconds' => 5,
     'redis_memory_stale_seconds' => 120,
+    'postgres_database_stale_seconds' => 120,
 ];

@@ -222,6 +222,30 @@
                 evicted_keys: '累计淘汰 Key（evicted_keys）',
                 evicted_keys_delta: '本次淘汰增量（evicted_keys_delta）',
                 rejected_connections: '拒绝连接（rejected_connections）',
+                database: '数据库（database）',
+                max_connections: '连接上限（max_connections）',
+                normal_connection_capacity: '普通连接容量（normal_connection_capacity）',
+                total_connections: '当前客户端连接（total_connections）',
+                normal_connection_headroom: '普通连接余量（normal_connection_headroom）',
+                connection_used_percent: '普通连接使用率（connection_used_percent）',
+                current_database_connections: '当前库连接（current_database_connections）',
+                active_connections: '活跃连接（active_connections）',
+                idle_connections: '空闲连接（idle_connections）',
+                idle_in_transaction_connections: '事务中空闲连接（idle_in_transaction_connections）',
+                lock_waiting_connections: '等待锁连接（lock_waiting_connections）',
+                blocked_connections: '被阻塞连接（blocked_connections）',
+                longest_transaction_seconds: '最长事务秒数（longest_transaction_seconds）',
+                deadlocks_delta: '本次死锁增量（deadlocks_delta）',
+                cache_hit_percent: '缓存命中率（cache_hit_percent）',
+                sample_duration_ms: '采样耗时毫秒（sample_duration_ms）',
+                locators_sampled_at: 'locators 统计采样时间（locators_sampled_at）',
+                locators_live_tuples: 'locators 估算活行（locators_live_tuples）',
+                locators_dead_tuples: 'locators 估算死行（locators_dead_tuples）',
+                locators_updates_total: 'locators 累计更新（locators_updates_total）',
+                locators_hot_update_percent: 'locators HOT 更新率（locators_hot_update_percent）',
+                locators_autovacuum_count: 'locators 自动清理次数（locators_autovacuum_count）',
+                locators_last_autovacuum: 'locators 最近自动清理（locators_last_autovacuum）',
+                locators_total_bytes: 'locators 总占用（locators_total_bytes）',
                 stream_total: 'Stream 当前长度（stream_total）',
                 pending: '待确认消息（pending）',
                 consumed_retained: '已确认但仍保留（consumed_retained）',
@@ -235,11 +259,14 @@
                 if (value === null || value === undefined) {
                     return '未知';
                 }
-                if (['used_memory', 'used_memory_rss', 'maxmemory'].includes(key)) {
+                if (['used_memory', 'used_memory_rss', 'maxmemory', 'locators_total_bytes'].includes(key)) {
                     return bytes(value);
                 }
-                if (key === 'used_percent') {
+                if (['used_percent', 'connection_used_percent', 'cache_hit_percent', 'locators_hot_update_percent'].includes(key)) {
                     return finiteNumber(value) ? Number(value).toFixed(2) + '%' : '未知';
+                }
+                if (key === 'locators_sampled_at') {
+                    return formatTimestamp(value);
                 }
                 if (typeof value === 'boolean') {
                     return value ? '是' : '否';
@@ -278,6 +305,7 @@
                 const summary = summaryValue || {};
                 const sections = sectionsValue || {};
                 const redis = sections.redis_memory || {status: 'unavailable', metrics: {}};
+                const postgres = sections.postgres_database || {status: 'unavailable', metrics: {}};
                 const mqtt = sections.mqtt_publish_stream || {status: 'unavailable', metrics: {}};
                 const podCount = finiteNumber(cluster.online_pods) && finiteNumber(cluster.delayed_pods)
                     ? Number(cluster.online_pods) + ' 在线 / ' + Number(cluster.delayed_pods) + ' 延迟'
@@ -289,6 +317,12 @@
                 const pending = finiteNumber(mqtt.metrics && mqtt.metrics.pending)
                     ? Number(mqtt.metrics.pending)
                     : '未知';
+                const postgresConnections = finiteNumber(postgres.metrics && postgres.metrics.total_connections)
+                    && finiteNumber(postgres.metrics && postgres.metrics.normal_connection_capacity)
+                    ? Number(postgres.metrics.total_connections)
+                        + ' / '
+                        + Number(postgres.metrics.normal_connection_capacity)
+                    : '未知';
 
                 const cards = [
                     summaryCard('Pod', podCount, cluster.status),
@@ -298,6 +332,7 @@
                         ratio(summary.task_worker_used, summary.task_worker_total) + '，Tasking ' + tasking,
                         cluster.status
                     ),
+                    summaryCard('PostgreSQL 连接', postgresConnections, postgres.status),
                     summaryCard('Redis 内存', redisPercent, redis.status),
                     summaryCard('MQTT Pending', pending, mqtt.status)
                 ];
@@ -370,6 +405,12 @@
                 redis_memory_waiting_for_complete_sample: '等待下一次完整 Redis 内存采样',
                 redis_memory_sample_delayed: 'Redis 内存采样延迟',
                 redis_memory_state_read_failed: 'Redis 内存状态读取失败',
+                postgres_monitor_disabled: 'PostgreSQL 监控未启用',
+                postgres_monitor_waiting_for_first_sample: '等待 PostgreSQL 首次采样',
+                postgres_monitor_waiting_for_complete_sample: '等待下一次完整 PostgreSQL 采样',
+                postgres_monitor_sample_delayed: 'PostgreSQL 采样延迟',
+                postgres_monitor_sampling_failed: 'PostgreSQL 采样失败',
+                postgres_monitor_state_read_failed: 'PostgreSQL 状态读取失败',
                 mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败'
             }[message] || '运行状态异常');
 
