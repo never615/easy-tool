@@ -210,15 +210,21 @@
 
             const postgresSamplingDelayInfo = '“采样延迟”表示监控快照未在预期时间内刷新，仅代表当前展示的数据可能不是最新，不表示 PostgreSQL 查询、读写或业务接口出现延迟。';
             const redisUnlimitedMemoryInfo = 'Redis 未配置 maxmemory 内存上限，当前仍可读取实际已用内存；“正常”表示未发现淘汰 Key 或拒绝连接等压力信号，不代表内存无限可用。';
-            const mongodbSamplingInfo = 'MongoDB 数据来自每分钟一次的轻量采样；“采样延迟”只表示快照未及时刷新，不表示数据库业务读写存在延迟。“指标受限”表示账号无 serverStatus 权限，但 ping 与拓扑检查仍然成功。';
+            const mongodbSamplingInfo = 'MongoDB 数据来自每分钟一次的轻量采样；“采样未刷新”只表示快照未及时更新，不表示数据库业务读写存在延迟。“详细指标无权限”表示账号无 serverStatus 权限，但 ping 与拓扑检查仍然成功。';
 
             const displayStatusLabel = (status, sectionKey) => {
                 const safeStatus = statusKey(status);
 
-                return ['postgres_database', 'mongodb_database'].includes(sectionKey)
-                    && safeStatus === 'delayed'
-                    ? '采样延迟'
-                    : statusLabel(safeStatus);
+                if (safeStatus === 'delayed') {
+                    if (sectionKey === 'postgres_database') {
+                        return '采样延迟';
+                    }
+                    if (sectionKey === 'mongodb_database') {
+                        return '采样未刷新';
+                    }
+                }
+
+                return statusLabel(safeStatus);
             };
 
             const finiteNumber = (value) => value !== null
@@ -351,7 +357,7 @@
                     return finiteNumber(value) ? Number(value).toFixed(2) + '%' : '未知';
                 }
                 if (key === 'monitoring_mode') {
-                    return value === 'server_status' ? '完整指标' : '仅可用性（指标受限）';
+                    return value === 'server_status' ? '完整指标' : '仅可用性（详细指标无权限）';
                 }
                 if (key === 'locators_sampled_at') {
                     return formatTimestamp(value);
@@ -442,7 +448,7 @@
                         + ' / '
                         + Number(mongodb.metrics.connection_capacity)
                     : mongodb.metrics && mongodb.metrics.monitoring_mode === 'availability_only'
-                        ? '在线 / 指标受限'
+                        ? '在线 / 详细指标无权限'
                         : '未知';
 
                 const cards = [
@@ -544,8 +550,8 @@
                 mongodb_monitor_disabled: 'MongoDB 监控未启用',
                 mongodb_monitor_waiting_for_first_sample: '等待 MongoDB 首次采样',
                 mongodb_monitor_waiting_for_complete_sample: '等待下一次完整 MongoDB 采样',
-                mongodb_monitor_sample_delayed: 'MongoDB 采样延迟',
-                mongodb_monitor_limited_metrics: 'MongoDB 在线，但 serverStatus 指标受限',
+                mongodb_monitor_sample_delayed: 'MongoDB 采样未刷新',
+                mongodb_monitor_limited_metrics: 'MongoDB 在线，但当前账号无 serverStatus 详细指标权限',
                 mongodb_monitor_sampling_failed: 'MongoDB 采样失败',
                 mongodb_monitor_state_read_failed: 'MongoDB 状态读取失败',
                 mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败'

@@ -216,9 +216,9 @@ MongoDB 监控默认开启；可通过 `MONGODB_MONITOR_ENABLED=false` 关闭。
 业务聚合。`dbStats` 的成本可能随数据库和数据文件规模增长，尤其不适合 HDD 上的一分钟采样。
 
 `serverStatus` 可能需要额外监控权限。若业务账号没有该权限，但 `ping` 和 `hello` 成功，页面显示
-“MongoDB 在线，但 serverStatus 指标受限”，不会误报数据库离线；如需连接容量、常驻内存和
+“MongoDB 在线，但当前账号无 serverStatus 详细指标权限”，不会误报数据库离线；如需连接容量、常驻内存和
 WiredTiger 缓存指标，应为监控连接授予最小化的 `serverStatus`/`clusterMonitor` 权限，不需要写
-权限。页面上的“采样延迟”只表示 Redis 快照超过默认 120 秒未刷新，并非 MongoDB 业务读写延迟。
+权限。页面上的“采样未刷新”只表示 Redis 快照超过默认 120 秒未更新，并非 MongoDB 业务读写延迟。
 
 ## 6. MQTT 指标与预留 dead stream
 
