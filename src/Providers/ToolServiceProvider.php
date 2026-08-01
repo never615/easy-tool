@@ -6,9 +6,11 @@
 namespace Mallto\Tool\Providers;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Events\ConnectionEstablished;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -59,6 +61,7 @@ use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Middleware\AuthenticateSign;
 use Mallto\Tool\Middleware\AuthenticateSign2;
 use Mallto\Tool\Middleware\AuthenticateSignWithReferrer;
+use Mallto\Tool\Middleware\EnforcePerPageLimit;
 use Mallto\Tool\Middleware\OwnerApiLog;
 use Mallto\Tool\Middleware\RequestCheck;
 use Mallto\Tool\Middleware\SetLanguage;
@@ -441,6 +444,7 @@ class ToolServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/new_config.php', 'new_config');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/pagination.php', 'easy_tool.pagination');
         $this->mergeConfigFrom(__DIR__ . '/../../config/subject_config_runtime.php', 'subject_config_runtime');
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
         $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
@@ -451,6 +455,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->registerPostgresDatabaseMonitor();
         $this->registerRedisMemoryMonitor();
         $this->registerSubjectConfigDefinitions();
+        $this->registerGlobalHttpMiddleware();
 
         $this->app->bind(ConnectionManager::class, function (Application $app) {
             $configRepository = $app->make('config');
@@ -475,6 +480,23 @@ class ToolServiceProvider extends ServiceProvider
         //$this->app->singleton(Sms::class, AliyunSms::class);
         $this->app->singleton(MobileDevicePush::class, AliyunMobileDevicePush::class);
         $this->app->singleton(Config::class, MtConfig::class);
+    }
+
+    /**
+     * 注册全局分页上限中间件。
+     *
+     * Web 请求会在 ServiceProvider 启动前解析 HTTP Kernel；Container::extend() 会立即扩展
+     * 已解析的 singleton，并在尚未解析时保留扩展器，因此两种启动时机都能生效。
+     */
+    private function registerGlobalHttpMiddleware(): void
+    {
+        $this->app->extend(HttpKernelContract::class, function (HttpKernelContract $kernel) {
+            if ($kernel instanceof HttpKernel) {
+                $kernel->pushMiddleware(EnforcePerPageLimit::class);
+            }
+
+            return $kernel;
+        });
     }
 
     /**
