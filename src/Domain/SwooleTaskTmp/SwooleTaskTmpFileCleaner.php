@@ -16,6 +16,8 @@ final class SwooleTaskTmpFileCleaner
 
     private const FILE_TYPE_MASK = 0170000;
 
+    private const DIRECTORY_TYPE = 0040000;
+
     private const REGULAR_FILE_TYPE = 0100000;
 
     /**
@@ -38,7 +40,13 @@ final class SwooleTaskTmpFileCleaner
             $normalizedDirectory = DIRECTORY_SEPARATOR;
         }
 
-        if (!str_starts_with($normalizedDirectory, '/') || is_link($normalizedDirectory) || !is_dir($normalizedDirectory) || !is_readable($normalizedDirectory)) {
+        clearstatcache(true, $normalizedDirectory);
+        $directoryStat = @lstat($normalizedDirectory);
+
+        if (!str_starts_with($normalizedDirectory, '/')
+            || $directoryStat === false
+            || ((int) $directoryStat['mode'] & self::FILE_TYPE_MASK) !== self::DIRECTORY_TYPE
+            || !is_readable($normalizedDirectory)) {
             return $this->result(
                 $startedAt,
                 $scanned,
@@ -75,6 +83,7 @@ final class SwooleTaskTmpFileCleaner
                 }
 
                 $path = $entry->getPathname();
+                clearstatcache(true, $path);
                 $stat = @lstat($path);
 
                 if ($stat === false) {
