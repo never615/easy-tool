@@ -124,6 +124,26 @@ class SwooleTaskTmpFileCleanerTest extends TestCase
         $this->assertFileExists($targetFile);
     }
 
+    public function test_rejects_symlink_root_with_trailing_directory_separator_without_scanning_its_target(): void
+    {
+        $targetDirectory = $this->path('target-with-trailing-slash');
+        $symlinkDirectory = $this->path('symlink-root-with-trailing-slash');
+        $targetFile = $targetDirectory.'/swoole.task.expired';
+
+        mkdir($targetDirectory);
+        file_put_contents($targetFile, 'expired');
+        touch($targetFile, 100);
+        symlink($targetDirectory, $symlinkDirectory);
+
+        $result = (new SwooleTaskTmpFileCleaner())->clean($symlinkDirectory.'/', 100, 10);
+
+        $this->assertSame(0, $result->scanned);
+        $this->assertSame(0, $result->deleted);
+        $this->assertSame(1, $result->failed);
+        $this->assertSame(UnexpectedValueException::class, $result->errorType);
+        $this->assertFileExists($targetFile);
+    }
+
     public function test_scan_can_be_interrupted_by_laravels_reload_or_stop(): void
     {
         $path = $this->path('swoole.task.expired');

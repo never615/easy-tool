@@ -32,8 +32,13 @@ final class SwooleTaskTmpFileCleaner
         $deleted = 0;
         $failed = 0;
         $deleteLimit = max(1, $deleteLimit);
+        $normalizedDirectory = rtrim($directory, DIRECTORY_SEPARATOR);
 
-        if (!str_starts_with($directory, '/') || is_link($directory) || !is_dir($directory) || !is_readable($directory)) {
+        if ($normalizedDirectory === '') {
+            $normalizedDirectory = DIRECTORY_SEPARATOR;
+        }
+
+        if (!str_starts_with($normalizedDirectory, '/') || is_link($normalizedDirectory) || !is_dir($normalizedDirectory) || !is_readable($normalizedDirectory)) {
             return $this->result(
                 $startedAt,
                 $scanned,
@@ -47,7 +52,7 @@ final class SwooleTaskTmpFileCleaner
 
         try {
             $iterator = new FilesystemIterator(
-                $directory,
+                $normalizedDirectory,
                 FilesystemIterator::SKIP_DOTS | FilesystemIterator::CURRENT_AS_FILEINFO
             );
 
