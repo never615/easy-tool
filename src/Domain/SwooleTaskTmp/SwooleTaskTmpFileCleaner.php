@@ -33,7 +33,7 @@ final class SwooleTaskTmpFileCleaner
         $failed = 0;
         $deleteLimit = max(1, $deleteLimit);
 
-        if (!str_starts_with($directory, '/') || !is_dir($directory) || !is_readable($directory)) {
+        if (!str_starts_with($directory, '/') || is_link($directory) || !is_dir($directory) || !is_readable($directory)) {
             return $this->result(
                 $startedAt,
                 $scanned,
