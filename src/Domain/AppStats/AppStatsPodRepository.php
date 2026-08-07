@@ -9,6 +9,7 @@ namespace Mallto\Tool\Domain\AppStats;
 use Closure;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpSnapshotStore;
 use Throwable;
 
 /**
@@ -27,6 +28,7 @@ class AppStatsPodRepository
     public function __construct(
         private readonly RedisFactory $redis,
         private readonly ConfigRepository $config,
+        private readonly SwooleTaskTmpSnapshotStore $taskTmpSnapshots,
         ?Closure $clock = null
     ) {
         $this->clock = $clock ?? static fn (): int => time();
@@ -45,6 +47,8 @@ class AppStatsPodRepository
      */
     public function read(): array
     {
+        $taskTmpSnapshots = $this->readTaskTmpSnapshots();
+
         try {
             $connection = $this->connection();
             $payloads = (array) $connection->hgetall($this->hashKey());
@@ -84,7 +88,8 @@ class AppStatsPodRepository
                     $payload,
                     $lastSeen,
                     $age,
-                    $status
+                    $status,
+                    $taskTmpSnapshots[(string) $hostname] ?? null
                 );
             }
 
@@ -153,7 +158,8 @@ class AppStatsPodRepository
         array $payload,
         int $lastSeen,
         int $age,
-        string $status
+        string $status,
+        ?array $taskTmpSnapshot
     ): array {
         $metrics = is_array($payload['metrics'] ?? null) ? $payload['metrics'] : [];
         $stats = is_array($payload['stats'] ?? null) ? $payload['stats'] : [];
@@ -202,6 +208,103 @@ class AppStatsPodRepository
             ],
             'stats' => $stats,
             'skylab_tcp' => is_array($payload['skylab_tcp'] ?? null) ? $payload['skylab_tcp'] : [],
+            'task_tmp' => $this->normalizeTaskTmp(
+                (string) ($payload['instance_id'] ?? sprintf(
+                    '%s:%d:0',
+                    $hostname,
+                    max(0, (int) ($payload['updated_at'] ?? 0))
+                )),
+                $taskTmpSnapshot
+            ),
+        ];
+    }
+
+    /**
+     * task tmp 存储不可用不应隐藏仍可读取的 Swoole Pod 快照；页面以固定 unavailable 状态降级。
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function readTaskTmpSnapshots(): array
+    {
+        try {
+            return $this->taskTmpSnapshots->readAll();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @param array<string, mixed>|null $snapshot
+     * @return array<string, mixed>
+     */
+    private function normalizeTaskTmp(string $instanceId, ?array $snapshot): array
+    {
+        if ($snapshot === null
+            || ! is_string($snapshot['instance_id'] ?? null)
+            || $snapshot['instance_id'] === ''
+            || $snapshot['instance_id'] !== $instanceId
+            || max(0, (int) ($snapshot['sample_age_seconds'] ?? PHP_INT_MAX))
+                > max(1, (int) $this->config->get('app_stats.task_tmp_snapshot_stale_seconds', 60))) {
+            return $this->unavailableTaskTmp();
+        }
+
+        return [
+            'status' => 'normal',
+            'sample_age_seconds' => max(0, (int) $snapshot['sample_age_seconds']),
+            'instance_id' => $snapshot['instance_id'],
+            'path' => is_string($snapshot['path'] ?? null) ? $snapshot['path'] : null,
+            'process_enabled' => (bool) ($snapshot['process_enabled'] ?? false),
+            'auto_cleanup_enabled' => (bool) ($snapshot['auto_cleanup_enabled'] ?? false),
+            'filesystem' => $this->taskTmpFields($snapshot['filesystem'] ?? null, [
+                'ok', 'total_bytes', 'free_bytes', 'used_bytes', 'used_percent', 'error_type',
+            ]),
+            'inventory' => $this->taskTmpFields($snapshot['inventory'] ?? null, [
+                'scanned', 'matching_files', 'matching_bytes', 'stale_files', 'stale_bytes',
+                'oldest_mtime', 'complete', 'duration_milliseconds', 'error_type', 'started_at',
+                'finished_at',
+            ]),
+            'cleanup' => $this->taskTmpFields($snapshot['cleanup'] ?? null, [
+                'request_id', 'status', 'started_at', 'finished_at', 'scanned', 'deleted', 'failed',
+                'error_type',
+            ]),
+        ];
+    }
+
+    /**
+     * @param mixed $fields
+     * @param array<int, string> $allowed
+     * @return array<string, scalar|null>
+     */
+    private function taskTmpFields(mixed $fields, array $allowed): array
+    {
+        if (! is_array($fields)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($allowed as $field) {
+            $value = $fields[$field] ?? null;
+            if (is_scalar($value) || $value === null) {
+                $normalized[$field] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /** @return array<string, mixed> */
+    private function unavailableTaskTmp(): array
+    {
+        return [
+            'status' => 'unavailable',
+            'sample_age_seconds' => null,
+            'instance_id' => null,
+            'path' => null,
+            'process_enabled' => false,
+            'auto_cleanup_enabled' => false,
+            'filesystem' => [],
+            'inventory' => [],
+            'cleanup' => [],
         ];
     }
 

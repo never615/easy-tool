@@ -45,6 +45,7 @@ use Mallto\Tool\Domain\AppStats\Sections\MongoDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\PostgresDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\RedisMemoryAppStatsSection;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpSnapshotStore;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
 use Mallto\Tool\Domain\Config\MtConfig;
@@ -509,7 +510,14 @@ class ToolServiceProvider extends ServiceProvider
     private function registerAppStats(): void
     {
         $this->app->singleton(AppStatsPodWriter::class);
-        $this->app->singleton(AppStatsPodRepository::class);
+        $this->app->singleton(SwooleTaskTmpSnapshotStore::class);
+        $this->app->singleton(AppStatsPodRepository::class, static function (Application $app) {
+            return new AppStatsPodRepository(
+                $app->make(RedisFactory::class),
+                $app->make('config'),
+                $app->make(SwooleTaskTmpSnapshotStore::class)
+            );
+        });
         $this->app->singleton(SwooleStatsSnapshotFactory::class);
         // Redis 内存区块只读 Scheduler 已持久化的一个状态 Key。singleton 与 tag 只登记定义，
         // 不会在 Provider 启动时连接 Redis，也不会创建新的 Scheduler、进程或队列任务。
