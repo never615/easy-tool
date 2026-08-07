@@ -14,6 +14,13 @@ return [
     'task_tmp_pods_hash_key' => 'app_stats:swoole_task_tmp:pods',
     'task_tmp_pods_last_seen_key' => 'app_stats:swoole_task_tmp:pods:last_seen',
     'task_tmp_snapshot_stale_seconds' => 60,
+    // 手动清理请求使用独立、有界的控制 Key；它们不能与 Pod 快照共用，避免状态采样覆盖回执。
+    'task_tmp_cleanup_active_key' => 'app_stats:swoole_task_tmp:cleanup:active',
+    'task_tmp_cleanup_last_key' => 'app_stats:swoole_task_tmp:cleanup:last',
+    'task_tmp_cleanup_request_prefix' => 'app_stats:swoole_task_tmp:cleanup:request:',
+    'task_tmp_cleanup_deadline_prefix' => 'app_stats:swoole_task_tmp:cleanup:deadline:',
+    'task_tmp_cleanup_results_prefix' => 'app_stats:swoole_task_tmp:cleanup:results:',
+    'task_tmp_cleanup_lease_prefix' => 'app_stats:swoole_task_tmp:cleanup:lease:',
     'collect_interval_seconds' => 5,
     'online_seconds' => 15,
     'delayed_seconds' => 60,
