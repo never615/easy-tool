@@ -80,6 +80,23 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
         $this->assertSame(5, $redis->lastSetExpirySeconds);
     }
 
+    public function test_renew_keeps_a_running_target_lease_until_the_request_finishes_or_expires(): void
+    {
+        [$store, $redis] = $this->store(5);
+        $request = $store->create($this->targets(), 7, 200);
+        $redis->now = 205;
+        $this->assertNotNull($store->claim('pod-a', 'pod-a:100:9', 205));
+
+        $redis->now = 209;
+        $this->assertTrue($store->renew($request['request_id'], 'pod-a', 'pod-a:100:9', 209));
+        $this->assertSame(214, $redis->expiresAt[$this->leaseKey($request['request_id'])]);
+
+        $redis->now = 210;
+        $this->assertNull($store->claim('pod-a', 'pod-a:100:9', 210));
+        $redis->now = 214;
+        $this->assertNotNull($store->claim('pod-a', 'pod-a:100:9', 214));
+    }
+
     #[DataProvider('terminalStatusProvider')]
     public function test_terminal_results_cannot_be_claimed_again(string $status): void
     {
@@ -504,6 +521,11 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
     {
         return 'app_stats:swoole_task_tmp:cleanup:results:' . $requestId;
     }
+
+    private function leaseKey(string $requestId): string
+    {
+        return 'app_stats:swoole_task_tmp:cleanup:lease:' . $requestId . ':pod-a:pod-a:100:9';
+    }
 }
 
 /**
@@ -559,6 +581,18 @@ final class CleanupRequestFakeRedisConnection
             ]);
 
             return $this->evalClaim($numberOfKeys, $arguments);
+        }
+
+        if (str_contains($script, '-- renew_cleanup_lease')) {
+            $this->assertLuaStructure($script, [
+                "redis.call('GET', KEYS[1]) ~= ARGV[1]",
+                "redis.call('GET', KEYS[3])",
+                "redis.call('HGET', KEYS[4], ARGV[2])",
+                "redis.call('GET', KEYS[5]) ~= ARGV[1]",
+                "redis.call('EXPIRE', KEYS[5], ARGV[5])",
+            ]);
+
+            return $this->evalRenew($numberOfKeys, $arguments);
         }
 
         if (str_contains($script, '-- mark_cleanup_running')) {
@@ -778,6 +812,38 @@ final class CleanupRequestFakeRedisConnection
         }
 
         return [(string) $requestId, (string) $deadlineAt];
+    }
+
+    /** @param list<mixed> $arguments */
+    private function evalRenew(int $numberOfKeys, array $arguments): int
+    {
+        if ($numberOfKeys !== 5) {
+            throw new InvalidArgumentException('Renew script key count mismatch.');
+        }
+
+        [$activeKey, $requestKey, $deadlineKey, $resultsKey, $leaseKey] = array_slice($arguments, 0, 5);
+        [$requestId, $hostname, $instanceId, $now, $leaseSeconds] = array_slice($arguments, 5, 5);
+        if ($this->get((string) $activeKey) !== (string) $requestId
+            || $this->get((string) $requestKey) === false) {
+            return 0;
+        }
+        $deadlineAt = $this->get((string) $deadlineKey);
+        if ($deadlineAt === false || (int) $deadlineAt <= (int) $now) {
+            return 0;
+        }
+        $result = $this->hget((string) $resultsKey, (string) $hostname);
+        if ($result === false) {
+            return 0;
+        }
+        $result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+        if (in_array($result['status'] ?? null, ['succeeded', 'failed', 'timed_out'], true)
+            || $this->get((string) $leaseKey) !== (string) $requestId) {
+            return 0;
+        }
+
+        $this->expire((string) $leaseKey, (int) $leaseSeconds);
+
+        return 1;
     }
 
     /** @param list<mixed> $arguments */

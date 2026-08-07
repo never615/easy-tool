@@ -45,8 +45,10 @@ use Mallto\Tool\Domain\AppStats\Sections\MongoDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\PostgresDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\RedisMemoryAppStatsSection;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
-use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpSnapshotStore;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestCoordinator;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestStore;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpRuntime;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpSnapshotStore;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
 use Mallto\Tool\Domain\Config\MtConfig;
@@ -513,6 +515,10 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(AppStatsPodWriter::class);
         $this->app->singleton(SwooleTaskTmpSnapshotStore::class);
         $this->app->singleton(SwooleTaskTmpCleanupRequestStore::class);
+        $this->app->singleton(SwooleTaskTmpCleanupRequestCoordinator::class, static function (Application $app): SwooleTaskTmpCleanupRequestCoordinator {
+            return $app->make(SwooleTaskTmpCleanupRequestStore::class);
+        });
+        $this->app->singleton(SwooleTaskTmpRuntime::class);
         $this->app->singleton(AppStatsPodRepository::class, static function (Application $app) {
             return new AppStatsPodRepository(
                 $app->make(RedisFactory::class),

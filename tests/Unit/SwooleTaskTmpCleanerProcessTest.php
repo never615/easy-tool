@@ -3,7 +3,7 @@
 namespace Mallto\Tool\Tests\Unit;
 
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
-use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpFileCleaner;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpRuntime;
 use Mallto\Tool\Processes\SwooleTaskTmpCleanerProcess;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -25,12 +25,14 @@ class SwooleTaskTmpCleanerProcessTest extends TestCase
         $source = file_get_contents(dirname(__DIR__, 2).'/src/Processes/SwooleTaskTmpCleanerProcess.php');
 
         $this->assertIsString($source);
-        $this->assertStringContainsString(SwooleTaskTmpFileCleaner::class, $source);
+        $this->assertStringContainsString(SwooleTaskTmpRuntime::class, $source);
+        $this->assertSame(1, substr_count($source, 'app(SwooleTaskTmpRuntime::class)'));
         $this->assertStringContainsString("config('laravels.swoole.task_tmpdir')", $source);
-        $this->assertStringContainsString("config('swoole_task_tmp_cleaner.stale_seconds', 60)", $source);
-        $this->assertStringContainsString("config('swoole_task_tmp_cleaner.scan_interval_seconds', 30)", $source);
-        $this->assertStringContainsString("config('swoole_task_tmp_cleaner.backlog_retry_seconds', 1)", $source);
-        $this->assertStringContainsString("config('swoole_task_tmp_cleaner.delete_limit', 100000)", $source);
+        $this->assertStringContainsString('sprintf(', $source);
+        $this->assertStringContainsString("'%s:%d:%d'", $source);
+        $this->assertStringContainsString("['start_time']", $source);
+        $this->assertStringContainsString('master_pid', $source);
+        $this->assertStringContainsString('getmypid()', $source);
         $this->assertStringNotContainsString('/dev/shm', $source);
         $this->assertStringNotContainsString('env(', $source);
     }
@@ -42,7 +44,7 @@ class SwooleTaskTmpCleanerProcessTest extends TestCase
         $this->assertIsString($source);
         $this->assertStringContainsString('static fn (): bool => self::$running', $source);
         $this->assertStringContainsString('self::$running = false;', $source);
-        $this->assertStringContainsString('duration_ms', $source);
+        $this->assertStringContainsString('self::sleepWhileRunning', $source);
         $this->assertStringNotContainsString("Log::info(\$path", $source);
         $this->assertStringNotContainsString("Log::warning(\$path", $source);
     }

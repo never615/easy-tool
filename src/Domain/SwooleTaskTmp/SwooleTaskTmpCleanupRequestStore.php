@@ -16,7 +16,7 @@ use JsonException;
  *
  * Redis 只保存有时限的控制面状态；任务临时文件始终由目标 Pod 在本地文件系统中处理。
  */
-class SwooleTaskTmpCleanupRequestStore
+final class SwooleTaskTmpCleanupRequestStore implements SwooleTaskTmpCleanupRequestCoordinator
 {
     /** @var list<string> */
     private const TERMINAL_STATUSES = ['succeeded', 'failed', 'timed_out'];
@@ -184,6 +184,53 @@ LUA,
             'request_id' => (string) $response[0],
             'deadline_at' => max(0, (int) ($response[1] ?? 0)),
         ];
+    }
+
+    public function renew(string $requestId, string $hostname, string $instanceId, int $now): bool
+    {
+        $response = $this->connection()->eval(
+            <<<'LUA'
+-- renew_cleanup_lease
+if redis.call('GET', KEYS[1]) ~= ARGV[1] or redis.call('EXISTS', KEYS[2]) == 0 then
+    return 0
+end
+
+local deadline_at = redis.call('GET', KEYS[3])
+if deadline_at == false or tonumber(deadline_at) <= tonumber(ARGV[4]) then
+    return 0
+end
+
+local result_json = redis.call('HGET', KEYS[4], ARGV[2])
+if result_json == false then
+    return 0
+end
+
+local result = cjson.decode(result_json)
+if result.status == 'succeeded' or result.status == 'failed' or result.status == 'timed_out' then
+    return 0
+end
+
+if redis.call('GET', KEYS[5]) ~= ARGV[1] then
+    return 0
+end
+
+redis.call('EXPIRE', KEYS[5], ARGV[5])
+return 1
+LUA,
+            5,
+            $this->activeKey(),
+            $this->requestKey($requestId),
+            $this->deadlineKey($requestId),
+            $this->resultsKey($requestId),
+            $this->leaseKey($requestId, $hostname, $instanceId),
+            $requestId,
+            $hostname,
+            $instanceId,
+            max(0, $now),
+            $this->leaseSeconds()
+        );
+
+        return (int) $response === 1;
     }
 
     /**
