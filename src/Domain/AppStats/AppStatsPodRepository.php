@@ -209,6 +209,7 @@ class AppStatsPodRepository
             'stats' => $stats,
             'skylab_tcp' => is_array($payload['skylab_tcp'] ?? null) ? $payload['skylab_tcp'] : [],
             'task_tmp' => $this->normalizeTaskTmp(
+                $hostname,
                 (string) ($payload['instance_id'] ?? sprintf(
                     '%s:%d:0',
                     $hostname,
@@ -237,9 +238,11 @@ class AppStatsPodRepository
      * @param array<string, mixed>|null $snapshot
      * @return array<string, mixed>
      */
-    private function normalizeTaskTmp(string $instanceId, ?array $snapshot): array
+    private function normalizeTaskTmp(string $hostname, string $instanceId, ?array $snapshot): array
     {
         if ($snapshot === null
+            || ! is_string($snapshot['hostname'] ?? null)
+            || $snapshot['hostname'] !== $hostname
             || ! is_string($snapshot['instance_id'] ?? null)
             || $snapshot['instance_id'] === ''
             || $snapshot['instance_id'] !== $instanceId

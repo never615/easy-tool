@@ -84,12 +84,36 @@ class SwooleTaskTmpSnapshotStoreTest extends TestCase
         $snapshots = $store->readAll();
 
         $this->assertSame(['pod-a'], array_keys($snapshots));
+        $this->assertSame('pod-a', $snapshots['pod-a']['hostname']);
         $this->assertSame('pod-a:100:9', $snapshots['pod-a']['instance_id']);
         $this->assertSame(195, $snapshots['pod-a']['updated_at']);
         $this->assertSame(5, $snapshots['pod-a']['sample_age_seconds']);
         $this->assertSame(95.5, $snapshots['pod-a']['filesystem']['used_percent']);
         $this->assertSame(20, $snapshots['pod-a']['inventory']['stale_files']);
         $this->assertArrayNotHasKey('staleFiles', $snapshots['pod-a']['inventory']);
+    }
+
+    public function test_read_all_rejects_a_hash_value_without_its_zset_timestamp(): void
+    {
+        $connection = Mockery::mock();
+        $connection->shouldReceive('hgetall')
+            ->once()
+            ->with('app_stats:swoole_task_tmp:pods')
+            ->andReturn([
+                'pod-a' => json_encode([
+                    'instance_id' => 'pod-a:100:9',
+                    'updated_at' => 195,
+                    'inventory' => ['stale_files' => 20],
+                ], JSON_THROW_ON_ERROR),
+            ]);
+        $connection->shouldReceive('zrange')
+            ->once()
+            ->with('app_stats:swoole_task_tmp:pods:last_seen', 0, -1, ['withscores' => true])
+            ->andReturn([]);
+        $connection->shouldNotReceive('keys');
+        $connection->shouldNotReceive('scan');
+
+        $this->assertSame([], $this->store($connection, 200)->readAll());
     }
 
     public function test_forget_removes_one_hostname_from_task_tmp_hash_and_index_in_one_pipeline(): void

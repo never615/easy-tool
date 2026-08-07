@@ -31,7 +31,7 @@ class SwooleTaskTmpSnapshotStore
     public function store(string $hostname, array $payload, int $sampledAt): void
     {
         $json = json_encode(
-            $this->normalizePayload($payload, max(0, $sampledAt), 0),
+            $this->normalizePayload($hostname, $payload, max(0, $sampledAt), 0),
             JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
 
@@ -66,8 +66,13 @@ class SwooleTaskTmpSnapshotStore
                 continue;
             }
 
-            // rolling release 期间 Hash 可能先于 ZSet 可见，暂用 payload 时间保持短暂兼容。
-            $sampledAt = max(0, (int) ($scores[(string) $hostname] ?? $payload['updated_at'] ?? 0));
+            // Hash 与 ZSet 共同构成快照：没有 ZSet 时间戳的孤立 Hash 值不可信，不能回退到
+            // payload 内的旧时间戳，否则旧实例数据可能被错误合并到当前 Pod。
+            if (! array_key_exists((string) $hostname, $scores)) {
+                continue;
+            }
+
+            $sampledAt = max(0, (int) $scores[(string) $hostname]);
             $sampleAgeSeconds = max(0, $now - $sampledAt);
 
             if ($sampledAt === 0 || $sampleAgeSeconds > $staleSeconds) {
@@ -75,6 +80,7 @@ class SwooleTaskTmpSnapshotStore
             }
 
             $snapshots[(string) $hostname] = $this->normalizePayload(
+                (string) $hostname,
                 $payload,
                 $sampledAt,
                 $sampleAgeSeconds
@@ -96,9 +102,16 @@ class SwooleTaskTmpSnapshotStore
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    private function normalizePayload(array $payload, int $sampledAt, int $sampleAgeSeconds): array
+    private function normalizePayload(
+        string $hostname,
+        array $payload,
+        int $sampledAt,
+        int $sampleAgeSeconds
+    ): array
     {
         return [
+            // Hash field 是 task tmp 快照的权威 hostname，忽略 payload 内的同名字段。
+            'hostname' => $hostname,
             'instance_id' => is_string($payload['instance_id'] ?? null) ? $payload['instance_id'] : '',
             'updated_at' => $sampledAt,
             'sample_age_seconds' => $sampleAgeSeconds,
