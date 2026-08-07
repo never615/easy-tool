@@ -46,7 +46,9 @@ use Mallto\Tool\Domain\AppStats\Sections\PostgresDatabaseAppStatsSection;
 use Mallto\Tool\Domain\AppStats\Sections\RedisMemoryAppStatsSection;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestCoordinator;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestCreator;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestStore;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestStatusReader;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpRuntime;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpSnapshotStore;
 use Mallto\Tool\Domain\Config\Config;
@@ -518,6 +520,12 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(SwooleTaskTmpCleanupRequestCoordinator::class, static function (Application $app): SwooleTaskTmpCleanupRequestCoordinator {
             return $app->make(SwooleTaskTmpCleanupRequestStore::class);
         });
+        $this->app->singleton(SwooleTaskTmpCleanupRequestCreator::class, static function (Application $app): SwooleTaskTmpCleanupRequestCreator {
+            return $app->make(SwooleTaskTmpCleanupRequestStore::class);
+        });
+        $this->app->singleton(SwooleTaskTmpCleanupRequestStatusReader::class, static function (Application $app): SwooleTaskTmpCleanupRequestStatusReader {
+            return $app->make(SwooleTaskTmpCleanupRequestStore::class);
+        });
         $this->app->singleton(SwooleTaskTmpRuntime::class);
         $this->app->singleton(AppStatsPodRepository::class, static function (Application $app) {
             return new AppStatsPodRepository(
@@ -549,6 +557,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->singleton(AppStatsSnapshotService::class, static function (Application $app) {
             return new AppStatsSnapshotService(
                 $app->make(AppStatsPodRepository::class),
+                $app->make(SwooleTaskTmpCleanupRequestStatusReader::class),
                 $app->tagged(AppStatsSectionProvider::class),
                 $app->make('config'),
                 $app->make(LoggerInterface::class)

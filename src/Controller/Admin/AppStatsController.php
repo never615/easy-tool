@@ -15,8 +15,8 @@ use Mallto\Tool\Domain\AppStats\AppStatsSnapshotService;
 /**
  * 统一应用运行监控的 Laravel Admin 入口。
  *
- * 控制器只提供页面骨架和只读 JSON 快照。采集、Redis 内存 INFO、Pod 清理等会修改
- * 运行状态的动作必须留在既有后台采集链路中，禁止由页面请求触发。
+ * 控制器只提供页面骨架和只读 JSON 快照。task tmp 清理请求由独立 POST Controller 创建，
+ * 实际删除仍由目标 Pod 的常驻进程完成；本控制器的 GET 方法禁止改变运行状态。
  */
 final class AppStatsController extends Controller
 {

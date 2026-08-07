@@ -9,6 +9,7 @@ namespace Mallto\Tool\Domain\AppStats;
 use Closure;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestStatusReader;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Traversable;
@@ -32,6 +33,7 @@ class AppStatsSnapshotService
      */
     public function __construct(
         private readonly AppStatsPodRepository $pods,
+        private readonly SwooleTaskTmpCleanupRequestStatusReader $taskTmpCleanup,
         iterable $sectionProviders,
         private readonly ConfigRepository $config,
         private readonly LoggerInterface $logger,
@@ -47,7 +49,9 @@ class AppStatsSnapshotService
     /** @return array<string, mixed> */
     public function snapshot(): array
     {
+        $now = ($this->clock)();
         $podState = $this->pods->read();
+        $taskTmpCleanup = $this->taskTmpCleanupStatus($now);
         $sections = [];
 
         foreach ($this->sectionProviders as $provider) {
@@ -95,7 +99,7 @@ class AppStatsSnapshotService
         ];
 
         return [
-            'generated_at' => date(DATE_ATOM, ($this->clock)()),
+            'generated_at' => date(DATE_ATOM, $now),
             'refresh_seconds' => max(
                 1,
                 (int) $this->config->get('app_stats.page_refresh_seconds', 5)
@@ -114,7 +118,25 @@ class AppStatsSnapshotService
             ],
             'summary' => $summary,
             'pods' => $podState['pods'],
+            'task_tmp_cleanup' => $taskTmpCleanup,
             'sections' => $sections,
         ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function taskTmpCleanupStatus(int $now): ?array
+    {
+        try {
+            return $this->taskTmpCleanup->currentStatus($now);
+        } catch (Throwable $exception) {
+            $this->logger->warning('AppStats task tmp cleanup status read failed', [
+                'error_type' => $exception::class,
+            ]);
+
+            return [
+                'status' => 'unavailable',
+                'message' => 'task_tmp_cleanup_status_read_failed',
+            ];
+        }
     }
 }

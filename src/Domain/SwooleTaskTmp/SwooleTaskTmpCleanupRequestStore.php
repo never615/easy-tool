@@ -16,7 +16,7 @@ use JsonException;
  *
  * Redis 只保存有时限的控制面状态；任务临时文件始终由目标 Pod 在本地文件系统中处理。
  */
-final class SwooleTaskTmpCleanupRequestStore implements SwooleTaskTmpCleanupRequestCoordinator
+final class SwooleTaskTmpCleanupRequestStore implements SwooleTaskTmpCleanupRequestCoordinator, SwooleTaskTmpCleanupRequestCreator, SwooleTaskTmpCleanupRequestStatusReader
 {
     /** @var list<string> */
     private const TERMINAL_STATUSES = ['succeeded', 'failed', 'timed_out'];

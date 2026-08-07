@@ -144,6 +144,8 @@ Route::group($attributes, function ($router) {
                             ->name('admin_monitor.app_stats');
                         Route::get('monitor/app_stats/data', 'AppStatsController@data')
                             ->name('admin_monitor.app_stats.data');
+                        Route::post('monitor/app_stats/task-tmp-cleanup', 'SwooleTaskTmpCleanupController@store')
+                            ->name('admin_monitor.app_stats.task_tmp_cleanup');
                         Route::get('monitor/swoole_stats', 'SwooleStatsController@index')
                             ->name('admin_monitor.swoole_stats');
                         //Route::resource('sms_notifies', 'SmsNotifyController');
