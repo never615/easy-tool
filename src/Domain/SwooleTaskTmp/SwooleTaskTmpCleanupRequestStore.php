@@ -117,33 +117,72 @@ LUA,
             return null;
         }
 
-        $request = $this->readRequest($requestId);
-        if ($request === null
-            || $now >= (int) ($request['deadline_at'] ?? 0)
-            || ! $this->hasTarget($request, $hostname, $instanceId)) {
-            return null;
-        }
+        $response = $this->connection()->eval(
+            <<<'LUA'
+-- claim_cleanup_target
+local request_id = redis.call('GET', KEYS[1])
+if request_id == false then
+    return false
+end
 
-        $existing = $this->readResult($requestId, $hostname);
-        if ($existing === null || $this->isTerminal((string) ($existing['status'] ?? ''))) {
-            return null;
-        }
+local deadline_at = redis.call('GET', KEYS[3])
+if request_id ~= ARGV[1] or deadline_at == false or tonumber(deadline_at) <= tonumber(ARGV[4]) then
+    return false
+end
 
-        $claimed = $this->connection()->set(
+local request_json = redis.call('GET', KEYS[2])
+if request_json == false then
+    return false
+end
+
+local request = cjson.decode(request_json)
+local target_matches = false
+for _, target in ipairs(request.targets or {}) do
+    if target.hostname == ARGV[2] and target.instance_id == ARGV[3] then
+        target_matches = true
+        break
+    end
+end
+if not target_matches then
+    return false
+end
+
+local result_json = redis.call('HGET', KEYS[4], ARGV[2])
+if result_json == false then
+    return false
+end
+
+local result = cjson.decode(result_json)
+if result.status == 'succeeded' or result.status == 'failed' or result.status == 'timed_out' then
+    return false
+end
+
+if redis.call('SET', KEYS[5], ARGV[1], 'EX', ARGV[5], 'NX') == false then
+    return false
+end
+
+return {ARGV[1], deadline_at}
+LUA,
+            5,
+            $this->activeKey(),
+            $this->requestKey($requestId),
+            $this->deadlineKey($requestId),
+            $this->resultsKey($requestId),
             $this->leaseKey($requestId, $hostname, $instanceId),
             $requestId,
-            'EX',
-            $this->leaseSeconds(),
-            'NX'
+            $hostname,
+            $instanceId,
+            max(0, $now),
+            $this->leaseSeconds()
         );
 
-        if (! $claimed) {
+        if (! is_array($response) || (string) ($response[0] ?? '') === '') {
             return null;
         }
 
         return [
-            'request_id' => $requestId,
-            'deadline_at' => (int) $request['deadline_at'],
+            'request_id' => (string) $response[0],
+            'deadline_at' => max(0, (int) ($response[1] ?? 0)),
         ];
     }
 
@@ -152,23 +191,45 @@ LUA,
      */
     public function markRunning(string $requestId, string $hostname, array $progress): void
     {
-        $request = $this->readRequest($requestId);
-        if ($request === null || ! $this->hasHostname($request, $hostname)) {
-            return;
-        }
-
-        $existing = $this->readResult($requestId, $hostname);
-        if ($existing === null || $this->isTerminal((string) ($existing['status'] ?? ''))) {
-            return;
-        }
-
         unset($progress['status']);
-        $this->connection()->hset(
+        unset($progress['hostname'], $progress['instance_id']);
+        $now = time();
+        $this->connection()->eval(
+            <<<'LUA'
+-- mark_cleanup_running
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then
+    return 0
+end
+
+local deadline_at = redis.call('GET', KEYS[3])
+if deadline_at == false or tonumber(deadline_at) <= tonumber(ARGV[3]) or redis.call('EXISTS', KEYS[2]) == 0 then
+    return 0
+end
+
+local existing_json = redis.call('HGET', KEYS[4], ARGV[2])
+if existing_json == false then
+    return 0
+end
+
+local existing = cjson.decode(existing_json)
+if existing.status ~= 'pending' and existing.status ~= 'running' then
+    return 0
+end
+
+redis.call('HSET', KEYS[4], ARGV[2], ARGV[4])
+return 1
+LUA,
+            4,
+            $this->activeKey(),
+            $this->requestKey($requestId),
+            $this->deadlineKey($requestId),
             $this->resultsKey($requestId),
+            $requestId,
             $hostname,
+            $now,
             $this->encode(array_merge($progress, [
                 'status' => 'running',
-                'updated_at' => time(),
+                'updated_at' => $now,
             ]))
         );
     }
@@ -188,6 +249,7 @@ LUA,
         }
 
         unset($result['status']);
+        unset($result['hostname'], $result['instance_id']);
         $this->connection()->eval(
             <<<'LUA'
 -- finish_cleanup_target
@@ -269,10 +331,9 @@ LUA,
                 $status = 'timed_out';
             }
 
-            $targets[] = array_merge([
+            $targets[] = array_merge($result, [
                 'hostname' => $hostname,
                 'instance_id' => (string) ($target['instance_id'] ?? ''),
-            ], $result, [
                 'status' => $status,
             ]);
         }
@@ -293,6 +354,12 @@ LUA,
     private function aggregateStatus(array $targets): string
     {
         $statuses = array_column($targets, 'status');
+        if (in_array('running', $statuses, true)) {
+            return 'running';
+        }
+        if (in_array('pending', $statuses, true)) {
+            return 'pending';
+        }
         if ($statuses !== [] && count(array_filter($statuses, static fn (string $status): bool => $status === 'succeeded')) === count($statuses)) {
             return 'succeeded';
         }
@@ -300,8 +367,6 @@ LUA,
         $succeeded = in_array('succeeded', $statuses, true);
         $failed = in_array('failed', $statuses, true);
         $timedOut = in_array('timed_out', $statuses, true);
-        $running = in_array('running', $statuses, true);
-
         if ($succeeded && ($failed || $timedOut)) {
             return 'partial_failed';
         }
@@ -312,7 +377,7 @@ LUA,
             return 'failed';
         }
 
-        return $running ? 'running' : 'pending';
+        return 'failed';
     }
 
     /**

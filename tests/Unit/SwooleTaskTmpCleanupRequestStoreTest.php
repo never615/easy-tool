@@ -9,6 +9,7 @@ use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpCleanupRequestStore;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Redis;
 
 class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
 {
@@ -89,6 +90,17 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
         $this->assertNull($store->claim('pod-a', 'pod-a:100:9', 221));
     }
 
+    public function test_claim_cannot_succeed_when_terminal_finish_wins_the_interleave(): void
+    {
+        [$store, $redis] = $this->store();
+        $request = $store->create($this->targets(), 7, 200);
+        $redis->beforeClaim = function () use ($store, $request): void {
+            $store->markFinished($request['request_id'], 'pod-a', 'succeeded', []);
+        };
+
+        $this->assertNull($store->claim('pod-a', 'pod-a:100:9', 205));
+    }
+
     public static function terminalStatusProvider(): array
     {
         return [
@@ -101,7 +113,7 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
     public function test_mark_running_uses_only_the_fixed_running_status(): void
     {
         [$store, $redis] = $this->store();
-        $request = $store->create($this->targets(), 7, 200);
+        $request = $store->create($this->targets(), 7, time());
 
         $store->markRunning($request['request_id'], 'pod-a', [
             'status' => 'succeeded',
@@ -111,6 +123,45 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
         $result = $redis->decodedHashField($this->resultsKey($request['request_id']), 'pod-a');
         $this->assertSame('running', $result['status']);
         $this->assertSame(100, $result['scanned']);
+    }
+
+    public function test_mark_running_cannot_revert_a_terminal_result(): void
+    {
+        [$store, $redis] = $this->store();
+        $request = $store->create($this->targets(), 7, 200);
+        $store->markFinished($request['request_id'], 'pod-a', 'succeeded', ['deleted' => 10]);
+
+        $store->markRunning($request['request_id'], 'pod-a', ['scanned' => 100]);
+
+        $result = $redis->decodedHashField($this->resultsKey($request['request_id']), 'pod-a');
+        $this->assertSame('succeeded', $result['status']);
+        $this->assertSame(10, $result['deleted']);
+        $this->assertArrayNotHasKey('scanned', $result);
+    }
+
+    public function test_progress_and_result_cannot_override_frozen_target_identity(): void
+    {
+        [$store] = $this->store();
+        $now = time();
+        $request = $store->create($this->targets(), 7, $now);
+
+        $store->markRunning($request['request_id'], 'pod-a', [
+            'hostname' => 'attacker',
+            'instance_id' => 'attacker:1:1',
+            'scanned' => 10,
+        ]);
+        $running = $store->currentStatus($now + 1);
+        $this->assertSame('pod-a', $running['targets'][0]['hostname']);
+        $this->assertSame('pod-a:100:9', $running['targets'][0]['instance_id']);
+
+        $store->markFinished($request['request_id'], 'pod-a', 'succeeded', [
+            'hostname' => 'attacker',
+            'instance_id' => 'attacker:1:1',
+            'deleted' => 5,
+        ]);
+        $finished = $store->currentStatus($now + 1);
+        $this->assertSame('pod-a', $finished['targets'][0]['hostname']);
+        $this->assertSame('pod-a:100:9', $finished['targets'][0]['instance_id']);
     }
 
     public function test_unknown_targets_cannot_create_or_change_a_result(): void
@@ -155,9 +206,14 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
     public function test_all_terminal_results_clear_only_the_matching_active_pointer_and_write_last(): void
     {
         [$store, $redis] = $this->store();
-        $request = $store->create($this->targets(), 7, 200);
+        $request = $store->create($this->targets('pod-a', 'pod-b'), 7, 200);
 
         $store->markFinished($request['request_id'], 'pod-a', 'succeeded', []);
+
+        $this->assertSame($request['request_id'], $redis->strings[$this->activeKey()]);
+        $this->assertArrayNotHasKey($this->lastKey(), $redis->strings);
+
+        $store->markFinished($request['request_id'], 'pod-b', 'succeeded', []);
 
         $this->assertArrayNotHasKey($this->activeKey(), $redis->strings);
         $this->assertSame($request['request_id'], $redis->strings[$this->lastKey()]);
@@ -205,6 +261,9 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
             'all failed' => [['failed', 'failed'], 'failed'],
             'all pending' => [['pending', 'pending'], 'pending'],
             'one running' => [['running', 'pending'], 'running'],
+            'succeeded and pending stays pending' => [['succeeded', 'pending'], 'pending'],
+            'failed and running stays running' => [['failed', 'running'], 'running'],
+            'timed out and pending stays pending' => [['timed_out', 'pending'], 'pending'],
         ];
     }
 
@@ -253,6 +312,54 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
         $this->assertNull($store->currentStatus(3800));
     }
 
+    public function test_terminal_release_preserves_original_request_ttls_and_sets_independent_last_ttl(): void
+    {
+        [$store, $redis] = $this->store();
+        $request = $store->create($this->targets(), 7, 200);
+        $redis->now = 400;
+
+        $store->markFinished($request['request_id'], 'pod-a', 'succeeded', []);
+
+        $this->assertSame(3800, $redis->expiresAt[$this->requestKey($request['request_id'])]);
+        $this->assertSame(3800, $redis->expiresAt['app_stats:swoole_task_tmp:cleanup:deadline:' . $request['request_id']]);
+        $this->assertSame(3800, $redis->expiresAt[$this->resultsKey($request['request_id'])]);
+        $this->assertSame(4000, $redis->expiresAt[$this->lastKey()]);
+    }
+
+    public function test_real_redis_lua_protocol_reuses_replaces_claims_and_releases(): void
+    {
+        [$connection, $shutdown] = $this->startIsolatedRedis();
+        try {
+            $prefix = 'task3:integration:' . bin2hex(random_bytes(8)) . ':';
+            $store = $this->storeForConnection($connection, $prefix);
+            $now = time();
+            $first = $store->create($this->targets('pod-old'), 7, $now);
+            $reused = $store->create($this->targets('pod-ignored'), 8, $now + 1);
+
+            $this->assertFalse($reused['created']);
+            $this->assertSame($first['request_id'], $reused['request_id']);
+
+            $replacement = $store->create($this->targets('pod-a', 'pod-b'), 9, $now + 900);
+            $this->assertTrue($replacement['created']);
+            $this->assertNotSame($first['request_id'], $replacement['request_id']);
+
+            $this->assertSame(
+                $replacement['request_id'],
+                $store->claim('pod-a', 'pod-a:100:9', $now + 901)['request_id']
+            );
+            $this->assertNull($store->claim('pod-a', 'pod-a:100:9', $now + 901));
+
+            $store->markFinished($replacement['request_id'], 'pod-a', 'succeeded', []);
+            $this->assertSame($replacement['request_id'], $connection->get($prefix . 'active'));
+
+            $store->markFinished($replacement['request_id'], 'pod-b', 'succeeded', []);
+            $this->assertFalse($connection->get($prefix . 'active'));
+            $this->assertSame($replacement['request_id'], $connection->get($prefix . 'last'));
+        } finally {
+            $shutdown();
+        }
+    }
+
     /**
      * @return array{SwooleTaskTmpCleanupRequestStore, CleanupRequestFakeRedisConnection}
      */
@@ -280,6 +387,86 @@ class SwooleTaskTmpCleanupRequestStoreTest extends TestCase
         ]);
 
         return [new SwooleTaskTmpCleanupRequestStore($redis, $config), $connection];
+    }
+
+    private function storeForConnection(CleanupRequestNativeRedisConnection $connection, string $prefix): SwooleTaskTmpCleanupRequestStore
+    {
+        $redis = Mockery::mock(RedisFactory::class);
+        $redis->shouldReceive('connection')->zeroOrMoreTimes()->with(null)->andReturn($connection);
+        $config = new Repository([
+            'app_stats' => [
+                'redis_connection' => null,
+                'task_tmp_cleanup_active_key' => $prefix . 'active',
+                'task_tmp_cleanup_last_key' => $prefix . 'last',
+                'task_tmp_cleanup_request_prefix' => $prefix . 'request:',
+                'task_tmp_cleanup_deadline_prefix' => $prefix . 'deadline:',
+                'task_tmp_cleanup_results_prefix' => $prefix . 'results:',
+                'task_tmp_cleanup_lease_prefix' => $prefix . 'lease:',
+            ],
+            'swoole_task_tmp_cleaner' => [
+                'cleanup_execution_timeout_seconds' => 900,
+                'cleanup_request_ttl_seconds' => 3600,
+                'cleanup_lease_seconds' => 30,
+            ],
+        ]);
+
+        return new SwooleTaskTmpCleanupRequestStore($redis, $config);
+    }
+
+    /** @return array{CleanupRequestNativeRedisConnection, \Closure} */
+    private function startIsolatedRedis(): array
+    {
+        $redisServer = trim((string) shell_exec('command -v redis-server'));
+        if ($redisServer === '' || ! extension_loaded('redis')) {
+            self::markTestSkipped('redis-server or the PHP redis extension is unavailable.');
+        }
+
+        $socket = stream_socket_server('tcp://127.0.0.1:0');
+        if ($socket === false) {
+            self::fail('Unable to reserve an isolated Redis TCP port.');
+        }
+        $address = stream_socket_get_name($socket, false);
+        fclose($socket);
+        $port = (int) substr((string) $address, strrpos((string) $address, ':') + 1);
+
+        $process = proc_open([
+            $redisServer,
+            '--port',
+            (string) $port,
+            '--bind',
+            '127.0.0.1',
+            '--save',
+            '',
+            '--appendonly',
+            'no',
+        ], [
+            0 => ['pipe', 'r'],
+            1 => ['file', '/dev/null', 'a'],
+            2 => ['file', '/dev/null', 'a'],
+        ], $pipes);
+        if (! is_resource($process)) {
+            self::fail('Unable to start an isolated Redis instance.');
+        }
+        fclose($pipes[0]);
+
+        $client = new Redis();
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            try {
+                if ($client->connect('127.0.0.1', $port, 0.05)) {
+                    return [new CleanupRequestNativeRedisConnection($client), static function () use ($client, $process): void {
+                        $client->close();
+                        @proc_terminate($process);
+                        @proc_close($process);
+                    }];
+                }
+            } catch (\RedisException) {
+                usleep(10000);
+            }
+        }
+
+        @proc_terminate($process);
+        @proc_close($process);
+        self::fail('Isolated Redis did not become ready.');
     }
 
     /**
@@ -338,6 +525,9 @@ final class CleanupRequestFakeRedisConnection
 
     public int $createEvalCount = 0;
 
+    /** @var \Closure|null */
+    public ?\Closure $beforeClaim = null;
+
     public int $now = 0;
 
     public int $writeCount = 0;
@@ -346,13 +536,53 @@ final class CleanupRequestFakeRedisConnection
 
     public function eval(string $script, int $numberOfKeys, mixed ...$arguments): array|int
     {
-        if ($numberOfKeys === 4) {
+        if (str_contains($script, '-- create_cleanup_request')) {
+            $this->assertLuaStructure($script, [
+                "redis.call('GET', KEYS[1])",
+                "redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[5])",
+                "redis.call('HSET', KEYS[4], ARGV[index], ARGV[index + 1])",
+                "redis.call('EXPIRE', KEYS[4], ARGV[5])",
+            ]);
             $this->createEvalCount++;
 
             return $this->evalCreate($numberOfKeys, $arguments);
         }
 
-        if ($numberOfKeys === 5) {
+        if (str_contains($script, '-- claim_cleanup_target')) {
+            $this->assertLuaStructure($script, [
+                "redis.call('GET', KEYS[1])",
+                "redis.call('GET', KEYS[3])",
+                "request_id ~= ARGV[1]",
+                "target.hostname == ARGV[2] and target.instance_id == ARGV[3]",
+                "redis.call('HGET', KEYS[4], ARGV[2])",
+                "redis.call('SET', KEYS[5], ARGV[1], 'EX', ARGV[5], 'NX')",
+            ]);
+
+            return $this->evalClaim($numberOfKeys, $arguments);
+        }
+
+        if (str_contains($script, '-- mark_cleanup_running')) {
+            $this->assertLuaStructure($script, [
+                "redis.call('GET', KEYS[1]) ~= ARGV[1]",
+                "redis.call('GET', KEYS[3])",
+                "redis.call('HGET', KEYS[4], ARGV[2])",
+                "existing.status ~= 'pending' and existing.status ~= 'running'",
+                "redis.call('HSET', KEYS[4], ARGV[2], ARGV[4])",
+            ]);
+
+            return $this->evalRunning($numberOfKeys, $arguments);
+        }
+
+        if (str_contains($script, '-- finish_cleanup_target')) {
+            $this->assertLuaStructure($script, [
+                "redis.call('EXISTS', KEYS[2])",
+                "redis.call('HEXISTS', KEYS[4], ARGV[2])",
+                "redis.call('HSET', KEYS[4], ARGV[2], ARGV[3])",
+                "redis.call('GET', KEYS[1]) == ARGV[1]",
+                "redis.call('DEL', KEYS[1])",
+                "redis.call('SET', KEYS[5], ARGV[1], 'EX', ARGV[4])",
+            ]);
+
             return $this->evalFinish($numberOfKeys, $arguments);
         }
 
@@ -503,6 +733,85 @@ final class CleanupRequestFakeRedisConnection
     }
 
     /** @param list<mixed> $arguments */
+    private function evalClaim(int $numberOfKeys, array $arguments): array|false
+    {
+        if ($numberOfKeys !== 5) {
+            throw new InvalidArgumentException('Claim script key count mismatch.');
+        }
+
+        if ($this->beforeClaim !== null) {
+            $beforeClaim = $this->beforeClaim;
+            $this->beforeClaim = null;
+            $beforeClaim();
+        }
+
+        [$activeKey, $requestKey, $deadlineKey, $resultsKey, $leaseKey] = array_slice($arguments, 0, 5);
+        [$requestId, $hostname, $instanceId, $now, $leaseSeconds] = array_slice($arguments, 5, 5);
+        $activeRequestId = $this->get((string) $activeKey);
+        $deadlineAt = $this->get((string) $deadlineKey);
+        if ($activeRequestId !== (string) $requestId || $deadlineAt === false || (int) $deadlineAt <= (int) $now) {
+            return false;
+        }
+
+        $request = $this->decodedString((string) $requestKey);
+        $matches = false;
+        foreach ((array) ($request['targets'] ?? []) as $target) {
+            if (($target['hostname'] ?? null) === $hostname && ($target['instance_id'] ?? null) === $instanceId) {
+                $matches = true;
+                break;
+            }
+        }
+        if (! $matches) {
+            return false;
+        }
+
+        $result = $this->hget((string) $resultsKey, (string) $hostname);
+        if ($result === false) {
+            return false;
+        }
+        $result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+        if (in_array($result['status'] ?? null, ['succeeded', 'failed', 'timed_out'], true)) {
+            return false;
+        }
+        if (! $this->set((string) $leaseKey, (string) $requestId, 'EX', (int) $leaseSeconds, 'NX')) {
+            return false;
+        }
+
+        return [(string) $requestId, (string) $deadlineAt];
+    }
+
+    /** @param list<mixed> $arguments */
+    private function evalRunning(int $numberOfKeys, array $arguments): int
+    {
+        if ($numberOfKeys !== 4) {
+            throw new InvalidArgumentException('Running script key count mismatch.');
+        }
+
+        [$activeKey, $requestKey, $deadlineKey, $resultsKey] = array_slice($arguments, 0, 4);
+        [$requestId, $hostname, $now, $progressJson] = array_slice($arguments, 4, 4);
+        if ($this->get((string) $activeKey) !== (string) $requestId
+            || $this->get((string) $requestKey) === false) {
+            return 0;
+        }
+        $deadlineAt = $this->get((string) $deadlineKey);
+        if ($deadlineAt === false || (int) $deadlineAt <= (int) $now) {
+            return 0;
+        }
+        $existing = $this->hget((string) $resultsKey, (string) $hostname);
+        if ($existing === false) {
+            return 0;
+        }
+        $existing = json_decode($existing, true, 512, JSON_THROW_ON_ERROR);
+        if (! in_array($existing['status'] ?? null, ['pending', 'running'], true)) {
+            return 0;
+        }
+
+        $this->hset((string) $resultsKey, (string) $hostname, (string) $progressJson);
+
+        return 1;
+    }
+
+    /** @param list<mixed> $arguments */
     private function evalFinish(int $numberOfKeys, array $arguments): int
     {
         if ($numberOfKeys !== 5) {
@@ -533,10 +842,8 @@ final class CleanupRequestFakeRedisConnection
         if ($allTerminal && ($this->get((string) $activeKey) === (string) $requestId)) {
             unset($this->strings[(string) $activeKey], $this->expiresAt[(string) $activeKey]);
             $this->strings[(string) $lastKey] = (string) $requestId;
-            foreach ([$requestKey, $deadlineKey, $resultsKey, $lastKey] as $key) {
-                $this->expiresAt[(string) $key] = $this->now + (int) $retention;
-                $this->ttlSetByEval[(string) $key] = (int) $retention;
-            }
+            $this->expiresAt[(string) $lastKey] = $this->now + (int) $retention;
+            $this->ttlSetByEval[(string) $lastKey] = (int) $retention;
         }
         $this->writeCount++;
 
@@ -557,5 +864,66 @@ final class CleanupRequestFakeRedisConnection
         if (count($values) < $minimum) {
             throw new InvalidArgumentException('Lua argument count mismatch.');
         }
+    }
+
+    /** @param list<string> $fragments */
+    private function assertLuaStructure(string $script, array $fragments): void
+    {
+        foreach ($fragments as $fragment) {
+            if (! str_contains($script, $fragment)) {
+                throw new InvalidArgumentException('Lua script is missing required fragment: ' . $fragment);
+            }
+        }
+    }
+}
+
+/**
+ * 让真实 phpredis 客户端使用 Illuminate Redis 连接的 eval 参数约定。
+ */
+final class CleanupRequestNativeRedisConnection
+{
+    public function __construct(private readonly Redis $client)
+    {
+    }
+
+    public function eval(string $script, int $numberOfKeys, mixed ...$arguments): mixed
+    {
+        return $this->client->eval($script, $arguments, $numberOfKeys);
+    }
+
+    public function get(string $key): string|false
+    {
+        return $this->client->get($key);
+    }
+
+    public function set(string $key, string $value, mixed ...$options): bool
+    {
+        $nativeOptions = [];
+        for ($index = 0; $index < count($options); $index++) {
+            $option = strtoupper((string) $options[$index]);
+            if ($option === 'EX') {
+                $nativeOptions['EX'] = (int) ($options[++$index] ?? 0);
+            } else {
+                $nativeOptions[] = $option;
+            }
+        }
+
+        return (bool) $this->client->set($key, $value, $nativeOptions);
+    }
+
+    public function hget(string $key, string $field): string|false
+    {
+        return $this->client->hGet($key, $field);
+    }
+
+    /** @return array<string, string> */
+    public function hgetall(string $key): array
+    {
+        return $this->client->hGetAll($key);
+    }
+
+    public function hset(string $key, string $field, string $value): int
+    {
+        return $this->client->hSet($key, $field, $value);
     }
 }
