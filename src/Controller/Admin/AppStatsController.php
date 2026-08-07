@@ -31,6 +31,9 @@ final class AppStatsController extends Controller
             $content->body(view('easy-tool::app_stats.content', [
                 'mode' => 'admin',
                 'dataUrl' => route('admin_monitor.app_stats.data'),
+                'cleanupUrl' => route('admin_monitor.app_stats.task_tmp_cleanup'),
+                'csrfToken' => csrf_token(),
+                'canCleanup' => (bool) Admin::user()?->can('admin_monitor.app_stats.task_tmp_cleanup'),
                 'initialData' => null,
                 'showRedisMemory' => true,
                 'autoRefresh' => true,

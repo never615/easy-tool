@@ -8,6 +8,7 @@
     .app-stats__toolbar h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
     .app-stats__toolbar p { margin: 0; color: #666; }
     .app-stats__toolbar-actions { display: flex; align-items: center; gap: 12px; }
+    .app-stats__danger-action { white-space: nowrap; }
     .app-stats__auto-refresh { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #555; cursor: pointer; font-weight: 400; }
     .app-stats__auto-refresh input { margin: 0; }
     .app-stats__toolbar button:focus-visible,
@@ -62,6 +63,11 @@
     .app-stats__pod-identity { border-left-width: 4px !important; }
     .app-stats__pod-identity details { margin-top: 7px; }
     .app-stats__pod-identity summary { color: #3c8dbc; cursor: pointer; font-size: 12px; }
+    .app-stats__task-tmp { min-width: 250px; }
+    .app-stats__task-tmp summary { color: #3c8dbc; cursor: pointer; font-size: 12px; }
+    .app-stats__task-tmp p { margin: 4px 0 0; overflow-wrap: anywhere; }
+    .app-stats__task-tmp-action { white-space: nowrap; }
+    .app-stats__cleanup-state { margin: -4px 0 12px; color: #666; }
     .app-stats__table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     /* standalone 兼容页不保证加载 Bootstrap，因此表格基础边框不能只依赖管理端主题。 */
     .app-stats__table-wrap table { width: 100%; min-width: 920px; margin-bottom: 0; border-collapse: collapse; }
@@ -85,6 +91,12 @@
     .app-stats .status-waiting,
     .app-stats .status-disabled,
     .app-stats .status-unavailable { border-left-color: #777 !important; color: #555; }
+    .app-stats .status-running { border-left-color: #3c8dbc !important; color: #21617f; }
+    .app-stats .status-pending,
+    .app-stats .status-partial_failed { border-left-color: #f39c12 !important; color: #8a5800; }
+    .app-stats .status-succeeded { border-left-color: #00a65a !important; color: #19733e; }
+    .app-stats .status-failed,
+    .app-stats .status-timed_out { border-left-color: #dd4b39 !important; color: #9d2618; }
 
     @media (max-width: 767px) {
         .app-stats__toolbar { align-items: stretch; flex-direction: column; }
@@ -95,7 +107,13 @@
 </style>
 
 @if($mode === 'admin')
-    <section class="app-stats" data-mode="admin" data-url="{{ $dataUrl ?? '' }}">
+    <section
+        class="app-stats"
+        data-mode="admin"
+        data-url="{{ $dataUrl ?? '' }}"
+        data-cleanup-url="{{ $cleanupUrl ?? '' }}"
+        data-csrf-token="{{ $csrfToken ?? '' }}"
+    >
         <header class="app-stats__toolbar">
             <div>
                 <h2>全集群运行状态</h2>
@@ -112,11 +130,23 @@
                         <span>自动刷新</span>
                     </label>
                     <button type="button" id="app-stats-refresh" class="btn btn-primary">立即刷新</button>
+                    @if($canCleanup ?? false)
+                        <button
+                            type="button"
+                            id="app-stats-task-tmp-cleanup-all"
+                            class="btn btn-warning app-stats__danger-action"
+                            data-task-tmp-cleanup
+                            data-scope="all"
+                        >清理全部在线 Pod</button>
+                    @endif
                 </div>
             @endif
         </header>
 
         <div id="app-stats-alert" class="alert alert-warning" hidden role="status" aria-live="polite"></div>
+        @if($canCleanup ?? false)
+            <p id="app-stats-task-tmp-cleanup-state" class="app-stats__cleanup-state" aria-live="polite">暂无 task 临时文件清理请求</p>
+        @endif
         <div id="app-stats-summary" class="app-stats__cards" aria-label="集群摘要"></div>
 
         <div class="app-stats__table-wrap">
@@ -132,6 +162,10 @@
                     <th scope="col">Tasking</th>
                     <th scope="col">连接数</th>
                     <th scope="col">启动时间</th>
+                    <th scope="col">Task 临时文件</th>
+                    @if($canCleanup ?? false)
+                        <th scope="col">操作</th>
+                    @endif
                 </tr>
                 </thead>
                 <tbody id="app-stats-pods"></tbody>
@@ -157,16 +191,23 @@
             }
 
             const dataUrl = root.dataset.url;
+            const cleanupUrl = root.dataset.cleanupUrl;
+            const csrfToken = root.dataset.csrfToken;
+            const canCleanup = @json((bool) ($canCleanup ?? false));
             const showRedisMemory = @json((bool) $showRedisMemory);
             const refreshButton = document.getElementById('app-stats-refresh');
             const autoRefreshToggle = document.getElementById('app-stats-auto-refresh');
             const refreshState = document.getElementById('app-stats-refresh-state');
             const alertBox = document.getElementById('app-stats-alert');
+            const cleanupState = document.getElementById('app-stats-task-tmp-cleanup-state');
             const summaryRoot = document.getElementById('app-stats-summary');
             const podsRoot = document.getElementById('app-stats-pods');
             const sectionsRoot = document.getElementById('app-stats-sections');
             let timer = null;
             let controller = null;
+            let cleanupController = null;
+            let cleanupInFlight = false;
+            let latestCleanup = null;
             let lastSuccessAt = null;
             let destroyed = false;
             let refreshMilliseconds = 5000;
@@ -190,7 +231,8 @@
             const statusKey = (status) => {
                 const allowed = [
                     'normal', 'online', 'warning', 'delayed', 'error', 'expired',
-                    'waiting', 'disabled', 'unavailable'
+                    'waiting', 'disabled', 'unavailable', 'pending', 'running', 'succeeded',
+                    'failed', 'timed_out', 'partial_failed'
                 ];
 
                 return allowed.includes(status) ? status : 'unavailable';
@@ -205,7 +247,13 @@
                 expired: '过期',
                 waiting: '等待采样',
                 disabled: '未启用',
-                unavailable: '不可用'
+                unavailable: '不可用',
+                pending: '等待 Pod 执行',
+                running: '正在清理',
+                succeeded: '已完成',
+                failed: '清理失败',
+                timed_out: '清理超时',
+                partial_failed: '部分失败'
             }[statusKey(status)]);
 
             const postgresSamplingDelayInfo = '“采样延迟”表示监控快照未在预期时间内刷新，仅代表当前展示的数据可能不是最新，不表示 PostgreSQL 查询、读写或业务接口出现延迟。';
@@ -486,11 +534,88 @@
                 summaryRoot.replaceChildren(...cards);
             };
 
+            const taskTmpStatusText = (taskTmpValue) => {
+                const taskTmp = taskTmpValue || {};
+                const cleanup = taskTmp.cleanup || {};
+                const status = statusLabel(taskTmp.status);
+                const cleanupStatus = cleanup.status ? '；最近清理：' + statusLabel(cleanup.status) : '';
+
+                return status + cleanupStatus;
+            };
+
+            const taskTmpCell = (taskTmpValue) => {
+                const taskTmp = taskTmpValue || {};
+                const filesystem = taskTmp.filesystem || {};
+                const inventory = taskTmp.inventory || {};
+                const cleanup = taskTmp.cleanup || {};
+                const safeStatus = statusKey(taskTmp.status);
+                const cell = document.createElement('td');
+                cell.className = 'app-stats__task-tmp status-' + safeStatus;
+                cell.append(text('strong', taskTmpStatusText(taskTmp)));
+
+                if (safeStatus !== 'normal') {
+                    cell.append(text('p', '该 Pod 的 task 临时文件快照暂不可用于手动清理。'));
+
+                    return cell;
+                }
+
+                const details = document.createElement('details');
+                details.append(text('summary', '查看目录占用与积压'));
+                const detail = document.createElement('div');
+                detail.append(text('p', '路径：' + (taskTmp.path || '未知'), 'app-stats__data'));
+                detail.append(text(
+                    'p',
+                    '使用：' + bytes(filesystem.used_bytes) + ' / ' + bytes(filesystem.total_bytes)
+                        + (finiteNumber(filesystem.used_percent)
+                            ? '（' + Number(filesystem.used_percent).toFixed(2) + '%）'
+                            : '')
+                ));
+                detail.append(text(
+                    'p',
+                    'Task 文件：' + (finiteNumber(inventory.matching_files) ? Number(inventory.matching_files) : '未知')
+                        + '；过期（超过 60 秒）：'
+                        + (finiteNumber(inventory.stale_files) ? Number(inventory.stale_files) : '未知')
+                ));
+                detail.append(text('p', '最早文件时间：' + formatTimestamp(inventory.oldest_mtime)));
+                detail.append(text(
+                    'p',
+                    '快照年龄：' + (finiteNumber(taskTmp.sample_age_seconds)
+                        ? Number(taskTmp.sample_age_seconds) + ' 秒'
+                        : '未知')
+                        + '；自动清理：' + (taskTmp.auto_cleanup_enabled ? '已开启' : '已关闭')
+                ));
+                if (cleanup.status) {
+                    detail.append(text(
+                        'p',
+                        '最近结果：' + statusLabel(cleanup.status)
+                            + '；删除 ' + (finiteNumber(cleanup.deleted) ? Number(cleanup.deleted) : 0)
+                            + '；失败 ' + (finiteNumber(cleanup.failed) ? Number(cleanup.failed) : 0)
+                    ));
+                }
+                details.append(detail);
+                cell.append(details);
+
+                return cell;
+            };
+
+            const isCleanupEligible = (podValue) => {
+                const pod = podValue || {};
+                const taskTmp = pod.task_tmp || {};
+
+                return canCleanup
+                    && pod.status === 'online'
+                    && taskTmp.status === 'normal'
+                    && taskTmp.process_enabled === true
+                    && typeof pod.hostname === 'string' && pod.hostname !== ''
+                    && typeof pod.instance_id === 'string' && pod.instance_id !== ''
+                    && taskTmp.instance_id === pod.instance_id;
+            };
+
             const renderPods = (pods) => {
                 if (!Array.isArray(pods) || pods.length === 0) {
                     const row = document.createElement('tr');
                     const cell = text('td', '暂无在线或延迟 Pod 数据', 'app-stats__empty');
-                    cell.colSpan = 8;
+                    cell.colSpan = canCleanup ? 10 : 9;
                     row.append(cell);
                     podsRoot.replaceChildren(row);
                     return;
@@ -536,6 +661,23 @@
                     row.append(text('td', finiteNumber(metrics.tasking_num) ? Number(metrics.tasking_num) : '未知', 'app-stats__data'));
                     row.append(text('td', finiteNumber(metrics.connection_num) ? Number(metrics.connection_num) : '未知', 'app-stats__data'));
                     row.append(text('td', formatTimestamp(metrics.start_time)));
+                    row.append(taskTmpCell(pod.task_tmp));
+                    if (canCleanup) {
+                        const action = document.createElement('td');
+                        action.className = 'app-stats__task-tmp-action';
+                        if (isCleanupEligible(pod)) {
+                            const button = text('button', '清理此 Pod', 'btn btn-xs btn-warning');
+                            button.type = 'button';
+                            button.dataset.taskTmpCleanup = '1';
+                            button.dataset.scope = 'pod';
+                            button.dataset.hostname = pod.hostname;
+                            button.dataset.instanceId = pod.instance_id;
+                            action.append(button);
+                        } else {
+                            action.append(text('span', '暂不可清理'));
+                        }
+                        row.append(action);
+                    }
 
                     return row;
                 });
@@ -607,10 +749,56 @@
                 sectionsRoot.replaceChildren(...cards);
             };
 
+            const cleanupMessageLabel = (message) => ({
+                invalid_scope: '清理范围无效。',
+                invalid_target: 'Pod 目标参数无效。',
+                target_unavailable: '目标 Pod 已更新、离线或 task 临时文件快照不可用，请刷新后重试。',
+                no_eligible_targets: '当前没有可执行清理的在线 Pod。',
+                pod_state_unavailable: 'Pod 状态暂不可用，未创建清理请求。',
+                cleanup_request_unavailable: '清理请求暂不可用，请稍后重试。',
+                unauthenticated: '当前登录状态不可用。'
+            }[message] || '清理请求失败，请刷新后重试。');
+
+            const renderCleanupState = (cleanupValue) => {
+                if (!canCleanup || !cleanupState) {
+                    return;
+                }
+
+                const cleanup = cleanupValue || null;
+                if (!cleanup) {
+                    cleanupState.textContent = '暂无 task 临时文件清理请求。';
+                    cleanupState.className = 'app-stats__cleanup-state';
+
+                    return;
+                }
+
+                const status = statusKey(cleanup.status);
+                const targets = Array.isArray(cleanup.targets) ? cleanup.targets : [];
+                const completed = targets.filter((target) => ['succeeded', 'failed', 'timed_out'].includes(target.status)).length;
+                cleanupState.textContent = 'Task 临时文件清理：' + statusLabel(status)
+                    + '；目标 ' + targets.length + ' 个，已结束 ' + completed + ' 个。';
+                cleanupState.className = 'app-stats__cleanup-state status-' + status;
+            };
+
+            const syncCleanupButtons = (cleanupValue) => {
+                if (!canCleanup) {
+                    return;
+                }
+
+                const cleanup = cleanupValue || {};
+                const active = ['pending', 'running'].includes(cleanup.status) || cleanupInFlight;
+                root.querySelectorAll('[data-task-tmp-cleanup]').forEach((button) => {
+                    button.disabled = active;
+                });
+            };
+
             const render = (payload) => {
                 renderSummary(payload.cluster, payload.summary, payload.sections);
                 renderPods(payload.pods);
                 renderSections(payload.sections);
+                latestCleanup = payload.task_tmp_cleanup || null;
+                renderCleanupState(latestCleanup);
+                syncCleanupButtons(latestCleanup);
                 lastSuccessAt = new Date();
                 refreshState.textContent = '最近刷新：' + lastSuccessAt.toLocaleTimeString()
                     + (autoRefreshEnabled ? '；自动刷新已开启' : '；自动刷新已关闭');
@@ -704,7 +892,86 @@
                 }
             };
 
+            const requestCleanup = async (requestPayload) => {
+                if (!cleanupUrl || !csrfToken || cleanupInFlight || destroyed) {
+                    return;
+                }
+
+                cleanupInFlight = true;
+                syncCleanupButtons(latestCleanup);
+                cleanupState.textContent = '正在创建 task 临时文件清理请求。';
+                const requestController = new AbortController();
+                cleanupController = requestController;
+
+                try {
+                    const response = await fetch(cleanupUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify(requestPayload),
+                        signal: requestController.signal
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.accepted) {
+                        throw new Error(result && result.message ? result.message : 'cleanup_request_unavailable');
+                    }
+
+                    latestCleanup = {
+                        status: 'pending',
+                        targets: [],
+                        request_id: result.request_id
+                    };
+                    renderCleanupState(latestCleanup);
+                    await refresh();
+                } catch (error) {
+                    if (error.name !== 'AbortError' && !destroyed) {
+                        const message = cleanupMessageLabel(error.message);
+                        alertBox.className = 'alert alert-warning';
+                        alertBox.textContent = message;
+                        alertBox.hidden = false;
+                        cleanupState.textContent = message;
+                    }
+                } finally {
+                    if (requestController === cleanupController) {
+                        cleanupController = null;
+                    }
+                    cleanupInFlight = false;
+                    syncCleanupButtons(latestCleanup);
+                }
+            };
+
             const onRefreshClick = () => refresh();
+            const onCleanupClick = (event) => {
+                if (!(event.target instanceof Element)) {
+                    return;
+                }
+
+                const button = event.target.closest('[data-task-tmp-cleanup]');
+                if (!button || !root.contains(button) || button.disabled) {
+                    return;
+                }
+
+                const scope = button.dataset.scope;
+                const payload = {scope: scope};
+                const confirmation = scope === 'all'
+                    ? '确认向全部在线且 task 临时文件状态正常的 Pod 发起清理？仅删除超过 60 秒且未被实时任务读取的临时文件。'
+                    : '确认清理此 Pod 中超过 60 秒且未被实时任务读取的 task 临时文件？';
+                if (!window.confirm(confirmation)) {
+                    return;
+                }
+
+                if (scope === 'pod') {
+                    payload.hostname = button.dataset.hostname;
+                    payload.instance_id = button.dataset.instanceId;
+                }
+
+                requestCleanup(payload);
+            };
             const onAutoRefreshChange = () => {
                 autoRefreshEnabled = Boolean(autoRefreshToggle && autoRefreshToggle.checked);
                 setPollingInterval(refreshMilliseconds / 1000);
@@ -747,12 +1014,17 @@
                         controller.abort();
                         controller = null;
                     }
+                    if (cleanupController) {
+                        cleanupController.abort();
+                        cleanupController = null;
+                    }
                     if (refreshButton) {
                         refreshButton.removeEventListener('click', onRefreshClick);
                     }
                     if (autoRefreshToggle) {
                         autoRefreshToggle.removeEventListener('change', onAutoRefreshChange);
                     }
+                    root.removeEventListener('click', onCleanupClick);
                     document.removeEventListener('visibilitychange', onVisibilityChange);
                     document.removeEventListener('pjax:beforeReplace', onPjaxBeforeReplace);
                     if (window.easyToolAppStats === api) {
@@ -768,6 +1040,9 @@
             if (autoRefreshToggle) {
                 autoRefreshToggle.checked = false;
                 autoRefreshToggle.addEventListener('change', onAutoRefreshChange);
+            }
+            if (canCleanup) {
+                root.addEventListener('click', onCleanupClick);
             }
             document.addEventListener('visibilitychange', onVisibilityChange);
             document.addEventListener('pjax:beforeReplace', onPjaxBeforeReplace, {once: true});
