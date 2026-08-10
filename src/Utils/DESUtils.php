@@ -98,8 +98,13 @@ class DESUtils
      */
     private function unPkcsPadding($str)
     {
-        $pad = ord($str{strlen($str) - 1});
-        if ($pad > strlen($str)) {
+        $length = strlen($str);
+        if ($length === 0) {
+            return '';
+        }
+
+        $pad = ord($str[$length - 1]);
+        if ($pad > $length) {
             return false;
         }
 
