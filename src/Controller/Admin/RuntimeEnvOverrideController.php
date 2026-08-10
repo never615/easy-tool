@@ -100,7 +100,7 @@ class RuntimeEnvOverrideController extends AdminCommonController
         $form->switch('is_enabled', '启用')->default(1);
         $form->display('requires_reload', '需重启')->with(function ($value) {
             return $value ? '是' : '否';
-        })->help('运行期 Env 覆盖固定需要发布并重启后被 LaravelS/Horizon 新进程读取。');
+        })->help('启动配置覆盖需要发布启动配置后，由 LaravelS/Horizon 新进程读取。');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
 
@@ -137,8 +137,8 @@ class RuntimeEnvOverrideController extends AdminCommonController
         return '<div class="alert alert-warning" style="margin:10px 0 12px;">'
             . '<strong>提示：</strong>这里不是 .env 文件编辑器，只会写入配置中心运行期 Env 覆盖。'
             . '保存后还需要到 '
-            . '<a href="' . $this->escape($publishRestartUrl) . '">发布与重启</a>'
-            . ' 页面执行发布并重启，LaravelS/Horizon 新进程才会读取最新值。'
+            . '<a href="' . $this->escape($publishRestartUrl) . '">发布启动配置</a>'
+            . ' 页面执行发布；重启功能开启时会同步调度新进程生效。'
             . '</div>';
     }
 

@@ -19,7 +19,7 @@ class PublishNewConfigCommand extends Command
         {--env-file= : 运行期 shell env 文件路径，默认 storage/framework/new_configs.env}
         {--json : 输出 JSON}';
 
-    protected $description = 'Export runtime config snapshots and refresh Laravel config cache';
+    protected $description = 'Publish generated startup config and optionally schedule service restart';
 
     /**
      * 处理「handle」相关的内部协作步骤。
@@ -46,28 +46,13 @@ class PublishNewConfigCommand extends Command
         }
 
         $write = $result['write'] ?? [];
-        $subjectConfig = $result['subject_config'] ?? [];
         $configCache = $result['config_cache'] ?? null;
         $generation = $result['generation'] ?? null;
         $restart = $result['restart'] ?? null;
 
-        $this->info('new_configs exported: values=' . count($result['values'] ?? []));
+        $this->info('启动配置已发布: values=' . count($result['values'] ?? []));
         $this->line('runtime env changed: ' . (($write['changed'] ?? false) ? 'yes' : 'no'));
         $this->line('runtime env file: ' . ($write['env_path'] ?? 'n/a'));
-        $this->line('subject_configs exported: subjects=' . (int)($subjectConfig['counts']['subjects'] ?? 0)
-            . ', values=' . (int)($subjectConfig['counts']['values'] ?? 0));
-        $this->line('subject live values excluded: ' . (int)($subjectConfig['counts']['excluded_live_values'] ?? 0));
-        $this->line('subject config values changed: ' . (($subjectConfig['values_file']['changed'] ?? false) ? 'yes' : 'no'));
-        $this->line('subject config values file: ' . ($subjectConfig['values_file']['values_path'] ?? 'n/a'));
-        foreach ((array)($subjectConfig['snapshot_changed_keys'] ?? []) as $changedKey) {
-            $this->line('subject snapshot changed key: '
-                . (int)($changedKey['subject_id'] ?? 0) . ':'
-                . (string)($changedKey['key'] ?? '') . ':'
-                . (string)($changedKey['change'] ?? '') . ':'
-                . (string)($changedKey['apply_mode'] ?? ''));
-        }
-        $this->line('subject config requires reload: ' . (($subjectConfig['requires_reload'] ?? false) ? 'yes' : 'no'));
-
         if (is_array($configCache)) {
             $this->line('config cache: ' . (($configCache['skipped'] ?? false) ? 'skipped' : 'refreshed'));
         }
@@ -77,6 +62,9 @@ class PublishNewConfigCommand extends Command
         }
 
         if (is_array($restart)) {
+            if (($restart['reason'] ?? null) === 'new_config.restart.enabled is false') {
+                $this->warn('重启功能已关闭；未递增配置世代，也未调度服务重启。');
+            }
             $this->line('service restart: ' . (($restart['skipped'] ?? false) ? 'skipped' : 'scheduled'));
             if (isset($restart['strategy'])) {
                 $this->line('restart strategy: ' . $restart['strategy']);

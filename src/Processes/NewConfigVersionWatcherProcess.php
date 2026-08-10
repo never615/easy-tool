@@ -23,6 +23,12 @@ class NewConfigVersionWatcherProcess implements CustomProcessInterface
     public static function callback(Server $swoole, Process $process)
     {
         self::$running = true;
+        if (!(bool)config('new_config.restart.enabled', true)) {
+            Log::info('[NewConfigVersionWatcher] disabled by new_config.restart.enabled');
+
+            return;
+        }
+
         $pollSeconds = max(1, (int)config('new_config.watcher.poll_seconds', 10));
 
         try {
@@ -47,6 +53,11 @@ class NewConfigVersionWatcherProcess implements CustomProcessInterface
             }
 
             try {
+                if (!(bool)config('new_config.restart.enabled', true)) {
+                    Log::info('[NewConfigVersionWatcher] stopped because restart is disabled');
+                    break;
+                }
+
                 $watcher = app(NewConfigVersionWatcher::class);
                 if ($lastSeenGeneration === null) {
                     $lastSeenGeneration = $watcher->currentGeneration();
@@ -62,16 +73,28 @@ class NewConfigVersionWatcherProcess implements CustomProcessInterface
                     continue;
                 }
 
-                Log::info('[NewConfigVersionWatcher] config generation changed, restarting current LaravelS instance', $state);
-                $result = app(LaravelSRestartService::class)->restartCurrentLaravelSInstance();
-                Log::info('[NewConfigVersionWatcher] restart scheduled', $result);
-                self::$running = false;
+                if (self::restartIfChanged($state)) {
+                    self::$running = false;
+                }
             } catch (\Throwable $exception) {
                 Log::warning('[NewConfigVersionWatcher] watch failed: ' . $exception->getMessage());
             }
         }
 
         Log::info('[NewConfigVersionWatcher] stopped');
+    }
+
+    public static function restartIfChanged(array $state, ?LaravelSRestartService $restartService = null): bool
+    {
+        if (!($state['changed'] ?? false) || !(bool)config('new_config.restart.enabled', true)) {
+            return false;
+        }
+
+        Log::info('[NewConfigVersionWatcher] config generation changed, restarting current LaravelS instance', $state);
+        $result = ($restartService ?? app(LaravelSRestartService::class))->restartCurrentLaravelSInstance();
+        Log::info('[NewConfigVersionWatcher] restart scheduled', $result);
+
+        return !($result['skipped'] ?? false);
     }
 
     /**

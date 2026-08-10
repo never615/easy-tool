@@ -21,8 +21,8 @@ class NewConfigPublishController extends Controller
         $snapshot = $effectiveEnv->snapshot();
 
         return Admin::content(function (Content $content) use ($snapshot) {
-            $content->header('发布与重启');
-            $content->description('配置中心 / 发布与重启');
+            $content->header('发布启动配置');
+            $content->description('配置中心 / 发布启动配置');
             $content->body($this->renderHtml($snapshot));
         });
     }
@@ -36,6 +36,9 @@ class NewConfigPublishController extends Controller
         $summary = $this->renderSummary($snapshot);
         $errors = $this->renderErrors($snapshot['errors'] ?? []);
         $rows = $this->renderRows($snapshot['rows'] ?? []);
+        $restartDescription = (bool)config('new_config.restart.enabled', true)
+            ? '发布后会刷新 Laravel config cache，并调度 LaravelS/Horizon 重启。'
+            : '重启功能已关闭；仍会发布启动配置并刷新 Laravel config cache，不会递增配置世代或调度重启。';
 
         return <<<HTML
 <style>
@@ -57,8 +60,8 @@ class NewConfigPublishController extends Controller
     <div class="new-config-publish-actions">
         {$reloadButton}
         <p class="new-config-publish-help">
-            点击后会发布配置中心 env、强制刷新 Laravel config cache，并广播配置版本触发 LaravelS 实例重启；同时会请求 Horizon master 自终止后由进程管理器拉起。<br>
-            该操作服务端 30 秒内只允许执行一次，避免连续点击导致重启重入。保存普通配置不会自动重启，需要所有新进程立即生效时再执行这里的发布与重启。
+            此处仅发布配置中心生成的启动配置，不会修改真实 .env。{$restartDescription}<br>
+            普通业务配置保存后通过运行缓存生效，不需要在此发布。
         </p>
     </div>
 </div>
@@ -95,11 +98,14 @@ HTML;
     {
         $url = route('new_configs.reload');
         $csrf = csrf_field();
+        $confirm = (bool)config('new_config.restart.enabled', true)
+            ? '确认发布启动配置、刷新 config cache，并广播配置版本触发各实例重启？'
+            : '确认发布启动配置并刷新 config cache？重启功能已关闭，本次不会调度重启。';
 
         return <<<HTML
-<form method="POST" action="{$this->escape($url)}" style="display:inline-block;" onsubmit="if (!confirm('确认发布配置中心 env、刷新 config cache，并广播配置版本触发各实例重启？')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> 发布中...'; } return true;">
+<form method="POST" action="{$this->escape($url)}" style="display:inline-block;" onsubmit="if (!confirm('{$this->escape($confirm)}')) { return false; } var btn=this.querySelector('button[type=submit]'); if (btn) { btn.disabled=true; btn.innerHTML='<i class=&quot;fa fa-refresh&quot;></i> 发布中...'; } return true;">
     {$csrf}
-    <button type="submit" class="btn btn-warning"><i class="fa fa-refresh"></i> 发布并重启</button>
+    <button type="submit" class="btn btn-warning"><i class="fa fa-refresh"></i> 发布启动配置</button>
 </form>
 HTML;
     }

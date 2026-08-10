@@ -24,6 +24,10 @@ class LaravelSRestartService
      */
     public function restart(): array
     {
+        if (!(bool)config('new_config.restart.enabled', true)) {
+            return $this->disabledResult(true);
+        }
+
         $strategy = (string)config('new_config.restart.strategy', 'supervisor_autorestart');
         if ($strategy === 'disabled') {
             return [
@@ -57,6 +61,10 @@ class LaravelSRestartService
      */
     public function restartCurrentLaravelSInstance(): array
     {
+        if (!(bool)config('new_config.restart.enabled', true)) {
+            return $this->disabledResult(false);
+        }
+
         $strategy = (string)config('new_config.watcher.restart_strategy', 'supervisor_autorestart');
         if ($strategy === 'disabled') {
             return [
@@ -293,6 +301,10 @@ SH;
      */
     private function requestHorizonTerminate(): array
     {
+        if (!(bool)config('new_config.restart.enabled', true)) {
+            return $this->disabledResult(false) + ['masters' => []];
+        }
+
         if (!(bool)config('new_config.restart.terminate_horizon', true)) {
             return [
                 'skipped' => true,
@@ -302,5 +314,23 @@ SH;
         }
 
         return ($this->horizonTerminateService ?? app(HorizonTerminateService::class))->requestTerminate();
+    }
+
+    private function disabledResult(bool $includeHorizon): array
+    {
+        $result = [
+            'skipped' => true,
+            'reason' => 'new_config.restart.enabled is false',
+        ];
+
+        if ($includeHorizon) {
+            $result['horizon'] = [
+                'skipped' => true,
+                'reason' => 'new_config.restart.enabled is false',
+                'masters' => [],
+            ];
+        }
+
+        return $result;
     }
 }

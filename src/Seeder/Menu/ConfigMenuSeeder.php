@@ -59,7 +59,7 @@ class ConfigMenuSeeder extends Seeder
             "new_configs.runtime_env_overrides.index", $configCenterMenu->id, 75, "运行期 Env 覆盖", "fa-terminal");
 
         $this->updateOrCreate(
-            "new_configs.publish_restart", $configCenterMenu->id, 80, "发布与重启", "fa-refresh");
+            "new_configs.publish_restart", $configCenterMenu->id, 80, "发布启动配置", "fa-refresh");
 
         $traditionalConfigMenu = $this->updateOrCreate(
             "traditional_configs", $configCenterMenu->id, 90, "传统配置", "fa-archive");

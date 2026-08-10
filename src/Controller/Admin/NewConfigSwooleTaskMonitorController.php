@@ -39,7 +39,7 @@ class NewConfigSwooleTaskMonitorController extends Controller
             'trace_sample_rate',
         ]));
 
-        admin_toastr('Swoole Task 监控配置已保存，运行期 env 已发布；需要进程生效时请执行发布并重启。');
+        admin_toastr('Swoole Task 监控启动配置已保存并发布；如需新进程生效，请执行“发布启动配置”。');
 
         return redirect()->route('new_configs.swoole_task_monitor');
     }

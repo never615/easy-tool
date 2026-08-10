@@ -28,6 +28,14 @@ class HorizonTerminateService
      */
     public function requestTerminate(): array
     {
+        if (!(bool)config('new_config.restart.enabled', true)) {
+            return [
+                'skipped' => true,
+                'reason' => 'new_config.restart.enabled is false',
+                'masters' => [],
+            ];
+        }
+
         if (!class_exists(MasterSupervisor::class) || !class_exists(Terminate::class)) {
             return [
                 'skipped' => true,

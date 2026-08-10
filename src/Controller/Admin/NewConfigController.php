@@ -76,7 +76,7 @@ class NewConfigController extends AdminCommonController
         });
 
         $grid->tools(function ($tools) {
-            $tools->append('<a class="btn btn-sm btn-warning" href="' . route('new_configs.publish_restart') . '"><i class="fa fa-refresh"></i> 发布与重启</a>');
+            $tools->append('<a class="btn btn-sm btn-warning" href="' . route('new_configs.publish_restart') . '"><i class="fa fa-refresh"></i> 发布启动配置</a>');
         });
     }
 
@@ -94,7 +94,7 @@ class NewConfigController extends AdminCommonController
     public function reload(NewConfigPublisher $publisher)
     {
         if (!Cache::add(self::RELOAD_THROTTLE_KEY, time(), self::RELOAD_THROTTLE_SECONDS)) {
-            admin_toastr('重启操作过于频繁，请 30 秒后再试。', 'warning');
+            admin_toastr('发布操作过于频繁，请 30 秒后再试。', 'warning');
 
             return redirect()->route('new_configs.publish_restart');
         }
@@ -104,8 +104,10 @@ class NewConfigController extends AdminCommonController
 
         if ($restart === null) {
             admin_toastr('配置已发布；当前没有需要重启的已发布配置项，服务广播未执行。', 'warning');
+        } elseif (is_array($restart) && ($restart['reason'] ?? null) === 'new_config.restart.enabled is false') {
+            admin_toastr('启动配置已发布；重启功能已关闭。', 'warning');
         } elseif (is_array($restart) && ($restart['skipped'] ?? false)) {
-            admin_toastr('配置已发布，但服务重启跳过：' . ($restart['reason'] ?? 'unknown'), 'warning');
+            admin_toastr('启动配置已发布，但服务重启跳过：' . ($restart['reason'] ?? 'unknown'), 'warning');
         } else {
             $generation = $result['generation']['generation'] ?? null;
             $horizon = $restart['horizon'] ?? null;
@@ -113,7 +115,7 @@ class NewConfigController extends AdminCommonController
                 ? '，并已请求 Horizon 重启'
                 : '';
             $generationMessage = $generation ? "，配置版本 {$generation} 已广播" : '';
-            admin_toastr('配置已发布，并已触发服务重启' . $horizonMessage . $generationMessage . '。');
+            admin_toastr('启动配置已发布，重启请求已调度' . $horizonMessage . $generationMessage . '。');
         }
 
         return redirect()->route('new_configs.publish_restart');
@@ -140,7 +142,7 @@ class NewConfigController extends AdminCommonController
         $form->display('requires_reload', '需重启')->with(function ($value) {
             return $value ? '是' : '否';
         })
-            ->help('开启时表示该配置需要服务重启后才会被所有新进程读取。保存配置只发布运行期 env 并刷新 config cache，不会自动重启；需要生效时请到“发布与重启”页面执行。');
+            ->help('开启时表示该启动配置需要服务重启后才会被所有新进程读取。保存后在下次计划内重启生效；本页不会修改真实 .env。');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
         $form->display('key', 'Key');

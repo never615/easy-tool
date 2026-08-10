@@ -2,10 +2,8 @@
 
 namespace Mallto\Tool\Domain\NewConfig;
 
-use Illuminate\Support\Facades\Schema;
-use Mallto\Admin\Data\SubjectConfig;
-use Mallto\Admin\Domain\SubjectConfig\SubjectConfigApplyMode;
 use Mallto\Admin\Domain\SubjectConfig\SubjectConfigDefinitions;
+
 
 /**
  * SubjectConfigPublisher：配置中心发布与运行时生效链路的一环。
@@ -36,7 +34,7 @@ class SubjectConfigPublisher
             'values' => $values,
             'values_file' => $writeResult,
             'snapshot_changed_keys' => $snapshotChangedKeys,
-            'requires_reload' => $this->requiresReload($snapshotChangedKeys),
+            'requires_reload' => false,
             'counts' => [
                 'subjects' => count($values),
                 'values' => array_sum(array_map('count', $values)),
@@ -54,56 +52,13 @@ class SubjectConfigPublisher
     }
 
     /**
-     * 生成快照值，并统计因实时生效模式而排除的配置数量。
+     * Subject 业务配置统一通过运行缓存生效，生成快照始终为空。
      */
     private function buildValues(): array
     {
-        if (!Schema::hasTable('subject_configs')) {
-            return [
-                'values' => [],
-                'excluded_live_values' => 0,
-            ];
-        }
-
-        $query = SubjectConfig::query()
-            ->orderBy('subject_id')
-            ->orderBy('key')
-            ->orderBy('id');
-
-        if (Schema::hasColumn('subject_configs', 'deleted_at')) {
-            $query->whereNull('deleted_at');
-        }
-
-        $values = [];
-        $excludedLiveValues = 0;
-        foreach ($query->get(['id', 'subject_id', 'key', 'value']) as $row) {
-            $subjectId = (int)$row->subject_id;
-            $key = trim((string)$row->key);
-            if ($subjectId <= 0 || $key === '') {
-                continue;
-            }
-
-            if (SubjectConfigDefinitions::isLiveCached($key)) {
-                $excludedLiveValues++;
-                continue;
-            }
-
-            if (array_key_exists($key, $values[$subjectId] ?? [])) {
-                continue;
-            }
-
-            $values[$subjectId][$key] = $row->value === null ? null : (string)$row->value;
-        }
-
-        foreach ($values as &$configs) {
-            ksort($configs);
-        }
-        unset($configs);
-        ksort($values);
-
         return [
-            'values' => $values,
-            'excluded_live_values' => $excludedLiveValues,
+            'values' => [],
+            'excluded_live_values' => 0,
         ];
     }
 
@@ -169,20 +124,6 @@ class SubjectConfigPublisher
         }
 
         return $flattened;
-    }
-
-    /**
-     * 只有快照重载模式的文件 diff 才要求刷新配置缓存并重载进程。
-     */
-    private function requiresReload(array $snapshotChangedKeys): bool
-    {
-        foreach ($snapshotChangedKeys as $changedKey) {
-            if (($changedKey['apply_mode'] ?? null) === SubjectConfigApplyMode::SNAPSHOT_RELOAD) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

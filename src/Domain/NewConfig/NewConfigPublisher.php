@@ -60,7 +60,17 @@ class NewConfigPublisher
 
             $restartResult = null;
             $generationResult = null;
-            if ($restart && ($requiresRestart || $forceConfigCache) && $shouldRefreshConfigCache && !$this->isTestRun()) {
+            if ($restart && !config('new_config.restart.enabled', true)) {
+                $restartResult = [
+                    'skipped' => true,
+                    'reason' => 'new_config.restart.enabled is false',
+                    'horizon' => [
+                        'skipped' => true,
+                        'reason' => 'new_config.restart.enabled is false',
+                        'masters' => [],
+                    ],
+                ];
+            } elseif ($restart && ($requiresRestart || $forceConfigCache) && $shouldRefreshConfigCache && !$this->isTestRun()) {
                 $generationResult = $this->generationStore()->bump();
                 $restartResult = $this->restartService->restart();
             }
@@ -105,6 +115,15 @@ class NewConfigPublisher
         return NewConfig::query()
             ->whereNotNull('env_key')
             ->where('env_key', '<>', '')
+            ->where(function ($query) {
+                $query->where('group_key', NewConfig::GROUP_RUNTIME_ENV_OVERRIDE)
+                    ->orWhere('group_key', NewConfig::GROUP_SWOOLE_TASK_MONITOR)
+                    ->orWhereIn('key', [
+                        NewConfig::KEY_SWOOLE_TASK_MONITOR_ENABLED,
+                        NewConfig::KEY_SWOOLE_TASK_MONITOR_MODE,
+                        NewConfig::KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE,
+                    ]);
+            })
             ->orderBy('group_key')
             ->orderBy('sort')
             ->orderBy('id')

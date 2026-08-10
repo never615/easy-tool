@@ -91,7 +91,7 @@ class ConfigController extends AdminCommonController
     protected function formOption(Form $form)
     {
         $form->text("key", 'Key')->required()
-            ->help('历史路由名为 configs；保存实际写入 new_configs 的 global_config 分组，不会写入旧 configs 表，并发布为运行期配置快照。');
+            ->help('历史路由名为 configs；保存实际写入 new_configs 的 global_config 分组，不会写入旧 configs 表，并通过运行缓存生效。');
         $form->text("name", '配置项');
         $form->textarea("remark", '说明')
             ->help('说明按纯文本保存；历史 HTML 标签会在保存时自动清理。');
@@ -163,13 +163,9 @@ class ConfigController extends AdminCommonController
      */
     private function usageNotice(): string
     {
-        $publishRestartUrl = route('new_configs.publish_restart');
-
         return '<div class="alert alert-warning" style="margin:10px 0 12px;">'
             . '<strong>提示：</strong>当前页面沿用历史 configs 路由名，但实际数据源是 new_configs；旧 configs 表只用于升级迁移。日常请优先使用“配置中心”下对应的模块化运行时配置页面。'
-            . '如果在这里临时修改配置值，保存后还需要到 '
-            . '<a href="' . self::escape($publishRestartUrl) . '">发布与重启</a>'
-            . ' 页面执行发布并重启，LaravelS/Horizon 新进程才会读取最新运行时配置。'
+            . '保存后通过运行缓存生效，无需发布或重启。'
             . '</div>';
     }
 
