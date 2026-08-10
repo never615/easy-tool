@@ -1,0 +1,185 @@
+<?php
+
+namespace Mallto\Tool\Domain\RuntimeConfig;
+
+use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Throwable;
+
+final class RuntimeConfigSharedStore
+{
+    public function __construct(private readonly CacheFactory $cache)
+    {
+    }
+
+    /** @return array{identity: string, found: bool, value: mixed}|null */
+    public function get(RuntimeConfigIdentity $identity): ?array
+    {
+        try {
+            return $this->validPayload($identity, $this->store()->get($identity->redisKey()));
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param callable(): array{found: bool, value: mixed} $loader
+     * @return array{identity: string, found: bool, value: mixed}
+     */
+    public function remember(RuntimeConfigIdentity $identity, callable $loader): array
+    {
+        $loaderStarted = false;
+        $loadedPayload = null;
+        $store = null;
+
+        try {
+            $store = $this->store();
+            $seconds = max(1, (int)config('runtime_config.identity_lock_seconds', 5));
+
+            return $store->lock($this->lockKey($identity), $seconds)->block(
+                $seconds,
+                function () use ($store, $identity, $loader, &$loaderStarted, &$loadedPayload): array {
+                    $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
+                    if ($cached !== null) {
+                        return $cached;
+                    }
+
+                    $loaderStarted = true;
+                    $loadedPayload = $this->payload($identity, $loader());
+                    try {
+                        $this->putWithStore($store, $identity, $loadedPayload);
+                    } catch (Throwable) {
+                        // The loaded database value remains correct when Redis writes fail.
+                    }
+
+                    return $loadedPayload;
+                }
+            );
+        } catch (Throwable $exception) {
+            if ($loaderStarted) {
+                if ($loadedPayload !== null) {
+                    return $loadedPayload;
+                }
+
+                throw $exception;
+            }
+
+            if ($store !== null) {
+                try {
+                    $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
+                    if ($cached !== null) {
+                        return $cached;
+                    }
+                } catch (Throwable) {
+                    // Continue to the source only after the final shared-cache recheck fails.
+                }
+            }
+
+            $payload = $this->payload($identity, $loader());
+            $this->put($identity, $payload);
+
+            return $payload;
+        }
+    }
+
+    /**
+     * @param callable(): array{found: bool, value: mixed} $loader
+     * @return array{identity: string, found: bool, value: mixed}
+     */
+    public function fresh(RuntimeConfigIdentity $identity, callable $loader): array
+    {
+        $loaderStarted = false;
+        $loadedPayload = null;
+
+        try {
+            $store = $this->store();
+            $seconds = max(1, (int)config('runtime_config.identity_lock_seconds', 5));
+
+            return $store->lock($this->lockKey($identity), $seconds)->block(
+                $seconds,
+                function () use ($store, $identity, $loader, &$loaderStarted, &$loadedPayload): array {
+                    $loaderStarted = true;
+                    $loadedPayload = $this->payload($identity, $loader());
+                    try {
+                        $this->putWithStore($store, $identity, $loadedPayload);
+                    } catch (Throwable) {
+                        // The loaded database value remains correct when Redis writes fail.
+                    }
+
+                    return $loadedPayload;
+                }
+            );
+        } catch (Throwable $exception) {
+            if ($loaderStarted) {
+                if ($loadedPayload !== null) {
+                    return $loadedPayload;
+                }
+
+                throw $exception;
+            }
+
+            $payload = $this->payload($identity, $loader());
+            $this->put($identity, $payload);
+
+            return $payload;
+        }
+    }
+
+    /** @param array{identity: string, found: bool, value: mixed} $payload */
+    public function put(RuntimeConfigIdentity $identity, array $payload): void
+    {
+        try {
+            $this->putWithStore($this->store(), $identity, $payload);
+        } catch (Throwable) {
+            // PostgreSQL remains the source of truth when the shared cache is unavailable.
+        }
+    }
+
+    private function store()
+    {
+        return $this->cache->store((string)config('runtime_config.shared_store', 'redis'));
+    }
+
+    private function lockKey(RuntimeConfigIdentity $identity): string
+    {
+        return 'runtime_config:lock:' . $identity->fingerprint();
+    }
+
+    /**
+     * @param mixed $loaded
+     * @return array{identity: string, found: bool, value: mixed}
+     */
+    private function payload(RuntimeConfigIdentity $identity, $loaded): array
+    {
+        return [
+            'identity' => $identity->fingerprint(),
+            'found' => (bool)($loaded['found'] ?? false),
+            'value' => $loaded['value'] ?? null,
+        ];
+    }
+
+    /** @return array{identity: string, found: bool, value: mixed}|null */
+    private function validPayload(RuntimeConfigIdentity $identity, $payload): ?array
+    {
+        if (!is_array($payload)
+            || count($payload) !== 3
+            || !array_key_exists('identity', $payload)
+            || !array_key_exists('found', $payload)
+            || !array_key_exists('value', $payload)
+            || $payload['identity'] !== $identity->fingerprint()
+            || !is_bool($payload['found'])) {
+            return null;
+        }
+
+        return $payload;
+    }
+
+    /** @param array{identity: string, found: bool, value: mixed} $payload */
+    private function putWithStore($store, RuntimeConfigIdentity $identity, array $payload): void
+    {
+        $store->put(
+            $identity->redisKey(),
+            $payload,
+            max(1, (int)config('runtime_config.shared_ttl_seconds', 60))
+        );
+    }
+}

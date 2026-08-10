@@ -450,6 +450,7 @@ class ToolServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/new_config.php', 'new_config');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/runtime_config.php', 'runtime_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/pagination.php', 'easy_tool.pagination');
         $this->mergeConfigFrom(__DIR__ . '/../../config/subject_config_runtime.php', 'subject_config_runtime');
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
