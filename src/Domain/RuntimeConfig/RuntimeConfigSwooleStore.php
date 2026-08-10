@@ -106,23 +106,28 @@ final class RuntimeConfigSwooleStore
         }
     }
 
-    public function flush(): void
+    public function flush(): bool
     {
         if (!$this->enabled()) {
-            return;
+            return false;
         }
 
         try {
             $table = $this->table();
             if ($table === null) {
-                return;
+                return false;
             }
 
             foreach ($table as $key => $row) {
-                $table->del((string)$key);
+                if ($table->del((string)$key) === false) {
+                    return false;
+                }
             }
+
+            return true;
         } catch (Throwable) {
             // Missing Swoole tables only disable L1 acceleration.
+            return false;
         }
     }
 
