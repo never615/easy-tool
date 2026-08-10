@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
  */
 class EnforcePerPageLimit
 {
-    public const DEFAULT_PER_PAGE_MAX = 500;
+    public const DEFAULT_PER_PAGE_MAX = 1000;
 
     public const DEFAULT_EXCLUDED_PATHS = [
         'api/lbs/location/histories',

@@ -23,7 +23,7 @@ class EnforcePerPageLimitTest extends TestCase
     public function test_allows_the_global_maximum(): void
     {
         $this->assertSame('passed', $this->handle('/admin/api/locator', [
-            'per_page' => 500,
+            'per_page' => 1000,
         ])->getContent());
     }
 
@@ -31,7 +31,7 @@ class EnforcePerPageLimitTest extends TestCase
     {
         $this->app['config']->set('easy_tool.pagination.per_page_max', 9999);
 
-        foreach ([501, 9999] as $perPage) {
+        foreach ([1001, 9999] as $perPage) {
             try {
                 $this->handle('/admin/api/locator', ['per_page' => $perPage]);
                 $this->fail("Expected per_page={$perPage} to be rejected.");
@@ -44,12 +44,12 @@ class EnforcePerPageLimitTest extends TestCase
 
     public function test_global_http_stack_returns_422_validation_responses(): void
     {
-        $this->getJson('/admin/api/tags?per_page=501')
+        $this->getJson('/admin/api/tags?per_page=1001')
             ->assertUnprocessable()
             ->assertJsonStructure(['error', 'message']);
 
         $this->withHeader('protocol_version', '2')
-            ->getJson('/admin/api/tags?per_page=501')
+            ->getJson('/admin/api/tags?per_page=1001')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('per_page');
     }
