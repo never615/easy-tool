@@ -5,8 +5,11 @@ namespace Mallto\Tool\Data;
 use Mallto\Admin\Data\Traits\BaseModel;
 
 /**
- * Config：config 对应的数据模型或持久化边界。
- * 它集中声明字段、关联和查询语义，供领域服务与管理界面复用。
+ * Config：旧 `configs` 表的只读迁移模型。
+ *
+ * 全局业务配置的运行期唯一数据源已经迁移为 NewConfig（`new_configs` 表）。
+ * 本模型仅由 ConfigTablesSeeder 在升级/初始化时读取旧数据并补齐缺失的新记录；
+ * 禁止在新的运行期读写路径、后台页面或业务代码中继续使用它。
  */
 class Config extends BaseModel
 {

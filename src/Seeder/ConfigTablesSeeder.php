@@ -12,8 +12,10 @@ use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitionSyncer;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
 /**
- * ConfigTablesSeeder：初始化 config tables seeder 所需的基础数据。
- * 种子过程保持幂等，以便在安装、升级或测试环境中重复执行。
+ * ConfigTablesSeeder：初始化新配置中心并迁移旧全局配置。
+ *
+ * `configs` 已是历史表：迁移只会把旧表中缺失的 key 补入 `new_configs`，
+ * 不会覆盖已有 NewConfig，也不会把新值回写旧表。运行期读取与写入均不应依赖 `configs`。
  */
 class ConfigTablesSeeder extends Seeder
 {
@@ -31,7 +33,9 @@ class ConfigTablesSeeder extends Seeder
     }
 
     /**
-     * 处理「migrateLegacyConfigs」相关的内部协作步骤。
+     * 单向读取旧 `configs`，为缺失 key 创建 `new_configs.global_config` 记录。
+     *
+     * 保留旧表是为了升级兼容和可追溯，不表示它仍是运行期配置来源。
      */
     private function migrateLegacyConfigs(): void
     {

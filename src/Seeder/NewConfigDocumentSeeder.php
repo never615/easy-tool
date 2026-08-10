@@ -41,7 +41,7 @@ class NewConfigDocumentSeeder extends Seeder
         return <<<'MARKDOWN'
 # 配置使用说明
 
-日期：2026-07-28
+日期：2026-08-10
 
 本文说明当前项目中 `.env`、Docker Compose/K8s 环境变量、配置中心、传统配置入口之间的关系，以及日常应该在哪里修改配置。
 
@@ -86,7 +86,15 @@ class NewConfigDocumentSeeder extends Seeder
 | 全局业务配置 | `配置中心 > 基础业务配置` 等模块化表单 | `new_configs` 表 | `config('new_config.values')` / `ConfigUtils::get()` | 所有项目共用的业务开关、阈值、接口地址 |
 | 项目动态配置 | `配置中心 > 项目动态配置` | `subject_configs` 表 | 按代码定义读取进程快照或共享 Redis/DB | 按 `subject_id` 区分的定位、地图、推送、厂商参数 |
 | 启动基础配置 | `.env`、Docker Compose env、K8s Secret/ConfigMap | 进程环境和 `.env` | Laravel config cache | DB/Redis/Mongo、配置中心自身依赖、容器启动前必须存在的连接信息 |
-| 传统兜底配置 | `配置中心 > 传统配置` | `configs` / `new_configs` / `subject_configs` 原始记录 | 视具体代码路径而定 | 排查、迁移过渡、模块化表单尚未覆盖的历史 key |
+| 传统兜底配置 | `配置中心 > 传统配置` | `new_configs` / `subject_configs` 原始记录 | 视具体代码路径而定 | 排查、模块化表单尚未覆盖的历史 key |
+
+## 旧 `configs` 表的边界
+
+`configs` 是已退役的旧全局配置表，不再是运行期配置来源。当前全局业务配置的唯一持久化来源是 `new_configs`。
+
+保留旧表只为升级兼容：`ConfigTablesSeeder` 会在 `tool:update` 时**单向读取**旧表，并且只为 `new_configs` 中缺失的 key 创建记录；不会覆盖 `new_configs` 已有值，也不会把新值回写旧表。
+
+因此，禁止新增 `Config` 模型的运行期读写代码，也不要直接修改旧 `configs` 表来处理线上配置。历史 `/admin/configs` 路由名虽然保留，但该页面实际读写的是 `new_configs.global_config`，不是旧表。
 
 ## 主体项目动态配置
 
@@ -138,7 +146,7 @@ config('subject_config_runtime.values')
 
 ## `/admin/configs` 的定位
 
-`/admin/configs` 现在不是日常主入口。
+`/admin/configs` 沿用了历史 URL，但现在不是日常主入口，也不读写旧 `configs` 表。
 
 它保留在 `配置中心 > 传统配置 > 全局配置` 下，主要用途是：
 
