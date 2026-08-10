@@ -43,253 +43,174 @@ class NewConfigDocumentSeeder extends Seeder
 
 日期：2026-08-10
 
-本文说明当前项目中 `.env`、Docker Compose/K8s 环境变量、配置中心、传统配置入口之间的关系，以及日常应该在哪里修改配置。
+本文说明 `.env`、Docker Compose/K8s 环境变量、配置中心和传统配置入口的当前边界。
 
 ## 总体原则
 
-当前项目已经把业务全局配置和项目动态配置迁到运行配置缓存。业务配置保存后通过共享 Redis 与本机 Swoole L1 生效，不再生成业务 env/value/subject 快照，也不要求发布或重启。
+全局业务配置和项目动态配置以 PostgreSQL 为事实来源，通过运行配置缓存生效。普通业务保存不生成业务 env/value/subject 快照，不刷新 Laravel config cache，也不要求发布或重启。
 
-配置中心的发布流程会生成运行期文件：
+业务配置有两种模式：
 
-- `storage/framework/new_configs.env`：shell env 导出文件，供 LaravelS/Horizon 启动脚本 source。
-- `storage/framework/new_configs_values.php`：仅保留为空文件的升级兼容边界。
-- `storage/framework/subject_configs_values.php`：仅保留为空文件的升级兼容边界。
+| 模式 | 读取路径 | 保存后的行为 |
+| --- | --- | --- |
+| `swoole_redis` | LaravelS：专用 Swoole L1 → 共享 Redis L2 → DB；Horizon/Artisan：Redis L2 → DB | commit 后写穿 L2、删除本机 L1、递增 runtime revision 并广播无 value identity |
+| `shared_redis` | 所有进程：共享 Redis L2 → DB，绝不访问 Swoole | commit 后写穿 L2、递增 runtime revision；无 L1 identity |
 
-业务代码通过 `ConfigUtils::get()` 和 `SubjectUtils::getDynamicKeyConfigByOwner()` 读取运行缓存，缓存未命中时回源数据库。
+未知或历史业务 key 默认使用 `swoole_redis`。当 `SWOOLE_TABLE_ENABLE=false` 时，它自动回退到 Redis L2 → DB，不需要为了正确性开启 Swoole。
+
+`storage/framework/new_configs_values.php` 和 `storage/framework/subject_configs_values.php` 只保留为空兼容文件，不是运行时真相。`ConfigUtils` 和 `SubjectUtils` 均从运行配置缓存读取。
 
 ## 日常修改入口
 
-日常优先使用 `配置中心` 下的模块化表单：
+日常优先使用“配置中心”下的模块化表单：
 
-- `使用说明`
-- `项目动态配置`
-- `基础业务配置`
-- `短信与告警配置`
-- `定位算法配置`
-- `定位维护配置`
-- `BeaconArea配置`
-- `定位日志配置`
-- `Swoole Task配置`
-- `运行期 Env 覆盖`
-- `发布启动配置`
+- 项目动态配置
+- 基础业务配置、短信与告警配置
+- 定位算法、定位维护、BeaconArea、定位日志配置
+- Swoole Task 配置、运行期 Env 覆盖
+- 发布启动配置
 
-这些页面对应代码中已登记的配置定义。新增业务配置时，应该先在代码定义中补充，再由 `php artisan tool:update` 补齐缺失的 `new_configs` 记录。
+新增业务 key 时，应先在所属包的 Global / Subject definitions 中登记，再执行 `php artisan tool:update` 补齐缺失记录。apply mode 由代码定义，管理员不能在 UI 中任意修改。
 
-`配置中心 > 使用说明` 对应 `/admin/new_configs/usage`，展示数据库 `new_config_documents` 表中 slug 为 `configuration_usage` 的 Markdown 文档。默认内容由 `tool:update` 通过 seeder 写入，运行时不依赖项目根目录 `docs/` 文件。
+`/admin/configs`、`/admin/subject_configs` 和 `/admin/new_configs` 是查看原始记录或兼容历史 key 的排查入口，不是日常首选入口。旧 `configs` 表已退役；升级 seeder 只单向读取它以补齐缺失的 `new_configs`，不会覆盖新表已有值或把值写回旧表。
 
-## 配置类型速查
+## Redis-only 项目配置
 
-| 配置类型 | 管理入口 | 持久化来源 | 运行期读取 | 适用场景 |
-| --- | --- | --- | --- | --- |
-| 全局业务配置 | `配置中心 > 基础业务配置` 等模块化表单 | `new_configs` 表 | `ConfigUtils::get()` 运行缓存 | 所有项目共用的业务开关、阈值、接口地址 |
-| 项目动态配置 | `配置中心 > 项目动态配置` | `subject_configs` 表 | `SubjectUtils` 运行缓存 | 按 `subject_id` 区分的定位、地图、推送、厂商参数 |
-| 启动基础配置 | `.env`、Docker Compose env、K8s Secret/ConfigMap | 进程环境和 `.env` | Laravel config cache | DB/Redis/Mongo、配置中心自身依赖、容器启动前必须存在的连接信息 |
-| 传统兜底配置 | `配置中心 > 传统配置` | `new_configs` / `subject_configs` 原始记录 | 视具体代码路径而定 | 排查、模块化表单尚未覆盖的历史 key |
+以下项目 key 固定为 `shared_redis`，不会进入 Swoole：
 
-## 旧 `configs` 表的边界
+```text
+map_layer
+sprite
+default_base_bg_color
+compartment_color
+place_style_text_size
+facilities_style_icon_size
+bearing
+navigation_config
+navigation_config_road1
+navigation_project_distance
+navigation_voice_copywriter_config
+default_positioning_args
+active_positioning_args
+passive_positioning_args
+mobile_positioning_args
+lc_tag_status_log
+lance_tag_status_api_url
+fence_area_alarm_logs_max_count
+fence_area_alarm_logs_max_months
+work_place_no_head_name
+wiki
+cdn_backend_domain
+statistics_pid
+statistics_project
+```
 
-`configs` 是已退役的旧全局配置表，不再是运行期配置来源。当前全局业务配置的唯一持久化来源是 `new_configs`。
+全局 `location_args` 也固定使用 `shared_redis`。四个 positioning JSON 只在重建项目定位参数派生缓存时读取，正常定位热路径继续使用派生缓存。
 
-保留旧表只为升级兼容：`ConfigTablesSeeder` 会在 `tool:update` 时**单向读取**旧表，并且只为 `new_configs` 中缺失的 key 创建记录；不会覆盖 `new_configs` 已有值，也不会把新值回写旧表。
+## 保存业务配置后
 
-因此，禁止新增 `Config` 模型的运行期读写代码，也不要直接修改旧 `configs` 表来处理线上配置。历史 `/admin/configs` 路由名虽然保留，但该页面实际读写的是 `new_configs.global_config`，不是旧表。
+保存全局或项目业务配置后，Observer 在数据库 commit 后按当前 definition mode 写穿/失效运行缓存，并递增独立的 runtime revision。rollback 不产生缓存或广播副作用。
 
-## 主体项目动态配置
+通常下一次读取即可取得新值，不需要进入“发布启动配置”。跨实例的 Pub/Sub 消息只携带 revision 和 identity hash，不携带 key/value；若消息丢失，revision watcher 会清理专用 Swoole L1 以补偿，但不会触发服务重启。
 
-`配置中心 > 项目动态配置` 对应 `/admin/subject-config-module`，用于维护按项目 `subject_id` 绑定的动态配置。页面会先选择项目，再按“基础与前端、定位开关、定位算法、地图样式、导航、推送、日志排查、厂商接入、运行维护、历史/未归类、临时基站”等分组展示表单。
+删除或移动项目 key 时会同时处理原 identity 与新 identity。定位参数、tx rssi 等源配置还会定向失效对应 `l_a_{subject_id}_*` 或 `r_m{subject_id}_*` 派生缓存。
 
-主体项目动态配置不是 `new_configs` 记录，也不会展开成大量 env key。它仍以 `subject_configs` 表作为后台编辑和持久化来源。配置定义中的 `apply_mode` 由代码维护，管理员不能在页面随意修改：
+## 长驻组件如何生效
 
-| 生效模式 | 读取路径 | 保存后的行为 |
-| --- | --- | --- |
-| `swoole_redis` / `shared_redis` | 本机 Swoole L1 与共享 Redis，未命中时读取 DB | 数据库事务提交后定向失效缓存，通常下一次读取即可生效 |
+Hytera 的 IP、端口、账号、密码、API 版本、service request 和 SSI identity 都是 `swoole_redis` 业务值。活动 ACAPI 会话比较七项配置的 SHA-256 指纹；变化时只关闭并立即重建 ACAPI 连接，不记录或广播密码/指纹，也不重启 LaravelS/Horizon。
 
-定位、地图、导航、推送、厂商接入等按项目区分的配置，业务代码应统一通过 `SubjectUtils::getDynamicKeyConfigByOwner()` 读取。运行缓存默认 TTL 为 60 秒；正常保存会在事务提交后定向失效缓存，通常下一次读取即可生效。
+`location.beacon_area_check_interval` 也是运行时业务值。BeaconArea Timer 固定每秒 tick，同一个 Cron 实例按最新 interval 控制是否派发；修改间隔会影响后续派发，无需重启。Timer 是否注册仍由启动环境控制。
 
-`lance_tag_status_api_url` 由开启后的 `0 2 * * *` 日调度命令读取（每日 `02:00`），每次扫描对每个项目最多读取一次；本次明确接受这一低频成本。它不是调度注册开关，修改 URL 不需要重启调度进程。
+仓库默认 `LARAVELS_JOBS` 未包含 `LocatorBeaconAreaCron`。只有现场环境显式加入该类完整 FQCN 时，这个 Timer 才会运行；修改 interval 不会自动注册任务。
 
-保存 `项目动态配置` 表单时，会写入 `subject_configs` 表，并在事务提交后更新运行缓存；不发布 subject 快照，不刷新 Laravel config cache，也不重启进程。
+## 启动配置与生成的 env
 
-新增主体项目动态配置 key 时，优先在所属业务包的 `*SubjectConfigDefinitions` 中定义，并通过 `SubjectConfigRegistry` 注册，这样后台会以固定分组、类型校验、默认值和中文说明展示。数据库中已经存在但尚未登记的历史 key 会出现在“历史/未归类”中，只允许修改已有 value，不提供任意新增。`sa_lo_st_` 前缀的临时定位基站开关属于“临时基站”，同一个项目最多 10 个，超过会拒绝保存。
+只有 `runtime_env_override` 和 `swoole_task_monitor` 属于生成 env 的启动配置。它们发布到：
 
-`配置中心 > 传统配置 > 动态配置` 对应 `/admin/subject_configs`，是项目动态配置的原始 key/value 兜底入口。日常不建议直接使用它；从该入口保存的配置同样通过运行缓存生效。
+```text
+storage/framework/new_configs.env
+```
 
-## `/admin/configs` 的定位
+该文件供启动脚本 source 和 `config:cache` 子进程使用。配置中心不是 `.env` 编辑器：发布不会读取、展示或修改真实 `.env`。
 
-`/admin/configs` 沿用了历史 URL，但现在不是日常主入口，也不读写旧 `configs` 表。
-
-它保留在 `配置中心 > 传统配置 > 全局配置` 下，主要用途是：
-
-- 查看迁移后的 `new_configs.global_config` 原始 key/value。
-- 临时处理还没有模块化表单覆盖的历史 `ConfigUtils::get()` key。
-- 模块化表单出问题时，作为运维兜底入口。
-- 排查 `key`、`env_key`、发布时间、发布错误等原始数据。
-
-正常业务配置应优先使用模块化表单，而不是直接使用 `/admin/configs`。
-
-`/admin/configs` 的说明字段按纯文本展示和保存。历史数据中如果包含 HTML 标签，页面会清理为纯文本，避免可编辑字段渲染 HTML 带来安全风险。
-
-## `/admin/new_configs` 的定位
-
-`/admin/new_configs` 是运行期配置原始列表，也属于传统/排查入口。
-
-它适合用于确认底层 `new_configs` 记录是否存在、是否启用、发布时间和发布错误。日常配置修改仍应优先走模块化表单。
-
-## 运行期 Env 覆盖
-
-`配置中心 > 运行期 Env 覆盖` 用于维护少量可以安全覆盖的 Laravel 运行期 env key。它不是 `.env` 编辑器，不会读取、展示或修改真实 `.env` 文件，只会写入 `new_configs` 表并在发布时导出到 `storage/framework/new_configs.env`。
-
-该入口适合处理已经在 `config/*.php` 中通过 `env()` 读取、但尚未进入模块化表单的非启动类开关和阈值，例如定位队列限流开关。
-
-该入口禁止 DB、Redis、Mongo、Cache、Session、Mail、云厂商、微信支付、MQTT、LaravelS/Horizon、配置中心自身 key。命中黑名单的 key 必须继续通过 `.env`、Docker Compose env 文件或 K8s Secret/ConfigMap 管理。
-
-保存后需要进入 `配置中心 > 发布启动配置` 执行发布。重启总开关开启时会同步调度 LaravelS/Horizon 新进程生效；关闭时仍会发布文件和刷新 config cache。
-
-## 发布启动配置
-
-普通业务配置保存后通过运行缓存生效，无需进入本页。本页只发布 `runtime_env_override` 和 `swoole_task_monitor` 生成的启动配置，不会修改真实 `.env`。
-
-需要让 LaravelS/Horizon 新进程读取最新配置时，进入：
-
-`配置中心 > 发布启动配置`
-
-然后点击发布启动配置按钮。
-
-该页面还会展示最终生效 Env 视图，便于确认 `.env`、当前进程 env、配置中心导出值合并后的实际结果。
-
-命令行也可以手动发布：
+启动配置需要计划内重启新进程才能完整生效。后台进入“配置中心 > 发布启动配置”，或使用：
 
 ```bash
 php artisan tool:new_config_publish --force-config-cache
+php artisan tool:new_config_publish --restart --force-config-cache
 ```
 
-需要结合服务重启时，使用当前环境的重启脚本或容器/Pod 重启机制。
+`NEW_CONFIG_RESTART_ENABLED` 默认开启，并可独立关闭。关闭后仍会发布 `new_configs.env`、刷新 config cache，业务缓存更新也完全不受影响；仅跳过 restart generation、LaravelS restart 和 Horizon terminate。页面或 CLI 的“已发布”不代表真实 `.env` 被修改，也不代表服务已经重启。
 
-## Docker Compose / K8s / `.env` 的使用边界
+## revision 与 generation 不要混淆
 
-Docker Compose env 文件、K8s Secret/ConfigMap、项目 `.env` 仍然用于启动基础配置。
+- `runtime_config:revision`：业务配置每次 commit 后递增，用于跨实例缓存同步；不触发重启，不受 restart switch 影响。
+- `new_configs:apply_generation`：仅用于启动配置的计划内重启；请求 restart 且总开关开启时才递增。
 
-适合放在这些地方的配置包括：
+## `.env`、Compose 与 K8s 边界
 
-- `DB_*`
+以下启动依赖必须在配置中心可用之前存在，应继续由真实 `.env`、Docker Compose env 或 K8s Secret/ConfigMap 管理：
+
+- `DB_*`、`DATABASE_URL`
 - `REDIS_*`
 - `MONGO_*` / `MONGODB_*`
-- `DATABASE_URL`
-- 容器启动必须先知道的连接信息
-- LaravelS/Horizon 启动前必须存在的进程级配置
-- 配置中心自身需要的基础配置
+- MQTT、Cache、Session、Mail 和云厂商连接凭据
+- LaravelS/Horizon 与配置中心自身的启动依赖
 
-这些配置不能放入配置中心。后台创建或发布 DB/Redis/Mongo 等 bootstrap key 时会被拒绝。
-
-对于 `ConfigUtils::get()` 读取的业务全局配置，不建议用 Docker Compose env 文件兜底；这类配置以 `new_configs` 和运行缓存为准。
-
-如果本地真实 Docker Compose 环境发现配置中心页面有 bug，推荐兜底方式是：
-
-1. 直接修正数据库 `new_configs` 表对应 key 的 value/is_enabled。
-2. 执行：
-
-```bash
-php artisan tool:new_config_publish --force-config-cache
-```
-
-3. 重启 LaravelS 和 Horizon 容器。
-
-只有启动基础配置才优先通过 Docker Compose env 文件修正。
-
-## 生效优先级
-
-对 Laravel 配置文件中的 `env()` key，启动和 `config:cache` 时的覆盖关系大致是：
-
-1. 容器/K8s 注入的环境变量。
-2. 项目 `.env`。
-3. 配置中心导出的 `storage/framework/new_configs.env`，以及 `tool:new_config_publish` 传给 `config:cache` 子进程的 env 值。
-
-最终运行期 LaravelS/Horizon worker 读取的是 Laravel config cache。
-
-对 `ConfigUtils::get()` 读取的业务全局配置，读取路径是：
-
-```text
-ConfigUtils::get()
-  -> 本机 Swoole L1
-  -> 共享 Redis L2
-  -> 未命中时查询 new_configs 表
-```
-
-因此这类配置保存后以运行缓存为准，不需要发布或重启。
-
-对 `SubjectUtils::getDynamicKeyConfigByOwner()` 读取的项目动态配置，读取路径是：
-
-```text
-SubjectUtils::getDynamicKeyConfigByOwner()
-  -> 本机 Swoole L1（按 definition mode）
-  -> 共享 Redis L2
-  -> 缓存未命中时查询 subject_configs 表
-```
-
-定位等热路径优先命中 Swoole L1，不在每次请求中查询 Redis/DB。
-
-## 开发服务器
-
-开发服务器如果手动覆盖 `.env`，例如：
-
-```bash
-cp .env.integration .env
-```
-
-后续仍应运行现有重启脚本。重启脚本会重新发布配置中心运行期 env，并刷新 config cache。
-
-如果只是改了配置中心业务配置，保存后由运行缓存生效，无需依赖 LaravelS inotify reload。
-
-当前已确认 LaravelS reload 在开发环境曾出现旧 task worker 残留问题，因此配置生效路径采用更保守的 full restart。
+后台会拒绝把这些 bootstrap key 作为运行期 Env 覆盖发布。
 
 ## 新增配置规范
 
-新增业务配置时遵守以下规则：
-
-1. 运行期代码不要直接调用 `env()`。
-2. 需要 Laravel 配置项时，先写入 `config/*.php`，业务代码用 `config()`。
-3. 需要全局业务配置时，先在 `GlobalConfigDefinitions` 中登记，再由 `tool:update` 补齐缺失记录。
-4. 已存在的线上配置 key，seeder 不允许覆盖 value、默认值、启用状态、说明等线上数据。
-5. DB/Redis/Mongo/bootstrap key 不允许进入配置中心。
-6. 新增模块化配置时，优先做成 `配置中心` 下的表单，不新增散落入口。
-7. `subject_configs` 中 `sa_lo_st_` 前缀的临时定位基站开关，同一个项目最多 10 个，超过会拒绝保存。
-8. 新增项目动态配置 key 时，优先在所属业务包通过 `SubjectConfigRegistry` 注册定义，让后台以表单和中文说明展示；临时或历史 key 会在“历史/未归类”中按数据库已有记录展示。
+1. 运行时代码不得直接调用 `env()`；环境值进入 `config/*.php` 后用 `config()`。
+2. 全局业务读取统一使用 `ConfigUtils`，项目业务读取统一使用 `SubjectUtils`。
+3. 小型业务值默认 `swoole_redis`；固定大值/低频值明确登记为 `shared_redis`。
+4. 不得把业务值重新加入 `new_configs_values.php`、`subject_configs_values.php` 或启动 env。
+5. Definition Syncer 保留已有记录的 `value` 和 `is_enabled`；name、remark、type、env key、default、options、sort 和 apply/reload metadata 会随代码定义同步。
+6. 临时 `sa_lo_st_*` 和历史未注册 key 仍按业务缓存兼容处理；同一项目临时基站开关最多 10 个。
 
 ## 常用排查
 
-查看发布命令是否正常：
+业务配置未生效：
 
-```bash
-php artisan tool:new_config_publish --force-config-cache
-```
+1. 检查 DB 中正确的 subject/scope/key、value 和 `is_enabled`。
+2. 检查 definition mode；`shared_redis` 不应访问 Swoole。
+3. 检查 Redis L2 写穿、runtime revision 和无 value 广播。
+4. Swoole 开启时检查 subscriber / revision watcher；关闭时确认已回退 Redis/DB。
+5. 定位参数或 tx rssi 还要检查派生缓存是否按带尾下划线的项目 prefix 清理。
 
-查看后台最终生效值：
+启动配置未生效：检查 `new_configs.env`、config cache、restart switch、restart generation 和新进程是否实际拉起。不要检查旧业务 snapshot 文件，也不要把生成 env 与真实 `.env` 混为一谈。
 
-```text
-配置中心 > 发布启动配置
-```
+## 上线检查
 
-查看原始运行期配置记录：
-
-```text
-配置中心 > 传统配置 > 运行期配置
-```
-
-查看迁移后的全局配置记录：
+迁移上线前，逐项核对以下 21 个全局业务 key：
 
 ```text
-配置中心 > 传统配置 > 全局配置
+location.upload_data_direct_parse_enabled
+location.locator_negative_cache_ttl_seconds
+location.queue_limiters.enabled
+location.queue_limiters.pgsql_write.concurrency
+location.queue_limiters.location_result_storage.concurrency
+location.trajectory_segments.enabled
+location.trajectory_segments.history_points_read_enabled
+location.trajectory_segments.history_query_source
+location.trajectory_segments.history_cutover_at
+location.trajectory_segments.legacy_lbs_log2s_write_enabled
+location.trajectory_segments.near_realtime_enabled
+location.trajectory_segments.near_realtime_throttle_seconds
+location.trajectory_segments.near_realtime_window_minutes
+location.trajectory_segments.chunk_minutes
+location.trajectory_segments.max_points_per_chunk
+location.trajectory_segments.max_gap_seconds
+location.trajectory_segments.algorithm_version
+location.trajectory_segments.road_match_enabled
+location.trajectory_segments.road_network_cache_seconds
+location.beacon_area_check_interval
+location.skylab_location_perf_log
 ```
 
-如果配置修改后没有生效，优先检查：
+PostgreSQL effective value 必须与每个 LaravelS Pod、Horizon 当前加载的 `config(key)` / 旧快照值一致。effective value 规则：记录启用且 `value` 非 `null`/空字符串时取 `value`，否则取 definition 同步后的 `default_value`；记录缺失时才回退当前 Laravel config。差异必须先确认并修正 DB，不能直接切换读路径。
 
-- 对应 `new_configs` key 是否存在。
-- 如果是项目动态配置，对应 `subject_configs` key 和 `subject_id` 是否存在。
-- 如果是项目动态配置，是否在 `配置中心 > 项目动态配置` 选中了正确项目。
-- `is_enabled` 是否符合预期。
-- `last_published_at` 是否更新。
-- `last_publish_error` 是否为空。
-- 运行配置的 Swoole L1 / Redis L2 是否正常；失效异常时是否已等待默认 TTL 收敛。
+上线时先冻结后台业务配置写入，再完成对账并全量滚动 LaravelS、Horizon，确认所有实例已使用新代码和同一共享 Redis 后解除冻结。新旧版本混跑期间不得保存业务配置；滚动完成后复核 runtime revision、Redis L2 和 Swoole L1。
 MARKDOWN;
     }
 }
