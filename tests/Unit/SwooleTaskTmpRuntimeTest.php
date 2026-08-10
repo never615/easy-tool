@@ -96,6 +96,20 @@ class SwooleTaskTmpRuntimeTest extends TestCase
         $this->assertSame(1, $latest['inventory']['stale_files']);
     }
 
+    public function test_missing_auto_cleanup_setting_defaults_to_enabled(): void
+    {
+        $settings = $this->config->get('swoole_task_tmp_cleaner');
+        unset($settings['auto_cleanup_enabled']);
+        $this->config->set('swoole_task_tmp_cleaner', $settings);
+        $path = $this->writeTaskFile('swoole.task.old', $this->now - 120);
+        $this->requests->shouldReceive('claim')->zeroOrMoreTimes()->andReturnNull();
+
+        $this->runUntil($this->now);
+
+        $this->assertFileDoesNotExist($path);
+        $this->assertTrue($this->snapshots->latest()['auto_cleanup_enabled']);
+    }
+
     public function test_capacity_and_inventory_use_independent_cadences(): void
     {
         $this->requests->shouldReceive('claim')->zeroOrMoreTimes()->andReturnNull();

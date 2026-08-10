@@ -474,7 +474,7 @@ final class SwooleTaskTmpRuntime
     private function settings(): array
     {
         return [
-            'auto_cleanup_enabled' => (bool) $this->config->get('swoole_task_tmp_cleaner.auto_cleanup_enabled', false),
+            'auto_cleanup_enabled' => (bool) $this->config->get('swoole_task_tmp_cleaner.auto_cleanup_enabled', true),
             'stale_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.stale_seconds', 60)),
             'filesystem_stats_interval_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.filesystem_stats_interval_seconds', 5)),
             'inventory_interval_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.inventory_interval_seconds', 300)),
