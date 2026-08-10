@@ -37,6 +37,7 @@ use Mallto\Tool\Commands\RedisMemoryMonitorCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
+use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
 use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
 use Mallto\Tool\Domain\AppStats\AppStatsSnapshotService;
@@ -75,6 +76,7 @@ use Mallto\Tool\Middleware\ThirdRequestCheck;
 use Mallto\Tool\Middleware\TokenFromQuery;
 use Mallto\Tool\Msg\AliyunMobileDevicePush;
 use Mallto\Tool\Msg\MobileDevicePush;
+use Mallto\Tool\Observers\NewConfigRuntimeObserver;
 use PhpMqtt\Client\ConnectionManager;
 use Psr\Log\LoggerInterface;
 
@@ -146,6 +148,8 @@ class ToolServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/adminapi.php');
+
+        NewConfig::observe(NewConfigRuntimeObserver::class);
 
         if ($this->app->runningInConsole()) {
             //发布view覆盖error页面
@@ -675,22 +679,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
 
-            if (\config("other.update_app_secret")) {
-                $schedule->command('tool:update_app_secret')
-                    ->onOneServer()
-                    ->daily()
-                    ->name("update_app_secret")
-                    ->runInBackground()
-                    ->withoutOverlapping()
-                    ->before(function () {
-                        dispatch(new LogJob("logSchedule",
-                            ["slug" => "update_app_secret", "status" => "start"]));
-                    })
-                    ->after(function () {
-                        dispatch(new LogJob("logSchedule",
-                            ["slug" => "update_app_secret", "status" => "finish"]));
-                    });
-            }
+            $this->scheduleAppSecretRotation($schedule);
 
             $schedule->command('sanctum:prune-expired --hours=24')
                 ->onOneServer()
@@ -779,6 +768,28 @@ class ToolServiceProvider extends ServiceProvider
             $this->schedulePostgresDatabaseMonitor($schedule);
             $this->scheduleMongoDatabaseMonitor($schedule);
         });
+    }
+
+    private function scheduleAppSecretRotation(Schedule $schedule): void
+    {
+        if (!\config("other.update_app_secret")) {
+            return;
+        }
+
+        $schedule->command('tool:update_app_secret')
+            ->onOneServer()
+            ->daily()
+            ->name("update_app_secret")
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->before(function () {
+                dispatch(new LogJob("logSchedule",
+                    ["slug" => "update_app_secret", "status" => "start"]));
+            })
+            ->after(function () {
+                dispatch(new LogJob("logSchedule",
+                    ["slug" => "update_app_secret", "status" => "finish"]));
+            });
     }
 
     /**

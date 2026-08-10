@@ -56,7 +56,7 @@ class GlobalConfigNewConfig
             'remark' => $remark,
             'sort' => 0,
             'is_enabled' => true,
-            'requires_reload' => true,
+            'requires_reload' => GlobalConfigApplyMode::requiresReload($key),
         ];
     }
 
@@ -78,6 +78,7 @@ class GlobalConfigNewConfig
         $attributes['default_value'] = (string)($definition['default_value'] ?? $attributes['default_value']);
         $attributes['options'] = $definition['options'] ?? $attributes['options'];
         $attributes['sort'] = (int)($definition['sort'] ?? $attributes['sort']);
+        $attributes['requires_reload'] = false;
 
         return $attributes;
     }

@@ -5,13 +5,12 @@
 
 namespace Mallto\Tool\Domain\App;
 
-use GuzzleHttp\Exception\ClientException;
+use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\Config;
+use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\Net\AbstractAPI;
 use Mallto\Tool\Exception\ThirdPartException;
 use Mallto\Tool\Utils\ConfigUtils;
-use Mallto\Tool\Utils\SignUtils;
-use Illuminate\Support\Facades\Log;
 
 /**
  *
@@ -36,72 +35,31 @@ class AppSecretUsecase extends AbstractAPI
     public function update()
     {
         $salt = "phfOtwKclusrHKwfgPtfIah1uT3xi";
-        $app_secret = md5(md5($salt . date('Ymd') . $salt));
-        ConfigUtils::set(Config::APP_SECRET, $app_secret);
+        $date = now()->format('Ymd');
+        $secret = md5(md5($salt . $date . $salt));
+        $store = Cache::store((string)config('runtime_config.shared_store', 'redis'));
 
-        return;
+        return $store->lock('app_secret:rotate:' . $date, 30)->block(5, function () use ($secret): bool {
+            $persisted = NewConfig::query()
+                ->where('key', Config::APP_SECRET)
+                ->first();
+            $effectiveValue = $persisted?->value;
+            if ($persisted !== null && ($effectiveValue === null || $effectiveValue === '')) {
+                $effectiveValue = $persisted->default_value;
+            }
+            $metadataHealthy = $persisted !== null
+                && $persisted->group_key === NewConfig::GROUP_GLOBAL_CONFIG
+                && $persisted->is_enabled
+                && $persisted->type === 'string'
+                && !$persisted->requires_reload;
+            if ($metadataHealthy && $effectiveValue !== null && hash_equals((string)$effectiveValue, $secret)) {
+                return false;
+            }
 
-        if (config("app.env") == 'production' || config("app.env") == 'staging') {
-            $baseUrl = "https://wechat.mall-to.com";
-        } else {
-            $baseUrl = "https://test-wechat.mall-to.com";
-        }
-
-//        $nonceStr = AppUtils::getRandomString();
-//        $now = TimeUtils::getNowTime();
-//
-//        $signHeaders = [
-//            'uuid'            => 0,
-//            'app_id'          => config("other.mallto_app_id"),
-//            'timestamp'       => $now,
-//            'signature_nonce' => $nonceStr,
-//        ];
-
-        $requestData = [
-
-        ];
-
-//        $requestData = array_merge($signHeaders, $requestData);
-
-        $sign = SignUtils::sign($requestData, config("other.mallto_app_secret"));
-
-        $requestData = array_merge($requestData, [
-            "sign" => $sign,
-        ]);
-
-        $contents = null;
-        try {
-            $contents = $this->parseJson('get', [
-                $baseUrl . '/api/app_secret',
-                $requestData,
-                [
-                    'headers' => [
-                        'uuid'   => 0,
-                        'app-id' => config("other.mallto_app_id"),
-//                        'Timestamp' => $now,
-                        'Accept' => 'application/json',
-//                        'Signature-Nonce'   => $nonceStr,
-//                        'Signature-Version' => 4,
-//                        'Signature'         => $sign,
-                    ],
-                ],
-            ]);
-
-        } catch (ClientException $clientException) {
-            Log::error("请求微信开放平台,更新当前应用的秘钥ClientException异常");
-            Log::warning($clientException->getResponse()->getBody());
-        } catch (\Exception $exception) {
-            Log::error("请求微信开放平台,更新当前应用的秘钥异常");
-            Log::warning($exception);
-        }
-
-        if ($contents && isset($contents["app_secret"])) {
-            ConfigUtils::set(Config::APP_SECRET, $contents["app_secret"]);
+            ConfigUtils::set(Config::APP_SECRET, $secret);
 
             return true;
-        } else {
-            return false;
-        }
+        });
     }
 
 

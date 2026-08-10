@@ -3,7 +3,6 @@
 namespace Mallto\Tool\Data;
 
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
-use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 
 /**
  * NewConfig：new config 对应的数据模型或持久化边界。
@@ -29,6 +28,11 @@ class NewConfig extends BaseModel
 
     private static int $publishSuppressionCount = 0;
 
+    private static int $testAutoPublishOverrideCount = 0;
+
+    /** @var array{changed: bool, old_key: string, old_group: string}|null */
+    public ?array $runtimeConfigChangeContext = null;
+
     /**
      * 处理「booted」相关的内部协作步骤。
      */
@@ -43,17 +47,6 @@ class NewConfig extends BaseModel
             }
         });
 
-        static::saved(function () {
-            if (static::shouldAutoPublish()) {
-                app(NewConfigPublisher::class)->publish(false);
-            }
-        });
-
-        static::deleted(function () {
-            if (static::shouldAutoPublish()) {
-                app(NewConfigPublisher::class)->publish(false);
-            }
-        });
     }
 
     /**
@@ -81,11 +74,30 @@ class NewConfig extends BaseModel
     }
 
     /**
+     * 仅允许单元测试临时走生产 auto-publish 判断，用于确定性验证 after-commit 分流。
+     */
+    public static function withAutoPublishForTesting(callable $callback)
+    {
+        if (!self::isTestRun()) {
+            throw new \LogicException('Auto-publish test override is only available during unit tests.');
+        }
+
+        self::$testAutoPublishOverrideCount++;
+
+        try {
+            return $callback();
+        } finally {
+            self::$testAutoPublishOverrideCount--;
+        }
+    }
+
+    /**
      * 处理「shouldAutoPublish」相关的内部协作步骤。
      */
-    private static function shouldAutoPublish(): bool
+    public static function shouldAutoPublish(): bool
     {
-        return self::$publishSuppressionCount <= 0 && !self::isTestRun();
+        return self::$publishSuppressionCount <= 0
+            && (!self::isTestRun() || self::$testAutoPublishOverrideCount > 0);
     }
 
     /**

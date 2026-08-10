@@ -26,15 +26,15 @@ class GlobalConfigDefinitionSyncer
                     ->where('key', $key)
                     ->first();
 
-                if ($config !== null) {
-                    continue;
+                $attributes = GlobalConfigNewConfig::attributesForDefinition($definition);
+                if ($config === null) {
+                    $config = new NewConfig(['key' => $key]);
+                    $config->fill($attributes);
+                } else {
+                    unset($attributes['value'], $attributes['is_enabled']);
+                    $config->fill($attributes);
                 }
 
-                $config = new NewConfig([
-                    'key' => $key,
-                ]);
-
-                $config->fill(GlobalConfigNewConfig::attributesForDefinition($definition));
                 $config->save();
             }
         });

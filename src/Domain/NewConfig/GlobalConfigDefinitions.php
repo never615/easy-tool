@@ -61,6 +61,22 @@ class GlobalConfigDefinitions
         return $modules[$module] ?? null;
     }
 
+    public static function find(string $key): ?array
+    {
+        $registered = GlobalConfigRegistry::definition($key);
+        if ($registered !== null) {
+            return $registered;
+        }
+
+        static $builtIn = null;
+        $builtIn ??= GlobalConfigDefinition::keyByConfigKey(array_merge(
+            self::basicDefinitions(),
+            self::smsDefinitions()
+        ));
+
+        return $builtIn[$key] ?? null;
+    }
+
     /**
      * 处理「allowedModules」相关的内部协作步骤。
      */

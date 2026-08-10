@@ -33,6 +33,10 @@ class GlobalConfigDefinition
             'remark' => $remark,
             'sort' => 0,
             'ui' => $type === 'json' ? 'textarea' : 'input',
+            'apply_mode' => $key === 'location_args'
+                ? GlobalConfigApplyMode::SHARED_REDIS
+                : GlobalConfigApplyMode::SWOOLE_REDIS,
+            'requires_reload' => false,
         ], $meta);
     }
 

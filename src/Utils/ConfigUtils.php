@@ -7,6 +7,7 @@ namespace Mallto\Tool\Utils;
 
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigRuntimeResolver;
 
 /**
  *
@@ -50,12 +51,23 @@ class ConfigUtils
      */
     public static function get($key, $default = null, $cacheNullValue = true, $ttl = null)
     {
-        $values = config('new_config.values', []);
-        if (is_array($values) && array_key_exists($key, $values)) {
-            return $values[$key];
-        }
+        return app(GlobalConfigRuntimeResolver::class)->get(
+            (string)$key,
+            $default,
+            (bool)$cacheNullValue
+        );
+    }
 
-        return $default ?? ($cacheNullValue ? '' : null);
+    /**
+     * 强制从 PostgreSQL 刷新当前业务配置，并回填共享缓存与可用的 Swoole L1。
+     */
+    public static function refresh($key, $default = null, $cacheNullValue = true)
+    {
+        return app(GlobalConfigRuntimeResolver::class)->fresh(
+            (string)$key,
+            $default,
+            (bool)$cacheNullValue
+        );
     }
 
 

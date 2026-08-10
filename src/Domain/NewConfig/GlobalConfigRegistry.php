@@ -58,4 +58,9 @@ class GlobalConfigRegistry
             return ($definition['module'] ?? null) === $module;
         });
     }
+
+    public static function definition(string $key): ?array
+    {
+        return self::$definitions[$key] ?? null;
+    }
 }
