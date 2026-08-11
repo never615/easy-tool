@@ -5,8 +5,14 @@ namespace Mallto\Tool\Domain\NewConfig;
 use Mallto\Tool\Data\Config;
 
 /**
- * GlobalConfigDefinitions：配置中心发布与运行时生效链路的一环。
- * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ * 全局业务配置的代码侧定义目录。
+ *
+ * 初始清单由开发阶段的 AI 辅助源码扫描生成：盘点活跃业务代码中的
+ * ConfigUtils::get() key，再将扫描结果固化为 PHP Definitions。后续新增或删除
+ * ConfigUtils key 时仍应重新执行同类源码盘点并同步本目录。
+ *
+ * 运行时、应用启动和 tool:update 都不会扫描 PHP 源码；它们只消费已固化的
+ * Definitions 数组以注册或同步配置元数据。
  */
 class GlobalConfigDefinitions
 {

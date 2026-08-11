@@ -5,8 +5,10 @@ namespace Mallto\Tool\Domain\NewConfig;
 use Mallto\Tool\Data\NewConfig;
 
 /**
- * GlobalConfigDefinitionSyncer：配置中心发布与运行时生效链路的一环。
- * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ * 将已固化的全局配置 Definitions 同步到 new_configs。
+ *
+ * Definitions 的 key 来自开发阶段对 ConfigUtils::get() 使用点的 AI 辅助源码盘点。
+ * Syncer 本身不扫描源码、不自动发现 key；它只消费调用方传入的 Definitions 数组。
  */
 class GlobalConfigDefinitionSyncer
 {

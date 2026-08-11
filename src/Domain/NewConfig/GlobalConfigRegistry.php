@@ -3,8 +3,10 @@
 namespace Mallto\Tool\Domain\NewConfig;
 
 /**
- * GlobalConfigRegistry：配置中心发布与运行时生效链路的一环。
- * 它区分持久化配置、生成文件、配置缓存与长驻进程重载，避免调用方绕过发布边界。
+ * 汇总各业务包显式注册的全局配置 Definitions。
+ *
+ * Registry 不扫描 ConfigUtils::get() 调用；它只在运行时接收开发阶段已经通过
+ * AI 辅助源码盘点生成并固化在各包 Definitions 类中的结果。
  */
 class GlobalConfigRegistry
 {
