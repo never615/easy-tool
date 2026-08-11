@@ -41,7 +41,7 @@ class NewConfigDocumentSeeder extends Seeder
         return <<<'MARKDOWN'
 # 配置使用说明
 
-日期：2026-08-10
+日期：2026-08-11
 
 本文说明 `.env`、Docker Compose/K8s 环境变量、配置中心和传统配置入口的当前边界。
 
@@ -86,10 +86,6 @@ compartment_color
 place_style_text_size
 facilities_style_icon_size
 bearing
-navigation_config
-navigation_config_road1
-navigation_project_distance
-navigation_voice_copywriter_config
 default_positioning_args
 active_positioning_args
 passive_positioning_args
@@ -106,6 +102,14 @@ statistics_project
 ```
 
 全局 `location_args` 也固定使用 `shared_redis`。四个 positioning JSON 只在重建项目定位参数派生缓存时读取，正常定位热路径继续使用派生缓存。
+
+### 为什么这样选择
+
+- `navigation_config`、`navigation_config_road1`、`navigation_project_distance`、`navigation_voice_copywriter_config` 长度可控，而且导航请求会直接读取，所以使用 `swoole_redis`，让 LaravelS 优先命中本机 L1。
+- 四个 positioning JSON 和全局 `location_args` 是定位参数的源配置。正常定位热路径读取的是合并后的 `l_a_*` 派生 Swoole/Redis 缓存；只有派生缓存 miss 或配置变化后重建时才读取源 JSON。因此源配置继续使用 `shared_redis`，避免源值和派生结果重复占用 Swoole 内存。
+- `map_layer`、`sprite` 等地图数据可能很大；其他 Redis-only 配置读取较低频。它们不占用容量有限的 runtime Swoole 表。Swoole payload 超限时虽会安全回退 Redis，但继续探测 L1 没有性能收益。
+
+这项分类依据“实际读取路径、频率和 payload 大小”，而不是只看字段类型是否为 JSON。业务访问模式改变时，应重新审查 definition mode。
 
 ## 保存业务配置后
 
