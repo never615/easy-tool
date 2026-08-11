@@ -113,7 +113,7 @@ statistics_project
 
 ## 保存业务配置后
 
-使用 `fromConfig()` 登记的全局配置，只有勾选“启用数据库覆盖”并保存后才产生 `manual` 覆盖；取消勾选会回到当前进程 config 基线。普通 `make()` 全局配置没有环境 config 来源，页面显示普通“启用配置”，启用时数据库值就是主配置，停用或缺少记录时才使用代码兜底值。系统通过 `ConfigUtils::set()` 写入的配置标记为 `system`，`app_secret` 不允许在普通表单中查看或手工覆盖。
+使用 `fromConfig()` 登记的全局配置，保存与环境值不同的内容时自动产生 `manual` 覆盖；改回环境值并保存时自动清除覆盖并回到当前进程 config 基线，不需要额外勾选。普通 `make()` 全局配置没有环境 config 来源，页面显示普通“启用配置”，启用时数据库值就是主配置，停用或缺少记录时才使用代码兜底值。系统通过 `ConfigUtils::set()` 写入的配置标记为 `system`，`app_secret` 不允许在普通表单中查看或手工覆盖。
 
 保存全局覆盖或项目业务配置后，Observer 在数据库 commit 后按当前 definition mode 写穿/失效运行缓存，并递增独立的 runtime revision。rollback 不产生缓存或广播副作用。
 

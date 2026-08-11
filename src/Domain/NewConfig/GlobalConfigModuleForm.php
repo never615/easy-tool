@@ -75,6 +75,23 @@ class GlobalConfigModuleForm
             }
 
             $override = is_array($overrides[$key]) ? $overrides[$key] : [];
+            if (GlobalConfigDefinition::usesLaravelConfigBaseline($definition)) {
+                $value = $this->validateValue($key, $definition, $override['value'] ?? null);
+                $normalizedValue = $this->normalizeValue($definition, $value);
+                $baselineValue = GlobalConfigBaselineResolver::normalize(
+                    (string)($definition['type'] ?? 'string'),
+                    $this->baseline()->forDefinition($definition)
+                );
+
+                if ($normalizedValue === $baselineValue) {
+                    $this->manager()->clear($key);
+                } else {
+                    $this->manager()->setManual($key, $normalizedValue);
+                }
+
+                continue;
+            }
+
             $enabled = filter_var($override['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
             if (!$enabled) {
                 $this->manager()->clear($key);

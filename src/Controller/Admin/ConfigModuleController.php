@@ -346,12 +346,8 @@ HTML;
                 . '<div class="global-config-module-help">该配置以数据库为主；停用后使用代码兜底值。</div>';
         }
 
-        return '<div class="checkbox" style="margin-top:0">'
-            . '<input type="hidden" name="overrides[' . $escapedKey . '][enabled]" value="0">'
-            . '<label><input type="checkbox" name="overrides[' . $escapedKey . '][enabled]" value="1"' . $checked . '> 启用数据库覆盖</label>'
-            . '</div>'
-            . $this->renderInput($row, $key, $value)
-            . '<div class="global-config-module-help">取消勾选并保存，即恢复使用当前环境 config 基线。</div>';
+        return $this->renderInput($row, $key, $value)
+            . '<div class="global-config-module-help">修改为不同于环境值的内容并保存，会自动启用数据库覆盖；改回环境值并保存，会自动恢复环境配置。</div>';
     }
 
     private function displayValue(array $row, string $field): string

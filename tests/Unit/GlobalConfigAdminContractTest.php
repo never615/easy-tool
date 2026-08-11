@@ -154,12 +154,13 @@ class GlobalConfigAdminContractTest extends TestCase
             ]],
         ]);
 
-        $this->assertStringContainsString('启用数据库覆盖', $html);
+        $this->assertStringNotContainsString('> 启用数据库覆盖</label>', $html);
+        $this->assertStringContainsString('自动启用数据库覆盖', $html);
         $this->assertStringContainsString('环境值：', $html);
         $this->assertStringContainsString('数据库覆盖值：', $html);
         $this->assertStringContainsString('最终生效值：', $html);
         $this->assertStringContainsString('来源：环境配置', $html);
-        $this->assertStringContainsString('overrides[location.trajectory_segments.chunk_minutes][enabled]', $html);
+        $this->assertStringNotContainsString('overrides[location.trajectory_segments.chunk_minutes][enabled]', $html);
     }
 
     public function test_database_native_module_row_uses_normal_enable_control_without_override_wording(): void
@@ -196,7 +197,7 @@ class GlobalConfigAdminContractTest extends TestCase
         $this->assertStringContainsString('数据库值：', $html);
         $this->assertStringContainsString('代码兜底值：', $html);
         $this->assertStringContainsString('来源：数据库配置', $html);
-        $this->assertStringNotContainsString('启用数据库覆盖', $html);
+        $this->assertStringNotContainsString('自动启用数据库覆盖', $html);
         $this->assertStringNotContainsString('数据库覆盖值：', $html);
     }
 
@@ -217,7 +218,7 @@ class GlobalConfigAdminContractTest extends TestCase
         $this->assertSame('laravel_config', $maintenance['location.trajectory_segments.chunk_minutes']['effective_source']);
     }
 
-    public function test_module_form_only_creates_manual_override_after_explicit_selection(): void
+    public function test_database_native_module_form_keeps_normal_enable_semantics(): void
     {
         $form = new GlobalConfigModuleForm(new class extends NewConfigPublisher {
             public function __construct()
@@ -239,7 +240,7 @@ class GlobalConfigAdminContractTest extends TestCase
         $this->assertSame(GlobalConfigOverrideSource::MANUAL, $row->override_source);
         $this->assertTrue((bool)$row->is_enabled);
         $snapshotRow = collect($snapshot['rows'])->firstWhere('key', 'debug_log');
-        $this->assertSame('database_override', $snapshotRow['effective_source']);
+        $this->assertSame('database', $snapshotRow['effective_source']);
         $this->assertSame('1', $snapshotRow['effective_value']);
 
         $snapshot = $form->save('basic', [
@@ -257,6 +258,45 @@ class GlobalConfigAdminContractTest extends TestCase
         $snapshotRow = collect($snapshot['rows'])->firstWhere('key', 'debug_log');
         $this->assertSame('code_default', $snapshotRow['effective_source']);
         $this->assertSame('0', $snapshotRow['effective_value']);
+    }
+
+    public function test_config_backed_module_form_automatically_sets_and_clears_override_by_value(): void
+    {
+        $form = new GlobalConfigModuleForm(new class extends NewConfigPublisher {
+            public function __construct()
+            {
+            }
+        });
+        $key = 'location.trajectory_segments.chunk_minutes';
+        $baseline = (string)((int)config($key));
+        $override = (string)(((int)$baseline) + 1);
+
+        $snapshot = $form->save('location_maintenance', [
+            'overrides' => [
+                $key => ['value' => $override],
+            ],
+        ]);
+
+        $row = NewConfig::query()->where('key', $key)->firstOrFail();
+        $this->createdKeys[] = $key;
+        $this->assertSame(GlobalConfigOverrideSource::MANUAL, $row->override_source);
+        $this->assertTrue((bool)$row->is_enabled);
+        $snapshotRow = collect($snapshot['rows'])->firstWhere('key', $key);
+        $this->assertSame('database_override', $snapshotRow['effective_source']);
+        $this->assertSame($override, $snapshotRow['effective_value']);
+
+        $snapshot = $form->save('location_maintenance', [
+            'overrides' => [
+                $key => ['value' => $baseline],
+            ],
+        ]);
+
+        $row->refresh();
+        $this->assertNull($row->override_source);
+        $this->assertFalse((bool)$row->is_enabled);
+        $snapshotRow = collect($snapshot['rows'])->firstWhere('key', $key);
+        $this->assertSame('laravel_config', $snapshotRow['effective_source']);
+        $this->assertSame($baseline, $snapshotRow['effective_value']);
     }
 
     public function test_raw_admin_grids_never_render_app_secret_value(): void
