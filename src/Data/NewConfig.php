@@ -16,6 +16,20 @@ class NewConfig extends BaseModel
 
     public const GROUP_RUNTIME_ENV_OVERRIDE = 'runtime_env_override';
 
+    /**
+     * 配置中心底层列表支持的固定分组。
+     *
+     * @return array<string, string>
+     */
+    public static function groupOptions(): array
+    {
+        return [
+            self::GROUP_GLOBAL_CONFIG => '运行时业务配置',
+            self::GROUP_RUNTIME_ENV_OVERRIDE => '运行期 Env 覆盖',
+            self::GROUP_SWOOLE_TASK_MONITOR => 'Swoole Task 启动配置',
+        ];
+    }
+
     public const KEY_SWOOLE_TASK_MONITOR_ENABLED = 'swoole_task_monitor.enabled';
     public const KEY_SWOOLE_TASK_MONITOR_MODE = 'swoole_task_monitor.mode';
     public const KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE = 'swoole_task_monitor.trace_sample_rate';

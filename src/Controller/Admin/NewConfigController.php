@@ -51,11 +51,17 @@ class NewConfigController extends AdminCommonController
             $actions->disableDelete();
         });
 
-        $grid->group_key('分组')->label();
+        $grid->group_key('分组')->display(function ($groupKey) {
+            $groupKey = (string)$groupKey;
+            $groupLabel = NewConfig::groupOptions()[$groupKey] ?? '未知分组';
+
+            return '<span class="label label-info">' . e($groupLabel) . '</span>'
+                . '<br><code>' . e($groupKey) . '</code>';
+        });
         $grid->name('配置项');
         $grid->type('类型')->label();
-        $grid->value('当前值')->limit(30)->editable(); //limit必须放在 editable 之前
-        $grid->default_value('默认值')->limit(30);
+        $grid->value('当前值')->limit(50)->editable(); //limit必须放在 editable 之前
+        $grid->default_value('默认值')->limit(50);
         $grid->remark('说明')->limit(40);
         $grid->is_enabled('启用')->switchE();
         $grid->requires_reload('需重启')->display(function ($value) {
@@ -72,7 +78,7 @@ class NewConfigController extends AdminCommonController
             $filter->ilike('key', 'Key');
             $filter->ilike('env_key', 'Env Key');
             $filter->ilike('name', '配置项');
-            $filter->equal('group_key', '分组');
+            $filter->equal('group_key', '分组')->select(NewConfig::groupOptions());
         });
 
         $grid->tools(function ($tools) {
