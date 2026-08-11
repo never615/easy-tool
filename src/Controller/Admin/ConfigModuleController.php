@@ -245,7 +245,11 @@ HTML;
         $html = '';
         foreach ($rows as $row) {
             $key = (string)$row['key'];
-            $overrideValue = $row['override_value'] ?? $row['baseline_value'] ?? '';
+            $useBaselineInput = (bool)($row['config_backed'] ?? false)
+                && !(bool)($row['override_enabled'] ?? false);
+            $overrideValue = $useBaselineInput
+                ? ($row['baseline_value'] ?? '')
+                : ($row['override_value'] ?? $row['baseline_value'] ?? '');
             $overrideValue = $overrideValue === null ? '' : (string)$overrideValue;
             $familyKey = (string)($row['family_key'] ?? '');
             $familyBadge = $this->renderFamilyBadge($row);

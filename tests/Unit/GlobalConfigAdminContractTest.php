@@ -140,7 +140,7 @@ class GlobalConfigAdminContractTest extends TestCase
                 'family_key' => '',
                 'family_label' => '',
                 'baseline_value' => '27',
-                'override_value' => null,
+                'override_value' => '10',
                 'effective_value' => '27',
                 'effective_source' => 'laravel_config',
                 'override_source' => null,
@@ -161,6 +161,10 @@ class GlobalConfigAdminContractTest extends TestCase
         $this->assertStringContainsString('最终生效值：', $html);
         $this->assertStringContainsString('来源：环境配置', $html);
         $this->assertStringNotContainsString('overrides[location.trajectory_segments.chunk_minutes][enabled]', $html);
+        $this->assertStringContainsString(
+            'name="overrides[location.trajectory_segments.chunk_minutes][value]" value="27"',
+            $html
+        );
     }
 
     public function test_database_native_module_row_uses_normal_enable_control_without_override_wording(): void
