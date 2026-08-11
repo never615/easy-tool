@@ -9,6 +9,7 @@ use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitionSyncer;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideSource;
 use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 
 /**
@@ -76,6 +77,7 @@ class ConfigTablesSeeder extends Seeder
         ]);
 
         $config->fill(GlobalConfigNewConfig::attributesFor($key, $value, $remark));
+        $config->override_source = GlobalConfigOverrideSource::LEGACY_CONFIGS;
         $config->save();
     }
 

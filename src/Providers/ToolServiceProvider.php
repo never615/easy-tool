@@ -27,6 +27,8 @@ use Illuminate\Support\ServiceProvider;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Admin\Domain\SubjectConfig\SubjectConfigRegistry;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
+use Mallto\Tool\Commands\AdoptGlobalConfigOverridesCommand;
+use Mallto\Tool\Commands\AuditGlobalConfigOverridesCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
 use Mallto\Tool\Commands\MongoDatabaseMonitorCommand;
 use Mallto\Tool\Commands\PublishNewConfigCommand;
@@ -103,6 +105,8 @@ class ToolServiceProvider extends ServiceProvider
         PostgresDatabaseMonitorCommand::class,
         RedisMemoryMonitorCommand::class,
         PublishNewConfigCommand::class,
+        AuditGlobalConfigOverridesCommand::class,
+        AdoptGlobalConfigOverridesCommand::class,
     ];
 
     /**

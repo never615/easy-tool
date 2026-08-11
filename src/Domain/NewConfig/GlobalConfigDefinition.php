@@ -15,7 +15,7 @@ class GlobalConfigDefinition
         string $key,
         string $name,
         string $module,
-        string $defaultValue,
+        ?string $defaultValue,
         string $type,
         string $remark,
         ?string $envKey = null,
@@ -38,6 +38,35 @@ class GlobalConfigDefinition
                 : GlobalConfigApplyMode::SWOOLE_REDIS,
             'requires_reload' => false,
         ], $meta);
+    }
+
+    public static function fromConfig(
+        string $key,
+        string $name,
+        string $module,
+        string $configKey,
+        string $type,
+        string $remark,
+        ?string $envKey = null,
+        array $meta = []
+    ): array {
+        if (!config()->has($configKey)) {
+            throw new \LogicException("Missing Laravel config baseline: {$configKey}");
+        }
+
+        return self::make(
+            $key,
+            $name,
+            $module,
+            GlobalConfigBaselineResolver::normalize($type, config($configKey)),
+            $type,
+            $remark,
+            $envKey,
+            array_merge($meta, [
+                'baseline_source' => 'laravel_config',
+                'config_key' => $configKey,
+            ])
+        );
     }
 
     /**

@@ -60,11 +60,11 @@ final class GlobalConfigRuntimeResolver
             return ['found' => false, 'value' => null];
         }
 
-        $value = $config->is_enabled ? $config->value : $config->default_value;
-        if ($config->is_enabled && ($value === null || $value === '')) {
-            $value = $config->default_value;
+        if ($config->override_source === null || !$config->is_enabled) {
+            return ['found' => false, 'value' => null];
         }
 
+        $value = $config->value;
         if ($value !== null) {
             $value = match ((string)$config->type) {
                 'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',

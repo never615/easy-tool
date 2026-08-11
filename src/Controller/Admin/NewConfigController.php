@@ -10,6 +10,8 @@ use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\NewConfigEffectiveEnv;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideSource;
+use Mallto\Tool\Exception\ResourceException;
 
 /**
  * NewConfigController：处理 new config controller 相关的 HTTP 请求。
@@ -60,7 +62,18 @@ class NewConfigController extends AdminCommonController
         });
         $grid->name('配置项');
         $grid->type('类型')->label();
-        $grid->value('当前值')->limit(50)->editable(); //limit必须放在 editable 之前
+        $grid->value('配置值（global_config 为数据库覆盖值）')->display(function ($value) {
+            return NewConfigController::displayConfigValue((string)$this->key, $value, 50);
+        });
+        $grid->override_source('全局覆盖来源')->display(function ($source) {
+            if ((string)$this->group_key !== NewConfig::GROUP_GLOBAL_CONFIG) {
+                return '-';
+            }
+
+            return $source
+                ? '<span class="label label-primary">' . e((string)$source) . '</span>'
+                : '<span class="label label-default">未覆盖，使用 config 基线</span>';
+        });
         $grid->default_value('默认值')->limit(50);
         $grid->remark('说明')->limit(40);
         $grid->is_enabled('启用')->switchE();
@@ -139,9 +152,10 @@ class NewConfigController extends AdminCommonController
         $form->display('group_key', '分组');
         $form->display('name', '配置项');
         $form->display('type', '类型');
-        $form->textarea('value', '当前值')
-            ->help('留空时使用默认值。boolean 建议填写 0/1；float 可填写 0.01。');
+        $form->textarea('value', '配置值')
+            ->help('global_config 中该字段是数据库覆盖值，不是环境 config 基线。boolean 建议填写 0/1；float 可填写 0.01。');
         $form->switch('is_enabled', '启用')->default(1);
+        $form->display('override_source', '全局覆盖来源');
         $form->display('default_value', '默认值');
         $form->display('options', '选项');
         $form->display('remark', '说明');
@@ -154,6 +168,44 @@ class NewConfigController extends AdminCommonController
         $form->display('key', 'Key');
         $form->display('env_key', 'Env Key')
             ->help('导出为运行期环境变量名，例如 SWOOLE_TASK_MONITOR_ENABLED。<br>' . NewConfigBootstrapKeyGuard::forbiddenHint());
+
+        $form->editing(function (Form $form) {
+            if ((string)$form->model()->key !== 'app_secret') {
+                return;
+            }
+
+            // 不让系统密钥被字段 fill 到编辑页 HTML 中。
+            $form->model()->value = '已脱敏';
+            $form->fields()->first(function ($field) {
+                return $field->column() === 'value';
+            })?->readonly();
+        });
+
+        $form->saving(function (Form $form) {
+            if ((string)$form->model()->group_key !== NewConfig::GROUP_GLOBAL_CONFIG) {
+                return;
+            }
+
+            if ((string)$form->model()->key === 'app_secret') {
+                throw new ResourceException('app_secret 由系统管理，不能在原始配置列表修改。');
+            }
+
+            $form->model()->override_source = GlobalConfigOverrideSource::MANUAL;
+        });
+    }
+
+    private static function displayConfigValue(string $key, $value, int $limit): string
+    {
+        if ($key === 'app_secret') {
+            return '<em>已脱敏</em>';
+        }
+
+        $value = (string)$value;
+        if (mb_strlen($value) > $limit) {
+            $value = mb_substr($value, 0, $limit) . '...';
+        }
+
+        return e($value);
     }
 
 }

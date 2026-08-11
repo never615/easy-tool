@@ -5,8 +5,7 @@
 
 namespace Mallto\Tool\Utils;
 
-use Mallto\Tool\Data\NewConfig;
-use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideManager;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigRuntimeResolver;
 
 /**
@@ -81,24 +80,6 @@ class ConfigUtils
      */
     public static function set($key, $value, $ttl = null)
     {
-        $attributes = GlobalConfigNewConfig::attributesFor((string)$key, (string)$value);
-        $config = NewConfig::query()->firstOrNew([
-            'key' => (string)$key,
-        ]);
-
-        if (!$config->exists) {
-            $config->fill($attributes);
-        } else {
-            $config->env_key = $attributes['env_key'];
-            $config->group_key = $attributes['group_key'];
-            $config->type = $attributes['type'];
-            $config->is_enabled = $attributes['is_enabled'];
-            $config->requires_reload = $attributes['requires_reload'];
-        }
-
-        $config->value = $attributes['value'];
-        $config->save();
-
-        return $config;
+        return app(GlobalConfigOverrideManager::class)->setSystem((string)$key, $value);
     }
 }

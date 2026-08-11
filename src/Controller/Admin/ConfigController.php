@@ -7,6 +7,8 @@ use Encore\Admin\Grid;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigNewConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideSource;
+use Mallto\Tool\Exception\ResourceException;
 
 /**
  * ConfigController：历史 `/admin/configs` 路由的兼容控制器。
@@ -51,7 +53,14 @@ class ConfigController extends AdminCommonController
 
         $grid->key('Key')->copyable();
         $grid->name('配置项')->limit(30);
-        $grid->value('当前值')->limit(40)->editable(); //limit必须放在 editable 之前
+        $grid->value('数据库覆盖值')->display(function ($value) {
+            return ConfigController::displayConfigValue((string)$this->key, $value, 40);
+        });
+        $grid->override_source('覆盖来源')->display(function ($source) {
+            return $source
+                ? '<span class="label label-primary">' . e((string)$source) . '</span>'
+                : '<span class="label label-default">未启用覆盖</span>';
+        });
         $grid->remark('说明')->display(function ($value) {
             $text = ConfigController::plainRemarkText($value);
             if ($text === '') {
@@ -95,13 +104,31 @@ class ConfigController extends AdminCommonController
         $form->text("name", '配置项');
         $form->textarea("remark", '说明')
             ->help('说明按纯文本保存；历史 HTML 标签会在保存时自动清理。');
-        $form->textarea("value", '当前值');
+        $form->textarea("value", '数据库覆盖值')
+            ->help('保存后将明确启用人工数据库覆盖。如需恢复环境 config 基线，请在对应模块页取消“启用数据库覆盖”。');
+        $form->display('override_source', '覆盖来源');
         $form->display('env_key', 'Env Key');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
 
+        $form->editing(function (Form $form) {
+            if ((string)$form->model()->key !== 'app_secret') {
+                return;
+            }
+
+            // editing hook 在字段 fill 之前执行，用内存中的脱敏值替代原值，
+            // 保证密钥不会进入 textarea 或任何 HTML 属性。
+            $form->model()->value = '已脱敏';
+            $form->fields()->first(function ($field) {
+                return $field->column() === 'value';
+            })?->readonly();
+        });
+
         $form->saving(function (Form $form) {
             $key = (string)$form->key;
+            if ($key === 'app_secret') {
+                throw new ResourceException('app_secret 由系统管理，不能在普通全局配置页修改。');
+            }
             $remark = self::plainRemarkText($form->remark ? (string)$form->remark : null);
             $attributes = GlobalConfigNewConfig::attributesFor(
                 $key,
@@ -116,6 +143,7 @@ class ConfigController extends AdminCommonController
             $form->model()->options = $attributes['options'];
             $form->model()->remark = $attributes['remark'];
             $form->model()->is_enabled = $attributes['is_enabled'];
+            $form->model()->override_source = GlobalConfigOverrideSource::MANUAL;
             $form->model()->requires_reload = $attributes['requires_reload'];
             if (!$form->name) {
                 $form->model()->name = $attributes['name'];
@@ -150,6 +178,15 @@ class ConfigController extends AdminCommonController
         return mb_substr($value, 0, $limit) . '...';
     }
 
+    private static function displayConfigValue(string $key, $value, int $limit): string
+    {
+        if ($key === 'app_secret') {
+            return '<em>已脱敏</em>';
+        }
+
+        return self::escape(self::limitText((string)$value, $limit));
+    }
+
     /**
      * 处理「escape」相关的内部协作步骤。
      */
@@ -165,7 +202,7 @@ class ConfigController extends AdminCommonController
     {
         return '<div class="alert alert-warning" style="margin:10px 0 12px;">'
             . '<strong>提示：</strong>当前页面沿用历史 configs 路由名，但实际数据源是 new_configs；旧 configs 表只用于升级迁移。日常请优先使用“配置中心”下对应的模块化运行时配置页面。'
-            . '保存后通过运行缓存生效，无需发布或重启。'
+            . '列表中的 value 仅表示数据库覆盖值；override_source 为空时不会覆盖环境 config 基线。保存后通过运行缓存生效，无需发布或重启。'
             . '</div>';
     }
 

@@ -47,7 +47,7 @@ class NewConfigDocumentSeeder extends Seeder
 
 ## 总体原则
 
-全局业务配置和项目动态配置以 PostgreSQL 为事实来源，通过运行配置缓存生效。普通业务保存不生成业务 env/value/subject 快照，不刷新 Laravel config cache，也不要求发布或重启。
+全局业务配置以当前环境 `.env -> config/*.php` 为默认基线，只有管理员或系统明确启用的 `new_configs.global_config` 记录才覆盖该基线。项目动态配置仍以 PostgreSQL 为事实来源。两者都通过运行配置缓存生效；普通业务保存不生成业务 env/value/subject 快照，不刷新 Laravel config cache，也不要求发布或重启。
 
 业务配置有两种模式：
 
@@ -70,7 +70,7 @@ class NewConfigDocumentSeeder extends Seeder
 - Swoole Task 配置、运行期 Env 覆盖
 - 发布启动配置
 
-新增业务 key 时，应先在所属包的 Global / Subject definitions 中登记，再执行 `php artisan tool:update` 补齐缺失记录。apply mode 由代码定义，管理员不能在 UI 中任意修改。
+新增业务 key 时，应先在所属包的 Global / Subject definitions 中登记，再执行 `php artisan tool:update` 补齐目录记录。全局目录记录默认不启用数据库覆盖；后台仍能展示配置项、环境基线、数据库覆盖值和最终生效值。apply mode 由代码定义，管理员不能在 UI 中任意修改。
 
 `/admin/configs`、`/admin/subject_configs` 和 `/admin/new_configs` 是查看原始记录或兼容历史 key 的排查入口，不是日常首选入口。旧 `configs` 表已退役；升级 seeder 只单向读取它以补齐缺失的 `new_configs`，不会覆盖新表已有值或把值写回旧表。
 
@@ -113,7 +113,9 @@ statistics_project
 
 ## 保存业务配置后
 
-保存全局或项目业务配置后，Observer 在数据库 commit 后按当前 definition mode 写穿/失效运行缓存，并递增独立的 runtime revision。rollback 不产生缓存或广播副作用。
+全局配置只有勾选“启用数据库覆盖”并保存后才产生 `manual` 覆盖；点击“恢复环境配置”会清除覆盖来源并回到当前进程 config 基线。系统通过 `ConfigUtils::set()` 写入的配置标记为 `system`，`app_secret` 不允许在普通表单中查看或手工覆盖。
+
+保存全局覆盖或项目业务配置后，Observer 在数据库 commit 后按当前 definition mode 写穿/失效运行缓存，并递增独立的 runtime revision。rollback 不产生缓存或广播副作用。
 
 通常下一次读取即可取得新值，不需要进入“发布启动配置”。跨实例的 Pub/Sub 消息只携带 revision 和 identity hash，不携带 key/value；若消息丢失，revision watcher 会清理专用 Swoole L1 以补偿，但不会触发服务重启。
 
@@ -169,14 +171,15 @@ php artisan tool:new_config_publish --restart --force-config-cache
 2. 全局业务读取统一使用 `ConfigUtils`，项目业务读取统一使用 `SubjectUtils`。
 3. 小型业务值默认 `swoole_redis`；固定大值/低频值明确登记为 `shared_redis`。
 4. 不得把业务值重新加入 `new_configs_values.php`、`subject_configs_values.php` 或启动 env。
-5. Definition Syncer 保留已有记录的 `value` 和 `is_enabled`；name、remark、type、env key、default、options、sort 和 apply/reload metadata 会随代码定义同步。
-6. 临时 `sa_lo_st_*` 和历史未注册 key 仍按业务缓存兼容处理；同一项目临时基站开关最多 10 个。
+5. Definition Syncer 会创建配置目录，但新目录记录的 `value=null`、`override_source=null`、`is_enabled=false`；已有人工/系统覆盖的 value、启用状态和来源保持不变。name、remark、type、env key、default、options、sort 和 apply/reload metadata 会随代码定义同步。
+6. 当调用方默认值来自 `config($configKey)` 时，Global Definition 必须通过 `fromConfig()` 读取同一 config key；当默认值是代码常量时，调用方与 Definition 必须共用 Defaults 常量；原本没有默认值时不得人为补默认值。
+7. 临时 `sa_lo_st_*` 和历史未注册 key 仍按业务缓存兼容处理；同一项目临时基站开关最多 10 个。
 
 ## 常用排查
 
 业务配置未生效：
 
-1. 检查 DB 中正确的 subject/scope/key、value 和 `is_enabled`。
+1. 全局配置检查 DB 的 `override_source`、`is_enabled` 和 value；项目配置检查正确的 subject/scope/key/value。
 2. 检查 definition mode；`shared_redis` 不应访问 Swoole。
 3. 检查 Redis L2 写穿、runtime revision 和无 value 广播。
 4. Swoole 开启时检查 subscriber / revision watcher；关闭时确认已回退 Redis/DB。
@@ -212,9 +215,9 @@ location.beacon_area_check_interval
 location.skylab_location_perf_log
 ```
 
-PostgreSQL effective value 必须与每个 LaravelS Pod、Horizon 当前加载的 `config(key)` / 旧快照值一致。effective value 规则：记录启用且 `value` 非 `null`/空字符串时取 `value`，否则取 definition 同步后的 `default_value`；记录缺失时才回退当前 Laravel config。差异必须先确认并修正 DB，不能直接切换读路径。
+每个 LaravelS Pod、Horizon 当前加载的 `config(key)` 必须与 Definitions 展示的环境基线一致。目录记录存在不代表覆盖生效；只有 `override_source` 非空且 `is_enabled=true` 时才取数据库 value，否则始终取当前进程 config。历史来源不明确的值先审计，只有确认需要继续覆盖时才标记为 `reviewed`。
 
 上线时先冻结后台业务配置写入，再完成对账并全量滚动 LaravelS、Horizon，确认所有实例已使用新代码和同一共享 Redis 后解除冻结。新旧版本混跑期间不得保存业务配置；滚动完成后复核 runtime revision、Redis L2 和 Swoole L1。
-MARKDOWN;
+MARKDOWN . "\n";
     }
 }

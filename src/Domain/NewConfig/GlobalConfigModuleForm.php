@@ -16,7 +16,11 @@ class GlobalConfigModuleForm
     /**
      * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
      */
-    public function __construct(private NewConfigPublisher $publisher)
+    public function __construct(
+        private NewConfigPublisher $publisher,
+        private ?GlobalConfigOverrideManager $overrideManager = null,
+        private ?GlobalConfigBaselineResolver $baselineResolver = null
+    )
     {
     }
 
@@ -54,39 +58,35 @@ class GlobalConfigModuleForm
     {
         $this->moduleMeta($module);
         $definitions = GlobalConfigDefinitions::definitions($module);
-        $values = $input['values'] ?? [];
-        $validated = [
-            'values' => [],
-        ];
+        $overrides = Validator::make($input, [
+            'overrides' => ['required', 'array'],
+        ], [
+            'overrides.required' => '缺少数据库覆盖表单数据。',
+            'overrides.array' => '数据库覆盖表单格式无效。',
+        ])->validate()['overrides'];
 
         foreach ($definitions as $key => $definition) {
-            $validated['values'][$key] = $this->validateValue($key, $definition, $values[$key] ?? null);
+            if (($definition['override_policy'] ?? null) === 'system') {
+                continue;
+            }
+
+            if (!array_key_exists($key, $overrides)) {
+                continue;
+            }
+
+            $override = is_array($overrides[$key]) ? $overrides[$key] : [];
+            $enabled = filter_var($override['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            if (!$enabled) {
+                $this->manager()->clear($key);
+
+                continue;
+            }
+
+            $value = $this->validateValue($key, $definition, $override['value'] ?? null);
+            $this->manager()->setManual($key, $this->normalizeValue($definition, $value));
         }
 
-        NewConfig::withoutAutoPublish(function () use ($definitions, $validated) {
-            foreach ($definitions as $key => $definition) {
-                $value = $validated['values'][$key] ?? '';
-                $this->saveValue($key, $definition, $this->normalizeValue($definition, $value));
-            }
-        });
-
         return $this->snapshot($module);
-    }
-
-    /**
-     * 处理「saveValue」相关的内部协作步骤。
-     */
-    private function saveValue(string $key, array $definition, string $value): void
-    {
-        $config = NewConfig::query()->firstOrNew([
-            'key' => $key,
-        ]);
-        $attributes = GlobalConfigNewConfig::attributesForDefinition($definition, $value);
-
-        $config->fill($attributes);
-        $config->value = $value;
-        $config->is_enabled = true;
-        $config->save();
     }
 
     /**
@@ -94,16 +94,31 @@ class GlobalConfigModuleForm
      */
     private function rowSnapshot(string $key, array $definition, ?NewConfig $row): array
     {
-        $value = $row ? $row->value : null;
-        if ($value === null || $value === '') {
-            $value = $definition['default_value'] ?? '';
-        }
+        $baseline = $this->baseline()->forDefinition($definition);
+        $activeOverride = $row !== null
+            && $row->override_source !== null
+            && (bool)$row->is_enabled;
+        $sensitive = ($definition['override_policy'] ?? null) === 'system'
+            || $key === 'app_secret';
+        $displayBaseline = $sensitive ? null : $baseline;
+        $displayOverride = $sensitive ? null : $row?->value;
+        $displayEffective = $sensitive ? null : ($activeOverride ? $row?->value : $baseline);
 
         return [
             'key' => $key,
             'env_key' => $row && $row->env_key ? $row->env_key : GlobalConfigNewConfig::envKeyForDefinition($definition),
             'name' => (string)($definition['name'] ?? ($row->name ?? $key)),
-            'value' => (string)$value,
+            'value' => $displayEffective === null ? '' : (string)$displayEffective,
+            'baseline_value' => $displayBaseline === null ? null : (string)$displayBaseline,
+            'override_value' => $displayOverride === null ? null : (string)$displayOverride,
+            'effective_value' => $displayEffective === null ? null : (string)$displayEffective,
+            'effective_source' => $activeOverride
+                ? 'database_override'
+                : (string)($definition['baseline_source'] ?? 'code_default'),
+            'override_source' => $row?->override_source,
+            'override_enabled' => $activeOverride,
+            'override_policy' => (string)($definition['override_policy'] ?? 'manual'),
+            'sensitive' => $sensitive,
             'type' => (string)($definition['type'] ?? 'string'),
             'ui' => (string)($definition['ui'] ?? 'input'),
             'placeholder' => (string)($definition['placeholder'] ?? ''),
@@ -181,5 +196,15 @@ class GlobalConfigModuleForm
         }
 
         return $meta;
+    }
+
+    private function manager(): GlobalConfigOverrideManager
+    {
+        return $this->overrideManager ??= app(GlobalConfigOverrideManager::class);
+    }
+
+    private function baseline(): GlobalConfigBaselineResolver
+    {
+        return $this->baselineResolver ??= app(GlobalConfigBaselineResolver::class);
     }
 }

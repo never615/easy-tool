@@ -97,7 +97,16 @@ class GlobalConfigDefinitions
     private static function basicDefinitions(): array
     {
         return [
-            self::definition(Config::APP_SECRET, '开放平台 App Secret', 'basic', '', 'string', '请求定位接口使用的签名密钥。'),
+            self::definition(
+                Config::APP_SECRET,
+                '开放平台 App Secret',
+                'basic',
+                '',
+                'string',
+                '请求定位接口使用的签名密钥。',
+                null,
+                ['override_policy' => 'system']
+            ),
             self::definition('debug_log', '全局调试日志', 'basic', '0', 'boolean', '开启后部分业务会写额外调试日志。'),
             self::definition('close_owner_api_log_except', '关闭 Owner API 日志排除规则', 'basic', '0', 'boolean', '开启后 owner API 日志不再跳过 app.log.except 中的路径。'),
         ];

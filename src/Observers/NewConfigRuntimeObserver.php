@@ -78,7 +78,7 @@ final class NewConfigRuntimeObserver
     /** @return list<string> */
     private function effectiveFields(): array
     {
-        return ['key', 'group_key', 'type', 'value', 'default_value', 'is_enabled'];
+        return ['key', 'group_key', 'type', 'value', 'default_value', 'is_enabled', 'override_source'];
     }
 
     private function dispatchChangedAfterCommit(NewConfig $config, string $key, ?string $originalKey): void

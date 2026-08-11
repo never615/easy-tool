@@ -32,12 +32,17 @@ class GlobalConfigDefinitionSyncer
                 if ($config === null) {
                     $config = new NewConfig(['key' => $key]);
                     $config->fill($attributes);
+                    $config->value = null;
+                    $config->override_source = null;
+                    $config->is_enabled = false;
                 } else {
-                    unset($attributes['value'], $attributes['is_enabled']);
+                    unset($attributes['value'], $attributes['is_enabled'], $attributes['override_source']);
                     $config->fill($attributes);
                 }
 
-                $config->save();
+                if (!$config->exists || $config->isDirty()) {
+                    $config->save();
+                }
             }
         });
     }

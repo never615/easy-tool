@@ -2,6 +2,7 @@
 
 namespace Mallto\Tool\Data;
 
+use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideSource;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 
 /**
@@ -53,6 +54,7 @@ class NewConfig extends BaseModel
     protected static function booted(): void
     {
         static::saving(function (NewConfig $config) {
+            GlobalConfigOverrideSource::assertValid($config->override_source);
             $config->env_key = NewConfigBootstrapKeyGuard::normalize($config->env_key);
             if ($config->group_key === self::GROUP_RUNTIME_ENV_OVERRIDE) {
                 NewConfigBootstrapKeyGuard::assertAllowedForRuntimeOverride($config->env_key);

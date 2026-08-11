@@ -56,6 +56,7 @@ class GlobalConfigNewConfig
             'remark' => $remark,
             'sort' => 0,
             'is_enabled' => true,
+            'override_source' => null,
             'requires_reload' => GlobalConfigApplyMode::requiresReload($key),
         ];
     }
@@ -68,14 +69,16 @@ class GlobalConfigNewConfig
         $key = (string)$definition['key'];
         $attributes = self::attributesFor(
             $key,
-            $value ?? (string)($definition['value'] ?? $definition['default_value'] ?? ''),
+            $value,
             (string)($definition['remark'] ?? '')
         );
 
         $attributes['name'] = (string)($definition['name'] ?? $attributes['name']);
         $attributes['env_key'] = self::envKeyForDefinition($definition);
         $attributes['type'] = (string)($definition['type'] ?? $attributes['type']);
-        $attributes['default_value'] = (string)($definition['default_value'] ?? $attributes['default_value']);
+        $attributes['default_value'] = array_key_exists('default_value', $definition)
+            ? $definition['default_value']
+            : $attributes['default_value'];
         $attributes['options'] = $definition['options'] ?? $attributes['options'];
         $attributes['sort'] = (int)($definition['sort'] ?? $attributes['sort']);
         $attributes['requires_reload'] = false;
