@@ -110,6 +110,18 @@ class SwooleTaskMonitor
     }
 
     /**
+     * 处理「recordDirectRejected」相关的内部协作步骤。
+     */
+    public static function recordDirectRejected(string|Task $task, string $reason, array $context = []): void
+    {
+        $taskClass = is_string($task) ? $task : get_class($task);
+
+        self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass, $reason, $context) {
+            $store->recordDirectRejected($taskClass, $reason, $context);
+        });
+    }
+
+    /**
      * 处理「recordStarted」相关的内部协作步骤。
      */
     public static function recordStarted(MonitoredSwooleTask $task): void
@@ -148,6 +160,35 @@ class SwooleTaskMonitor
                 $durationMs,
                 $task->swooleTaskMonitorPayloadBytes(),
                 $task->swooleTaskMonitorContext()
+            );
+        });
+    }
+
+    /**
+     * 处理「recordRejected」相关的内部协作步骤。
+     */
+    public static function recordRejected(
+        MonitoredSwooleTask $task,
+        int $durationMs,
+        string $reason,
+        array $context = []
+    ): void {
+        $context = array_merge($task->swooleTaskMonitorContext(), $context);
+
+        self::safeRecord(function (SwooleTaskMonitorStore $store) use ($task, $durationMs, $reason, $context) {
+            if (!$task->swooleTaskMonitorTraceSampled()) {
+                $store->recordRejectedSummary(get_class($task), $durationMs, $reason, $context);
+
+                return;
+            }
+
+            $store->recordRejected(
+                $task->swooleTaskMonitorId(),
+                get_class($task),
+                $durationMs,
+                $task->swooleTaskMonitorPayloadBytes(),
+                $reason,
+                $context
             );
         });
     }

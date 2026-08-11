@@ -14,6 +14,7 @@ abstract class MonitoredSwooleTask extends Task
     private ?string $swooleTaskMonitorId = null;
     private array $swooleTaskMonitorContext = [];
     private bool $swooleTaskMonitorTraceSampled = false;
+    private ?array $swooleTaskMonitorRejection = null;
 
     /**
      * 处理「handle」相关的内部协作步骤。
@@ -31,6 +32,17 @@ abstract class MonitoredSwooleTask extends Task
             throw $exception;
         }
 
+        if ($this->swooleTaskMonitorRejection !== null) {
+            SwooleTaskMonitor::recordRejected(
+                $this,
+                $this->elapsedMs($start),
+                $this->swooleTaskMonitorRejection['reason'],
+                $this->swooleTaskMonitorRejection['context']
+            );
+
+            return;
+        }
+
         SwooleTaskMonitor::recordFinished($this, $this->elapsedMs($start));
     }
 
@@ -38,6 +50,17 @@ abstract class MonitoredSwooleTask extends Task
      * 处理「handleTask」相关的内部协作步骤。
      */
     abstract protected function handleTask(): void;
+
+    /**
+     * 处理「markRejected」相关的内部协作步骤。
+     */
+    final protected function markRejected(string $reason, array $context = []): void
+    {
+        $this->swooleTaskMonitorRejection = [
+            'reason' => $reason,
+            'context' => $context,
+        ];
+    }
 
     /**
      * 处理「setSwooleTaskMonitorContext」相关的内部协作步骤。

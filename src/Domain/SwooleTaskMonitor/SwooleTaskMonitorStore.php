@@ -26,6 +26,10 @@ class SwooleTaskMonitorStore
     private static array $metaTouchedAt = [];
     private static array $samplePushedAt = [];
 
+    public function __construct(private readonly string $prefix = self::PREFIX)
+    {
+    }
+
     /**
      * 记录一次 Task 提交事件，并按采样策略决定是否保留追踪详情。
      */
@@ -146,6 +150,17 @@ class SwooleTaskMonitorStore
     }
 
     /**
+     * 处理「recordDirectRejected」相关的内部协作步骤。
+     */
+    public function recordDirectRejected(string $taskClass, string $reason, array $context = []): void
+    {
+        $date = $this->date();
+        $this->increment($this->statsKey($date), $taskClass, 'direct_rejected');
+        $this->recordRejectionSample($date, $taskClass, $reason, 'direct', $context);
+        $this->touchMeta($date);
+    }
+
+    /**
      * 处理「recordStartedSummary」相关的内部协作步骤。
      */
     public function recordStartedSummary(string $taskClass): void
@@ -238,6 +253,54 @@ class SwooleTaskMonitorStore
     }
 
     /**
+     * 处理「recordRejectedSummary」相关的内部协作步骤。
+     */
+    public function recordRejectedSummary(
+        string $taskClass,
+        int $durationMs,
+        string $reason,
+        array $context = []
+    ): void {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+
+        $this->increment($statsKey, $taskClass, 'rejected');
+        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        $this->recordRejectionSample($date, $taskClass, $reason, 'task', $context + [
+            'duration_ms' => $durationMs,
+        ]);
+        $this->touchMeta($date);
+    }
+
+    /**
+     * 处理「recordRejected」相关的内部协作步骤。
+     */
+    public function recordRejected(
+        string $taskId,
+        string $taskClass,
+        int $durationMs,
+        int $payloadBytes,
+        string $reason,
+        array $context = []
+    ): void {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+
+        $this->increment($statsKey, $taskClass, 'rejected');
+        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        $this->recordMax($statsKey, $taskClass, 'duration_max_ms', $durationMs);
+        $this->increment($statsKey, $taskClass, 'payload_bytes_total_runtime', $payloadBytes);
+        $this->recordMax($statsKey, $taskClass, 'payload_bytes_max_runtime', $payloadBytes);
+        $this->recordRejectionSample($date, $taskClass, $reason, 'task', $context + [
+            'task_id' => $taskId,
+            'duration_ms' => $durationMs,
+            'payload_bytes' => $payloadBytes,
+        ]);
+        $this->clearRuntimeState($date, $taskId);
+        $this->touchMeta($date);
+    }
+
+    /**
      * 处理「recordFailedSummary」相关的内部协作步骤。
      */
     public function recordFailedSummary(string $taskClass, int $durationMs, Throwable $exception): void
@@ -301,6 +364,7 @@ class SwooleTaskMonitorStore
             'recent_drops' => $this->decodeListRows($this->sampleKey($date, 'drops')),
             'recent_rate_limited' => $this->decodeListRows($this->sampleKey($date, 'rate_limited')),
             'recent_direct' => $this->decodeListRows($this->sampleKey($date, 'direct')),
+            'recent_rejections' => $this->decodeListRows($this->sampleKey($date, 'rejections')),
         ];
     }
 
@@ -318,7 +382,8 @@ class SwooleTaskMonitorStore
             $this->sampleKey($date, 'slow'),
             $this->sampleKey($date, 'drops'),
             $this->sampleKey($date, 'rate_limited'),
-            $this->sampleKey($date, 'direct')
+            $this->sampleKey($date, 'direct'),
+            $this->sampleKey($date, 'rejections'),
         ];
 
         Redis::del(...$keys);
@@ -392,6 +457,26 @@ class SwooleTaskMonitorStore
             'created_at' => date('Y-m-d H:i:s'),
             'pid' => getmypid() ?: null,
         ], $extra));
+    }
+
+    /**
+     * 处理「recordRejectionSample」相关的内部协作步骤。
+     */
+    private function recordRejectionSample(
+        string $date,
+        string $taskClass,
+        string $reason,
+        string $executionMode,
+        array $context
+    ): void {
+        $this->pushSample($this->sampleKey($date, 'rejections'), [
+            'task_class' => $taskClass,
+            'reason' => $reason,
+            'execution_mode' => $executionMode,
+            'context' => $context,
+            'created_at' => date('Y-m-d H:i:s'),
+            'pid' => getmypid() ?: null,
+        ]);
     }
 
     /**
@@ -471,6 +556,7 @@ class SwooleTaskMonitorStore
             (string)($payload['task_class'] ?? ''),
             (string)($payload['stage'] ?? ''),
             (string)($payload['reason'] ?? ''),
+            (string)($payload['execution_mode'] ?? ''),
         ]);
         $now = time();
         if (($now - (self::$samplePushedAt[$identity] ?? 0)) < self::SAMPLE_THROTTLE_SECONDS) {
@@ -507,15 +593,16 @@ class SwooleTaskMonitorStore
 
         foreach ($rows as $taskClass => $row) {
             $finished = (int)($row['finished'] ?? 0);
+            $rejected = (int)($row['rejected'] ?? 0);
             $failed = (int)($row['failed'] ?? 0);
             $started = (int)($row['started'] ?? 0);
             $delivered = (int)($row['delivered'] ?? 0);
-            $durationCount = $finished + $failed;
+            $durationCount = $finished + $rejected + $failed;
             $durationTotal = (int)($row['duration_total_ms'] ?? 0);
             $waitTotal = (int)($row['wait_total_ms'] ?? 0);
 
             $row['pending'] = max(0, $delivered - $started);
-            $row['running'] = max(0, $started - $finished - $failed);
+            $row['running'] = max(0, $started - $finished - $rejected - $failed);
             $row['duration_avg_ms'] = $durationCount > 0 ? (int)round($durationTotal / $durationCount) : 0;
             $row['wait_avg_ms'] = $started > 0 ? (int)round($waitTotal / $started) : 0;
             $rows[$taskClass] = $row;
@@ -543,6 +630,8 @@ class SwooleTaskMonitorStore
             'dropped' => 0,
             'rate_limited' => 0,
             'direct_handled' => 0,
+            'rejected' => 0,
+            'direct_rejected' => 0,
             'started' => 0,
             'finished' => 0,
             'failed' => 0,
@@ -619,7 +708,7 @@ class SwooleTaskMonitorStore
      */
     private function statsKey(string $date): string
     {
-        return self::PREFIX . ':stats:' . $date;
+        return $this->prefix . ':stats:' . $date;
     }
 
     /**
@@ -627,7 +716,7 @@ class SwooleTaskMonitorStore
      */
     private function metaKey(string $date): string
     {
-        return self::PREFIX . ':meta:' . $date;
+        return $this->prefix . ':meta:' . $date;
     }
 
     /**
@@ -635,7 +724,7 @@ class SwooleTaskMonitorStore
      */
     private function startKey(string $taskId): string
     {
-        return self::PREFIX . ':start:' . $taskId;
+        return $this->prefix . ':start:' . $taskId;
     }
 
     /**
@@ -643,7 +732,7 @@ class SwooleTaskMonitorStore
      */
     private function runningKey(string $date): string
     {
-        return self::PREFIX . ':running:' . $date;
+        return $this->prefix . ':running:' . $date;
     }
 
     /**
@@ -651,7 +740,7 @@ class SwooleTaskMonitorStore
      */
     private function sampleKey(string $date, string $type): string
     {
-        return self::PREFIX . ':sample:' . $type . ':' . $date;
+        return $this->prefix . ':sample:' . $type . ':' . $date;
     }
 
     /**
