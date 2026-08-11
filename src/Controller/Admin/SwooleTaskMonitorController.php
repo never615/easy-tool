@@ -152,7 +152,7 @@ class SwooleTaskMonitorController extends Controller
     .swoole-task-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
     .swoole-task-alert { margin-bottom:12px; }
     .swoole-task-muted { color:#667085; }
-    .swoole-task-grid { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap:10px; margin-bottom:12px; }
+    .swoole-task-grid { display:grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap:10px; margin-bottom:12px; }
     .swoole-task-card { background:#fff; border:1px solid #d8dde6; border-radius:4px; padding:10px 12px; min-height:72px; }
     .swoole-task-card-label { color:#667085; font-size:12px; margin-bottom:4px; }
     .swoole-task-card-value { font-size:22px; line-height:1.2; font-weight:600; color:#1f2937; }
@@ -211,9 +211,11 @@ class SwooleTaskMonitorController extends Controller
                     <th>丢弃</th>
                     <th>限流跳过</th>
                     <th>直接处理</th>
+                    <th>直接拒绝</th>
                     <th>待启动</th>
                     <th>运行中</th>
                     <th>完成</th>
+                    <th>拒绝</th>
                     <th>失败</th>
                     <th>慢任务</th>
                     <th>平均耗时</th>
@@ -242,6 +244,11 @@ class SwooleTaskMonitorController extends Controller
 <div class="swoole-task-panel">
     <h3>最近丢弃</h3>
     <div id="swoole-task-drops"></div>
+</div>
+
+<div class="swoole-task-panel">
+    <h3>最近拒绝</h3>
+    <div id="swoole-task-rejections"></div>
 </div>
 
 <div class="swoole-task-panel">
@@ -328,6 +335,8 @@ class SwooleTaskMonitorController extends Controller
             kpi('投递失败', number(summary.deliver_failed), number(summary.deliver_failed) > 0 ? 'swoole-task-bad' : '') +
             kpi('丢弃', number(summary.dropped), number(summary.dropped) > 0 ? 'swoole-task-warn' : '') +
             kpi('限流跳过', number(summary.rate_limited), number(summary.rate_limited) > 0 ? 'swoole-task-warn' : '') +
+            kpi('拒绝', number(summary.rejected), number(summary.rejected) > 0 ? 'swoole-task-warn' : '') +
+            kpi('直接拒绝', number(summary.direct_rejected), number(summary.direct_rejected) > 0 ? 'swoole-task-warn' : '') +
             kpi('待启动', number(summary.pending), number(summary.pending) > 0 ? 'swoole-task-warn' : '') +
             kpi('运行中', number(summary.running), '');
     }
@@ -348,7 +357,7 @@ class SwooleTaskMonitorController extends Controller
 
     function renderRows(rows) {
         if (!rows || rows.length === 0) {
-            document.getElementById('swoole-task-rows').innerHTML = '<tr><td colspan="17" class="swoole-task-empty">暂无数据。等待 Swoole Task 投递或执行后会自动出现。</td></tr>';
+            document.getElementById('swoole-task-rows').innerHTML = '<tr><td colspan="19" class="swoole-task-empty">暂无数据。等待 Swoole Task 投递或执行后会自动出现。</td></tr>';
             return;
         }
 
@@ -361,9 +370,11 @@ class SwooleTaskMonitorController extends Controller
                 + '<td class="' + (number(row.dropped) > 0 ? 'swoole-task-warn' : '') + '">' + number(row.dropped) + '</td>'
                 + '<td class="' + (number(row.rate_limited) > 0 ? 'swoole-task-warn' : '') + '">' + number(row.rate_limited) + '</td>'
                 + '<td>' + number(row.direct_handled) + '</td>'
+                + '<td class="' + (number(row.direct_rejected) > 0 ? 'swoole-task-warn' : '') + '">' + number(row.direct_rejected) + '</td>'
                 + '<td class="' + (number(row.pending) > 0 ? 'swoole-task-warn' : '') + '">' + number(row.pending) + '</td>'
                 + '<td>' + number(row.running) + '</td>'
                 + '<td>' + number(row.finished) + '</td>'
+                + '<td class="' + (number(row.rejected) > 0 ? 'swoole-task-warn' : '') + '">' + number(row.rejected) + '</td>'
                 + '<td class="' + (number(row.failed) > 0 ? 'swoole-task-bad' : '') + '">' + number(row.failed) + '</td>'
                 + '<td class="' + (number(row.slow_count) > 0 ? 'swoole-task-warn' : '') + '">' + number(row.slow_count) + '</td>'
                 + '<td>' + ms(row.duration_avg_ms) + '</td>'
@@ -406,10 +417,16 @@ class SwooleTaskMonitorController extends Controller
             + rows.slice(0, 20).map(function (row) {
                 var type = row.__sample_type === 'direct'
                     ? '直接处理'
-                    : (row.__sample_type === 'rate_limited' ? '限流跳过' : '丢弃');
+                    : (row.__sample_type === 'rate_limited'
+                        ? '限流跳过'
+                        : (row.__sample_type === 'rejection'
+                            ? (row.execution_mode === 'direct' ? '直接拒绝' : '任务拒绝')
+                            : '丢弃'));
                 var typeClass = row.__sample_type === 'direct'
                     ? 'swoole-task-good'
-                    : (row.__sample_type === 'rate_limited' ? 'swoole-task-warn' : 'swoole-task-bad');
+                    : (row.__sample_type === 'rate_limited' || row.__sample_type === 'rejection'
+                        ? 'swoole-task-warn'
+                        : 'swoole-task-bad');
                 var reason = row.reason || row.stage || '-';
                 var context = row.context ? JSON.stringify(row.context) : '-';
                 return '<tr>'
@@ -505,6 +522,7 @@ class SwooleTaskMonitorController extends Controller
         renderSamples('swoole-task-errors', snapshot.recent_errors || [], 'error');
         renderSamples('swoole-task-slow', snapshot.recent_slow || [], 'slow');
         renderDropSamples(sortSamplesByTime(markSamples(snapshot.recent_drops || [], 'drop')));
+        renderEventSamples('swoole-task-rejections', sortSamplesByTime(markSamples(snapshot.recent_rejections || [], 'rejection')));
         renderRateLimitedSamples(sortSamplesByTime(markSamples(snapshot.recent_rate_limited || [], 'rate_limited')));
         setRateLimitedSamplesVisible(rateLimitedSamplesVisible);
         renderDirectSamples(sortSamplesByTime(markSamples(snapshot.recent_direct || [], 'direct')));
