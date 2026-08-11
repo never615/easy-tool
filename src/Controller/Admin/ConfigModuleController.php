@@ -84,7 +84,7 @@ class ConfigModuleController extends Controller
     {
         $form->save($module, $request->only('overrides'));
 
-        admin_toastr('数据库覆盖状态已保存，将通过运行缓存生效。');
+        admin_toastr('配置已保存，将通过运行缓存生效。');
 
         return redirect()->route(GlobalConfigDefinitions::module($module)['route']);
     }
@@ -137,7 +137,7 @@ class ConfigModuleController extends Controller
                 <thead>
                     <tr>
                         <th class="config-name">配置项</th>
-                        <th class="config-value">环境基线与数据库覆盖</th>
+                        <th class="config-value">配置值与来源</th>
                         <th class="config-meta">生效信息</th>
                     </tr>
                 </thead>
@@ -251,6 +251,7 @@ HTML;
             $familyBadge = $this->renderFamilyBadge($row);
             $reloadBadge = $this->renderReloadBadge($row);
             $sourceLabel = $this->sourceLabel($row);
+            $configBacked = (bool)($row['config_backed'] ?? false);
             $baselineValue = $this->displayValue($row, 'baseline_value');
             $databaseValue = $this->displayValue($row, 'override_value');
             $effectiveValue = $this->displayValue($row, 'effective_value');
@@ -260,12 +261,12 @@ HTML;
                 . '<div class="global-config-module-help global-config-module-code">' . $this->escape($key) . '</div>'
                 . '<div class="global-config-module-help">' . $this->escape((string)$row['remark']) . '</div></td>'
                 . '<td class="config-value">' . $this->renderOverrideControl($row, $key, $overrideValue)
-                . '<div class="global-config-module-help">环境值：<span class="global-config-module-code">' . $baselineValue . '</span></div>'
-                . '<div class="global-config-module-help">数据库覆盖值：<span class="global-config-module-code">' . $databaseValue . '</span></div>'
+                . '<div class="global-config-module-help">' . ($configBacked ? '环境值' : '代码兜底值') . '：<span class="global-config-module-code">' . $baselineValue . '</span></div>'
+                . '<div class="global-config-module-help">' . ($configBacked ? '数据库覆盖值' : '数据库值') . '：<span class="global-config-module-code">' . $databaseValue . '</span></div>'
                 . '<div class="global-config-module-help"><strong>最终生效值：</strong><span class="global-config-module-code">' . $effectiveValue . '</span></div></td>'
                 . '<td class="config-meta"><div>Env Key: <span class="global-config-module-code">' . $this->escape((string)$row['env_key']) . '</span></div>'
                 . '<div>' . $sourceLabel . '</div>'
-                . '<div>覆盖来源: <span class="global-config-module-code">' . $this->escape((string)($row['override_source'] ?? '-')) . '</span></div>'
+                . ($configBacked ? '<div>覆盖来源: <span class="global-config-module-code">' . $this->escape((string)($row['override_source'] ?? '-')) . '</span></div>' : '')
                 . '<div>最近发布: ' . $this->escape((string)($row['last_published_at'] ?? '-')) . '</div>'
                 . '<div class="global-config-module-error">发布错误: ' . $this->escape((string)($row['last_publish_error'] ?: '-')) . '</div>'
                 . $reloadBadge . '</td>'
@@ -336,6 +337,15 @@ HTML;
         $escapedKey = $this->escape($key);
         $checked = ($row['override_enabled'] ?? false) ? ' checked' : '';
 
+        if (!($row['config_backed'] ?? false)) {
+            return '<div class="checkbox" style="margin-top:0">'
+                . '<input type="hidden" name="overrides[' . $escapedKey . '][enabled]" value="0">'
+                . '<label><input type="checkbox" name="overrides[' . $escapedKey . '][enabled]" value="1"' . $checked . '> 启用配置</label>'
+                . '</div>'
+                . $this->renderInput($row, $key, $value)
+                . '<div class="global-config-module-help">该配置以数据库为主；停用后使用代码兜底值。</div>';
+        }
+
         return '<div class="checkbox" style="margin-top:0">'
             . '<input type="hidden" name="overrides[' . $escapedKey . '][enabled]" value="0">'
             . '<label><input type="checkbox" name="overrides[' . $escapedKey . '][enabled]" value="1"' . $checked . '> 启用数据库覆盖</label>'
@@ -357,6 +367,10 @@ HTML;
 
     private function sourceLabel(array $row): string
     {
+        if (($row['effective_source'] ?? null) === 'database') {
+            return '<span class="label label-primary">来源：数据库配置</span>';
+        }
+
         if (($row['effective_source'] ?? null) === 'database_override') {
             return '<span class="label label-primary">来源：数据库显式覆盖</span>';
         }

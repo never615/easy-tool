@@ -62,12 +62,17 @@ class NewConfigController extends AdminCommonController
         });
         $grid->name('配置项');
         $grid->type('类型')->label();
-        $grid->value('配置值（global_config 为数据库覆盖值）')->display(function ($value) {
+        $grid->value('配置值')->display(function ($value) {
             return NewConfigController::displayConfigValue((string)$this->key, $value, 50);
         });
-        $grid->override_source('全局覆盖来源')->display(function ($source) {
+        $grid->override_source('全局配置来源')->display(function ($source) {
             if ((string)$this->group_key !== NewConfig::GROUP_GLOBAL_CONFIG) {
                 return '-';
+            }
+
+            $definition = \Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions::find((string)$this->key);
+            if (!\Mallto\Tool\Domain\NewConfig\GlobalConfigDefinition::usesLaravelConfigBaseline($definition)) {
+                return '<span class="label label-primary">数据库主配置</span>';
             }
 
             return $source
@@ -153,9 +158,9 @@ class NewConfigController extends AdminCommonController
         $form->display('name', '配置项');
         $form->display('type', '类型');
         $form->textarea('value', '配置值')
-            ->help('global_config 中该字段是数据库覆盖值，不是环境 config 基线。boolean 建议填写 0/1；float 可填写 0.01。');
+            ->help('config 基线型 global_config 需要显式数据库覆盖；纯数据库 global_config 的该字段就是主配置值。boolean 建议填写 0/1；float 可填写 0.01。');
         $form->switch('is_enabled', '启用')->default(1);
-        $form->display('override_source', '全局覆盖来源');
+        $form->display('override_source', '全局配置来源');
         $form->display('default_value', '默认值');
         $form->display('options', '选项');
         $form->display('remark', '说明');
@@ -190,7 +195,10 @@ class NewConfigController extends AdminCommonController
                 throw new ResourceException('app_secret 由系统管理，不能在原始配置列表修改。');
             }
 
-            $form->model()->override_source = GlobalConfigOverrideSource::MANUAL;
+            $definition = \Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions::find((string)$form->model()->key);
+            $form->model()->override_source = \Mallto\Tool\Domain\NewConfig\GlobalConfigDefinition::usesLaravelConfigBaseline($definition)
+                ? GlobalConfigOverrideSource::MANUAL
+                : null;
         });
     }
 

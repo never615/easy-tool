@@ -8,6 +8,10 @@ namespace Mallto\Tool\Domain\NewConfig;
  */
 class GlobalConfigDefinition
 {
+    public const BASELINE_LARAVEL_CONFIG = 'laravel_config';
+
+    public const BASELINE_DATABASE = 'database';
+
     /**
      * 处理「make」相关的内部协作步骤。
      */
@@ -37,6 +41,7 @@ class GlobalConfigDefinition
                 ? GlobalConfigApplyMode::SHARED_REDIS
                 : GlobalConfigApplyMode::SWOOLE_REDIS,
             'requires_reload' => false,
+            'baseline_source' => self::BASELINE_DATABASE,
         ], $meta);
     }
 
@@ -63,10 +68,15 @@ class GlobalConfigDefinition
             $remark,
             $envKey,
             array_merge($meta, [
-                'baseline_source' => 'laravel_config',
+                'baseline_source' => self::BASELINE_LARAVEL_CONFIG,
                 'config_key' => $configKey,
             ])
         );
+    }
+
+    public static function usesLaravelConfigBaseline(?array $definition): bool
+    {
+        return ($definition['baseline_source'] ?? null) === self::BASELINE_LARAVEL_CONFIG;
     }
 
     /**

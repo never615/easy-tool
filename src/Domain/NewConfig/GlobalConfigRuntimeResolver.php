@@ -60,7 +60,9 @@ final class GlobalConfigRuntimeResolver
             return ['found' => false, 'value' => null];
         }
 
-        if ($config->override_source === null || !$config->is_enabled) {
+        $definition = GlobalConfigDefinitions::find((string)$config->key);
+        $requiresExplicitOverride = GlobalConfigDefinition::usesLaravelConfigBaseline($definition);
+        if (!$config->is_enabled || ($requiresExplicitOverride && $config->override_source === null)) {
             return ['found' => false, 'value' => null];
         }
 

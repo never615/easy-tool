@@ -70,7 +70,7 @@ class NewConfigDocumentSeeder extends Seeder
 - Swoole Task 配置、运行期 Env 覆盖
 - 发布启动配置
 
-新增业务 key 时，应先在所属包的 Global / Subject definitions 中登记，再执行 `php artisan tool:update` 补齐目录记录。全局目录记录默认不启用数据库覆盖；后台仍能展示配置项、环境基线、数据库覆盖值和最终生效值。apply mode 由代码定义，管理员不能在 UI 中任意修改。
+新增业务 key 时，应先在所属包的 Global / Subject definitions 中登记，再执行 `php artisan tool:update` 补齐目录记录。`fromConfig()` 定义表示“环境 config 基线 + 可选数据库覆盖”，普通 `make()` 定义表示“数据库主配置 + 代码兜底值”。后台按定义来源展示对应控件。apply mode 由代码定义，管理员不能在 UI 中任意修改。
 
 `/admin/configs`、`/admin/subject_configs` 和 `/admin/new_configs` 是查看原始记录或兼容历史 key 的排查入口，不是日常首选入口。旧 `configs` 表已退役；升级 seeder 只单向读取它以补齐缺失的 `new_configs`，不会覆盖新表已有值或把值写回旧表。
 
@@ -113,7 +113,7 @@ statistics_project
 
 ## 保存业务配置后
 
-全局配置只有勾选“启用数据库覆盖”并保存后才产生 `manual` 覆盖；点击“恢复环境配置”会清除覆盖来源并回到当前进程 config 基线。系统通过 `ConfigUtils::set()` 写入的配置标记为 `system`，`app_secret` 不允许在普通表单中查看或手工覆盖。
+使用 `fromConfig()` 登记的全局配置，只有勾选“启用数据库覆盖”并保存后才产生 `manual` 覆盖；取消勾选会回到当前进程 config 基线。普通 `make()` 全局配置没有环境 config 来源，页面显示普通“启用配置”，启用时数据库值就是主配置，停用或缺少记录时才使用代码兜底值。系统通过 `ConfigUtils::set()` 写入的配置标记为 `system`，`app_secret` 不允许在普通表单中查看或手工覆盖。
 
 保存全局覆盖或项目业务配置后，Observer 在数据库 commit 后按当前 definition mode 写穿/失效运行缓存，并递增独立的 runtime revision。rollback 不产生缓存或广播副作用。
 
@@ -215,7 +215,7 @@ location.beacon_area_check_interval
 location.skylab_location_perf_log
 ```
 
-每个 LaravelS Pod、Horizon 当前加载的 `config(key)` 必须与 Definitions 展示的环境基线一致。目录记录存在不代表覆盖生效；只有 `override_source` 非空且 `is_enabled=true` 时才取数据库 value，否则始终取当前进程 config。历史来源不明确的值先审计，只有确认需要继续覆盖时才标记为 `reviewed`。
+每个 LaravelS Pod、Horizon 当前加载的 `config(key)` 必须与 `fromConfig()` Definitions 展示的环境基线一致。对 config 基线型配置，只有 `override_source` 非空且 `is_enabled=true` 时才取数据库 value；对数据库主配置，`is_enabled=true` 即取数据库 value，不要求 override_source。历史 config 基线型记录来源不明确时先审计，只有确认需要继续覆盖才标记为 `reviewed`。
 
 上线时先冻结后台业务配置写入，再完成对账并全量滚动 LaravelS、Horizon，确认所有实例已使用新代码和同一共享 Redis 后解除冻结。新旧版本混跑期间不得保存业务配置；滚动完成后复核 runtime revision、Redis L2 和 Swoole L1。
 MARKDOWN . "\n";

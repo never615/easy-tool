@@ -53,10 +53,15 @@ class ConfigController extends AdminCommonController
 
         $grid->key('Key')->copyable();
         $grid->name('配置项')->limit(30);
-        $grid->value('数据库覆盖值')->display(function ($value) {
+        $grid->value('数据库配置值')->display(function ($value) {
             return ConfigController::displayConfigValue((string)$this->key, $value, 40);
         });
-        $grid->override_source('覆盖来源')->display(function ($source) {
+        $grid->override_source('配置来源')->display(function ($source) {
+            $definition = \Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions::find((string)$this->key);
+            if (!\Mallto\Tool\Domain\NewConfig\GlobalConfigDefinition::usesLaravelConfigBaseline($definition)) {
+                return '<span class="label label-primary">数据库主配置</span>';
+            }
+
             return $source
                 ? '<span class="label label-primary">' . e((string)$source) . '</span>'
                 : '<span class="label label-default">未启用覆盖</span>';
@@ -104,9 +109,9 @@ class ConfigController extends AdminCommonController
         $form->text("name", '配置项');
         $form->textarea("remark", '说明')
             ->help('说明按纯文本保存；历史 HTML 标签会在保存时自动清理。');
-        $form->textarea("value", '数据库覆盖值')
-            ->help('保存后将明确启用人工数据库覆盖。如需恢复环境 config 基线，请在对应模块页取消“启用数据库覆盖”。');
-        $form->display('override_source', '覆盖来源');
+        $form->textarea("value", '数据库配置值')
+            ->help('config 基线型配置会启用人工数据库覆盖；纯数据库配置会直接更新其主配置值。');
+        $form->display('override_source', '配置来源');
         $form->display('env_key', 'Env Key');
         $form->display('last_published_at', '最近发布时间');
         $form->display('last_publish_error', '最近发布错误');
@@ -143,7 +148,10 @@ class ConfigController extends AdminCommonController
             $form->model()->options = $attributes['options'];
             $form->model()->remark = $attributes['remark'];
             $form->model()->is_enabled = $attributes['is_enabled'];
-            $form->model()->override_source = GlobalConfigOverrideSource::MANUAL;
+            $definition = \Mallto\Tool\Domain\NewConfig\GlobalConfigDefinitions::find($key);
+            $form->model()->override_source = \Mallto\Tool\Domain\NewConfig\GlobalConfigDefinition::usesLaravelConfigBaseline($definition)
+                ? GlobalConfigOverrideSource::MANUAL
+                : null;
             $form->model()->requires_reload = $attributes['requires_reload'];
             if (!$form->name) {
                 $form->model()->name = $attributes['name'];
@@ -202,7 +210,7 @@ class ConfigController extends AdminCommonController
     {
         return '<div class="alert alert-warning" style="margin:10px 0 12px;">'
             . '<strong>提示：</strong>当前页面沿用历史 configs 路由名，但实际数据源是 new_configs；旧 configs 表只用于升级迁移。日常请优先使用“配置中心”下对应的模块化运行时配置页面。'
-            . '列表中的 value 仅表示数据库覆盖值；override_source 为空时不会覆盖环境 config 基线。保存后通过运行缓存生效，无需发布或重启。'
+            . '列表中的 value 是数据库配置值；仅 config 基线型配置需要显式覆盖来源，纯数据库配置直接以启用的数据库值为准。保存后通过运行缓存生效，无需发布或重启。'
             . '</div>';
     }
 

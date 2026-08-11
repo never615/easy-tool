@@ -32,9 +32,14 @@ class GlobalConfigDefinitionSyncer
                 if ($config === null) {
                     $config = new NewConfig(['key' => $key]);
                     $config->fill($attributes);
-                    $config->value = null;
                     $config->override_source = null;
-                    $config->is_enabled = false;
+                    if (GlobalConfigDefinition::usesLaravelConfigBaseline($definition)) {
+                        $config->value = null;
+                        $config->is_enabled = false;
+                    } else {
+                        $config->value = $definition['value'] ?? $definition['default_value'] ?? null;
+                        $config->is_enabled = true;
+                    }
                 } else {
                     unset($attributes['value'], $attributes['is_enabled'], $attributes['override_source']);
                     $config->fill($attributes);

@@ -95,9 +95,10 @@ class GlobalConfigModuleForm
     private function rowSnapshot(string $key, array $definition, ?NewConfig $row): array
     {
         $baseline = $this->baseline()->forDefinition($definition);
-        $activeOverride = $row !== null
-            && $row->override_source !== null
-            && (bool)$row->is_enabled;
+        $configBacked = GlobalConfigDefinition::usesLaravelConfigBaseline($definition);
+        $databaseEnabled = $row !== null && (bool)$row->is_enabled;
+        $activeOverride = $databaseEnabled
+            && (!$configBacked || $row->override_source !== null);
         $sensitive = ($definition['override_policy'] ?? null) === 'system'
             || $key === 'app_secret';
         $displayBaseline = $sensitive ? null : $baseline;
@@ -113,10 +114,11 @@ class GlobalConfigModuleForm
             'override_value' => $displayOverride === null ? null : (string)$displayOverride,
             'effective_value' => $displayEffective === null ? null : (string)$displayEffective,
             'effective_source' => $activeOverride
-                ? 'database_override'
-                : (string)($definition['baseline_source'] ?? 'code_default'),
+                ? ($configBacked ? 'database_override' : 'database')
+                : ($configBacked ? GlobalConfigDefinition::BASELINE_LARAVEL_CONFIG : 'code_default'),
             'override_source' => $row?->override_source,
             'override_enabled' => $activeOverride,
+            'config_backed' => $configBacked,
             'override_policy' => (string)($definition['override_policy'] ?? 'manual'),
             'sensitive' => $sensitive,
             'type' => (string)($definition['type'] ?? 'string'),

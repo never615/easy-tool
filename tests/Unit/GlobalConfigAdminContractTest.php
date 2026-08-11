@@ -145,6 +145,7 @@ class GlobalConfigAdminContractTest extends TestCase
                 'effective_source' => 'laravel_config',
                 'override_source' => null,
                 'override_enabled' => false,
+                'config_backed' => true,
                 'override_policy' => 'manual',
                 'sensitive' => false,
                 'requires_reload' => false,
@@ -159,6 +160,61 @@ class GlobalConfigAdminContractTest extends TestCase
         $this->assertStringContainsString('最终生效值：', $html);
         $this->assertStringContainsString('来源：环境配置', $html);
         $this->assertStringContainsString('overrides[location.trajectory_segments.chunk_minutes][enabled]', $html);
+    }
+
+    public function test_database_native_module_row_uses_normal_enable_control_without_override_wording(): void
+    {
+        $html = $this->renderModuleHtml([
+            'title' => '定位算法配置',
+            'save_route' => 'configs.location_algorithm.save',
+            'rows' => [[
+                'key' => 'location_args',
+                'name' => '定位算法参数',
+                'remark' => '',
+                'env_key' => 'GLOBAL_CONFIG_LOCATION_ARGS',
+                'type' => 'json',
+                'ui' => 'textarea',
+                'placeholder' => '',
+                'family_key' => '',
+                'family_label' => '',
+                'baseline_value' => '{"speed_const":25}',
+                'override_value' => '{"speed_const":30}',
+                'effective_value' => '{"speed_const":30}',
+                'effective_source' => 'database',
+                'override_source' => null,
+                'override_enabled' => true,
+                'config_backed' => false,
+                'override_policy' => 'manual',
+                'sensitive' => false,
+                'requires_reload' => false,
+                'last_published_at' => null,
+                'last_publish_error' => null,
+            ]],
+        ]);
+
+        $this->assertStringContainsString('启用配置', $html);
+        $this->assertStringContainsString('数据库值：', $html);
+        $this->assertStringContainsString('代码兜底值：', $html);
+        $this->assertStringContainsString('来源：数据库配置', $html);
+        $this->assertStringNotContainsString('启用数据库覆盖', $html);
+        $this->assertStringNotContainsString('数据库覆盖值：', $html);
+    }
+
+    public function test_real_location_modules_classify_database_native_and_config_backed_rows(): void
+    {
+        $form = new GlobalConfigModuleForm(new class extends NewConfigPublisher {
+            public function __construct()
+            {
+            }
+        });
+
+        $algorithm = collect($form->snapshot('location_algorithm')['rows'])->keyBy('key');
+        $maintenance = collect($form->snapshot('location_maintenance')['rows'])->keyBy('key');
+
+        $this->assertFalse($algorithm['location_args']['config_backed']);
+        $this->assertSame('code_default', $algorithm['location_args']['effective_source']);
+        $this->assertTrue($maintenance['location.trajectory_segments.chunk_minutes']['config_backed']);
+        $this->assertSame('laravel_config', $maintenance['location.trajectory_segments.chunk_minutes']['effective_source']);
     }
 
     public function test_module_form_only_creates_manual_override_after_explicit_selection(): void
