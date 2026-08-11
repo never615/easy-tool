@@ -257,6 +257,7 @@ class GlobalConfigAdminContractTest extends TestCase
         ]);
 
         $row->refresh();
+        $this->assertSame('1', $row->value);
         $this->assertNull($row->override_source);
         $this->assertFalse((bool)$row->is_enabled);
         $snapshotRow = collect($snapshot['rows'])->firstWhere('key', 'debug_log');
@@ -296,6 +297,7 @@ class GlobalConfigAdminContractTest extends TestCase
         ]);
 
         $row->refresh();
+        $this->assertNull($row->value);
         $this->assertNull($row->override_source);
         $this->assertFalse((bool)$row->is_enabled);
         $snapshotRow = collect($snapshot['rows'])->firstWhere('key', $key);

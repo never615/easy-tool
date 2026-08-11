@@ -33,10 +33,18 @@ final class GlobalConfigOverrideManager
             return;
         }
 
-        if ($row->override_source === null && !$row->is_enabled) {
+        $configBacked = GlobalConfigDefinition::usesLaravelConfigBaseline(
+            GlobalConfigDefinitions::find($key)
+        );
+        if ($row->override_source === null
+            && !$row->is_enabled
+            && (!$configBacked || $row->value === null)) {
             return;
         }
 
+        if ($configBacked) {
+            $row->value = null;
+        }
         $row->override_source = null;
         $row->is_enabled = false;
         $row->save();
