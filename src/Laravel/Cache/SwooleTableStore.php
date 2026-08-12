@@ -32,7 +32,14 @@ class SwooleTableStore implements Store
      */
     public function __construct()
     {
-        $this->cacheTable = app('swoole')->cacheTable;
+        $this->cacheTable = null;
+        if ((bool) config('laravels.swoole_table_enable', false)) {
+            try {
+                $this->cacheTable = app('swoole')->cacheTable ?? null;
+            } catch (\Throwable) {
+                // 全局关闭或非 LaravelS 进程中保持不可用，调用方回退共享 Redis。
+            }
+        }
         //$this->bcacheTable = app('swoole')->bcacheTable;
     }
 
@@ -46,6 +53,10 @@ class SwooleTableStore implements Store
      */
     public function get($key)
     {
+        if (!$this->cacheTable) {
+            return null;
+        }
+
         $value = $this->cacheTable->get($key)['value'] ?? null;
 
         return ! is_null($value) ? $this->unserialize($value) : null;
@@ -113,8 +124,15 @@ class SwooleTableStore implements Store
      */
     public function increment($key, $value = 1)
     {
-        return app('swoole')->cacheTable
-            ->incr($key, 'value', $value);
+        if (!$this->cacheTable) {
+            return false;
+        }
+
+        try {
+            return $this->cacheTable->incr($key, 'value', $value);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
 
@@ -128,8 +146,15 @@ class SwooleTableStore implements Store
      */
     public function decrement($key, $value = 1)
     {
-        return app('swoole')->cacheTable
-            ->decr($key, 'value', $value);
+        if (!$this->cacheTable) {
+            return false;
+        }
+
+        try {
+            return $this->cacheTable->decr($key, 'value', $value);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
 
@@ -143,8 +168,16 @@ class SwooleTableStore implements Store
      */
     public function forever($key, $value)
     {
+        if (!$this->cacheTable) {
+            return false;
+        }
 
-        return $this->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
+        try {
+            return $this->cacheTable->set($key, [ 'value' => $this->serialize($value) ]);
+        } catch (\Throwable) {
+            // 固定容量 Table 写满时只放弃 L1，不向业务抛出 ErrorException。
+            return false;
+        }
     }
 
 
@@ -157,7 +190,7 @@ class SwooleTableStore implements Store
      */
     public function forget($key)
     {
-        return $this->cacheTable->del($key);
+        return $this->cacheTable ? $this->cacheTable->del($key) : false;
     }
 
 
@@ -179,7 +212,7 @@ class SwooleTableStore implements Store
      */
     public function exist($key)
     {
-        return $this->cacheTable->exist($key);
+        return $this->cacheTable ? $this->cacheTable->exist($key) : false;
     }
 
 
@@ -188,7 +221,7 @@ class SwooleTableStore implements Store
      */
     public function count()
     {
-        return $this->cacheTable->count();
+        return $this->cacheTable ? $this->cacheTable->count() : 0;
     }
 
 
