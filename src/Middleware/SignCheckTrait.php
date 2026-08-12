@@ -37,9 +37,9 @@ trait SignCheckTrait
     /**
      * 处理「check」相关的内部协作步骤。
      */
-    protected function check(Request $request, Closure $next)
+    protected function check(Request $request, Closure $next, bool $force = false)
     {
-        if (!config('other.auth_sign')) {
+        if (!$force && !config('other.auth_sign')) {
             return $next($request);
         }
 

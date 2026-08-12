@@ -49,7 +49,7 @@ class AuthenticateSignWithReferrer
     public function handle(Request $request, Closure $next)
     {
         if (config('other.force_auth_sign_check', false)) {
-            return $this->check($request, $next);
+            return $this->check($request, $next, true);
         }
 
         //如果请求方的Referer是自己的域名,则跳过检查
