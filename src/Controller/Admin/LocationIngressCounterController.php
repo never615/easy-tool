@@ -7,8 +7,12 @@ use Encore\Admin\Layout\Content;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticSchema;
+use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticStore;
+use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticsConfig;
 use Mallto\Location\Support\Telemetry\LocationIngressCounter;
 use Mallto\Tool\Domain\NewConfig\LocationIngressCounterSwitch;
+use Mallto\Tool\Domain\NewConfig\LocationIngressDiagnosticsModeSwitch;
 use Throwable;
 
 /**
@@ -27,16 +31,37 @@ final class LocationIngressCounterController extends Controller
             'effective_enabled' => LocationIngressCounter::enabled(),
         ]);
         $canSwitch = (bool) Admin::user()?->can('admin_monitor.location_ingress.switch');
+        /** @var LocationIngressDiagnosticsModeSwitch $modeSwitch */
+        $modeSwitch = app(LocationIngressDiagnosticsModeSwitch::class);
+        $diagnosticsModeState = array_merge($modeSwitch->status(), [
+            'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
+        ]);
+        $canModeSwitch = (bool) Admin::user()?->can('admin_monitor.location_ingress.mode');
+        $canTraceDetails = (bool) Admin::user()?->can('location_ingress_trace.index');
 
-        return Admin::content(function (Content $content) use ($switchState, $canSwitch): void {
-            $content->header('定位入口调试');
-            $content->description('MQTT / TCP / HTTP / UDP / Mock 的入口与项目归属计数');
+        return Admin::content(function (Content $content) use (
+            $switchState,
+            $canSwitch,
+            $diagnosticsModeState,
+            $canModeSwitch,
+            $canTraceDetails
+        ): void {
+            $content->header('定位诊断中心');
+            $content->description('入口量、项目归属、业务阶段漏斗与短期诊断样本');
             $content->body(view('easy-tool::location_ingress_counter.content', [
                 'dataUrl' => route('admin_monitor.location_ingress.data'),
                 'switchUrl' => route('admin_monitor.location_ingress.switch'),
+                'modeSwitchUrl' => route('admin_monitor.location_ingress.mode'),
                 'csrfToken' => csrf_token(),
                 'switchState' => $switchState,
+                'diagnosticsModeState' => $diagnosticsModeState,
                 'canSwitch' => $canSwitch,
+                'canModeSwitch' => $canModeSwitch,
+                'canTraceDetails' => $canTraceDetails,
+                'traceListUrl' => $canTraceDetails ? route('location_ingress_trace.index') : null,
+                'traceDetailUrlTemplate' => $canTraceDetails
+                    ? route('location_ingress_trace.show', ['traceId' => '__trace_id__'])
+                    : null,
             ]));
         });
     }
@@ -47,20 +72,70 @@ final class LocationIngressCounterController extends Controller
     public function data(Request $request): JsonResponse
     {
         $minutesInput = $request->input('minutes', 10);
-        if (filter_var($minutesInput, FILTER_VALIDATE_INT) === false) {
+        if (!is_scalar($minutesInput) || filter_var($minutesInput, FILTER_VALIDATE_INT) === false) {
             return response()->json(['message' => 'minutes_must_be_an_integer'], 422);
         }
 
         $minutes = max(1, min(30, (int)$minutesInput));
         try {
             return response()->json([
-                'enabled' => LocationIngressCounter::enabled(),
+                'ingress_counter_enabled' => LocationIngressCounter::enabled(),
+                'diagnostics_mode' => LocationIngestDiagnosticsConfig::mode(),
                 'minutes' => $minutes,
-                'rows' => LocationIngressCounter::snapshot($minutes),
+                'ingress_rows' => LocationIngressCounter::snapshot($minutes),
+                'stage_rows' => LocationIngestDiagnosticStore::summarySnapshot($minutes),
             ]);
         } catch (Throwable) {
-            return response()->json(['message' => 'location_ingress_counter_unavailable'], 503);
+            return response()->json(['message' => 'location_ingest_diagnostics_unavailable'], 503);
         }
+    }
+
+    /**
+     * 有界样本必须经过独立权限读取，聚合接口永远不返回 trace ID 或事件。
+     */
+    public function traces(Request $request): JsonResponse
+    {
+        if (! Admin::user()?->can('location_ingress_trace.index')) {
+            return response()->json(['message' => 'forbidden'], 403);
+        }
+
+        $filters = $this->traceFilters($request);
+        if ($filters === null) {
+            return response()->json(['message' => 'trace_filters_invalid'], 422);
+        }
+
+        try {
+            return response()->json([
+                'rows' => LocationIngestDiagnosticStore::recentTraceSamples($filters),
+            ]);
+        } catch (Throwable) {
+            return response()->json(['message' => 'location_ingest_diagnostics_unavailable'], 503);
+        }
+    }
+
+    /**
+     * 一条 trace 只读取自己的短期 Redis List，不通过聚合接口泄露明细。
+     */
+    public function trace(Request $request, string $traceId): JsonResponse
+    {
+        if (! Admin::user()?->can('location_ingress_trace.index')) {
+            return response()->json(['message' => 'forbidden'], 403);
+        }
+        if (!preg_match('/^(?:loc|fault|skylab|skylab_ota)_[A-Za-z0-9_-]{8,96}$/', $traceId)) {
+            return response()->json(['message' => 'trace_id_invalid'], 422);
+        }
+
+        try {
+            $trace = LocationIngestDiagnosticStore::trace($traceId);
+        } catch (Throwable) {
+            return response()->json(['message' => 'location_ingest_diagnostics_unavailable'], 503);
+        }
+
+        if ($trace === null) {
+            return response()->json(['message' => 'trace_not_found'], 404);
+        }
+
+        return response()->json($trace);
     }
 
     /**
@@ -134,5 +209,99 @@ final class LocationIngressCounterController extends Controller
                 'message' => 'publish_failed',
             ], 503);
         }
+    }
+
+    /**
+     * 固定模式发布入口；requested 仅表示发布目标，effective 表示当前常驻进程的真实加载值。
+     */
+    public function mode(Request $request): JsonResponse
+    {
+        if (! Admin::user()?->can('admin_monitor.location_ingress.mode')) {
+            return response()->json(['accepted' => false, 'message' => 'forbidden'], 403);
+        }
+
+        $mode = $request->input('mode');
+        if (!is_string($mode) || !in_array($mode, LocationIngressDiagnosticsModeSwitch::MODES, true)) {
+            return response()->json(['accepted' => false, 'message' => 'diagnostics_mode_invalid'], 422);
+        }
+
+        try {
+            /** @var LocationIngressDiagnosticsModeSwitch $switch */
+            $switch = app(LocationIngressDiagnosticsModeSwitch::class);
+            $result = $switch->set($mode);
+            $publish = $result['publish'] ?? null;
+            $payload = [
+                'accepted' => true,
+                'requested_mode' => $result['requested_mode'] ?? $mode,
+                'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
+            ];
+
+            if ($publish === null) {
+                return response()->json($payload + [
+                    'publish_status' => 'publish_throttled',
+                    'message' => 'publish_throttled',
+                ], 429);
+            }
+
+            $restart = $publish['restart'] ?? null;
+            if (is_array($restart) && ($restart['reason'] ?? null) === 'new_config.restart.enabled is false') {
+                return response()->json($payload + [
+                    'publish_status' => 'restart_disabled',
+                    'message' => 'restart_disabled',
+                ]);
+            }
+
+            if (is_array($restart) && ($restart['skipped'] ?? false)) {
+                return response()->json($payload + [
+                    'publish_status' => 'restart_not_scheduled',
+                    'message' => 'restart_not_scheduled',
+                ]);
+            }
+
+            if (is_array($restart) && ! ($restart['skipped'] ?? false)) {
+                return response()->json($payload + [
+                    'publish_status' => 'restart_scheduled',
+                    'message' => 'restart_scheduled',
+                ]);
+            }
+
+            return response()->json($payload + [
+                'publish_status' => 'published',
+                'message' => 'published',
+            ]);
+        } catch (Throwable) {
+            return response()->json([
+                'accepted' => false,
+                'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
+                'publish_status' => 'publish_failed',
+                'message' => 'publish_failed',
+            ], 503);
+        }
+    }
+
+    /** @return array<string, string|int>|null */
+    private function traceFilters(Request $request): ?array
+    {
+        $dimensions = [
+            'origin' => LocationIngestDiagnosticSchema::ORIGINS,
+            'transport' => LocationIngestDiagnosticSchema::TRANSPORTS,
+            'location_solution' => LocationIngestDiagnosticSchema::LOCATION_SOLUTIONS,
+        ];
+        $filters = [];
+        foreach ($dimensions as $key => $allowed) {
+            $value = $request->input($key, 'unknown');
+            if (!is_string($value) || !in_array($value, $allowed, true)) {
+                return null;
+            }
+            $filters[$key] = $value;
+        }
+
+        $limit = $request->input('limit', 20);
+        if (!is_scalar($limit) || filter_var($limit, FILTER_VALIDATE_INT) === false) {
+            return null;
+        }
+        $filters['limit'] = max(1, min(100, (int)$limit));
+
+        return $filters;
     }
 }

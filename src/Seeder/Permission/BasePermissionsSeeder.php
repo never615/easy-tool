@@ -47,9 +47,11 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("应用运行监控", "admin_monitor.app_stats", false, 0);
         $this->createPermissions("应用运行监控数据", "admin_monitor.app_stats.data", false, 0);
         $this->createPermissions("应用运行监控临时文件清理", "admin_monitor.app_stats.task_tmp_cleanup", false, 0);
-        $this->createPermissions("定位入口调试", "admin_monitor.location_ingress", false, 0);
-        $this->createPermissions("定位入口调试数据", "admin_monitor.location_ingress.data", false, 0);
+        $this->createPermissions("定位诊断中心", "admin_monitor.location_ingress", false, 0);
+        $this->createPermissions("定位诊断中心数据", "admin_monitor.location_ingress.data", false, 0);
         $this->createPermissions("定位入口调试开关", "admin_monitor.location_ingress.switch", false, 0);
+        $this->createPermissions("定位诊断模式开关", "admin_monitor.location_ingress.mode", false, 0);
+        $this->createPermissions("定位诊断明细", "location_ingress_trace.index", false, 0);
         /*
          * 旧路由仍为现有 Grafana/JSON 调用、历史角色授权和内部链接提供兼容入口。
          * 本期新增 AppStats 权限时不能删除它，否则升级后旧调用会在路由仍存在的情况下被拒绝。
