@@ -148,6 +148,8 @@ php artisan tool:new_config_publish --restart --force-config-cache
 
 `NEW_CONFIG_RESTART_ENABLED` 默认开启，并可独立关闭。关闭后仍会发布 `new_configs.env`、刷新 config cache，业务缓存更新也完全不受影响；仅跳过 restart generation、LaravelS restart 和 Horizon terminate。页面或 CLI 的“已发布”不代表真实 `.env` 被修改，也不代表服务已经重启。
 
+`LOCATION_QUEUE_LIMITER_ENABLED`、`LOCATION_PGSQL_WRITE_CONCURRENCY` 和 `LOCATION_RESULT_STORAGE_CONCURRENCY` 是定位队列限流的启动配置。业务任务只读取本地 `config()`，不会在热路径读取运行时配置中心、Redis 或 Swoole Table。升级时 `location:update` 会把这三个历史全局显式覆盖转换为 `runtime_env_override`；随后发布并重启 LaravelS 和 Horizon，所有新进程才会使用同一数值。
+
 ## revision 与 generation 不要混淆
 
 - `runtime_config:revision`：业务配置每次 commit 后递增，用于跨实例缓存同步；不触发重启，不受 restart switch 影响。
@@ -189,14 +191,11 @@ php artisan tool:new_config_publish --restart --force-config-cache
 
 ## 上线检查
 
-迁移上线前，逐项核对以下 21 个全局业务 key：
+迁移上线前，逐项核对以下 18 个全局业务 key：
 
 ```text
 location.upload_data_direct_parse_enabled
 location.locator_negative_cache_ttl_seconds
-location.queue_limiters.enabled
-location.queue_limiters.pgsql_write.concurrency
-location.queue_limiters.location_result_storage.concurrency
 location.trajectory_segments.enabled
 location.trajectory_segments.history_points_read_enabled
 location.trajectory_segments.history_query_source
