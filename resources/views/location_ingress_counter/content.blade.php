@@ -10,6 +10,10 @@
     .location-ingress-counter__section { margin-bottom: 16px; padding: 14px; border: 1px solid #ddd; border-left: 4px solid #3c8dbc; border-radius: 3px; background: #fff; }
     .location-ingress-counter__section h3 { margin: 0 0 7px; font-size: 16px; }
     .location-ingress-counter__section p { margin: 0 0 12px; color: #666; }
+    .location-ingress-counter__switch { border-left-color: #f39c12; }
+    .location-ingress-counter__switch-state { margin: 0 0 8px; }
+    .location-ingress-counter__switch-result { min-height: 20px; margin: 10px 0 0; color: #666; }
+    .location-ingress-counter__switch-result--error { color: #dd4b39; }
     .location-ingress-counter__table-wrap { overflow-x: auto; }
     .location-ingress-counter table { width: 100%; min-width: 650px; border-collapse: collapse; }
     .location-ingress-counter th, .location-ingress-counter td { padding: 8px; border: 1px solid #ddd; text-align: left; }
@@ -18,7 +22,20 @@
     .location-ingress-counter__status { margin: 0; font-weight: 600; }
 </style>
 
-<section class="location-ingress-counter" data-url="{{ $dataUrl }}">
+@php
+    $effectiveEnabled = (bool) ($switchState['effective_enabled'] ?? false);
+    $requestedEnabled = ($switchState['configured'] ?? false)
+        ? (bool) ($switchState['requested_enabled'] ?? false)
+        : null;
+    $switchTarget = ($requestedEnabled ?? $effectiveEnabled) ? '0' : '1';
+@endphp
+
+<section
+    class="location-ingress-counter"
+    data-url="{{ $dataUrl }}"
+    data-switch-url="{{ $switchUrl }}"
+    data-csrf-token="{{ $csrfToken }}"
+>
     <header class="location-ingress-counter__toolbar">
         <div>
             <h2 style="margin:0; font-size:20px;">入口流量与项目归属</h2>
@@ -42,6 +59,31 @@
     <div id="location-ingress-counter-notice" class="location-ingress-counter__notice">
         仅调试期启用计数。关闭时不会写 Redis；页面仍可能显示尚未过期的历史 bucket。
     </div>
+
+    <section class="location-ingress-counter__section location-ingress-counter__switch">
+        <h3>统计开关</h3>
+        <p class="location-ingress-counter__switch-state">
+            当前处理请求的进程：
+            <strong id="location-ingress-counter-effective">{{ $effectiveEnabled ? '已开启' : '已关闭' }}</strong>
+            （这是唯一可表述为“已生效”的状态）
+        </p>
+        <p class="location-ingress-counter__switch-state">
+            配置中心保存的目标：
+            <strong id="location-ingress-counter-requested">{{ $requestedEnabled === null ? '未配置覆盖' : ($requestedEnabled ? '开启' : '关闭') }}</strong>
+        </p>
+        @if ($canSwitch)
+            <p>操作会发布启动配置、刷新 config cache，并在重启功能开启时请求 LaravelS/Horizon 重启；旧常驻进程短暂继续使用旧值是正常现象。</p>
+            <button
+                id="location-ingress-counter-switch"
+                type="button"
+                class="btn {{ $switchTarget === '1' ? 'btn-warning' : 'btn-default' }}"
+                data-target="{{ $switchTarget }}"
+            >{{ $switchTarget === '1' ? '开启统计' : '停止统计' }}</button>
+        @else
+            <p>当前账号没有“定位入口调试开关”权限；仍可只读查看已保留的统计 bucket。</p>
+        @endif
+        <p id="location-ingress-counter-switch-result" class="location-ingress-counter__switch-result" aria-live="polite"></p>
+    </section>
 
     <section class="location-ingress-counter__section">
         <h3>原始入口消息（received）</h3>
@@ -73,6 +115,8 @@
         root.dataset.initialized = 'true';
 
         const dataUrl = root.dataset.url;
+        const switchUrl = root.dataset.switchUrl;
+        const csrfToken = root.dataset.csrfToken;
         const minutes = root.querySelector('#location-ingress-counter-minutes');
         const auto = root.querySelector('#location-ingress-counter-auto');
         const refresh = root.querySelector('#location-ingress-counter-refresh');
@@ -80,8 +124,14 @@
         const notice = root.querySelector('#location-ingress-counter-notice');
         const received = root.querySelector('#location-ingress-counter-received');
         const accepted = root.querySelector('#location-ingress-counter-accepted');
+        const switchButton = root.querySelector('#location-ingress-counter-switch');
+        const switchResult = root.querySelector('#location-ingress-counter-switch-result');
+        const effectiveState = root.querySelector('#location-ingress-counter-effective');
+        const requestedState = root.querySelector('#location-ingress-counter-requested');
         let timer = null;
         let controller = null;
+        let switchController = null;
+        let switchInFlight = false;
 
         const escapeHtml = function (value) {
             return String(value ?? '').replace(/[&<>'"]/g, function (character) {
@@ -100,7 +150,7 @@
             }).join('');
         };
         const load = async function () {
-            if (!dataUrl) return;
+            if (!dataUrl || switchInFlight) return;
             if (controller) controller.abort();
             controller = new AbortController();
             refresh.disabled = true;
@@ -124,19 +174,107 @@
             } catch (error) {
                 if (error.name !== 'AbortError') status.textContent = '读取失败：Redis 或调试页面暂不可用。';
             } finally {
+                refresh.disabled = switchInFlight;
+            }
+        };
+        const updateSwitchRequest = function (requestedEnabled) {
+            if (typeof requestedEnabled !== 'boolean') return;
+
+            requestedState.textContent = requestedEnabled ? '开启' : '关闭';
+            if (!switchButton) return;
+
+            switchButton.dataset.target = requestedEnabled ? '0' : '1';
+            switchButton.textContent = requestedEnabled ? '停止统计' : '开启统计';
+            switchButton.classList.toggle('btn-warning', !requestedEnabled);
+            switchButton.classList.toggle('btn-default', requestedEnabled);
+        };
+        const switchMessage = function (payload) {
+            switch (payload.publish_status) {
+                case 'restart_scheduled':
+                    return '启动配置已发布，并已请求 LaravelS/Horizon 重启；请以“当前处理请求的进程”状态确认生效。';
+                case 'restart_disabled':
+                    return '启动配置已发布，但重启功能已关闭；请等待计划内重启后再确认生效。';
+                case 'restart_not_scheduled':
+                    return '启动配置已发布，但本次未请求重启；请按重启策略处理后再确认生效。';
+                case 'publish_throttled':
+                    return '人工发布正处于 30 秒节流中，本次目标未保存；请稍后重新操作。';
+                case 'published':
+                    return '启动配置已发布；请核对重启调度及新进程的实际状态。';
+                default:
+                    return '发布失败；本次操作未报告已生效。';
+            }
+        };
+        const switchCounter = async function () {
+            if (!switchButton || !switchUrl || switchInFlight) return;
+
+            const enabled = switchButton.dataset.target === '1';
+            const action = enabled ? '开启' : '停止';
+            if (!window.confirm(
+                '确认' + action + '入口统计？此操作将发布启动配置、刷新 config cache，并在重启功能开启时请求 LaravelS/Horizon 重启。'
+            )) {
+                return;
+            }
+
+            switchInFlight = true;
+            if (timer) clearInterval(timer);
+            timer = null;
+            auto.checked = false;
+            auto.disabled = true;
+            refresh.disabled = true;
+            switchButton.disabled = true;
+            if (controller) controller.abort();
+            switchController = new AbortController();
+            switchResult.classList.remove('location-ingress-counter__switch-result--error');
+            switchResult.textContent = '正在发布启动配置并请求重启…';
+            try {
+                const response = await fetch(switchUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ enabled: enabled ? '1' : '0' }),
+                    signal: switchController.signal
+                });
+                const payload = await response.json().catch(function () {
+                    return {};
+                });
+                const published = response.ok && payload.accepted === true;
+
+                if (typeof payload.effective_enabled === 'boolean') {
+                    effectiveState.textContent = payload.effective_enabled ? '已开启' : '已关闭';
+                }
+                if (typeof payload.requested_enabled === 'boolean') {
+                    updateSwitchRequest(payload.requested_enabled);
+                }
+                switchResult.textContent = switchMessage(payload);
+                switchResult.classList.toggle('location-ingress-counter__switch-result--error', !published);
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    switchResult.textContent = '发布失败；本次操作未报告已生效。';
+                    switchResult.classList.add('location-ingress-counter__switch-result--error');
+                }
+            } finally {
+                switchInFlight = false;
+                auto.disabled = false;
                 refresh.disabled = false;
+                switchButton.disabled = false;
             }
         };
         const syncTimer = function () {
+            if (switchInFlight) return;
             if (timer) clearInterval(timer);
             timer = auto.checked ? setInterval(load, 10000) : null;
         };
         refresh.addEventListener('click', load);
         minutes.addEventListener('change', load);
         auto.addEventListener('change', syncTimer);
+        if (switchButton) switchButton.addEventListener('click', switchCounter);
         document.addEventListener('pjax:beforeReplace', function () {
             if (timer) clearInterval(timer);
             if (controller) controller.abort();
+            if (switchController) switchController.abort();
         }, { once: true });
     }());
 </script>

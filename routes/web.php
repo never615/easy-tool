@@ -149,6 +149,8 @@ Route::group($attributes, function ($router) {
                             ->name('admin_monitor.location_ingress');
                         Route::get('monitor/location_ingress/data', 'LocationIngressCounterController@data')
                             ->name('admin_monitor.location_ingress.data');
+                        Route::post('monitor/location_ingress/switch', 'LocationIngressCounterController@switch')
+                            ->name('admin_monitor.location_ingress.switch');
                         Route::post('monitor/app_stats/task-tmp-cleanup', 'SwooleTaskTmpCleanupController@store')
                             ->name('admin_monitor.app_stats.task_tmp_cleanup');
                         Route::get('monitor/swoole_stats', 'SwooleStatsController@index')

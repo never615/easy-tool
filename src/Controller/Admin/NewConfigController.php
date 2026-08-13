@@ -4,12 +4,11 @@ namespace Mallto\Tool\Controller\Admin;
 
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
-use Illuminate\Support\Facades\Cache;
 use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\NewConfigBootstrapKeyGuard;
 use Mallto\Tool\Domain\NewConfig\NewConfigEffectiveEnv;
-use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
+use Mallto\Tool\Domain\NewConfig\NewConfigManualPublishService;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideSource;
 use Mallto\Tool\Exception\ResourceException;
 
@@ -19,9 +18,6 @@ use Mallto\Tool\Exception\ResourceException;
  */
 class NewConfigController extends AdminCommonController
 {
-    private const RELOAD_THROTTLE_KEY = 'new_configs:manual_reload_throttle';
-    private const RELOAD_THROTTLE_SECONDS = 30;
-
     /**
      * 处理「getHeaderTitle」相关的内部协作步骤。
      */
@@ -115,15 +111,15 @@ class NewConfigController extends AdminCommonController
     /**
      * 处理「reload」相关的内部协作步骤。
      */
-    public function reload(NewConfigPublisher $publisher)
+    public function reload(NewConfigManualPublishService $manualPublisher)
     {
-        if (!Cache::add(self::RELOAD_THROTTLE_KEY, time(), self::RELOAD_THROTTLE_SECONDS)) {
+        $result = $manualPublisher->publish();
+        if ($result === null) {
             admin_toastr('发布操作过于频繁，请 30 秒后再试。', 'warning');
 
             return redirect()->route('new_configs.publish_restart');
         }
 
-        $result = $publisher->publish(true, true);
         $restart = $result['restart'] ?? null;
 
         if ($restart === null) {
