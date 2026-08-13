@@ -118,6 +118,9 @@ class ConfigMenuSeeder extends Seeder
         $this->updateOrCreate(
             "admin_monitor.app_stats", $monitorCenterMenu->id, 40, "应用运行监控", "fa-area-chart");
 
+        $this->updateOrCreate(
+            "admin_monitor.location_ingress", $monitorCenterMenu->id, 45, "定位入口调试", "fa-exchange");
+
         //--------------------- 日志中心
 
         $logCenterMenu = $this->updateOrCreate(

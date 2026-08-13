@@ -144,6 +144,11 @@ Route::group($attributes, function ($router) {
                             ->name('admin_monitor.app_stats');
                         Route::get('monitor/app_stats/data', 'AppStatsController@data')
                             ->name('admin_monitor.app_stats.data');
+                        // 定位入口计数按项目展开，只能在人工调试页读取，不能加入 AppStats 的 Pod 自动采样。
+                        Route::get('monitor/location_ingress', 'LocationIngressCounterController@index')
+                            ->name('admin_monitor.location_ingress');
+                        Route::get('monitor/location_ingress/data', 'LocationIngressCounterController@data')
+                            ->name('admin_monitor.location_ingress.data');
                         Route::post('monitor/app_stats/task-tmp-cleanup', 'SwooleTaskTmpCleanupController@store')
                             ->name('admin_monitor.app_stats.task_tmp_cleanup');
                         Route::get('monitor/swoole_stats', 'SwooleStatsController@index')
