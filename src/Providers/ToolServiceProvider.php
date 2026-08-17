@@ -60,6 +60,7 @@ use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\MongoMonitor\MongoDatabaseMonitor;
+use Mallto\Tool\Domain\MongoDb\MongoDbAccessPolicy;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
@@ -560,7 +561,13 @@ class ToolServiceProvider extends ServiceProvider
         }
         // MongoDB 区块同样只读 Scheduler 写入的共享 Redis 快照，不在 HTTP 路径访问 MongoDB。
         if (! $this->app->bound(MongoDatabaseAppStatsSection::class)) {
-            $this->app->singleton(MongoDatabaseAppStatsSection::class);
+            $this->app->singleton(MongoDatabaseAppStatsSection::class, static function (Application $app) {
+                return new MongoDatabaseAppStatsSection(
+                    $app->make(RedisFactory::class),
+                    $app->make('config'),
+                    $app->make(MongoDbAccessPolicy::class)
+                );
+            });
             $this->app->tag([MongoDatabaseAppStatsSection::class], AppStatsSectionProvider::class);
         }
         $this->app->singleton(AppStatsSnapshotService::class, static function (Application $app) {
@@ -584,7 +591,8 @@ class ToolServiceProvider extends ServiceProvider
                 $app->make('db'),
                 $app->make(RedisFactory::class),
                 $app->make(LoggerInterface::class),
-                (array)$app->make('config')->get('database.mongodb_monitor', [])
+                (array)$app->make('config')->get('database.mongodb_monitor', []),
+                $app->make(MongoDbAccessPolicy::class)
             );
         });
     }

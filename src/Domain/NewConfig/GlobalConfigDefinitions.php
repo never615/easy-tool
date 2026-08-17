@@ -108,6 +108,15 @@ class GlobalConfigDefinitions
                 ['override_policy' => 'system']
             ),
             self::definition('debug_log', '全局调试日志', 'basic', '0', 'boolean', '开启后部分业务会写额外调试日志。'),
+            GlobalConfigDefinition::fromConfig(
+                'database.mongodb.enabled',
+                'MongoDB 业务读写开关',
+                'basic',
+                'database.mongodb.enabled',
+                'boolean',
+                '全局维护开关。关闭后业务读写、历史统计、MongoDB 运维命令和运行监控均不得连接 MongoDB；维护期间的历史位置不会补写。',
+                'LOCATION_MONGODB_READ_WRITE_ENABLED'
+            ),
             self::definition('close_owner_api_log_except', '关闭 Owner API 日志排除规则', 'basic', '0', 'boolean', '开启后 owner API 日志不再跳过 app.log.except 中的路径。'),
         ];
     }

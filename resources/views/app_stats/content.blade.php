@@ -90,6 +90,7 @@
     .app-stats .status-expired { border-left-color: #dd4b39 !important; color: #9d2618; }
     .app-stats .status-waiting,
     .app-stats .status-disabled,
+    .app-stats .status-maintenance,
     .app-stats .status-unavailable { border-left-color: #777 !important; color: #555; }
     .app-stats .status-running { border-left-color: #3c8dbc !important; color: #21617f; }
     .app-stats .status-pending,
@@ -231,7 +232,7 @@
             const statusKey = (status) => {
                 const allowed = [
                     'normal', 'online', 'warning', 'delayed', 'error', 'expired',
-                    'waiting', 'disabled', 'unavailable', 'pending', 'running', 'succeeded',
+                    'waiting', 'disabled', 'maintenance', 'unavailable', 'pending', 'running', 'succeeded',
                     'failed', 'timed_out', 'partial_failed'
                 ];
 
@@ -247,6 +248,7 @@
                 expired: '过期',
                 waiting: '等待采样',
                 disabled: '未启用',
+                maintenance: '计划维护',
                 unavailable: '不可用',
                 pending: '等待 Pod 执行',
                 running: '正在清理',
@@ -700,6 +702,7 @@
                 postgres_monitor_sampling_failed: 'PostgreSQL 采样失败',
                 postgres_monitor_state_read_failed: 'PostgreSQL 状态读取失败',
                 mongodb_monitor_disabled: 'MongoDB 监控未启用',
+                mongodb_business_access_disabled: 'MongoDB 计划维护，业务读写已关闭',
                 mongodb_monitor_waiting_for_first_sample: '等待 MongoDB 首次采样',
                 mongodb_monitor_waiting_for_complete_sample: '等待下一次完整 MongoDB 采样',
                 mongodb_monitor_sample_delayed: 'MongoDB 采样未刷新',

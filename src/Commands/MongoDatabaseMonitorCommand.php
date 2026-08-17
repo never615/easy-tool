@@ -28,6 +28,12 @@ final class MongoDatabaseMonitorCommand extends Command
             return self::SUCCESS;
         }
 
+        if ($result['maintenance'] ?? false) {
+            $this->info('MongoDB business access disabled for planned maintenance');
+
+            return self::SUCCESS;
+        }
+
         if (! ($result['enabled'] ?? false)) {
             $this->info('MongoDB monitor disabled');
 

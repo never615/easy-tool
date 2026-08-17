@@ -9,6 +9,7 @@ namespace Mallto\Tool\Domain\AppStats\Sections;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\MongoDb\MongoDbAccessPolicy;
 use Throwable;
 
 /**
@@ -24,6 +25,7 @@ final class MongoDatabaseAppStatsSection implements AppStatsSectionProvider
     public function __construct(
         private readonly RedisFactory $redis,
         private readonly ConfigRepository $config,
+        private readonly MongoDbAccessPolicy $accessPolicy,
         ?callable $clock = null
     ) {
         $this->clock = $clock ?? static fn (): int => time();
@@ -37,6 +39,15 @@ final class MongoDatabaseAppStatsSection implements AppStatsSectionProvider
     /** @return array<string, mixed> */
     public function read(): array
     {
+        if (! $this->accessPolicy->enabled()) {
+            return $this->result(
+                'maintenance',
+                null,
+                [],
+                'mongodb_business_access_disabled'
+            );
+        }
+
         if (! (bool) $this->config->get('database.mongodb_monitor.enabled', false)) {
             return $this->result('disabled', null, [], 'mongodb_monitor_disabled');
         }

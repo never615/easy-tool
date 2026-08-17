@@ -8,6 +8,7 @@ namespace Mallto\Tool\Domain\MongoMonitor;
 
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Database\ConnectionResolverInterface;
+use Mallto\Tool\Domain\MongoDb\MongoDbAccessPolicy;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -47,6 +48,7 @@ final class MongoDatabaseMonitor
         private readonly RedisFactory $redis,
         private readonly LoggerInterface $logger,
         array $config,
+        private readonly MongoDbAccessPolicy $accessPolicy,
         ?callable $clock = null,
         ?callable $commandRunner = null
     ) {
@@ -68,6 +70,16 @@ final class MongoDatabaseMonitor
     /** @return array<string, mixed> */
     public function run(): array
     {
+        if (! $this->accessPolicy->enabled()) {
+            return [
+                'enabled' => true,
+                'ok' => true,
+                'level' => 'maintenance',
+                'maintenance' => true,
+                'reason' => 'mongodb_business_access_disabled',
+            ];
+        }
+
         if (! $this->enabled) {
             return [
                 'enabled' => false,
