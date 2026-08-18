@@ -116,6 +116,27 @@ class SwooleTaskTmpSnapshotStoreTest extends TestCase
         $this->assertSame([], $this->store($connection, 200)->readAll());
     }
 
+    public function test_read_candidates_keeps_an_expired_snapshot_for_repository_reason_classification(): void
+    {
+        $connection = Mockery::mock();
+        $connection->shouldReceive('hgetall')
+            ->once()
+            ->with('app_stats:swoole_task_tmp:pods')
+            ->andReturn([
+                'pod-old' => json_encode(['instance_id' => 'pod-old:100:8'], JSON_THROW_ON_ERROR),
+            ]);
+        $connection->shouldReceive('zrange')
+            ->once()
+            ->with('app_stats:swoole_task_tmp:pods:last_seen', 0, -1, ['withscores' => true])
+            ->andReturn(['pod-old' => 100]);
+
+        $snapshots = $this->store($connection, 200)->readCandidates();
+
+        $this->assertSame(['pod-old'], array_keys($snapshots));
+        $this->assertSame(100, $snapshots['pod-old']['updated_at']);
+        $this->assertSame(100, $snapshots['pod-old']['sample_age_seconds']);
+    }
+
     public function test_forget_removes_one_hostname_from_task_tmp_hash_and_index_in_one_pipeline(): void
     {
         $pipe = Mockery::mock();

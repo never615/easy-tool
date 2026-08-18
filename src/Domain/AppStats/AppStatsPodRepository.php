@@ -228,7 +228,7 @@ class AppStatsPodRepository
     private function readTaskTmpSnapshots(): array
     {
         try {
-            return $this->taskTmpSnapshots->readAll();
+            return $this->taskTmpSnapshots->readCandidates();
         } catch (Throwable) {
             return [];
         }
@@ -240,19 +240,30 @@ class AppStatsPodRepository
      */
     private function normalizeTaskTmp(string $hostname, string $instanceId, ?array $snapshot): array
     {
-        if ($snapshot === null
-            || ! is_string($snapshot['hostname'] ?? null)
-            || $snapshot['hostname'] !== $hostname
-            || ! is_string($snapshot['instance_id'] ?? null)
-            || $snapshot['instance_id'] === ''
-            || $snapshot['instance_id'] !== $instanceId
-            || max(0, (int) ($snapshot['sample_age_seconds'] ?? PHP_INT_MAX))
-                > max(1, (int) $this->config->get('app_stats.task_tmp_snapshot_stale_seconds', 60))) {
-            return $this->unavailableTaskTmp();
+        if ($snapshot === null) {
+            return $this->unavailableTaskTmp('snapshot_unavailable');
+        }
+
+        if (! is_string($snapshot['hostname'] ?? null) || $snapshot['hostname'] !== $hostname) {
+            return $this->unavailableTaskTmp('snapshot_hostname_mismatch');
+        }
+
+        if (! is_string($snapshot['instance_id'] ?? null) || $snapshot['instance_id'] === '') {
+            return $this->unavailableTaskTmp('snapshot_instance_id_missing');
+        }
+
+        if ($snapshot['instance_id'] !== $instanceId) {
+            return $this->unavailableTaskTmp('instance_id_mismatch');
+        }
+
+        if (max(0, (int) ($snapshot['sample_age_seconds'] ?? PHP_INT_MAX))
+            > max(1, (int) $this->config->get('app_stats.task_tmp_snapshot_stale_seconds', 60))) {
+            return $this->unavailableTaskTmp('snapshot_stale');
         }
 
         return [
             'status' => 'normal',
+            'reason_code' => null,
             'sample_age_seconds' => max(0, (int) $snapshot['sample_age_seconds']),
             'instance_id' => $snapshot['instance_id'],
             'path' => is_string($snapshot['path'] ?? null) ? $snapshot['path'] : null,
@@ -296,10 +307,11 @@ class AppStatsPodRepository
     }
 
     /** @return array<string, mixed> */
-    private function unavailableTaskTmp(): array
+    private function unavailableTaskTmp(string $reasonCode): array
     {
         return [
             'status' => 'unavailable',
+            'reason_code' => $reasonCode,
             'sample_age_seconds' => null,
             'instance_id' => null,
             'path' => null,

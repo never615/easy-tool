@@ -9,6 +9,7 @@ namespace Mallto\Tool\Processes;
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
 use Illuminate\Support\Facades\Log;
 use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
+use Mallto\Tool\Domain\AppStats\SwooleInstanceIdentity;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
 use Swoole\Http\Server;
 use Swoole\Process;
@@ -68,6 +69,7 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
         self::$running = true;
         // 常驻进程内只解析一次依赖，避免每 5 秒通过容器重复构造 Writer/Factory。
         $writer = app(AppStatsPodWriter::class);
+        $instanceIdentity = app(SwooleInstanceIdentity::class);
         $factory = app(SwooleStatsSnapshotFactory::class);
         $hostname = gethostname() ?: 'unknown';
         $lastCleanupAt = 0;
@@ -92,7 +94,7 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
 
                 $writer->store($hostname, $factory->make(
                     $hostname,
-                    (int)($swoole->master_pid ?? getmypid()),
+                    $instanceIdentity->masterPid(),
                     swoole_cpu_num(),
                     $stats,
                     $extra,

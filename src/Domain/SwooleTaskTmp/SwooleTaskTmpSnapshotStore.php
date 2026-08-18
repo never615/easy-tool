@@ -47,6 +47,24 @@ class SwooleTaskTmpSnapshotStore
      */
     public function readAll(): array
     {
+        return $this->readSnapshots(false);
+    }
+
+    /**
+     * 返回可解析的快照候选，包括过期或缺少索引的值，供 AppStats 区分不可用原因。
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function readCandidates(): array
+    {
+        return $this->readSnapshots(true);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function readSnapshots(bool $includeUnavailable): array
+    {
         $connection = $this->connection();
         // 每次 AppStats 读取固定为一个 Hash 和一个 WITHSCORES ZSet 请求；不做全库扫描或修复写入。
         $payloads = (array) $connection->hgetall($this->hashKey());
@@ -68,14 +86,12 @@ class SwooleTaskTmpSnapshotStore
 
             // Hash 与 ZSet 共同构成快照：没有 ZSet 时间戳的孤立 Hash 值不可信，不能回退到
             // payload 内的旧时间戳，否则旧实例数据可能被错误合并到当前 Pod。
-            if (! array_key_exists((string) $hostname, $scores)) {
-                continue;
-            }
+            $hasScore = array_key_exists((string) $hostname, $scores);
+            $sampledAt = $hasScore ? max(0, (int) $scores[(string) $hostname]) : 0;
+            $sampleAgeSeconds = $sampledAt > 0 ? max(0, $now - $sampledAt) : PHP_INT_MAX;
 
-            $sampledAt = max(0, (int) $scores[(string) $hostname]);
-            $sampleAgeSeconds = max(0, $now - $sampledAt);
-
-            if ($sampledAt === 0 || $sampleAgeSeconds > $staleSeconds) {
+            if ((! $hasScore || $sampledAt === 0 || $sampleAgeSeconds > $staleSeconds)
+                && ! $includeUnavailable) {
                 continue;
             }
 

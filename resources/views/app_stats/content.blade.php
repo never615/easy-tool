@@ -545,6 +545,14 @@
                 return status + cleanupStatus;
             };
 
+            const taskTmpUnavailableReason = (reasonCode) => ({
+                snapshot_unavailable: '尚未收到可用的 task 临时文件快照；请核对该 Pod 的 cleaner 进程与 Redis 快照。',
+                snapshot_hostname_mismatch: 'task 临时文件快照的 Pod 标识不匹配，已拒绝用于清理。',
+                snapshot_instance_id_missing: 'task 临时文件快照缺少实例标识，已拒绝用于清理。',
+                instance_id_mismatch: '主 Swoole 与 task 临时文件快照实例不一致，已拒绝用于清理。',
+                snapshot_stale: 'task 临时文件快照已超过有效期，已拒绝用于清理。'
+            }[reasonCode] || '该 Pod 的 task 临时文件快照暂不可用于手动清理。');
+
             const taskTmpCell = (taskTmpValue) => {
                 const taskTmp = taskTmpValue || {};
                 const filesystem = taskTmp.filesystem || {};
@@ -556,7 +564,7 @@
                 cell.append(text('strong', taskTmpStatusText(taskTmp)));
 
                 if (safeStatus !== 'normal') {
-                    cell.append(text('p', '该 Pod 的 task 临时文件快照暂不可用于手动清理。'));
+                    cell.append(text('p', taskTmpUnavailableReason(taskTmp.reason_code)));
 
                     return cell;
                 }

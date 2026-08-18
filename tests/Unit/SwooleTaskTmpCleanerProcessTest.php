@@ -3,6 +3,7 @@
 namespace Mallto\Tool\Tests\Unit;
 
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
+use Mallto\Tool\Domain\AppStats\SwooleInstanceIdentity;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpRuntime;
 use Mallto\Tool\Processes\SwooleTaskTmpCleanerProcess;
 use PHPUnit\Framework\TestCase;
@@ -28,11 +29,11 @@ class SwooleTaskTmpCleanerProcessTest extends TestCase
         $this->assertStringContainsString(SwooleTaskTmpRuntime::class, $source);
         $this->assertSame(1, substr_count($source, 'app(SwooleTaskTmpRuntime::class)'));
         $this->assertStringContainsString("config('laravels.swoole.task_tmpdir')", $source);
-        $this->assertStringContainsString('sprintf(', $source);
-        $this->assertStringContainsString("'%s:%d:%d'", $source);
+        $this->assertStringContainsString(SwooleInstanceIdentity::class, $source);
+        $this->assertStringContainsString('app(SwooleInstanceIdentity::class)', $source);
         $this->assertStringContainsString("['start_time']", $source);
-        $this->assertStringContainsString('master_pid', $source);
-        $this->assertStringContainsString('getmypid()', $source);
+        $this->assertStringNotContainsString('master_pid', $source);
+        $this->assertStringNotContainsString('getmypid()', $source);
         $this->assertStringNotContainsString('/dev/shm', $source);
         $this->assertStringNotContainsString('env(', $source);
     }

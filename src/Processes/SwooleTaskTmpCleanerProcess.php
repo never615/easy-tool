@@ -8,6 +8,7 @@ namespace Mallto\Tool\Processes;
 
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
 use Illuminate\Support\Facades\Log;
+use Mallto\Tool\Domain\AppStats\SwooleInstanceIdentity;
 use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpRuntime;
 use Swoole\Http\Server;
 use Swoole\Process;
@@ -27,11 +28,9 @@ class SwooleTaskTmpCleanerProcess implements CustomProcessInterface
         $directory = (string) config('laravels.swoole.task_tmpdir');
         $hostname = gethostname() ?: 'unknown';
         $stats = $swoole->stats();
-        $instanceId = sprintf(
-            '%s:%d:%d',
+        $instanceId = app(SwooleInstanceIdentity::class)->make(
             $hostname,
-            (int) ($stats['start_time'] ?? 0),
-            (int) ($swoole->master_pid ?? getmypid())
+            (int) ($stats['start_time'] ?? 0)
         );
         $runtime = app(SwooleTaskTmpRuntime::class);
 
