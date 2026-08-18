@@ -2,6 +2,7 @@
 
 namespace Mallto\Tool\Tests\Unit;
 
+use InvalidArgumentException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -12,6 +13,7 @@ use Mallto\Tool\Controller\Admin\NewConfigController;
 use Mallto\Tool\Data\NewConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideSource;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigModuleForm;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideManager;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 use Mallto\Tool\Seeder\NewConfigDocumentSeeder;
 use ReflectionMethod;
@@ -122,6 +124,16 @@ class GlobalConfigAdminContractTest extends TestCase
             'keys' => [$key, $key],
         ]));
         $this->assertNull($row->fresh()->override_source);
+    }
+
+    public function test_system_boolean_override_rejects_invalid_value(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        app(GlobalConfigOverrideManager::class)->setSystem(
+            'location.pgsql_maintenance.dry_run',
+            'unexpected'
+        );
     }
 
     public function test_module_html_states_explicit_override_and_environment_baseline_semantics(): void

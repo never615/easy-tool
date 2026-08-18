@@ -22,6 +22,7 @@ final class GlobalConfigBaselineResolver
 
     /**
      * @throws JsonException
+     * @throws \InvalidArgumentException
      */
     public static function normalize(string $type, mixed $value): ?string
     {
@@ -30,7 +31,7 @@ final class GlobalConfigBaselineResolver
         }
 
         return match ($type) {
-            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+            'boolean' => self::normalizeBoolean($value),
             'integer' => (string)((int)$value),
             'float' => (string)((float)$value),
             'json' => is_string($value)
@@ -38,5 +39,22 @@ final class GlobalConfigBaselineResolver
                 : json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             default => (string)$value,
         };
+    }
+
+    /**
+     * Boolean 配置只能接受明确的布尔表示，不能把拼写错误静默写成 false。
+     */
+    private static function normalizeBoolean(mixed $value): string
+    {
+        if (!is_bool($value) && !is_int($value) && !is_string($value)) {
+            throw new \InvalidArgumentException('Boolean global config value is invalid.');
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($parsed === null) {
+            throw new \InvalidArgumentException('Boolean global config value is invalid.');
+        }
+
+        return $parsed ? '1' : '0';
     }
 }

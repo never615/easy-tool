@@ -68,12 +68,16 @@ final class GlobalConfigRuntimeResolver
 
         $value = $config->value;
         if ($value !== null) {
-            $value = match ((string)$config->type) {
-                'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
-                'integer' => (string)((int)$value),
-                'float' => (string)((float)$value),
-                default => (string)$value,
-            };
+            try {
+                $value = match ((string)$config->type) {
+                    'boolean' => GlobalConfigBaselineResolver::normalize('boolean', $value),
+                    'integer' => (string)((int)$value),
+                    'float' => (string)((float)$value),
+                    default => (string)$value,
+                };
+            } catch (\InvalidArgumentException) {
+                return ['found' => false, 'value' => null];
+            }
         }
 
         return ['found' => $value !== null, 'value' => $value];
