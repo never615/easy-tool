@@ -260,16 +260,12 @@ class QueueDiagnosticController extends Controller
     </div>
 </div>
 
-<div class="queue-diag-grid">
-    <div class="queue-diag-panel">
-        <h3>Backlog 数据来源汇总</h3>
-        {$this->renderTopRows($snapshot['backlog_source_groups'] ?? [])}
-    </div>
-    <div class="queue-diag-panel">
-        <h3>Backlog 数据来源</h3>
-        {$this->renderTopRows($snapshot['backlog_sources'] ?? [])}
-    </div>
+<div class="queue-diag-panel">
+    <h3>Backlog 数据来源汇总</h3>
+    {$this->renderTopRows($snapshot['backlog_source_groups'] ?? [])}
 </div>
+
+{$this->renderBacklogSourcePanel($snapshot['backlog_sources'] ?? [])}
 
 <div class="queue-diag-panel">
     <h3>Top Jobs</h3>
@@ -948,6 +944,17 @@ HTML;
     {
         return '<div class="queue-diag-panel queue-diag-source-panel">'
             . '<h3>数据来源</h3>'
+            . $this->renderTopRows($rows)
+            . '</div>';
+    }
+
+    /**
+     * 处理「renderBacklogSourcePanel」相关的内部协作步骤。
+     */
+    private function renderBacklogSourcePanel(array $rows): string
+    {
+        return '<div class="queue-diag-panel queue-diag-source-panel queue-diag-backlog-source-panel">'
+            . '<h3>Backlog 数据来源</h3>'
             . $this->renderTopRows($rows)
             . '</div>';
     }
