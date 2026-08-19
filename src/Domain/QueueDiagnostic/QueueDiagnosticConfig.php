@@ -421,6 +421,28 @@ class QueueDiagnosticConfig
     }
 
     /**
+     * 只更新队列诊断总开关，供状态页顶部快捷启停使用。
+     */
+    public function saveEnabled(bool $enabled): void
+    {
+        $definition = $this->settingDefinitions()[self::KEY_ENABLED];
+        $value = $enabled ? '1' : '0';
+
+        if ($value === (string)$definition['default']) {
+            QueueDiagnosticSetting::query()->where('key', self::KEY_ENABLED)->delete();
+        } else {
+            QueueDiagnosticSetting::query()->updateOrCreate([
+                'key' => self::KEY_ENABLED,
+            ], [
+                'value' => $value,
+                'remark' => $definition['remark'] ?? $definition['label'] ?? null,
+            ]);
+        }
+
+        $this->clearSettingsCache();
+    }
+
+    /**
      * 处理「clearSettingsCache」相关的内部协作步骤。
      */
     public function clearSettingsCache(): void

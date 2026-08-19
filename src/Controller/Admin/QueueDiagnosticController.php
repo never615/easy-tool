@@ -65,6 +65,12 @@ class QueueDiagnosticController extends Controller
      */
     public function saveSettings(QueueDiagnosticConfig $config)
     {
+        if (request()->has('quick_enabled')) {
+            $config->saveEnabled(request()->boolean('quick_enabled'));
+
+            return redirect()->route('queue_diagnostics.index', [ 'saved' => 1 ]);
+        }
+
         $config->saveSettings(request()->all());
 
         return redirect()->route('queue_diagnostics.index', [ 'saved' => 1 ]);
@@ -103,6 +109,7 @@ class QueueDiagnosticController extends Controller
         $escapedCopyText = $this->escape($copyText);
         $copyScript = $this->renderCopyScript();
         $resourceHint = $this->renderResourceSnapshotHint($snapshot);
+        $quickToggleForm = $this->renderQuickToggleForm($enabled);
         $savedAlert = request()->boolean('saved')
             ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
             : '';
@@ -120,6 +127,7 @@ class QueueDiagnosticController extends Controller
     .queue-diag-table th { width: 36%; color: #5f6b7a; font-weight: 600; background: #fafbfc; }
     .queue-diag-actions { margin: 0 0 14px; }
     .queue-diag-actions a, .queue-diag-actions button { margin-right: 10px; }
+    .queue-diag-quick-toggle { display: inline-block; margin-left: 10px; }
     .queue-diag-alert { margin-bottom: 14px; }
     .queue-diag-form-table input[type="text"], .queue-diag-form-table input[type="number"] { max-width: 360px; }
     .queue-diag-help { color: #8a94a6; font-size: 12px; margin-top: 4px; }
@@ -136,6 +144,7 @@ class QueueDiagnosticController extends Controller
 
 <div class="queue-diag-actions">
     <span class="label {$statusClass}">{$statusText}</span>
+    {$quickToggleForm}
     <span style="margin-left:8px;color:#667085">当前窗口: {$windowTime}</span>
     <a class="btn btn-xs btn-primary" href="{$captureUrl}">采样并刷新</a>
     <a class="btn btn-xs btn-default" href="{$jsonUrl}">JSON</a>
@@ -257,6 +266,23 @@ class QueueDiagnosticController extends Controller
 </div>
 {$copyScript}
 HTML;
+    }
+
+    /**
+     * 渲染页面顶部快捷启停表单，仅更新总开关，不覆盖其余诊断配置。
+     */
+    private function renderQuickToggleForm(bool $enabled): string
+    {
+        $saveUrl = route('queue_diagnostics.settings');
+        $nextValue = $enabled ? '0' : '1';
+        $buttonClass = $enabled ? 'btn-danger' : 'btn-success';
+        $buttonText = $enabled ? '停用队列诊断' : '启用队列诊断';
+
+        return '<form class="queue-diag-quick-toggle" method="POST" action="' . $this->escape($saveUrl) . '">'
+            . csrf_field()
+            . '<input type="hidden" name="quick_enabled" value="' . $nextValue . '">'
+            . '<button type="submit" class="btn btn-xs ' . $buttonClass . '">' . $buttonText . '</button>'
+            . '</form>';
     }
 
     /**
