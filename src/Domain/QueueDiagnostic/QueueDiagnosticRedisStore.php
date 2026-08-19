@@ -122,6 +122,40 @@ class QueueDiagnosticRedisStore
         foreach ($keys as $key) {
             Redis::expire($key, $this->config->retentionSeconds());
         }
+
+        Redis::setex(
+            $this->config->latestResourceSnapshotKey(),
+            $this->config->retentionSeconds(),
+            (string)$windowStart
+        );
+    }
+
+    /**
+     * 读取当前窗口之前最近一次仍然新鲜的资源快照。
+     *
+     * 资源采样是按分钟异步写入的，页面刚跨入新窗口时不能因短暂空档把上一分钟
+     * 已采集的 Redis 与 backlog 现场误报成“暂无数据”。该回退只读取定点 key，
+     * 不扫描 Redis，且最多接受两个窗口内的快照。
+     */
+    public function latestResourceSnapshot(int $beforeWindowStart): ?array
+    {
+        $latestWindowStart = (int)Redis::get($this->config->latestResourceSnapshotKey());
+        $previousWindowStart = $beforeWindowStart - $this->config->windowSeconds();
+        $minimumCapturedAt = time() - max($this->config->windowSeconds() * 2, 120);
+
+        foreach (array_unique([$latestWindowStart, $previousWindowStart]) as $windowStart) {
+            if ($windowStart <= 0 || $windowStart >= $beforeWindowStart) {
+                continue;
+            }
+
+            $snapshot = $this->windowSnapshot($windowStart);
+            $capturedAt = (int)($snapshot['meta']['snapshot_updated_at'] ?? $windowStart);
+            if ($capturedAt >= $minimumCapturedAt && $this->hasResourceSnapshot($snapshot)) {
+                return $snapshot;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -159,6 +193,16 @@ class QueueDiagnosticRedisStore
             'source_groups' => $this->scoreRows($this->decodeJson((string)($raw['source_groups'] ?? '')) ?: [], $limit),
             'sources' => $this->scoreRows($this->decodeJson((string)($raw['sources'] ?? '')) ?: [], $limit),
         ];
+    }
+
+    /**
+     * 判断窗口是否已有 Redis、队列或 keyspace 现场快照。
+     */
+    private function hasResourceSnapshot(array $snapshot): bool
+    {
+        return !empty($snapshot['redis_memory'])
+            || !empty($snapshot['queue_sizes'])
+            || !empty($snapshot['keyspace']);
     }
 
     /**

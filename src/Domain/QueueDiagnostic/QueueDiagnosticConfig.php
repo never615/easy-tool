@@ -234,6 +234,14 @@ class QueueDiagnosticConfig
     }
 
     /**
+     * 处理「latestResourceSnapshotKey」相关的内部协作步骤。
+     */
+    public function latestResourceSnapshotKey(): string
+    {
+        return $this->redisPrefix() . 'latest_resource_snapshot';
+    }
+
+    /**
      * 处理「allConfigKeys」相关的内部协作步骤。
      */
     public function allConfigKeys(): array

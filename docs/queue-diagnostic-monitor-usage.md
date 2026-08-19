@@ -29,8 +29,8 @@
 
 1. **配置状态**：确认总开关、窗口长度、阈值、队列列表和 Redis key 前缀是否符合当前环境。
 2. **窗口事件**：查看当前窗口的 processed、failed、exception 和 total 计数。
-3. **Redis Memory / Keyspace**：判断 Redis 内存是否接近 warning 或 error 阈值。
-4. **队列 Backlog / Backlog 样本**：确认积压集中在哪个队列，以及 pending 队列中的 Job 类型、Payload 体积和业务来源。
+3. **Redis Memory / Keyspace**：判断 Redis 内存是否接近 warning 或 error 阈值。定时采样尚未写入当前窗口时，页面会展示两分钟内最近一次成功采样，并明确标出采样时间；窗口事件仍只表示当前窗口。
+4. **队列 Backlog / Backlog 样本**：确认积压集中在哪个队列，以及 pending 队列中的 Job 类型、Payload 体积和业务来源。若展示“最近一次采样”，请结合页面标出的时间判断其新鲜度，或点击“采样并刷新”获取现场结果。
 5. **Top Jobs / 任务耗时 / Payload Top**：判断是高频 Job、慢 Job，还是大 Payload 消耗了主要资源。
 6. **失败任务 / 异常状态**：优先结合应用日志检查失败重试、异常循环或已达到的阈值。
 7. **数据来源汇总与明细**：在已接入安全上下文的 Job 中，按 subject、gateway、业务阶段等维度定位压力来源；不会展示完整业务上报包。

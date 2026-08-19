@@ -85,12 +85,66 @@ class QueueDiagnosticController extends Controller
         QueueDiagnosticSnapshotter $snapshotter
     ): array {
         if (request()->boolean('capture') && $config->enabled() && $config->snapshotEnabled()) {
-            return $snapshotter->capture();
+            return $this->markResourceSnapshot($snapshotter->capture(), false);
         }
 
         $windowStart = (int)request()->get('window', $config->windowStart());
+        $snapshot = $store->windowSnapshot($windowStart);
 
-        return $store->windowSnapshot($windowStart);
+        if (request()->has('window') || !$this->resourceSnapshotMissing($snapshot)) {
+            return $this->markResourceSnapshot($snapshot, false);
+        }
+
+        $recentSnapshot = $store->latestResourceSnapshot($windowStart);
+
+        return $recentSnapshot === null
+            ? $this->markResourceSnapshot($snapshot, false)
+            : $this->mergeRecentResourceSnapshot($snapshot, $recentSnapshot);
+    }
+
+    /**
+     * 在当前窗口尚未写入现场数据时，保留事件统计并展示最近一次新鲜的资源快照。
+     */
+    private function mergeRecentResourceSnapshot(array $snapshot, array $recentSnapshot): array
+    {
+        foreach ([
+            'redis_memory',
+            'keyspace',
+            'queue_sizes',
+            'anomaly',
+            'backlog_sample',
+            'backlog_jobs',
+            'backlog_payload_jobs',
+            'backlog_source_groups',
+            'backlog_sources',
+        ] as $key) {
+            $snapshot[$key] = $recentSnapshot[$key] ?? [];
+        }
+
+        return $this->markResourceSnapshot(
+            $snapshot,
+            true,
+            (int)($recentSnapshot['window_started_at'] ?? 0),
+            (int)($recentSnapshot['meta']['snapshot_updated_at'] ?? 0)
+        );
+    }
+
+    /**
+     * 标记资源区块所使用的快照窗口，避免将回退数据误认为当前实时采样。
+     */
+    private function markResourceSnapshot(
+        array $snapshot,
+        bool $isFallback,
+        ?int $resourceWindowStart = null,
+        ?int $resourceSnapshotUpdatedAt = null
+    ): array {
+        $snapshot['resource_snapshot_fallback'] = $isFallback;
+        $snapshot['resource_snapshot_window_started_at'] = $resourceWindowStart
+            ?: (int)($snapshot['window_started_at'] ?? 0);
+        $snapshot['resource_snapshot_updated_at'] = $resourceSnapshotUpdatedAt
+            ?: (int)($snapshot['meta']['snapshot_updated_at'] ?? 0);
+
+        return $snapshot;
     }
 
     /**
@@ -413,7 +467,10 @@ HTML;
         $text .= '- 页面地址: ' . request()->fullUrl() . "\n";
         $text .= '- 当前窗口: ' . $windowTime . "\n";
         $text .= '- 说明: 本内容来自队列诊断状态页，不包含完整 raw payload 或序列化 Job 对象。' . "\n\n";
-        if ($this->resourceSnapshotMissing($snapshot)) {
+        if (!empty($snapshot['resource_snapshot_fallback'])) {
+            $text .= '- 资源快照提示: 当前窗口尚未采样；Redis Memory、队列 Backlog、Keyspace 与 Backlog 样本来自最近一次采样（'
+                . $this->resourceSnapshotTime($snapshot) . '）。' . "\n\n";
+        } elseif ($this->resourceSnapshotMissing($snapshot)) {
             $text .= '- 快照提示: 当前报告不包含 Redis Memory / 队列 Backlog / Keyspace；排查 Redis 内存告警时请先点击“采样并刷新”后再复制。' . "\n\n";
         }
 
@@ -900,6 +957,12 @@ HTML;
      */
     private function renderResourceSnapshotHint(array $snapshot): string
     {
+        if (!empty($snapshot['resource_snapshot_fallback'])) {
+            return '<div class="queue-diag-resource-hint">当前窗口尚未采样，以下 Redis Memory、队列 Backlog、Keyspace 与 Backlog 样本展示最近一次采样（'
+                . $this->escape($this->resourceSnapshotTime($snapshot))
+                . '）。点击“采样并刷新”可立即更新。</div>';
+        }
+
         if (!$this->resourceSnapshotMissing($snapshot)) {
             return '';
         }
@@ -915,6 +978,19 @@ HTML;
         return empty($snapshot['redis_memory'])
             && empty($snapshot['queue_sizes'])
             && empty($snapshot['keyspace']);
+    }
+
+    /**
+     * 格式化资源快照实际采样时间，供页面和复制结果说明数据新鲜度。
+     */
+    private function resourceSnapshotTime(array $snapshot): string
+    {
+        $timestamp = (int)($snapshot['resource_snapshot_updated_at'] ?? 0);
+        if ($timestamp <= 0) {
+            $timestamp = (int)($snapshot['resource_snapshot_window_started_at'] ?? 0);
+        }
+
+        return $timestamp > 0 ? date('Y-m-d H:i:s', $timestamp) : '未知时间';
     }
 
     /**
