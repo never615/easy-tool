@@ -5,6 +5,7 @@ namespace Mallto\Tool\Controller\Admin;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Layout\Content;
 use Illuminate\Routing\Controller;
+use Mallto\Tool\Domain\NewConfig\SwooleTaskMonitorConfigForm;
 use Mallto\Tool\Domain\SwooleTaskMonitor\SwooleTaskMonitor;
 use Mallto\Tool\Domain\SwooleTaskMonitor\SwooleTaskMonitorStore;
 use Throwable;
@@ -18,9 +19,9 @@ class SwooleTaskMonitorController extends Controller
     /**
      * 处理「index」相关的内部协作步骤。
      */
-    public function index(SwooleTaskMonitorStore $store)
+    public function index(SwooleTaskMonitorStore $store, SwooleTaskMonitorConfigForm $configForm)
     {
-        $payload = $this->payload($store);
+        $payload = $this->payload($store, $configForm);
 
         if ($this->wantsJsonResponse()) {
             return response()->json($payload);
@@ -46,14 +47,32 @@ class SwooleTaskMonitorController extends Controller
     /**
      * 处理「payload」相关的内部协作步骤。
      */
-    private function payload(SwooleTaskMonitorStore $store): array
+    private function payload(SwooleTaskMonitorStore $store, SwooleTaskMonitorConfigForm $configForm): array
     {
+        $startupConfig = $this->startupConfigSnapshot($configForm);
+
         return [
             'snapshot' => $store->snapshot($this->dateFromRequest()),
             'runtime' => $this->runtimeMetrics(),
             'monitor_config' => SwooleTaskMonitor::config(),
+            'startup_config' => $startupConfig,
+            'startup_config_available' => $startupConfig !== null,
+            'can_update_startup_config' => $startupConfig !== null
+                && (bool) Admin::user()?->can('new_configs.swoole_task_monitor.save'),
             'generated_at' => date('Y-m-d H:i:s'),
         ];
+    }
+
+    /**
+     * 配置中心不可用时仍保留监控页的只读诊断能力，不能因额外的启动配置读取而遮蔽运行态。
+     */
+    private function startupConfigSnapshot(SwooleTaskMonitorConfigForm $configForm): ?array
+    {
+        try {
+            return $configForm->snapshot();
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -139,6 +158,10 @@ class SwooleTaskMonitorController extends Controller
         ]));
         $resetUrl = route('swoole_task_monitor.reset');
         $configUrl = route('new_configs.swoole_task_monitor');
+        $configSaveUrl = route('new_configs.swoole_task_monitor.save');
+        $quickToggle = ($payload['can_update_startup_config'] ?? false)
+            ? $this->renderQuickToggleForm($payload['startup_config'] ?? [], $configSaveUrl)
+            : '';
         $payloadJson = json_encode(
             $payload,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
@@ -146,6 +169,13 @@ class SwooleTaskMonitorController extends Controller
         $resetAlert = request()->boolean('reset')
             ? '<div class="alert alert-success swoole-task-alert">Swoole Task监控数据已重置。</div>'
             : '';
+        $configSavedAlert = request()->boolean('config_saved')
+            ? '<div class="alert alert-success swoole-task-alert">监控启动配置已保存并发布；等待 LaravelS/Horizon 重启后生效。</div>'
+            : '';
+        $startupStatus = ($payload['startup_config_available'] ?? true)
+            ? $this->monitorStatus($payload['startup_config'] ?? [])
+            : '配置不可用';
+        $runtimeStatus = $this->monitorStatus($payload['monitor_config'] ?? []);
 
         return <<<HTML
 <style>
@@ -178,11 +208,14 @@ class SwooleTaskMonitorController extends Controller
 </style>
 
 {$resetAlert}
+{$configSavedAlert}
 
 <div class="swoole-task-toolbar">
     <span class="label label-info">日期 <span id="swoole-task-date"></span></span>
-    <span class="label label-default">模式 <span id="swoole-task-mode"></span></span>
+    <span class="label label-default">当前进程 <span id="swoole-task-mode">{$this->escape($runtimeStatus)}</span></span>
+    <span class="label label-primary">启动配置目标 {$this->escape($startupStatus)}</span>
     <span class="swoole-task-muted">更新时间: <span id="swoole-task-generated-at"></span></span>
+    {$quickToggle}
     <a class="btn btn-xs btn-primary" href="{$this->escape($configUrl)}">配置中心</a>
     <a class="btn btn-xs btn-default" href="{$this->escape($jsonUrl)}">JSON</a>
     <form method="POST" action="{$this->escape($resetUrl)}" style="display:inline" onsubmit="return confirm('确认重置当天 Swoole Task 监控数据?')">
@@ -567,6 +600,60 @@ HTML;
     }
 
     /**
+     * 渲染监控页顶部快捷启停表单，仅更新总开关，不覆盖已保存的模式和采样率。
+     */
+    private function renderQuickToggleForm(array $startupConfig, string $saveUrl): string
+    {
+        $enabled = $this->monitorEnabled($startupConfig);
+        $nextValue = $enabled ? '0' : '1';
+        $buttonClass = $enabled ? 'btn-danger' : 'btn-success';
+        $buttonText = $enabled ? '停用监控' : '启用监控';
+        $confirmation = $enabled
+            ? '确认停用 Swoole Task 监控？保存后需重启 LaravelS/Horizon 才会生效。'
+            : '确认启用 Swoole Task 监控？保存后需重启 LaravelS/Horizon 才会生效。';
+
+        return '<form method="POST" action="' . $this->escape($saveUrl) . '" style="display:inline"'
+            . ' onsubmit="return confirm(\'' . $this->escapeForJavaScript($confirmation) . '\')">'
+            . $this->csrfField()
+            . '<input type="hidden" name="quick_enabled" value="' . $nextValue . '">'
+            . '<button type="submit" class="btn btn-xs ' . $buttonClass . '">' . $buttonText . '</button>'
+            . '<span class="swoole-task-muted" style="margin-left:4px">保存后需重启 LaravelS/Horizon 才会生效。</span>'
+            . '</form>';
+    }
+
+    /**
+     * 将配置格式化为页面可读的生效状态，避免 enabled 与 mode=off 组合产生歧义。
+     */
+    private function monitorStatus(array $config): string
+    {
+        if (! $this->monitorEnabled($config)) {
+            return '关闭';
+        }
+
+        $mode = strtolower(trim((string)($config['mode'] ?? 'summary')));
+        $sampleRate = max(0.0, min(1.0, (float)($config['trace_sample_rate'] ?? 0)));
+
+        if ($sampleRate > 0 && $sampleRate < 1) {
+            return $mode . ' / trace ' . rtrim(rtrim(number_format($sampleRate * 100, 3, '.', ''), '0'), '.') . '%';
+        }
+
+        return $sampleRate >= 1 ? $mode . ' / trace all' : $mode;
+    }
+
+    /**
+     * mode=off 的优先级高于 enabled，必须与 SwooleTaskMonitor 的运行语义保持一致。
+     */
+    private function monitorEnabled(array $config): bool
+    {
+        $mode = strtolower(trim((string)($config['mode'] ?? 'summary')));
+        if ($mode === 'off') {
+            return false;
+        }
+
+        return filter_var($config['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * 处理「csrfField」相关的内部协作步骤。
      */
     private function csrfField(): string
@@ -583,6 +670,14 @@ HTML;
             $value,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
         );
+    }
+
+    /**
+     * 转义确认提示中的单引号，避免配置信息进入内联脚本时破坏 JavaScript 字符串。
+     */
+    private function escapeForJavaScript(string $value): string
+    {
+        return str_replace([ '\\', "'", "\r", "\n" ], [ '\\\\', "\\'", '', '' ], $value);
     }
 
     /**

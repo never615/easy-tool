@@ -33,6 +33,14 @@ class NewConfigSwooleTaskMonitorController extends Controller
      */
     public function save(Request $request, SwooleTaskMonitorConfigForm $configForm)
     {
+        if ($request->has('quick_enabled')) {
+            $configForm->saveEnabled($request->boolean('quick_enabled'));
+
+            admin_toastr('Swoole Task 监控启动配置已保存并发布；LaravelS/Horizon 重启后生效。');
+
+            return redirect()->route('swoole_task_monitor.index', [ 'config_saved' => 1 ]);
+        }
+
         $configForm->save($request->only([
             'enabled',
             'mode',

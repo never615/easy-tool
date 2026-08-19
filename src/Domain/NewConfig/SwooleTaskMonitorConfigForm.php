@@ -187,6 +187,24 @@ class SwooleTaskMonitorConfigForm
     }
 
     /**
+     * 只更新监控总开关，供监控页顶部快捷启停使用。
+     *
+     * 已关闭的 mode 在启用时恢复为 summary；其余模式及 trace 采样率保持不变，
+     * 避免快捷操作覆盖配置中心中已保存的明细采样设置。
+     */
+    public function saveEnabled(bool $enabled): array
+    {
+        $snapshot = $this->snapshot();
+        $mode = (string)($snapshot['mode'] ?? 'summary');
+
+        return $this->save([
+            'enabled' => $enabled ? '1' : '0',
+            'mode' => $enabled && $mode === 'off' ? 'summary' : $mode,
+            'trace_sample_rate' => $snapshot['trace_sample_rate'] ?? '0',
+        ]);
+    }
+
+    /**
      * 处理「saveValue」相关的内部协作步骤。
      */
     private function saveValue(string $key, string $value): void
