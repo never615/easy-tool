@@ -110,6 +110,7 @@ class QueueDiagnosticController extends Controller
         $copyScript = $this->renderCopyScript();
         $resourceHint = $this->renderResourceSnapshotHint($snapshot);
         $quickToggleForm = $this->renderQuickToggleForm($enabled);
+        $settingsPanel = $this->renderSettingsPanel($payload['settings'] ?? []);
         $savedAlert = request()->boolean('saved')
             ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
             : '';
@@ -129,6 +130,15 @@ class QueueDiagnosticController extends Controller
     .queue-diag-actions a, .queue-diag-actions button { margin-right: 10px; }
     .queue-diag-quick-toggle { display: inline-block; margin-left: 10px; }
     .queue-diag-alert { margin-bottom: 14px; }
+    .queue-diag-settings-panel { padding: 0; }
+    .queue-diag-settings-summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; padding: 14px 16px; }
+    .queue-diag-settings-summary::-webkit-details-marker { display: none; }
+    .queue-diag-settings-title { font-size: 16px; font-weight: 600; }
+    .queue-diag-settings-toggle { color: #667085; font-size: 12px; }
+    .queue-diag-settings-expanded-label { display: none; }
+    .queue-diag-settings-panel[open] .queue-diag-settings-collapsed-label { display: none; }
+    .queue-diag-settings-panel[open] .queue-diag-settings-expanded-label { display: inline; }
+    .queue-diag-settings-content { border-top: 1px solid #edf0f5; padding: 14px 16px; }
     .queue-diag-form-table input[type="text"], .queue-diag-form-table input[type="number"] { max-width: 360px; }
     .queue-diag-help { color: #8a94a6; font-size: 12px; margin-top: 4px; }
     .queue-diag-form-actions { margin-top: 12px; }
@@ -165,10 +175,7 @@ class QueueDiagnosticController extends Controller
     </div>
 </div>
 
-<div class="queue-diag-panel">
-    <h3>配置管理</h3>
-    {$this->renderSettingsForm($payload['settings'] ?? [])}
-</div>
+{$settingsPanel}
 
 <div class="queue-diag-panel">
     <h3>Redis Memory</h3>
@@ -283,6 +290,25 @@ HTML;
             . '<input type="hidden" name="quick_enabled" value="' . $nextValue . '">'
             . '<button type="submit" class="btn btn-xs ' . $buttonClass . '">' . $buttonText . '</button>'
             . '</form>';
+    }
+
+    /**
+     * 处理「renderSettingsPanel」相关的内部协作步骤。
+     */
+    private function renderSettingsPanel(array $settings): string
+    {
+        return '<details class="queue-diag-panel queue-diag-settings-panel">'
+            . '<summary class="queue-diag-settings-summary">'
+            . '<span class="queue-diag-settings-title" role="heading" aria-level="3">配置管理</span>'
+            . '<span class="queue-diag-settings-toggle">'
+            . '<span class="queue-diag-settings-collapsed-label">展开配置管理</span>'
+            . '<span class="queue-diag-settings-expanded-label">收起配置管理</span>'
+            . '</span>'
+            . '</summary>'
+            . '<div class="queue-diag-settings-content">'
+            . $this->renderSettingsForm($settings)
+            . '</div>'
+            . '</details>';
     }
 
     /**
