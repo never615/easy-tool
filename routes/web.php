@@ -126,6 +126,8 @@ Route::group($attributes, function ($router) {
                         ]);
                         Route::get('queue_diagnostics', 'QueueDiagnosticController@index')
                             ->name('queue_diagnostics.index');
+                        Route::get('queue_diagnostics/usage', 'QueueDiagnosticUsageController@index')
+                            ->name('queue_diagnostics.usage');
                         Route::post('queue_diagnostics/settings', 'QueueDiagnosticController@saveSettings')
                             ->name('queue_diagnostics.settings');
                         Route::get('swoole_task_monitor', 'SwooleTaskMonitorController@index')

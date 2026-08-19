@@ -110,6 +110,7 @@ class QueueDiagnosticController extends Controller
         $copyScript = $this->renderCopyScript();
         $resourceHint = $this->renderResourceSnapshotHint($snapshot);
         $quickToggleForm = $this->renderQuickToggleForm($enabled);
+        $usageButton = $this->renderUsageButton();
         $settingsPanel = $this->renderSettingsPanel($payload['settings'] ?? []);
         $savedAlert = request()->boolean('saved')
             ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
@@ -159,6 +160,7 @@ class QueueDiagnosticController extends Controller
     <a class="btn btn-xs btn-primary" href="{$captureUrl}">采样并刷新</a>
     <a class="btn btn-xs btn-default" href="{$jsonUrl}">JSON</a>
     <button type="button" class="btn btn-xs btn-success queue-diag-copy-button" data-target="queue-diag-copy-source">复制诊断结果</button>
+    {$usageButton}
     <span class="queue-diag-copy-status" id="queue-diag-copy-status"></span>
 </div>
 <textarea id="queue-diag-copy-source" class="queue-diag-copy-source" readonly>{$escapedCopyText}</textarea>
@@ -290,6 +292,17 @@ HTML;
             . '<input type="hidden" name="quick_enabled" value="' . $nextValue . '">'
             . '<button type="submit" class="btn btn-xs ' . $buttonClass . '">' . $buttonText . '</button>'
             . '</form>';
+    }
+
+    /**
+     * 渲染在新页面打开的队列诊断使用文档入口。
+     */
+    private function renderUsageButton(): string
+    {
+        $usageUrl = route('queue_diagnostics.usage');
+
+        return '<a class="btn btn-xs btn-info" href="' . $this->escape($usageUrl)
+            . '" target="_blank" rel="noopener noreferrer">使用文档</a>';
     }
 
     /**
