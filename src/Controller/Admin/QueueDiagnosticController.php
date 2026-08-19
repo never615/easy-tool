@@ -252,29 +252,29 @@ class QueueDiagnosticController extends Controller
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
         <h3>Backlog Jobs</h3>
-        {$this->renderTopRows($snapshot['backlog_jobs'] ?? [])}
+        {$this->renderTopRows($snapshot['backlog_jobs'] ?? [], '抽样积压任务数')}
     </div>
     <div class="queue-diag-panel">
         <h3>Backlog Payload Top</h3>
-        {$this->renderTopRows($snapshot['backlog_payload_jobs'] ?? [])}
+        {$this->renderTopRows($snapshot['backlog_payload_jobs'] ?? [], '抽样 Payload 总大小（字节）')}
     </div>
 </div>
 
 <div class="queue-diag-panel">
     <h3>Backlog 数据来源汇总</h3>
-    {$this->renderTopRows($snapshot['backlog_source_groups'] ?? [])}
+    {$this->renderTopRows($snapshot['backlog_source_groups'] ?? [], '抽样积压任务数')}
 </div>
 
 {$this->renderBacklogSourcePanel($snapshot['backlog_sources'] ?? [])}
 
 <div class="queue-diag-panel">
     <h3>Top Jobs</h3>
-    {$this->renderTopRows($snapshot['jobs'] ?? [])}
+    {$this->renderTopRows($snapshot['jobs'] ?? [], '事件次数')}
 </div>
 
 <div class="queue-diag-panel">
     <h3>Payload Top</h3>
-    {$this->renderTopRows($snapshot['payload_jobs'] ?? [])}
+    {$this->renderTopRows($snapshot['payload_jobs'] ?? [], '事件 Payload 总大小（字节）')}
 </div>
 
 <div class="queue-diag-panel">
@@ -284,7 +284,7 @@ class QueueDiagnosticController extends Controller
 
 <div class="queue-diag-panel">
     <h3>数据来源汇总</h3>
-    {$this->renderTopRows($snapshot['source_groups'] ?? [])}
+    {$this->renderTopRows($snapshot['source_groups'] ?? [], '事件次数')}
 </div>
 
 {$this->renderSourcePanel($snapshot['sources'] ?? [])}
@@ -292,17 +292,17 @@ class QueueDiagnosticController extends Controller
 <div class="queue-diag-grid">
     <div class="queue-diag-panel">
         <h3>慢任务</h3>
-        {$this->renderTopRows($snapshot['slow_jobs'] ?? [])}
+        {$this->renderTopRows($snapshot['slow_jobs'] ?? [], '慢任务事件次数')}
     </div>
     <div class="queue-diag-panel">
         <h3>大 Payload</h3>
-        {$this->renderTopRows($snapshot['large_payload_jobs'] ?? [])}
+        {$this->renderTopRows($snapshot['large_payload_jobs'] ?? [], '大 Payload 事件次数')}
     </div>
 </div>
 
 <div class="queue-diag-panel">
     <h3>失败任务</h3>
-    {$this->renderTopRows($snapshot['failed_jobs'] ?? [])}
+    {$this->renderTopRows($snapshot['failed_jobs'] ?? [], '失败/异常事件次数')}
 </div>
 
 <div class="queue-diag-grid">
@@ -476,18 +476,18 @@ HTML;
         $text .= $this->markdownKeyValueSection('Redis Memory', $snapshot['redis_memory'] ?? [], true);
         $text .= $this->markdownKeyValueSection('队列 Backlog', $snapshot['queue_sizes'] ?? []);
         $text .= $this->markdownKeyValueSection('Backlog 样本', $snapshot['backlog_sample'] ?? []);
-        $text .= $this->markdownTopRowsSection('Backlog Jobs', $snapshot['backlog_jobs'] ?? []);
-        $text .= $this->markdownTopRowsSection('Backlog Payload Top', $snapshot['backlog_payload_jobs'] ?? []);
-        $text .= $this->markdownTopRowsSection('Backlog 数据来源汇总', $snapshot['backlog_source_groups'] ?? []);
-        $text .= $this->markdownTopRowsSection('Backlog 数据来源', $snapshot['backlog_sources'] ?? []);
-        $text .= $this->markdownTopRowsSection('Top Jobs', $snapshot['jobs'] ?? []);
-        $text .= $this->markdownTopRowsSection('Payload Top', $snapshot['payload_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('Backlog Jobs', $snapshot['backlog_jobs'] ?? [], '抽样积压任务数');
+        $text .= $this->markdownTopRowsSection('Backlog Payload Top', $snapshot['backlog_payload_jobs'] ?? [], '抽样 Payload 总大小（字节）');
+        $text .= $this->markdownTopRowsSection('Backlog 数据来源汇总', $snapshot['backlog_source_groups'] ?? [], '抽样积压任务数');
+        $text .= $this->markdownTopRowsSection('Backlog 数据来源', $snapshot['backlog_sources'] ?? [], '抽样积压任务数');
+        $text .= $this->markdownTopRowsSection('Top Jobs', $snapshot['jobs'] ?? [], '事件次数');
+        $text .= $this->markdownTopRowsSection('Payload Top', $snapshot['payload_jobs'] ?? [], '事件 Payload 总大小（字节）');
         $text .= $this->markdownDurationSection('任务耗时', $snapshot['duration'] ?? []);
-        $text .= $this->markdownTopRowsSection('数据来源汇总', $snapshot['source_groups'] ?? []);
-        $text .= $this->markdownTopRowsSection('数据来源', $snapshot['sources'] ?? []);
-        $text .= $this->markdownTopRowsSection('慢任务', $snapshot['slow_jobs'] ?? []);
-        $text .= $this->markdownTopRowsSection('大 Payload', $snapshot['large_payload_jobs'] ?? []);
-        $text .= $this->markdownTopRowsSection('失败任务', $snapshot['failed_jobs'] ?? []);
+        $text .= $this->markdownTopRowsSection('数据来源汇总', $snapshot['source_groups'] ?? [], '事件次数');
+        $text .= $this->markdownTopRowsSection('数据来源', $snapshot['sources'] ?? [], '事件次数');
+        $text .= $this->markdownTopRowsSection('慢任务', $snapshot['slow_jobs'] ?? [], '慢任务事件次数');
+        $text .= $this->markdownTopRowsSection('大 Payload', $snapshot['large_payload_jobs'] ?? [], '大 Payload 事件次数');
+        $text .= $this->markdownTopRowsSection('失败任务', $snapshot['failed_jobs'] ?? [], '失败/异常事件次数');
         $text .= $this->markdownKeyValueSection('Keyspace', $snapshot['keyspace'] ?? []);
         $text .= $this->markdownKeyValueSection('最近事件', $snapshot['last_event'] ?? []);
         $text .= '## 完整 JSON' . "\n\n";
@@ -522,7 +522,7 @@ HTML;
     /**
      * 处理「markdownTopRowsSection」相关的内部协作步骤。
      */
-    private function markdownTopRowsSection(string $title, array $rows): string
+    private function markdownTopRowsSection(string $title, array $rows, string $valueLabel): string
     {
         $text = '## ' . $title . "\n\n";
 
@@ -530,7 +530,7 @@ HTML;
             return $text . '暂无数据' . "\n\n";
         }
 
-        $text .= '| 名称 | 分数 |' . "\n";
+        $text .= '| 名称 | ' . $valueLabel . ' |' . "\n";
         $text .= '| --- | --- |' . "\n";
 
         foreach ($rows as $row) {
@@ -923,13 +923,14 @@ HTML;
     /**
      * 处理「renderTopRows」相关的内部协作步骤。
      */
-    private function renderTopRows(array $rows): string
+    private function renderTopRows(array $rows, string $valueLabel): string
     {
         if (empty($rows)) {
             return '<div class="queue-diag-empty">暂无数据</div>';
         }
 
-        $html = '<table class="queue-diag-table"><thead><tr><th>名称</th><th>分数</th></tr></thead><tbody>';
+        $html = '<table class="queue-diag-table"><thead><tr><th>名称</th><th>'
+            . $this->escape($valueLabel) . '</th></tr></thead><tbody>';
         foreach ($rows as $row) {
             $html .= '<tr><td>' . $this->escape((string)($row['name'] ?? '-')) . '</td><td>' . $this->escape((string)($row['score'] ?? 0)) . '</td></tr>';
         }
@@ -944,7 +945,7 @@ HTML;
     {
         return '<div class="queue-diag-panel queue-diag-source-panel">'
             . '<h3>数据来源</h3>'
-            . $this->renderTopRows($rows)
+            . $this->renderTopRows($rows, '事件次数')
             . '</div>';
     }
 
@@ -955,7 +956,7 @@ HTML;
     {
         return '<div class="queue-diag-panel queue-diag-source-panel queue-diag-backlog-source-panel">'
             . '<h3>Backlog 数据来源</h3>'
-            . $this->renderTopRows($rows)
+            . $this->renderTopRows($rows, '抽样积压任务数')
             . '</div>';
     }
 
