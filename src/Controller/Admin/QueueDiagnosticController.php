@@ -140,6 +140,7 @@ class QueueDiagnosticController extends Controller
     .queue-diag-settings-panel[open] .queue-diag-settings-collapsed-label { display: none; }
     .queue-diag-settings-panel[open] .queue-diag-settings-expanded-label { display: inline; }
     .queue-diag-settings-content { border-top: 1px solid #edf0f5; padding: 14px 16px; }
+    .queue-diag-source-panel .queue-diag-table td:first-child { overflow-wrap: anywhere; white-space: normal; word-break: break-word; }
     .queue-diag-form-table input[type="text"], .queue-diag-form-table input[type="number"] { max-width: 360px; }
     .queue-diag-help { color: #8a94a6; font-size: 12px; margin-top: 4px; }
     .queue-diag-form-actions { margin-top: 12px; }
@@ -236,26 +237,22 @@ class QueueDiagnosticController extends Controller
     {$this->renderTopRows($snapshot['source_groups'] ?? [])}
 </div>
 
+{$this->renderSourcePanel($snapshot['sources'] ?? [])}
+
 <div class="queue-diag-grid">
-    <div class="queue-diag-panel">
-        <h3>数据来源</h3>
-        {$this->renderTopRows($snapshot['sources'] ?? [])}
-    </div>
     <div class="queue-diag-panel">
         <h3>慢任务</h3>
         {$this->renderTopRows($snapshot['slow_jobs'] ?? [])}
     </div>
-</div>
-
-<div class="queue-diag-grid">
     <div class="queue-diag-panel">
         <h3>大 Payload</h3>
         {$this->renderTopRows($snapshot['large_payload_jobs'] ?? [])}
     </div>
-    <div class="queue-diag-panel">
-        <h3>失败任务</h3>
-        {$this->renderTopRows($snapshot['failed_jobs'] ?? [])}
-    </div>
+</div>
+
+<div class="queue-diag-panel">
+    <h3>失败任务</h3>
+    {$this->renderTopRows($snapshot['failed_jobs'] ?? [])}
 </div>
 
 <div class="queue-diag-grid">
@@ -885,6 +882,17 @@ HTML;
         }
 
         return $html . '</tbody></table>';
+    }
+
+    /**
+     * 处理「renderSourcePanel」相关的内部协作步骤。
+     */
+    private function renderSourcePanel(array $rows): string
+    {
+        return '<div class="queue-diag-panel queue-diag-source-panel">'
+            . '<h3>数据来源</h3>'
+            . $this->renderTopRows($rows)
+            . '</div>';
     }
 
     /**
