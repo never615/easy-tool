@@ -48,7 +48,9 @@ class ClearCacheUsecase
 
 //            Log::debug($keys);
 
-            app('redis')->del($keys);
+            if (!empty($keys)) {
+                app('redis')->del($keys);
+            }
 
 //            if (!empty($keys)) {
 //                foreach ($keys as $key) {
