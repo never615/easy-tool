@@ -727,48 +727,7 @@ class ToolServiceProvider extends ServiceProvider
                         ["slug" => "clean_failed_jobs_log", "status" => "finish"]));
                 });
 
-            // Queue backlog monitor: warn at >=1000, error at >=5000
-            $schedule->call(function () {
-                try {
-                    // Determine connection & queue
-                    $connection = 'redis';
-                    $queue = config('queue.connections.redis.queue', 'default');
-
-                    $size = Queue::connection($connection)->size($queue);
-
-                    if (is_numeric($size)) {
-                        if ($size >= 5000) {
-                            Log::error('Queue backlog too high', [
-                                'connection' => $connection,
-                                'queue' => $queue,
-                                'size' => $size,
-                                'threshold' => 5000,
-                            ]);
-                        } elseif ($size >= 1000) {
-                            Log::warning('Queue backlog high', [
-                                'connection' => $connection,
-                                'queue' => $queue,
-                                'size' => $size,
-                                'threshold' => 1000,
-                            ]);
-                        }
-                    } else {
-                        Log::warning('Queue size returned non-numeric', [
-                            'connection' => $connection,
-                            'queue' => $queue,
-                            'size' => $size,
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('Queue backlog monitor failed', [
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            })
-                ->name('queue backlog monitor')
-                ->onOneServer()
-                ->everyMinute();
-//                ->everySecond();
+            $this->scheduleQueueBacklogMonitor($schedule);
 
             $schedule->command('tool:queue_diagnostic_snapshot')
                 ->name('queue diagnostic snapshot')
@@ -780,6 +739,78 @@ class ToolServiceProvider extends ServiceProvider
             $this->schedulePostgresDatabaseMonitor($schedule);
             $this->scheduleMongoDatabaseMonitor($schedule);
         });
+    }
+
+    /**
+     * Register the basic Redis default-queue backlog alert.
+     *
+     * This deployment-time alert is intentionally independent from the
+     * persisted queue diagnostics settings and checks only the configured
+     * Redis default queue once per minute.
+     */
+    private function scheduleQueueBacklogMonitor(Schedule $schedule): void
+    {
+        $schedule->call(function () {
+            try {
+                // Determine connection & queue
+                $connection = 'redis';
+                $queue = config('queue.connections.redis.queue', 'default');
+                $thresholds = $this->queueBacklogMonitorThresholds();
+
+                $size = Queue::connection($connection)->size($queue);
+
+                if (is_numeric($size)) {
+                    if ($size >= $thresholds['error_size']) {
+                        Log::error('Queue backlog too high', [
+                            'connection' => $connection,
+                            'queue' => $queue,
+                            'size' => $size,
+                            'threshold' => $thresholds['error_size'],
+                        ]);
+                    } elseif ($size >= $thresholds['warning_size']) {
+                        Log::warning('Queue backlog high', [
+                            'connection' => $connection,
+                            'queue' => $queue,
+                            'size' => $size,
+                            'threshold' => $thresholds['warning_size'],
+                        ]);
+                    }
+                } else {
+                    Log::warning('Queue size returned non-numeric', [
+                        'connection' => $connection,
+                        'queue' => $queue,
+                        'size' => $size,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Queue backlog monitor failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        })
+            ->name('queue backlog monitor')
+            ->onOneServer()
+            ->everyMinute();
+    }
+
+    /**
+     * Return normalized thresholds so misordered values cannot downgrade an
+     * error backlog to a warning.
+     *
+     * @return array{warning_size: int, error_size: int}
+     */
+    private function queueBacklogMonitorThresholds(): array
+    {
+        $warningSize = max(0, (int)config('queue.backlog_monitor.warning_size', 1000));
+        $errorSize = max(
+            $warningSize + 1,
+            (int)config('queue.backlog_monitor.error_size', 5000)
+        );
+
+        return [
+            'warning_size' => $warningSize,
+            'error_size' => $errorSize,
+        ];
     }
 
     private function scheduleAppSecretRotation(Schedule $schedule): void
