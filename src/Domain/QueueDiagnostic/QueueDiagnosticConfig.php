@@ -181,7 +181,7 @@ class QueueDiagnosticConfig
     {
         $value = $this->rawValue(
             self::KEY_QUEUES,
-            'high,pgsql-write,location-result-storage,gateway-transition,gateway-heartbeat,mid,default'
+            'high,pgsql-write,location-result-storage,mid,default'
         );
 
         if (is_string($value) && str_starts_with(trim($value), '[')) {
@@ -299,7 +299,7 @@ class QueueDiagnosticConfig
             self::KEY_QUEUES => [
                 'label' => '采样队列',
                 'type' => 'csv',
-                'default' => 'high,pgsql-write,location-result-storage,gateway-transition,gateway-heartbeat,mid,default',
+                'default' => 'high,pgsql-write,location-result-storage,mid,default',
                 'remark' => '逗号分隔，用于 snapshot 采样 backlog。',
             ],
             self::KEY_TOP_LIMIT => [
