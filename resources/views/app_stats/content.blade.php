@@ -163,6 +163,7 @@
                     <th scope="col">Tasking</th>
                     <th scope="col">连接数</th>
                     <th scope="col">SkyLab TCP（4001）连接数</th>
+                    <th scope="col">SkyLab TCP（4401）连接数</th>
                     <th scope="col">启动时间</th>
                     <th scope="col">Task 临时文件</th>
                     @if($canCleanup ?? false)
@@ -626,7 +627,7 @@
                 if (!Array.isArray(pods) || pods.length === 0) {
                     const row = document.createElement('tr');
                     const cell = text('td', '暂无在线或延迟 Pod 数据', 'app-stats__empty');
-                    cell.colSpan = canCleanup ? 11 : 10;
+                    cell.colSpan = canCleanup ? 12 : 11;
                     row.append(cell);
                     podsRoot.replaceChildren(row);
                     return;
@@ -666,6 +667,15 @@
                     row.append(text(
                         'td',
                         finiteNumber(pod.sample_age_seconds) ? Number(pod.sample_age_seconds) + ' 秒' : '未知',
+                        'app-stats__data'
+                    ));
+                    row.append(text(
+                        'td',
+                        finiteNumber(skyLabTcp.skylab_ota_connection_count)
+                            ? Number(skyLabTcp.skylab_ota_connection_count)
+                            : skyLabTcp.skylab_ota_connection_count_backend === 'disabled'
+                                ? '未启用'
+                                : '未知',
                         'app-stats__data'
                     ));
                     row.append(text('td', ratio(metrics.worker_used, metrics.worker_total), 'app-stats__data'));
