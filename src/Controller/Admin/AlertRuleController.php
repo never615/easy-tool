@@ -83,7 +83,13 @@ class AlertRuleController extends AdminCommonController
         $form->text("contact_id");
         $form->text("email");
         $form->text("mobile");
-        $form->text("alert_time");
+        // alert_ruls.alert_time is timestamptz; require an explicit offset so the
+        // PostgreSQL session timezone cannot reinterpret a naive admin input.
+        $form->text("alert_time")
+            ->rules('required|date_format:Y-m-d\\TH:i:sP,Y-m-d H:i:sP', [
+                'required' => '告警时间不能为空',
+                'date_format' => '告警时间必须使用带时区偏移的 ISO-8601 格式，例如 2026-09-02T10:00:00+08:00',
+            ]);
         $form->text("alert_desc");
         $form->text("alert_name_en");
         $form->text("webhook");
