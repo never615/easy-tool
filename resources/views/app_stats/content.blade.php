@@ -669,15 +669,6 @@
                         finiteNumber(pod.sample_age_seconds) ? Number(pod.sample_age_seconds) + ' 秒' : '未知',
                         'app-stats__data'
                     ));
-                    row.append(text(
-                        'td',
-                        finiteNumber(skyLabTcp.skylab_ota_connection_count)
-                            ? Number(skyLabTcp.skylab_ota_connection_count)
-                            : skyLabTcp.skylab_ota_connection_count_backend === 'disabled'
-                                ? '未启用'
-                                : '未知',
-                        'app-stats__data'
-                    ));
                     row.append(text('td', ratio(metrics.worker_used, metrics.worker_total), 'app-stats__data'));
                     row.append(text('td', ratio(metrics.task_worker_used, metrics.task_worker_total), 'app-stats__data'));
                     row.append(text('td', finiteNumber(metrics.tasking_num) ? Number(metrics.tasking_num) : '未知', 'app-stats__data'));
@@ -687,6 +678,15 @@
                         finiteNumber(skyLabTcp.skylab_connection_count)
                             ? Number(skyLabTcp.skylab_connection_count)
                             : skyLabTcp.skylab_connection_count_backend === 'disabled'
+                                ? '未启用'
+                                : '未知',
+                        'app-stats__data'
+                    ));
+                    row.append(text(
+                        'td',
+                        finiteNumber(skyLabTcp.skylab_ota_connection_count)
+                            ? Number(skyLabTcp.skylab_ota_connection_count)
+                            : skyLabTcp.skylab_ota_connection_count_backend === 'disabled'
                                 ? '未启用'
                                 : '未知',
                         'app-stats__data'
