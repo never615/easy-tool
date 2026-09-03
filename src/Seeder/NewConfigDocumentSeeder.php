@@ -150,6 +150,22 @@ php artisan tool:new_config_publish --restart --force-config-cache
 
 `LOCATION_QUEUE_LIMITER_ENABLED`、`LOCATION_PGSQL_WRITE_CONCURRENCY` 和 `LOCATION_RESULT_STORAGE_CONCURRENCY` 是定位队列限流的启动配置。业务任务只读取本地 `config()`，不会在热路径读取运行时配置中心、Redis 或 Swoole Table。升级时 `location:update` 会把这三个历史全局显式覆盖转换为 `runtime_env_override`；随后发布并重启 LaravelS 和 Horizon，所有新进程才会使用同一数值。
 
+定位队列截止和 failed provider 的建议基线为：
+
+```dotenv
+QUEUE_FAILED_DRIVER=file
+QUEUE_FAILED_FILE_PATH=
+QUEUE_FAILED_FILE_LIMIT=100
+LOCATION_PGSQL_WRITE_MAX_WAIT_SECONDS=600
+LOCATION_RESULT_STORAGE_MAX_WAIT_SECONDS=600
+```
+
+`QUEUE_FAILED_DRIVER` 对宿主所有 Laravel Queue Job 全局生效，只接受 `file/null/database`，非法值按
+`file` 处理。file 容量限制为 1–1000，默认 100；只有在路径确认使用 Pod-local storage 时，记录才是
+每个 Horizon Pod 独立的短期证据。file 路径不得指向多 Pod 共享 PVC，避免跨 Pod 单文件竞争；要求
+集中审计的 SSD 项目应显式使用 database，故障期可切 null。切换时不迁移旧 `failed_jobs` 或旧 file
+记录，也不会自动删除数据库历史记录。
+
 ## revision 与 generation 不要混淆
 
 - `runtime_config:revision`：业务配置每次 commit 后递增，用于跨实例缓存同步；不触发重启，不受 restart switch 影响。
