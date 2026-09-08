@@ -762,16 +762,24 @@ class ToolServiceProvider extends ServiceProvider
                 if (is_numeric($size)) {
                     if ($size >= $thresholds['error_size']) {
                         Log::error('Queue backlog too high', [
+                            // 实际检查的 Redis 连接（当前监控固定为 redis）。
                             'connection' => $connection,
+                            // 实际检查的队列名，来自 queue.connections.redis.queue。
                             'queue' => $queue,
+                            // 本次每分钟检查读取到的待消费任务数。
                             'size' => $size,
+                            // 达到该阈值才升级为 error；error 分支优先，不再同时打印 warning。
                             'threshold' => $thresholds['error_size'],
                         ]);
                     } elseif ($size >= $thresholds['warning_size']) {
                         Log::warning('Queue backlog high', [
+                            // 实际检查的 Redis 连接（当前监控固定为 redis）。
                             'connection' => $connection,
+                            // 实际检查的队列名，来自 queue.connections.redis.queue。
                             'queue' => $queue,
+                            // 本次每分钟检查读取到的待消费任务数。
                             'size' => $size,
+                            // 达到该阈值但尚未达到 error_size，记录为 warning。
                             'threshold' => $thresholds['warning_size'],
                         ]);
                     }
