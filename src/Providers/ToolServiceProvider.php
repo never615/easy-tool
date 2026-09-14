@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Redis\RedisManager;
 use Mallto\Admin\Facades\AdminE;
 use Mallto\Admin\Domain\SubjectConfig\SubjectConfigRegistry;
 use Mallto\Tool\Commands\CreateTableIdSeqCommand;
@@ -36,6 +37,7 @@ use Mallto\Tool\Commands\PostgresDatabaseMonitorCommand;
 use Mallto\Tool\Commands\QueueDiagnosticSnapshotCommand;
 use Mallto\Tool\Commands\RedisDelPrefixCommand;
 use Mallto\Tool\Commands\RedisMemoryMonitorCommand;
+use Mallto\Tool\Commands\RedisDiagnosticCommand;
 use Mallto\Tool\Controller\Admin\SelectSource\SelectSourceExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectConfigExtend;
 use Mallto\Tool\Controller\Admin\Subject\SubjectSettingExtend;
@@ -66,6 +68,7 @@ use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
 use Mallto\Tool\Domain\PostgresMonitor\PostgresDatabaseMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisMemoryMonitor;
+use Mallto\Tool\Domain\RedisMonitor\RedisDiagnosticProbe;
 use Mallto\Tool\Domain\SubjectConfig\ToolSubjectConfigDefinitions;
 use Mallto\Tool\Jobs\LogJob;
 use Mallto\Tool\Middleware\AuthenticateSign;
@@ -105,6 +108,7 @@ class ToolServiceProvider extends ServiceProvider
         MongoDatabaseMonitorCommand::class,
         PostgresDatabaseMonitorCommand::class,
         RedisMemoryMonitorCommand::class,
+        RedisDiagnosticCommand::class,
         PublishNewConfigCommand::class,
         AuditGlobalConfigOverridesCommand::class,
         AdoptGlobalConfigOverridesCommand::class,
@@ -470,6 +474,7 @@ class ToolServiceProvider extends ServiceProvider
         $this->registerMongoDatabaseMonitor();
         $this->registerPostgresDatabaseMonitor();
         $this->registerRedisMemoryMonitor();
+        $this->registerRedisDiagnostic();
         $this->registerSubjectConfigDefinitions();
         $this->registerGlobalHttpMiddleware();
 
@@ -626,6 +631,53 @@ class ToolServiceProvider extends ServiceProvider
                 $app->make(RedisFactory::class),
                 $app->make(LoggerInterface::class),
                 (array)$app->make('config')->get('database.redis_monitor', [])
+            );
+        });
+    }
+
+    /**
+     * 注册按需 Redis 诊断探针；两条连接只存在于命令进程，不复用业务或常驻进程 socket。
+     */
+    private function registerRedisDiagnostic(): void
+    {
+        $this->app->singleton(RedisDiagnosticProbe::class, static function (Application $app) {
+            $config = $app->make('config');
+            $redisConfig = (array) $config->get('database.redis', []);
+            $strictConnection = (string) $config->get(
+                'database.redis_monitor.connection',
+                'redis-monitor'
+            );
+            $strict = (array) ($redisConfig[$strictConnection] ?? []);
+            $relaxed = array_merge($strict, [
+                'persistent' => false,
+                'timeout' => 1.0,
+                'read_timeout' => 1.0,
+                'retry_interval' => 0,
+                'max_retries' => 0,
+            ]);
+            $manager = new RedisManager($app, (string) ($redisConfig['client'] ?? 'phpredis'), [
+                'options' => (array) ($redisConfig['options'] ?? []),
+                'strict' => $strict,
+                'relaxed' => $relaxed,
+            ]);
+
+            $queueConnection = (string) $config->get(
+                'queue.connections.redis.connection',
+                'default'
+            );
+            $queueConfig = (array) ($redisConfig[$queueConnection] ?? []);
+            $comparableFields = ['url', 'scheme', 'host', 'port', 'database', 'prefix'];
+            $normalizeEndpoint = static function (array $connection) use ($comparableFields): array {
+                $endpoint = array_intersect_key($connection, array_flip($comparableFields));
+
+                return array_map(static fn ($value): string => (string) $value, $endpoint);
+            };
+            $strictEndpoint = $normalizeEndpoint($strict);
+            $queueEndpoint = $normalizeEndpoint($queueConfig);
+
+            return new RedisDiagnosticProbe(
+                $manager,
+                $strict !== [] && $strictEndpoint === $queueEndpoint
             );
         });
     }
