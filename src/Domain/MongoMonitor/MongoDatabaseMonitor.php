@@ -91,10 +91,13 @@ final class MongoDatabaseMonitor
         $now = ($this->clock)();
         $stateConnection = null;
         $previous = [];
+        $stage = 'state_connection';
 
         try {
             $stateConnection = $this->redis->connection($this->redisConnection);
+            $stage = 'state_read';
             $previous = $this->decodeState($stateConnection->get($this->stateKey));
+            $stage = 'database_connection';
             $connection = $this->databases->connection($this->databaseConnection);
 
             if ($connection->getDriverName() !== 'mongodb') {
@@ -107,7 +110,9 @@ final class MongoDatabaseMonitor
             }
 
             $startedAt = hrtime(true);
+            $stage = 'ping';
             $this->command($connection, ['ping' => 1]);
+            $stage = 'hello';
             $hello = $this->command($connection, ['hello' => 1]);
 
             $serverStatus = null;
@@ -134,6 +139,7 @@ final class MongoDatabaseMonitor
                     : 'unavailable';
             }
 
+            $stage = 'snapshot_build';
             $sampleDurationMs = round((hrtime(true) - $startedAt) / 1_000_000, 2);
             $snapshot = $this->buildSnapshot(
                 $hello,
@@ -153,6 +159,7 @@ final class MongoDatabaseMonitor
                 'last_failure_at' => null,
             ];
 
+            $stage = 'state_write';
             $stateConnection->setex(
                 $this->stateKey,
                 $this->stateTtlSeconds,
@@ -172,8 +179,8 @@ final class MongoDatabaseMonitor
                 'reasons' => $reasons,
                 'snapshot' => $snapshot,
             ];
-        } catch (Throwable) {
-            $this->logSamplingFailure();
+        } catch (Throwable $exception) {
+            $this->logSamplingFailure($stage, $exception);
             $this->storeFailureState($stateConnection, $previous, $now);
 
             return [
@@ -339,12 +346,15 @@ final class MongoDatabaseMonitor
         return is_array($decoded) ? $decoded : [];
     }
 
-    private function logSamplingFailure(): void
+    private function logSamplingFailure(string $stage, Throwable $exception): void
     {
         try {
-            $this->logger->error('MongoDB monitor failed', [
+            $this->logger->error('MongoDB monitor sampling failed', [
                 'connection' => $this->databaseConnection
                     ?? $this->databases->getDefaultConnection(),
+                'stage' => $stage,
+                'exception_class' => get_class($exception),
+                'exception_code' => (int) $exception->getCode(),
             ]);
         } catch (Throwable) {
             // 日志通道失败不能反向中断 schedule:run。

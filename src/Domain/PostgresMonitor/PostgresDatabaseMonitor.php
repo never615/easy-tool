@@ -100,10 +100,13 @@ final class PostgresDatabaseMonitor
         $now = ($this->clock)();
         $stateConnection = null;
         $previous = [];
+        $stage = 'state_connection';
 
         try {
             $stateConnection = $this->redis->connection($this->redisConnection);
+            $stage = 'state_read';
             $previous = $this->decodeState($stateConnection->get($this->stateKey));
+            $stage = 'database_connection';
             $database = $this->databases->connection($this->databaseConnection);
 
             if ($database->getDriverName() !== 'pgsql') {
@@ -116,6 +119,7 @@ final class PostgresDatabaseMonitor
             }
 
             $startedAt = hrtime(true);
+            $stage = 'database_sample';
             [$core, $table, $tableSampledAt] = $this->sample(
                 $database,
                 $previous,
@@ -140,6 +144,7 @@ final class PostgresDatabaseMonitor
                 'last_failure_at' => null,
             ];
 
+            $stage = 'state_write';
             $stateConnection->setex(
                 $this->stateKey,
                 $this->stateTtlSeconds,
@@ -159,8 +164,8 @@ final class PostgresDatabaseMonitor
                 'reasons' => $reasons,
                 'snapshot' => $snapshot,
             ];
-        } catch (Throwable) {
-            $this->logSamplingFailure();
+        } catch (Throwable $exception) {
+            $this->logSamplingFailure($stage, $exception);
             $this->storeFailureState($stateConnection, $previous, $now);
 
             return [
@@ -379,12 +384,15 @@ final class PostgresDatabaseMonitor
         return is_array($decoded) ? $decoded : [];
     }
 
-    private function logSamplingFailure(): void
+    private function logSamplingFailure(string $stage, Throwable $exception): void
     {
         try {
-            $this->logger->error('PostgreSQL monitor failed', [
+            $this->logger->error('PostgreSQL monitor sampling failed', [
                 'connection' => $this->databaseConnection
                     ?? $this->databases->getDefaultConnection(),
+                'stage' => $stage,
+                'exception_class' => get_class($exception),
+                'exception_code' => (int) $exception->getCode(),
             ]);
         } catch (Throwable) {
             // 日志通道失败不能反向中断 schedule:run。

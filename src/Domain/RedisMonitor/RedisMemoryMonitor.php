@@ -83,12 +83,18 @@ final class RedisMemoryMonitor
             ];
         }
 
+        $stage = 'connection';
+
         try {
             // 只解析一次命名连接，确保 INFO 与状态 Key 位于同一个共享 Redis/逻辑 DB。
             $connection = $this->redis->connection($this->connectionName);
+            $stage = 'info_memory';
             $memory = $this->normalizeInfo($connection->command('INFO', ['memory']));
+            $stage = 'info_stats';
             $stats = $this->normalizeInfo($connection->command('INFO', ['stats']));
+            $stage = 'snapshot_build';
             $snapshot = RedisMemorySnapshot::fromInfo($memory, $stats);
+            $stage = 'state_read';
             $previousState = $this->decodeState($connection->get($this->stateKey));
             $now = ($this->clock)();
 
@@ -102,6 +108,7 @@ final class RedisMemoryMonitor
                 $now
             );
 
+            $stage = 'state_write';
             $connection->setex(
                 $this->stateKey,
                 $this->stateTtlSeconds,
@@ -129,12 +136,15 @@ final class RedisMemoryMonitor
                 'reasons' => $reasons,
                 'snapshot' => $snapshot->toArray(),
             ];
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             // 不把异常消息放入日志上下文，避免底层客户端把 Redis 主机、凭证或命令参数拼入。
             // connection 名是固定配置名，足够用于定位；具体连接错误仍可从 Redis/容器日志查看。
             try {
-                $this->logger->error('Redis memory monitor failed', [
+                $this->logger->error('Redis memory monitor sampling failed', [
                     'connection' => $this->connectionName,
+                    'stage' => $stage,
+                    'exception_class' => get_class($exception),
+                    'exception_code' => (int) $exception->getCode(),
                 ]);
             } catch (Throwable) {
                 // 日志通道自身失败也不能反向中断 schedule:run。
