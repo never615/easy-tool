@@ -66,6 +66,7 @@ use Mallto\Tool\Domain\MongoDb\MongoDbAccessPolicy;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
+use Mallto\Tool\Domain\QueueDiagnostic\QueueEventLogContext;
 use Mallto\Tool\Domain\PostgresMonitor\PostgresDatabaseMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisMemoryMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisDiagnosticProbe;
@@ -270,18 +271,22 @@ class ToolServiceProvider extends ServiceProvider
     private function queueBoot()
     {
         Queue::createPayloadUsing(function ($connection, $queue, array $payload) {
-            if (!app(QueueDiagnosticConfig::class)->enabled()) {
+            try {
+                if (!app(QueueDiagnosticConfig::class)->enabled()) {
+                    return [];
+                }
+
+                $job = $payload['data']['commandName'] ?? null;
+                if (!$job instanceof ProvidesQueueDiagnosticContext) {
+                    return [];
+                }
+
+                return [
+                    'queue_diagnostic_context' => $job->queueDiagnosticContext(),
+                ];
+            } catch (\Throwable) {
                 return [];
             }
-
-            $job = $payload['data']['commandName'] ?? null;
-            if (!$job instanceof ProvidesQueueDiagnosticContext) {
-                return [];
-            }
-
-            return [
-                'queue_diagnostic_context' => $job->queueDiagnosticContext(),
-            ];
         });
 
         //任务循环前
@@ -305,23 +310,20 @@ class ToolServiceProvider extends ServiceProvider
 
             Queue::before(function (JobProcessing $event) {
                 $logger = app(Logger::class);
-                $logger->logQueue([
-                    "connection_name" => $event->connectionName,
-                    "status" => "before",
-                    "queue" => $event->job->getQueue(),
-                    "name" => $event->job->resolveName(),
-                    "payload" => json_encode($event->job->payload()),
-                ]);
+                $logger->logQueue(app(QueueEventLogContext::class)->make(
+                    $event->connectionName,
+                    'before',
+                    $event->job
+                ));
             });
 
             Queue::after(function (JobProcessed $event) {
                 $logger = app(Logger::class);
-                $logger->logQueue([
-                    "connection_name" => $event->connectionName,
-                    "status" => "after",
-                    "queue" => $event->job->getQueue(),
-                    "name" => $event->job->resolveName(),
-                ]);
+                $logger->logQueue(app(QueueEventLogContext::class)->make(
+                    $event->connectionName,
+                    'after',
+                    $event->job
+                ));
             });
         }
 
@@ -343,19 +345,17 @@ class ToolServiceProvider extends ServiceProvider
                 return;
             }
 
-            Log::error("队列任务失败");
-            Log::warning($event->job->payload());
-            Log::warning($event->exception);
+            $context = app(QueueEventLogContext::class)->make(
+                $event->connectionName,
+                'failure',
+                $event->job,
+                $event->exception
+            );
+            Log::error("队列任务失败", $context);
 
             if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
-                $logger->logQueue([
-                    "connection_name" => $event->connectionName,
-                    "status" => "failure",
-                    "queue" => $event->job->getQueue(),
-                    "name" => $event->job->resolveName(),
-                    "payload" => $event->job->getRawBody(),
-                ]);
+                $logger->logQueue($context);
             }
         });
 
@@ -367,7 +367,15 @@ class ToolServiceProvider extends ServiceProvider
 
             // 自动清理反序列化失败的残留队列任务（类已不存在），直接删除并跳过重试
             if ($exception && str_contains($exception->getMessage(), 'Job is incomplete class')) {
-                Log::warning("队列任务类不存在，自动删除: ".$exception->getMessage());
+                Log::warning(
+                    "队列任务类不存在，自动删除",
+                    app(QueueEventLogContext::class)->make(
+                        $event->connectionName,
+                        'incomplete',
+                        $event->job,
+                        $event->exception
+                    )
+                );
                 $event->job->delete();
 
                 return;
@@ -379,18 +387,16 @@ class ToolServiceProvider extends ServiceProvider
 
                 return;
             }
-            Log::error("队列任务异常");
-            Log::warning($event->job->payload());
-            Log::warning($event->exception);
+            $context = app(QueueEventLogContext::class)->make(
+                $event->connectionName,
+                'exception',
+                $event->job,
+                $event->exception
+            );
+            Log::error("队列任务异常", $context);
             if (\config('app.log.queue')) {
                 $logger = app(Logger::class);
-                $logger->logQueue([
-                    "connection_name" => $event->connectionName,
-                    "status" => "exception",
-                    "queue" => $event->job->getQueue(),
-                    "name" => $event->job->resolveName(),
-                    "payload" => $event->job->getRawBody(),
-                ]);
+                $logger->logQueue($context);
             }
         });
     }

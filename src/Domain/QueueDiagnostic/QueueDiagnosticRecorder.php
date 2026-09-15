@@ -28,11 +28,11 @@ class QueueDiagnosticRecorder
      */
     public function before(JobProcessing $event): void
     {
-        if (!$this->config->enabled()) {
-            return;
-        }
-
         $this->safeRecord(function () use ($event): void {
+            if (!$this->config->enabled()) {
+                return;
+            }
+
             $meta = $this->jobMeta($event->connectionName, $event->job);
             $meta['started_at_ms'] = $this->nowMs();
 
@@ -45,11 +45,11 @@ class QueueDiagnosticRecorder
      */
     public function after(JobProcessed $event): void
     {
-        if (!$this->config->enabled()) {
-            return;
-        }
-
         $this->safeRecord(function () use ($event): void {
+            if (!$this->config->enabled()) {
+                return;
+            }
+
             $this->store->recordFinished($this->jobMeta($event->connectionName, $event->job), 'processed');
         });
     }
@@ -59,11 +59,11 @@ class QueueDiagnosticRecorder
      */
     public function failed(JobFailed $event): void
     {
-        if (!$this->config->enabled()) {
-            return;
-        }
-
         $this->safeRecord(function () use ($event): void {
+            if (!$this->config->enabled()) {
+                return;
+            }
+
             $this->store->recordFinished(
                 $this->jobMeta($event->connectionName, $event->job),
                 'failed',
@@ -77,11 +77,11 @@ class QueueDiagnosticRecorder
      */
     public function exceptionOccurred(JobExceptionOccurred $event): void
     {
-        if (!$this->config->enabled()) {
-            return;
-        }
-
         $this->safeRecord(function () use ($event): void {
+            if (!$this->config->enabled()) {
+                return;
+            }
+
             $this->store->recordFinished(
                 $this->jobMeta($event->connectionName, $event->job),
                 'exception',
@@ -209,7 +209,12 @@ class QueueDiagnosticRecorder
             $callback();
         } catch (\Throwable $throwable) {
             Log::warning('Queue diagnostic recorder failed', [
-                'error' => $throwable->getMessage(),
+                'exception_class' => get_class($throwable),
+                'exception_location' => basename($throwable->getFile()) . ':' . $throwable->getLine(),
+                'exception_fingerprint' => substr(hash(
+                    'sha256',
+                    get_class($throwable) . "\0" . $throwable->getMessage()
+                ), 0, 16),
             ]);
         }
     }

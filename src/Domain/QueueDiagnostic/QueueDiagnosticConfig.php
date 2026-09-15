@@ -43,7 +43,11 @@ class QueueDiagnosticConfig
      */
     public function enabled(): bool
     {
-        return $this->boolValue(self::KEY_ENABLED, false);
+        try {
+            return $this->boolValue(self::KEY_ENABLED, false);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
