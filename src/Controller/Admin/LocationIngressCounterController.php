@@ -11,8 +11,11 @@ use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticSchema;
 use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticStore;
 use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticsConfig;
 use Mallto\Location\Support\Telemetry\LocationIngressCounter;
+use Mallto\Location\Support\Telemetry\LocationQueryDiagnosticsConfig;
+use Mallto\Location\Support\Telemetry\LocationQueryDiagnosticStore;
 use Mallto\Tool\Domain\NewConfig\LocationIngressCounterSwitch;
 use Mallto\Tool\Domain\NewConfig\LocationIngressDiagnosticsModeSwitch;
+use Mallto\Tool\Domain\NewConfig\LocationQueryDiagnosticsSwitch;
 use Throwable;
 
 /**
@@ -37,6 +40,19 @@ final class LocationIngressCounterController extends Controller
             'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
         ]);
         $canModeSwitch = (bool) Admin::user()?->can('admin_monitor.location_ingress.mode');
+        $canQueryData = (bool) Admin::user()?->can('admin_monitor.location_query_diagnostics.data');
+        $canQuerySwitch = (bool) Admin::user()?->can('admin_monitor.location_query_diagnostics.switch');
+        $querySwitchState = [
+            'configured' => false,
+            'requested_enabled' => null,
+            'effective_enabled' => LocationQueryDiagnosticsConfig::enabled(),
+            'retention_seconds' => LocationQueryDiagnosticsConfig::retentionSeconds(),
+        ];
+        if ($canQueryData || $canQuerySwitch) {
+            /** @var LocationQueryDiagnosticsSwitch $querySwitch */
+            $querySwitch = app(LocationQueryDiagnosticsSwitch::class);
+            $querySwitchState = array_merge($querySwitchState, $querySwitch->status());
+        }
         $canTraceDetails = (bool) Admin::user()?->can('location_ingress_trace.index');
 
         return Admin::content(function (Content $content) use (
@@ -44,6 +60,9 @@ final class LocationIngressCounterController extends Controller
             $canSwitch,
             $diagnosticsModeState,
             $canModeSwitch,
+            $querySwitchState,
+            $canQueryData,
+            $canQuerySwitch,
             $canTraceDetails
         ): void {
             $content->header('定位诊断中心');
@@ -52,11 +71,16 @@ final class LocationIngressCounterController extends Controller
                 'dataUrl' => route('admin_monitor.location_ingress.data'),
                 'switchUrl' => route('admin_monitor.location_ingress.switch'),
                 'modeSwitchUrl' => route('admin_monitor.location_ingress.mode'),
+                'queryDataUrl' => $canQueryData ? route('admin_monitor.location_query_diagnostics.data') : null,
+                'querySwitchUrl' => $canQuerySwitch ? route('admin_monitor.location_query_diagnostics.switch') : null,
                 'csrfToken' => csrf_token(),
                 'switchState' => $switchState,
                 'diagnosticsModeState' => $diagnosticsModeState,
                 'canSwitch' => $canSwitch,
                 'canModeSwitch' => $canModeSwitch,
+                'querySwitchState' => $querySwitchState,
+                'canQueryData' => $canQueryData,
+                'canQuerySwitch' => $canQuerySwitch,
                 'canTraceDetails' => $canTraceDetails,
                 'traceListUrl' => $canTraceDetails ? route('location_ingress_trace.index') : null,
                 'traceDetailUrlTemplate' => $canTraceDetails
@@ -87,6 +111,105 @@ final class LocationIngressCounterController extends Controller
             ]);
         } catch (Throwable) {
             return response()->json(['message' => 'location_ingest_diagnostics_unavailable'], 503);
+        }
+    }
+
+    /**
+     * 只读读取实时地图查询诊断分钟 bucket；接口永远只读取固定 key，不执行 Redis SCAN。
+     */
+    public function queryData(Request $request): JsonResponse
+    {
+        if (! Admin::user()?->can('admin_monitor.location_query_diagnostics.data')) {
+            return response()->json(['message' => 'forbidden'], 403);
+        }
+
+        $minutesInput = $request->input('minutes', 10);
+        if (!is_scalar($minutesInput) || filter_var($minutesInput, FILTER_VALIDATE_INT) === false) {
+            return response()->json(['message' => 'minutes_must_be_an_integer'], 422);
+        }
+
+        $minutes = (int) $minutesInput;
+        if ($minutes < 1 || $minutes > 30) {
+            return response()->json(['message' => 'minutes_out_of_range'], 422);
+        }
+        try {
+            return response()->json([
+                'enabled' => LocationQueryDiagnosticsConfig::enabled(),
+                'retention_seconds' => LocationQueryDiagnosticsConfig::retentionSeconds(),
+                'minutes' => $minutes,
+                'rows' => LocationQueryDiagnosticStore::snapshot($minutes),
+            ]);
+        } catch (Throwable) {
+            return response()->json(['message' => 'location_query_diagnostics_unavailable'], 503);
+        }
+    }
+
+    /**
+     * 仅允许拥有独立权限的管理员变更实时地图查询诊断开关。
+     * 浏览器不能提交 Env Key、保留时长或重启参数；领域服务始终管理固定启动配置。
+     */
+    public function querySwitch(Request $request): JsonResponse
+    {
+        if (! Admin::user()?->can('admin_monitor.location_query_diagnostics.switch')) {
+            return response()->json(['accepted' => false, 'message' => 'forbidden'], 403);
+        }
+
+        if (! in_array($request->input('enabled'), ['0', '1', 0, 1], true)) {
+            return response()->json(['accepted' => false, 'message' => 'enabled_must_be_boolean'], 422);
+        }
+
+        $requestedEnabled = (bool) ((int) $request->input('enabled'));
+        try {
+            /** @var LocationQueryDiagnosticsSwitch $switch */
+            $switch = app(LocationQueryDiagnosticsSwitch::class);
+            $result = $switch->set($requestedEnabled);
+            $publish = $result['publish'] ?? null;
+            $payload = [
+                'accepted' => true,
+                'requested_enabled' => array_key_exists('requested_enabled', $result)
+                    ? $result['requested_enabled']
+                    : $requestedEnabled,
+                'effective_enabled' => LocationQueryDiagnosticsConfig::enabled(),
+            ];
+
+            if ($publish === null) {
+                return response()->json($payload + [
+                    'publish_status' => 'publish_throttled',
+                    'message' => 'publish_throttled',
+                ], 429);
+            }
+
+            $restart = $publish['restart'] ?? null;
+            if (is_array($restart) && ($restart['reason'] ?? null) === 'new_config.restart.enabled is false') {
+                return response()->json($payload + [
+                    'publish_status' => 'restart_disabled',
+                    'message' => 'restart_disabled',
+                ]);
+            }
+            if (is_array($restart) && ($restart['skipped'] ?? false)) {
+                return response()->json($payload + [
+                    'publish_status' => 'restart_not_scheduled',
+                    'message' => 'restart_not_scheduled',
+                ]);
+            }
+            if (is_array($restart) && ! ($restart['skipped'] ?? false)) {
+                return response()->json($payload + [
+                    'publish_status' => 'restart_scheduled',
+                    'message' => 'restart_scheduled',
+                ]);
+            }
+
+            return response()->json($payload + [
+                'publish_status' => 'published',
+                'message' => 'published',
+            ]);
+        } catch (Throwable) {
+            return response()->json([
+                'accepted' => false,
+                'effective_enabled' => LocationQueryDiagnosticsConfig::enabled(),
+                'publish_status' => 'publish_failed',
+                'message' => 'publish_failed',
+            ], 503);
         }
     }
 

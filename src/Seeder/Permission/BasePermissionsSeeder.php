@@ -52,6 +52,8 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("定位诊断中心数据", "admin_monitor.location_ingress.data", false, 0);
         $this->createPermissions("定位入口调试开关", "admin_monitor.location_ingress.switch", false, 0);
         $this->createPermissions("定位诊断模式开关", "admin_monitor.location_ingress.mode", false, 0);
+        $this->createPermissions("实时地图查询诊断数据", "admin_monitor.location_query_diagnostics.data", false, 0);
+        $this->createPermissions("实时地图查询诊断开关", "admin_monitor.location_query_diagnostics.switch", false, 0);
         $this->createPermissions("定位诊断明细", "location_ingress_trace.index", false, 0);
         /*
          * 旧路由仍为现有 Grafana/JSON 调用、历史角色授权和内部链接提供兼容入口。
