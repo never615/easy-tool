@@ -33,12 +33,6 @@
     $requestedMode = (($diagnosticsModeState ?? [])['configured'] ?? false)
         ? (string) (($diagnosticsModeState ?? [])['requested_mode'] ?? 'off')
         : null;
-    $queryEffectiveEnabled = (bool) (($querySwitchState ?? [])['effective_enabled'] ?? false);
-    $queryRequestedEnabled = (($querySwitchState ?? [])['configured'] ?? false)
-        ? (bool) (($querySwitchState ?? [])['requested_enabled'] ?? false)
-        : null;
-    $querySwitchTarget = ($queryRequestedEnabled ?? $queryEffectiveEnabled) ? '0' : '1';
-    $queryRetentionSeconds = (int) (($querySwitchState ?? [])['retention_seconds'] ?? 1800);
     $canTraceDetails = (bool) ($canTraceDetails ?? false);
 @endphp
 
@@ -47,8 +41,6 @@
     data-url="{{ $dataUrl }}"
     data-switch-url="{{ $switchUrl }}"
     data-mode-switch-url="{{ $modeSwitchUrl ?? '' }}"
-    data-query-data-url="{{ $queryDataUrl ?? '' }}"
-    data-query-switch-url="{{ $querySwitchUrl ?? '' }}"
     data-csrf-token="{{ $csrfToken }}"
     @if ($canTraceDetails)
         data-trace-list-url="{{ $traceListUrl }}"
@@ -128,55 +120,6 @@
         <p id="location-ingress-diagnostics-mode-result" class="location-ingress-counter__switch-result" aria-live="polite"></p>
     </section>
 
-    @if (($canQueryData ?? false) || ($canQuerySwitch ?? false))
-    <section class="location-ingress-counter__section location-ingress-counter__switch">
-        <h3>实时地图查询诊断</h3>
-        <p class="location-ingress-counter__switch-state">
-            当前处理请求的进程：<strong id="location-query-diagnostics-effective">{{ $queryEffectiveEnabled ? '已开启' : '已关闭' }}</strong>
-            （当前进程真实加载值）
-        </p>
-        <p class="location-ingress-counter__switch-state">
-            配置中心保存的目标：<strong id="location-query-diagnostics-requested">{{ $queryRequestedEnabled === null ? '未配置覆盖' : ($queryRequestedEnabled ? '开启' : '关闭') }}</strong>
-        </p>
-        <p>保留 {{ $queryRetentionSeconds }} 秒；关闭后仍可读取尚未过期的分钟 bucket。修改启动配置需要 LaravelS 新进程加载。</p>
-        @if ($canQuerySwitch ?? false)
-            <button
-                id="location-query-diagnostics-switch"
-                type="button"
-                class="btn {{ $querySwitchTarget === '1' ? 'btn-warning' : 'btn-default' }}"
-                data-target="{{ $querySwitchTarget }}"
-            >{{ $querySwitchTarget === '1' ? '开启查询诊断' : '停止查询诊断' }}</button>
-        @else
-            <p>当前账号没有“实时地图查询诊断开关”权限。</p>
-        @endif
-        <p id="location-query-diagnostics-switch-result" class="location-ingress-counter__switch-result" aria-live="polite"></p>
-        @if ($canQueryData ?? false)
-            <div class="location-ingress-counter__toolbar" style="margin-top:12px; margin-bottom:8px;">
-                <div><strong>查询诊断数据</strong><p>按固定分钟 bucket 聚合；不会扫描 Redis，也不返回 MAC、floor 或 tag 明细。</p></div>
-                <div class="location-ingress-counter__actions">
-                    <select id="location-query-diagnostics-minutes"><option value="1">最近 1 分钟</option><option value="5">最近 5 分钟</option><option value="10" selected>最近 10 分钟</option><option value="30">最近 30 分钟</option></select>
-                    <button id="location-query-diagnostics-refresh" type="button" class="btn btn-default">读取查询数据</button>
-                </div>
-            </div>
-            <p id="location-query-diagnostics-status" class="location-ingress-counter__status">等待手动读取。</p>
-            <div class="location-ingress-counter__table-wrap">
-                <table><thead><tr><th>Subject</th><th>路由</th><th>过滤器</th><th>标识</th><th>选项</th><th>结果桶</th><th>结果状态</th><th>请求数</th><th>平均 ms</th><th>P50</th><th>P95</th><th>P99</th><th>目标均值</th><th>返回均值</th><th>在线均值</th><th>截断数</th><th>响应 MB</th></tr></thead><tbody id="location-query-diagnostics-requests"><tr><td class="location-ingress-counter__empty" colspan="17">尚未读取。</td></tr></tbody></table>
-            </div>
-            <div class="location-ingress-counter__table-wrap" style="margin-top:10px;">
-                <table><thead><tr><th>Subject</th><th>路由</th><th>过滤器</th><th>来源</th><th>调用</th><th>集合成员</th><th>返回成员</th><th>轮次</th><th>耗时 ms</th></tr></thead><tbody id="location-query-diagnostics-indexes"><tr><td class="location-ingress-counter__empty" colspan="9">尚未读取。</td></tr></tbody></table>
-            </div>
-            <div class="location-ingress-counter__table-wrap" style="margin-top:10px;">
-                <table><thead><tr><th>Subject</th><th>路由</th><th>过滤器</th><th>来源</th><th>调用</th><th>Key 数</th><th>命中</th><th>命中率</th><th>Payload MB</th><th>耗时 ms</th></tr></thead><tbody id="location-query-diagnostics-results"><tr><td class="location-ingress-counter__empty" colspan="10">尚未读取。</td></tr></tbody></table>
-            </div>
-            <div class="location-ingress-counter__table-wrap" style="margin-top:10px;">
-                <table><thead><tr><th>Subject</th><th>路由</th><th>过滤器</th><th>来源</th><th>调用</th><th>耗时 ms</th></tr></thead><tbody id="location-query-diagnostics-optionals"><tr><td class="location-ingress-counter__empty" colspan="6">尚未读取。</td></tr></tbody></table>
-            </div>
-        @else
-            <p>当前账号没有“实时地图查询诊断数据”权限。</p>
-        @endif
-    </section>
-    @endif
-
     <section class="location-ingress-counter__section">
         <h3>原始入口消息（received）</h3>
         <p>一条 MQTT/TCP/HTTP/UDP/mock 原始消息只计一次，用于比较真实设备流量与模拟流量。</p>
@@ -240,8 +183,6 @@
         const dataUrl = root.dataset.url;
         const switchUrl = root.dataset.switchUrl;
         const modeSwitchUrl = root.dataset.modeSwitchUrl;
-        const queryDataUrl = root.dataset.queryDataUrl;
-        const querySwitchUrl = root.dataset.querySwitchUrl;
         const traceListUrl = root.dataset.traceListUrl;
         const traceDetailUrlTemplate = root.dataset.traceDetailUrlTemplate;
         const csrfToken = root.dataset.csrfToken;
@@ -262,17 +203,6 @@
         const modeResult = root.querySelector('#location-ingress-diagnostics-mode-result');
         const effectiveModeState = root.querySelector('#location-ingress-diagnostics-effective');
         const requestedModeState = root.querySelector('#location-ingress-diagnostics-requested');
-        const queryMinutes = root.querySelector('#location-query-diagnostics-minutes');
-        const queryRefresh = root.querySelector('#location-query-diagnostics-refresh');
-        const queryStatus = root.querySelector('#location-query-diagnostics-status');
-        const queryRequests = root.querySelector('#location-query-diagnostics-requests');
-        const queryIndexes = root.querySelector('#location-query-diagnostics-indexes');
-        const queryResults = root.querySelector('#location-query-diagnostics-results');
-        const queryOptionals = root.querySelector('#location-query-diagnostics-optionals');
-        const querySwitchButton = root.querySelector('#location-query-diagnostics-switch');
-        const querySwitchResult = root.querySelector('#location-query-diagnostics-switch-result');
-        const queryEffectiveState = root.querySelector('#location-query-diagnostics-effective');
-        const queryRequestedState = root.querySelector('#location-query-diagnostics-requested');
         const traceOrigin = root.querySelector('#location-ingress-trace-origin');
         const traceTransport = root.querySelector('#location-ingress-trace-transport');
         const traceSolution = root.querySelector('#location-ingress-trace-solution');
@@ -283,12 +213,9 @@
         let controller = null;
         let switchController = null;
         let modeController = null;
-        let queryController = null;
-        let querySwitchController = null;
         let traceController = null;
         let switchInFlight = false;
         let modeInFlight = false;
-        let querySwitchInFlight = false;
 
         const escapeHtml = function (value) {
             return String(value ?? '').replace(/[&<>'"]/g, function (character) {
@@ -336,83 +263,6 @@
                 if (error.name !== 'AbortError') status.textContent = '读取失败：Redis 或调试页面暂不可用。';
             } finally {
                 refresh.disabled = switchInFlight;
-            }
-        };
-        const renderQueryRows = function (target, rows, fields, colspan, formatter) {
-            if (!target) return;
-            if (!rows.length) {
-                target.innerHTML = '<tr><td class="location-ingress-counter__empty" colspan="' + colspan + '">此窗口内没有查询诊断。</td></tr>';
-                return;
-            }
-            target.innerHTML = rows.map(function (row) {
-                return '<tr>' + fields.map(function (field) {
-                    const value = formatter ? formatter(row, field) : row[field];
-                    return '<td>' + escapeHtml(value ?? '-') + '</td>';
-                }).join('') + '</tr>';
-            }).join('');
-        };
-        const queryLoad = async function () {
-            if (!queryDataUrl || !queryMinutes || !queryRefresh) return;
-            if (queryController) queryController.abort();
-            queryController = new AbortController();
-            queryRefresh.disabled = true;
-            if (queryStatus) queryStatus.textContent = '正在读取查询诊断 Redis 分钟 bucket…';
-            try {
-                const response = await fetch(queryDataUrl + '?minutes=' + encodeURIComponent(queryMinutes.value), {
-                    headers: { 'Accept': 'application/json' }, signal: queryController.signal
-                });
-                if (!response.ok) throw new Error('request_failed');
-                const payload = await response.json();
-                const rows = payload.rows || {};
-                const requestRows = Array.isArray(rows.requests) ? rows.requests : [];
-                const indexRows = Array.isArray(rows.indexes) ? rows.indexes : [];
-                const resultRows = Array.isArray(rows.results) ? rows.results : [];
-                const optionalRows = Array.isArray(rows.optionals) ? rows.optionals : [];
-                const percentile = function (row, percentileValue) {
-                    const requests = Math.max(1, Number(row.requests || 0));
-                    const threshold = Math.ceil(requests * percentileValue);
-                    const buckets = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 'inf'];
-                    for (let i = 0; i < buckets.length; i++) {
-                        if (Number(row['latency_le_' + buckets[i] + '_ms'] || 0) >= threshold) return buckets[i];
-                    }
-                    return 'inf';
-                };
-                renderQueryRows(queryRequests, requestRows,
-                    ['subject_id', 'route', 'filter', 'identifier_type', 'options', 'result_bucket', 'outcome', 'requests', 'avg_ms', 'p50_ms', 'p95_ms', 'p99_ms', 'targets_avg', 'returned_avg', 'online_avg', 'limited', 'response_mb'], 17,
-                    function (row, field) {
-                        const requests = Math.max(1, Number(row.requests || 0));
-                        if (field === 'avg_ms') return (Number(row.duration_us || 0) / requests / 1000).toFixed(2);
-                        if (field === 'p50_ms') return percentile(row, 0.50);
-                        if (field === 'p95_ms') return percentile(row, 0.95);
-                        if (field === 'p99_ms') return percentile(row, 0.99);
-                        if (field === 'targets_avg') return (Number(row.resolved_targets || 0) / requests).toFixed(1);
-                        if (field === 'returned_avg') return (Number(row.returned_results || 0) / requests).toFixed(1);
-                        if (field === 'online_avg') return (Number(row.online_results || 0) / requests).toFixed(1);
-                        if (field === 'response_mb') return (Number(row.response_bytes || 0) / 1048576).toFixed(2);
-                        return row[field];
-                    });
-                renderQueryRows(queryIndexes, indexRows,
-                    ['subject_id', 'route', 'filter', 'source', 'calls', 'source_members', 'returned_members', 'rounds', 'elapsed_ms'], 9,
-                    function (row, field) { return field === 'elapsed_ms' ? (Number(row.elapsed_us || 0) / 1000).toFixed(2) : row[field]; });
-                renderQueryRows(queryResults, resultRows,
-                    ['subject_id', 'route', 'filter', 'source', 'calls', 'keys', 'hits', 'hit_rate', 'payload_mb', 'elapsed_ms'], 10,
-                    function (row, field) {
-                        if (field === 'hit_rate') {
-                            const keys = Number(row.keys || 0);
-                            return keys > 0 ? (Number(row.hits || 0) * 100 / keys).toFixed(1) + '%' : '0.0%';
-                        }
-                        if (field === 'payload_mb') return (Number(row.payload_bytes || 0) / 1048576).toFixed(2);
-                        if (field === 'elapsed_ms') return (Number(row.elapsed_us || 0) / 1000).toFixed(2);
-                        return row[field];
-                    });
-                renderQueryRows(queryOptionals, optionalRows,
-                    ['subject_id', 'route', 'filter', 'source', 'calls', 'elapsed_ms'], 6,
-                    function (row, field) { return field === 'elapsed_ms' ? (Number(row.elapsed_us || 0) / 1000).toFixed(2) : row[field]; });
-                if (queryStatus) queryStatus.textContent = '已读取最近 ' + payload.minutes + ' 分钟：请求 ' + requestRows.length + ' 行、索引 ' + indexRows.length + ' 行、结果 ' + resultRows.length + ' 行。';
-            } catch (error) {
-                if (error.name !== 'AbortError' && queryStatus) queryStatus.textContent = '读取失败：查询诊断 Redis 暂不可用。';
-            } finally {
-                queryRefresh.disabled = false;
             }
         };
         const updateSwitchRequest = function (requestedEnabled) {
@@ -557,47 +407,6 @@
                 modeButton.disabled = false;
             }
         };
-        const querySwitchMessage = function (payload) {
-            if (payload.publish_status === 'restart_scheduled') return '查询诊断启动配置已发布，并已请求 LaravelS 重启；请以当前进程状态确认。';
-            if (payload.publish_status === 'restart_disabled' || payload.publish_status === 'restart_not_scheduled') return '查询诊断目标已发布，等待 LaravelS 新进程加载。';
-            if (payload.publish_status === 'publish_throttled') return '人工发布处于 30 秒节流中，本次目标未保存。';
-            if (payload.publish_status === 'published') return '查询诊断启动配置已发布；请以新进程状态确认。';
-            return '发布失败；本次操作未报告已生效。';
-        };
-        const switchQueryDiagnostics = async function () {
-            if (!querySwitchButton || !querySwitchUrl || querySwitchInFlight) return;
-            const enabled = querySwitchButton.dataset.target === '1';
-            if (!window.confirm('确认' + (enabled ? '开启' : '停止') + '实时地图查询诊断？修改启动配置需要 LaravelS 新进程加载。')) return;
-            querySwitchInFlight = true;
-            querySwitchButton.disabled = true;
-            if (querySwitchResult) querySwitchResult.textContent = '正在发布查询诊断启动配置…';
-            querySwitchController = new AbortController();
-            try {
-                const response = await fetch(querySwitchUrl, {
-                    method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify({ enabled: enabled ? '1' : '0' }), signal: querySwitchController.signal
-                });
-                const payload = await response.json().catch(function () { return {}; });
-                if (typeof payload.requested_enabled === 'boolean' && queryRequestedState) {
-                    queryRequestedState.textContent = payload.requested_enabled ? '开启' : '关闭';
-                    querySwitchButton.dataset.target = payload.requested_enabled ? '0' : '1';
-                    querySwitchButton.textContent = payload.requested_enabled ? '停止查询诊断' : '开启查询诊断';
-                }
-                if (typeof payload.effective_enabled === 'boolean' && queryEffectiveState) queryEffectiveState.textContent = payload.effective_enabled ? '已开启' : '已关闭';
-                if (querySwitchResult) {
-                    querySwitchResult.textContent = querySwitchMessage(payload);
-                    querySwitchResult.classList.toggle('location-ingress-counter__switch-result--error', !(response.ok && payload.accepted === true));
-                }
-            } catch (error) {
-                if (error.name !== 'AbortError' && querySwitchResult) {
-                    querySwitchResult.textContent = '发布失败；本次操作未报告已生效。';
-                    querySwitchResult.classList.add('location-ingress-counter__switch-result--error');
-                }
-            } finally {
-                querySwitchInFlight = false;
-                querySwitchButton.disabled = false;
-            }
-        };
         const renderTraceRows = function (rows) {
             if (!traces) return;
             if (!rows.length) {
@@ -660,12 +469,9 @@
         };
         refresh.addEventListener('click', load);
         minutes.addEventListener('change', load);
-        if (queryRefresh) queryRefresh.addEventListener('click', queryLoad);
-        if (queryMinutes) queryMinutes.addEventListener('change', queryLoad);
         auto.addEventListener('change', syncTimer);
         if (switchButton) switchButton.addEventListener('click', switchCounter);
         if (modeButton) modeButton.addEventListener('click', switchMode);
-        if (querySwitchButton) querySwitchButton.addEventListener('click', switchQueryDiagnostics);
         if (traceRefresh) traceRefresh.addEventListener('click', loadTraces);
         if (traces) traces.addEventListener('click', function (event) {
             const button = event.target.closest('[data-trace-id]');
@@ -676,8 +482,6 @@
             if (controller) controller.abort();
             if (switchController) switchController.abort();
             if (modeController) modeController.abort();
-            if (queryController) queryController.abort();
-            if (querySwitchController) querySwitchController.abort();
             if (traceController) traceController.abort();
         }, { once: true });
     }());

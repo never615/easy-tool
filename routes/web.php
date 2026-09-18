@@ -151,12 +151,8 @@ Route::group($attributes, function ($router) {
                             ->name('admin_monitor.location_ingress');
                         Route::get('monitor/location_ingress/data', 'LocationIngressCounterController@data')
                             ->name('admin_monitor.location_ingress.data');
-                        Route::get('monitor/location_ingress/query-data', 'LocationIngressCounterController@queryData')
-                            ->name('admin_monitor.location_query_diagnostics.data');
                         Route::post('monitor/location_ingress/switch', 'LocationIngressCounterController@switch')
                             ->name('admin_monitor.location_ingress.switch');
-                        Route::post('monitor/location_ingress/query-switch', 'LocationIngressCounterController@querySwitch')
-                            ->name('admin_monitor.location_query_diagnostics.switch');
                         Route::post('monitor/location_ingress/diagnostics-mode', 'LocationIngressCounterController@mode')
                             ->name('admin_monitor.location_ingress.mode');
                         Route::get('monitor/location_ingress/traces', 'LocationIngressCounterController@traces')
