@@ -74,8 +74,10 @@ class RuntimePrefixedMqttClient extends MqttClient
             return '';
         }
 
-        // Keep enough random suffix entropy while staying inside conservative broker limits.
-        $maxPrefixLength = max(0, $this->runtimeClientIdMaxLength - 12 - 1);
+        // Reserve four characters for the random suffix when the environment and
+        // connection name are both present; a prefix containing only the environment
+        // keeps the longer suffix through the calculation below.
+        $maxPrefixLength = max(0, $this->runtimeClientIdMaxLength - 4 - 1);
         if ($maxPrefixLength === 0) {
             return '';
         }

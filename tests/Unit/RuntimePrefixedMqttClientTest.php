@@ -16,11 +16,11 @@ class RuntimePrefixedMqttClientTest extends TestCase
             RuntimePrefixedMqttClient::MQTT_3_1_1,
             null,
             null,
-            'skylab-production',
+            'production-hjy_pub',
             23
         );
 
-        $this->assertStringStartsWith('skylab-', $client->getClientId());
+        $this->assertStringStartsWith('production-hjy-pub-', $client->getClientId());
         $this->assertLessThanOrEqual(23, strlen($client->getClientId()));
     }
 
@@ -33,7 +33,7 @@ class RuntimePrefixedMqttClientTest extends TestCase
             RuntimePrefixedMqttClient::MQTT_3_1_1,
             null,
             null,
-            'skylab-production',
+            'production-skylab',
             23
         );
 

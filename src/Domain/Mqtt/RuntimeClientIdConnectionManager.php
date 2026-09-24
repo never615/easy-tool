@@ -133,11 +133,17 @@ class RuntimeClientIdConnectionManager
             Arr::get($this->config, 'runtime_client_id.max_length', 23)
         );
 
-        // Put the named connection first so the short client-id limit preserves
-        // the service name when the runtime environment prefix must be truncated.
+        $connectionName = Arr::get(
+            $this->config,
+            "runtime_client_id.connection_aliases.{$name}",
+            $name
+        );
+
+        // Keep the environment first and the connection name second so both are
+        // visible in broker-side client lists when the generated id is truncated.
         $runtimeClientIdPrefix = implode('-', array_filter([
-            $name,
             $runtimeClientIdPrefix,
+            $connectionName,
         ], static fn ($value): bool => trim((string)$value) !== ''));
 
         $settings = $this->buildConnectionSettings(Arr::get($config, 'connection_settings', []));
