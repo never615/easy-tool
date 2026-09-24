@@ -139,6 +139,10 @@ class RuntimeClientIdConnectionManager
             $name
         );
 
+        // Four environment characters are enough to distinguish the deployment
+        // while leaving room for the connection name and random suffix.
+        $runtimeClientIdPrefix = substr(trim((string)$runtimeClientIdPrefix), 0, 4);
+
         // Keep the environment first and the connection name second so both are
         // visible in broker-side client lists when the generated id is truncated.
         $runtimeClientIdPrefix = implode('-', array_filter([

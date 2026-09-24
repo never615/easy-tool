@@ -16,11 +16,11 @@ class RuntimePrefixedMqttClientTest extends TestCase
             RuntimePrefixedMqttClient::MQTT_3_1_1,
             null,
             null,
-            'production-hjy_pub',
+            'prod-hjy_pub',
             23
         );
 
-        $this->assertStringStartsWith('production-hjy-pub-', $client->getClientId());
+        $this->assertStringStartsWith('prod-hjy-pub-', $client->getClientId());
         $this->assertLessThanOrEqual(23, strlen($client->getClientId()));
     }
 
