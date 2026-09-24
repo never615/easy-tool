@@ -133,6 +133,13 @@ class RuntimeClientIdConnectionManager
             Arr::get($this->config, 'runtime_client_id.max_length', 23)
         );
 
+        // Put the named connection first so the short client-id limit preserves
+        // the service name when the runtime environment prefix must be truncated.
+        $runtimeClientIdPrefix = implode('-', array_filter([
+            $name,
+            $runtimeClientIdPrefix,
+        ], static fn ($value): bool => trim((string)$value) !== ''));
+
         $settings = $this->buildConnectionSettings(Arr::get($config, 'connection_settings', []));
         $repository = $this->application->make($repository);
         $logger = $loggingEnabled ? $this->application->make('log') : null;
