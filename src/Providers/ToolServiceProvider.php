@@ -659,7 +659,6 @@ class ToolServiceProvider extends ServiceProvider
                 'timeout' => 1.0,
                 'read_timeout' => 1.0,
                 'retry_interval' => 0,
-                'max_retries' => 0,
             ]);
             $manager = new RedisManager($app, (string) ($redisConfig['client'] ?? 'phpredis'), [
                 'options' => (array) ($redisConfig['options'] ?? []),
