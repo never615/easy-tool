@@ -4,6 +4,7 @@ namespace Mallto\Tool\Domain\RedisMonitor;
 
 use Closure;
 use Illuminate\Contracts\Redis\Factory;
+use Illuminate\Redis\Connections\PhpRedisConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -58,17 +59,25 @@ final class RedisInstanceMonitor
             'last_sampled_at' => ($this->clock)(),
             'last_logged_at' => is_numeric($old['last_logged_at'] ?? null) ? (float)$old['last_logged_at'] : 0];
         $connection = null;
+        $stage = 'connection';
         try {
             if ($target['profile'] === []) {
                 throw new \InvalidArgumentException('Redis monitor target profile invalid');
             }
             $connection = $this->probes->connection($target['id']);
+            if ($connection instanceof PhpRedisConnection) {
+                // Older phpredis versions require a connected socket before setting this option.
+                $stage = 'probe_options';
+                $connection->client()->setOption(\Redis::OPT_MAX_RETRIES, 0);
+            }
+            $stage = 'ping';
             $start = hrtime(true);
             $connection->command('PING');
             $ping = round((hrtime(true) - $start) / 1e6, 3);
             $info = [];
             $limited = [];
             foreach (['memory', 'stats', 'server', 'cpu', 'clients'] as $section) {
+                $stage = 'info_'.$section;
                 try {
                     $info[$section] = $this->normalize($connection->command('INFO', [$section]));
                 } catch (Throwable $exception) {
@@ -82,6 +91,7 @@ final class RedisInstanceMonitor
             }
             $now = ($this->clock)();
             $row['last_sampled_at'] = $now;
+            $stage = 'snapshot_build';
             $snapshot = RedisMemorySnapshot::fromInfo($info['memory'], $info['stats'])->toArray();
             $runId = isset($info['server']['run_id']) ? hash('sha256', (string)$info['server']['run_id']) : null;
             $baseline = ['run_id_hash' => $runId, 'at' => $now];
@@ -136,7 +146,7 @@ final class RedisInstanceMonitor
             $row += ['level' => $level, 'reasons' => $reasons, 'snapshot' => $snapshot, 'baseline' => $baseline];
         } catch (Throwable $exception) {
             $row += ['level' => 'error', 'reasons' => ['sampling_failed'], 'snapshot' => [],
-                'error_kind' => get_class($exception)];
+                'error_kind' => get_class($exception), 'error_stage' => $stage];
         } finally {
             try {
                 $connection?->disconnect();
@@ -151,6 +161,8 @@ final class RedisInstanceMonitor
         if ($changed || ($row['level'] !== 'normal' && $row['last_sampled_at'] - $row['last_logged_at'] >= max(1, (int)($this->config['log_cooldown_seconds'] ?? 600)))) {
             $this->safeLog($row['level'] === 'normal' ? 'info' : $row['level'], [
                 'instance' => $row['id'], 'connection' => $row['connection'], 'reasons' => $row['reasons'],
+                // Fixed stages and exception classes identify failures without exposing client messages.
+                'error_stage' => $row['error_stage'] ?? null, 'error_kind' => $row['error_kind'] ?? null,
             ]);
             $row['last_logged_at'] = $row['last_sampled_at'];
         }

@@ -34,11 +34,12 @@ final class RedisMonitorTargets
                 continue;
             }
             unset($profile['prefix'], $profile['persistent_id'], $profile['backoff_algorithm'],
-                $profile['backoff_base'], $profile['backoff_cap']);
+                $profile['backoff_base'], $profile['backoff_cap'], $profile['max_retries']);
             $profile['options'] = [];
+            // phpredis 5.3.x rejects OPT_MAX_RETRIES before connect(); set it on the live probe instead.
             $profile = array_merge($profile, [
                 'persistent' => false, 'timeout' => 0.2, 'read_timeout' => 0.1,
-                'read_write_timeout' => 0.1, 'retry_interval' => 0, 'max_retries' => 0,
+                'read_write_timeout' => 0.1, 'retry_interval' => 0,
             ]);
             $resolved[$identity] = [
                 'id' => substr($identity, 0, 16),
