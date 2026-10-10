@@ -8,6 +8,7 @@ namespace Mallto\Tool\Providers;
 use Encore\Admin\Facades\Admin;
 use Laravel\Horizon\Horizon;
 use Laravel\Horizon\HorizonApplicationServiceProvider;
+use Laravel\Horizon\WorkerCommandString;
 
 /**
  * User: never615 <never615.com>
@@ -25,6 +26,14 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     public function boot()
     {
         parent::boot();
+
+        // Per-job console output can fill worker/supervisor pipes before handle(),
+        // consuming the Job timeout. Quiet workers retain application logs and
+        // Horizon/failed-job events; the master still reports lifecycle messages.
+        if (filter_var(config('horizon.worker_quiet', true), FILTER_VALIDATE_BOOLEAN)
+            && !preg_match('/(?:^|\s)(?:--quiet|-q)(?:\s|$)/', WorkerCommandString::$command)) {
+            WorkerCommandString::$command .= ' --quiet';
+        }
 
         // Horizon::routeSmsNotificationsTo('15556667777');
         // Horizon::routeMailNotificationsTo('example@example.com');
