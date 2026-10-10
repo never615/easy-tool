@@ -10,8 +10,9 @@ use Throwable;
 /**
  * 共享 Redis 的低开销内存监控器。
  *
- * 每次 run() 严格执行四类操作：INFO memory、INFO stats、读取一个状态 Key、带 TTL 写回
- * 同一个状态 Key。禁止 SCAN、KEYS、BIGKEYS、MEMORY USAGE 或逐 Key 分析，因此运行开销
+ * 旧配置每次 run() 严格执行四类操作：INFO memory、INFO stats、读取一个状态 Key、带 TTL
+ * 写回同一个状态 Key。targets 配置委托 RedisInstanceMonitor 固定预算采样多实例。
+ * 禁止 SCAN、KEYS、BIGKEYS、MEMORY USAGE 或逐 Key 分析，因此运行开销
  * 不随业务 Key 数量增长。它由 Laravel Scheduler 每分钟调用一次，不包含无限循环，也不会
  * 派发 Horizon Job 或 Swoole Task。
  */
@@ -46,7 +47,8 @@ final class RedisMemoryMonitor
         private readonly RedisFactory $redis,
         private readonly LoggerInterface $logger,
         array $config,
-        ?Closure $clock = null
+        ?Closure $clock = null,
+        private readonly ?RedisInstanceMonitor $instances = null
     ) {
         $this->enabled = (bool) ($config['enabled'] ?? false);
         $this->connectionName = (string) ($config['connection'] ?? 'redis-monitor');
@@ -81,6 +83,10 @@ final class RedisMemoryMonitor
                 'level' => 'disabled',
                 'logged' => false,
             ];
+        }
+
+        if ($this->instances !== null) {
+            return $this->instances->run();
         }
 
         $stage = 'connection';

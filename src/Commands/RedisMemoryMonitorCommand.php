@@ -16,7 +16,7 @@ class RedisMemoryMonitorCommand extends Command
 {
     protected $signature = 'tool:redis_memory_monitor {--json : 输出 JSON}';
 
-    protected $description = '采样共享 Redis 内存水位，并按阈值写入 Laravel 日志';
+    protected $description = '采样 Redis 实例内存、CPU 和响应状态，并按阈值写入 Laravel 日志';
 
     /**
      * 处理「handle」相关的内部协作步骤。
@@ -34,6 +34,12 @@ class RedisMemoryMonitorCommand extends Command
         if (! ($result['enabled'] ?? false)) {
             $this->info('redis memory monitor disabled');
 
+            return self::SUCCESS;
+        }
+
+        if (isset($result['instances'])) {
+            $this->info(sprintf('redis instance monitor completed: instances=%d failed=%d level=%s',
+                count($result['instances']), $result['failed_instances'] ?? 0, $result['level']));
             return self::SUCCESS;
         }
 

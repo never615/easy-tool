@@ -18,7 +18,7 @@
     .app-stats__card,
     .app-stats__section { border: 1px solid #ddd; border-left-width: 4px; border-radius: 4px; background: #fff; padding: 14px; }
     .app-stats__card h3,
-    .app-stats__section h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+    .app-stats__section h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
     .app-stats__card strong { display: block; margin-bottom: 6px; font-size: 22px; line-height: 1.2; }
     .app-stats__status { display: block; font-weight: 600; }
     .app-stats__status-row { display: flex; align-items: center; gap: 6px; }
@@ -320,6 +320,18 @@
             };
 
             const metricLabels = {
+                main_thread_cpu_percent: '主线程 CPU（周期平均）',
+                process_cpu_percent: '进程 CPU（周期平均）',
+                cpu_status: 'CPU 采样状态',
+                ping_ms: 'PING 往返（ms）',
+                instantaneous_ops_per_sec: '操作吞吐（ops/s）',
+                instantaneous_input_kbps: '网络入站（KiB/s）',
+                instantaneous_output_kbps: '网络出站（KiB/s）',
+                connected_clients: '当前客户端连接',
+                blocked_clients: '阻塞客户端',
+                rejected_connections_delta: '本周期拒绝连接增量',
+                instance_count: '实例数',
+                abnormal_instances: '异常实例数',
                 used_memory: '已用内存（used_memory）',
                 used_memory_rss: '常驻内存（used_memory_rss）',
                 maxmemory: '内存上限（maxmemory）',
@@ -402,12 +414,17 @@
                 }
                 if ([
                     'used_percent',
+                    'main_thread_cpu_percent',
+                    'process_cpu_percent',
                     'connection_used_percent',
                     'cache_hit_percent',
                     'locators_hot_update_percent',
                     'wiredtiger_cache_used_percent'
                 ].includes(key)) {
                     return finiteNumber(value) ? Number(value).toFixed(2) + '%' : '未知';
+                }
+                if (key === 'cpu_status') {
+                    return {available: '可用', waiting_baseline: '等待基线', unavailable: '主线程指标不可用'}[value] || '未知';
                 }
                 if (key === 'monitoring_mode') {
                     return value === 'server_status' ? '完整指标' : '仅可用性';
@@ -487,7 +504,9 @@
                 const redisMetrics = redis.metrics || {};
                 const redisHasUnlimitedMemory = finiteNumber(redisMetrics.maxmemory)
                     && Number(redisMetrics.maxmemory) === 0;
-                const redisMemoryDisplay = finiteNumber(redisMetrics.used_percent)
+                const redisMemoryDisplay = Array.isArray(redis.instances)
+                    ? redisMetrics.instance_count + ' 实例 / ' + redisMetrics.abnormal_instances + ' 异常'
+                    : finiteNumber(redisMetrics.used_percent)
                     ? Number(redisMetrics.used_percent).toFixed(2) + '%'
                     : redisHasUnlimitedMemory && finiteNumber(redisMetrics.used_memory)
                         ? bytes(redisMetrics.used_memory) + ' / 未设上限'
@@ -529,7 +548,7 @@
                         sectionKey: 'mongodb_database',
                         info: mongodbSamplingInfo
                     }),
-                    summaryCard('Redis 内存', redisMemoryDisplay, redis.status, redisHasUnlimitedMemory ? {
+                    summaryCard(Array.isArray(redis.instances) ? 'Redis 实例' : 'Redis 内存', redisMemoryDisplay, redis.status, redisHasUnlimitedMemory ? {
                         info: redisUnlimitedMemoryInfo
                     } : null),
                     summaryCard('MQTT Pending', pending, mqtt.status)
@@ -719,7 +738,14 @@
             const messageLabel = (message) => ({
                 pod_store_read_failed: 'Pod 状态读取失败',
                 section_read_failed: '区块状态读取失败',
-                redis_memory_monitor_disabled: 'Redis 内存监控未启用',
+                redis_instance_sampling_failed: 'Redis 实例采样失败',
+                redis_instance_metrics_limited: 'Redis 实例部分指标不可用',
+                redis_instance_cpu_error: 'Redis 主线程 CPU 达到错误阈值',
+                redis_instance_cpu_warning: 'Redis 主线程 CPU 达到告警阈值',
+                redis_instance_ping_pressure: 'Redis PING 往返延迟达到阈值',
+                redis_instance_counters_pressure: 'Redis 淘汰或拒绝连接计数增加',
+                redis_instance_memory_pressure: 'Redis 内存使用率达到阈值',
+                redis_memory_monitor_disabled: 'Redis 监控未启用',
                 redis_memory_waiting_for_first_sample: '等待 Redis 内存首次采样',
                 redis_memory_waiting_for_complete_sample: '等待下一次完整 Redis 内存采样',
                 redis_memory_sample_delayed: 'Redis 内存采样延迟',
@@ -745,7 +771,9 @@
             const renderSections = (sectionsValue) => {
                 const sections = sectionsValue && typeof sectionsValue === 'object' ? sectionsValue : {};
                 const entries = Object.entries(sections)
-                    .filter(([key]) => showRedisMemory || key !== 'redis_memory');
+                    .filter(([key]) => showRedisMemory || key !== 'redis_memory')
+                    .flatMap(([key, value]) => key === 'redis_memory' && Array.isArray(value && value.instances)
+                        ? value.instances.map((instance) => [key, instance]) : [[key, value]]);
 
                 if (entries.length === 0) {
                     const empty = document.createElement('article');

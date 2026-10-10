@@ -10,10 +10,11 @@ use Closure;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Mallto\Tool\Domain\AppStats\Contracts\AppStatsSectionProvider;
+use Mallto\Tool\Domain\RedisMonitor\RedisMonitorTargets;
 use Throwable;
 
 /**
- * 从 RedisMemoryMonitor 的单个最新状态 Key 生成 AppStats 全局区块。
+ * 从 RedisMemoryMonitor 的单个最新状态 Key 生成 AppStats 全局区块（v2 单实例、v3 多实例）。
  *
  * 该类运行在管理页面请求链路中，因此必须保持严格只读：一次 read() 最多解析一个命名
  * Redis 连接并执行一次 GET。不得在这里调用 RedisMemoryMonitor::run()、INFO、SET/SETEX，
@@ -46,9 +47,8 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
     /**
      * 返回最新一次 Scheduler 样本的固定白名单视图。
      *
-     * 连接名必须与 `database.redis_monitor.connection` 完全一致：Monitor 的 INFO 与状态 Key
-     * 都写在这套共享 Redis/逻辑 DB，页面若改用 default 或本地缓存连接，会在多 Pod 部署中
-     * 产生“采样存在但页面一直等待”的假故障。这里只消费启动期 config() 快照，不读取 env()。
+     * 旧配置使用 database.redis_monitor.connection，新配置使用 state_connection；必须与
+     * Scheduler 快照存储一致，不能改用其他 DB。这里只消费启动期 config()，不读取 env()。
      *
      * @return array{
      *   title: string,
@@ -67,13 +67,17 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
 
         try {
             $connectionName = (string) $this->config->get(
-                'database.redis_monitor.connection',
+                empty($this->config->get('database.redis_monitor.targets'))
+                    ? 'database.redis_monitor.connection' : 'database.redis_monitor.state_connection',
                 'redis-monitor'
             );
             $stateKey = (string) $this->config->get(
                 'database.redis_monitor.state_key',
                 'easy-tool:redis-memory-monitor:state'
             );
+            if (!empty($this->config->get('database.redis_monitor.targets'))) {
+                $stateKey = (string)$this->config->get('database.redis_monitor.instances_state_key', $stateKey);
+            }
 
             // 页面请求唯一允许的 Redis 命令。禁止改为 MGET/INFO 或附带修复写入。
             $raw = $this->redis->connection($connectionName)->get($stateKey);
@@ -84,6 +88,10 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
             $state = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
             if (! is_array($state)) {
                 return $this->result('waiting', null, [], 'redis_memory_waiting_for_complete_sample');
+            }
+
+            if (!empty($this->config->get('database.redis_monitor.targets'))) {
+                return $this->readInstances($state);
             }
 
             $sampledAt = max(0, (int) ($state['last_sampled_at'] ?? 0));
@@ -114,6 +122,69 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
             // 页面不写告警日志；聚合层只收到固定错误码，连接地址与客户端异常消息不会泄漏。
             return $this->result('error', null, [], 'redis_memory_state_read_failed');
         }
+    }
+
+    private function readInstances(array $state): array
+    {
+        if (($state['schema_version'] ?? null) !== 3 || !is_array($state['instances'] ?? null)) {
+            return $this->result('waiting', null, [], 'redis_memory_waiting_for_complete_sample');
+        }
+        $targets = RedisMonitorTargets::resolve(
+            (array)$this->config->get('database.redis_monitor.targets'),
+            (array)$this->config->get('database.redis', [])
+        );
+        $rows = [];
+        $stale = max(1, (int)$this->config->get('app_stats.redis_memory_stale_seconds', 120));
+        foreach ($targets as $target) {
+            $row = $state['instances'][$target['id']] ?? [];
+            $row = is_array($row) ? $row : [];
+            $at = is_numeric($row['last_sampled_at'] ?? null) ? (float)$row['last_sampled_at'] : 0;
+            $status = $at <= 0 ? 'waiting' : (($this->clock)() - $at > $stale ? 'delayed' : $this->normalizeLevel($row['level'] ?? null));
+            $snapshot = is_array($row['snapshot'] ?? null) ? $row['snapshot'] : [];
+            $metrics = $snapshot === [] ? [] : $this->whitelistMetrics($snapshot, $snapshot['evicted_keys_delta'] ?? null);
+            if ($snapshot !== []) {
+                foreach (['main_thread_cpu_percent', 'process_cpu_percent', 'ping_ms', 'instantaneous_ops_per_sec',
+                    'instantaneous_input_kbps', 'instantaneous_output_kbps', 'connected_clients', 'blocked_clients',
+                    'rejected_connections_delta'] as $field) {
+                    $value = $snapshot[$field] ?? null;
+                    $metrics[$field] = is_numeric($value) && is_finite((float)$value) ? max(0.0, (float)$value) : null;
+                }
+                $metrics['cpu_status'] = in_array($snapshot['cpu_status'] ?? null,
+                    ['available', 'waiting_baseline', 'unavailable'], true) ? $snapshot['cpu_status'] : 'unavailable';
+                $first = array_intersect_key($metrics, array_flip(['main_thread_cpu_percent', 'process_cpu_percent',
+                    'cpu_status', 'ping_ms', 'instantaneous_ops_per_sec']));
+                $metrics = $first + $metrics;
+            }
+            $reasons = (array)($row['reasons'] ?? []);
+            $message = match (true) {
+                $status === 'waiting' => 'redis_memory_waiting_for_first_sample',
+                $status === 'delayed' => 'redis_memory_sample_delayed',
+                in_array('sampling_failed', $reasons, true) => 'redis_instance_sampling_failed',
+                in_array('metrics_limited', $reasons, true) => 'redis_instance_metrics_limited',
+                in_array('main_thread_cpu_error', $reasons, true) => 'redis_instance_cpu_error',
+                in_array('main_thread_cpu_warning', $reasons, true) => 'redis_instance_cpu_warning',
+                in_array('ping_latency_error', $reasons, true) || in_array('ping_latency_warning', $reasons, true) => 'redis_instance_ping_pressure',
+                in_array('redis_counters_increased', $reasons, true) => 'redis_instance_counters_pressure',
+                in_array('memory_usage_error', $reasons, true) || in_array('memory_usage_warning', $reasons, true) => 'redis_instance_memory_pressure',
+                default => null,
+            };
+            $rows[] = ['id' => $target['id'], 'title' => 'Redis · '.implode(' / ', $target['roles']),
+                'status' => $status, 'sampled_at' => $at > 0 ? date(DATE_ATOM, (int)$at) : null,
+                'metrics' => $metrics, 'message' => $message];
+        }
+        $levels = array_column($rows, 'status');
+        $status = 'normal';
+        foreach (['error', 'delayed', 'waiting', 'warning'] as $level) {
+            if (in_array($level, $levels, true)) {
+                $status = $level;
+                break;
+            }
+        }
+        return ['title' => 'Redis 实例监控', 'status' => $status,
+            'sampled_at' => isset($state['last_sampled_at']) ? date(DATE_ATOM, (int)$state['last_sampled_at']) : null,
+            'metrics' => ['instance_count' => count($rows),
+                'abnormal_instances' => count(array_filter($levels, static fn ($level) => $level !== 'normal'))],
+            'message' => null, 'instances' => $rows];
     }
 
     /** 未识别的状态不能直接进入 JSON schema，按 error 安全降级。 */

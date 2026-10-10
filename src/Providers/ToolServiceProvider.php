@@ -69,6 +69,8 @@ use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueEventLogContext;
 use Mallto\Tool\Domain\PostgresMonitor\PostgresDatabaseMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisMemoryMonitor;
+use Mallto\Tool\Domain\RedisMonitor\RedisInstanceMonitor;
+use Mallto\Tool\Domain\RedisMonitor\RedisMonitorTargets;
 use Mallto\Tool\Domain\RedisMonitor\RedisDiagnosticProbe;
 use Mallto\Tool\Domain\SubjectConfig\ToolSubjectConfigDefinitions;
 use Mallto\Tool\Jobs\LogJob;
@@ -633,10 +635,24 @@ class ToolServiceProvider extends ServiceProvider
     private function registerRedisMemoryMonitor(): void
     {
         $this->app->singleton(RedisMemoryMonitor::class, static function (Application $app) {
+            $config = (array)$app->make('config')->get('database.redis_monitor', []);
+            $redisConfig = (array)$app->make('config')->get('database.redis', []);
+            $instances = null;
+            if (!empty($config['targets'])) {
+                $targets = RedisMonitorTargets::resolve((array)$config['targets'], $redisConfig);
+                $profiles = array_column($targets, 'profile', 'id');
+                $probes = new RedisManager($app, (string)($redisConfig['client'] ?? 'phpredis'),
+                    ['options' => []] + $profiles);
+                $instances = new RedisInstanceMonitor(
+                    $probes, $app->make(RedisFactory::class), $app->make(LoggerInterface::class), $config, $targets
+                );
+            }
             return new RedisMemoryMonitor(
                 $app->make(RedisFactory::class),
                 $app->make(LoggerInterface::class),
-                (array)$app->make('config')->get('database.redis_monitor', [])
+                $config,
+                null,
+                $instances
             );
         });
     }
@@ -905,7 +921,7 @@ class ToolServiceProvider extends ServiceProvider
      *
      * `onOneServer()` 避免多 Pod 重复采样，`withoutOverlapping(5)` 防止上一次异常悬挂时
      * 继续叠加；五分钟锁过期又不会像默认 24 小时那样让一次进程崩溃长期关闭监控。
-     * 刻意不调用 runInBackground()：命令只有四个固定规模 Redis 操作，应由 schedule:run
+     * 刻意不调用 runInBackground()：命令按去重实例执行固定采样预算，应由 schedule:run
      * 直接等待完成，避免每分钟再派生一个难以统一跟踪的后台进程。
      */
     private function scheduleRedisMemoryMonitor(Schedule $schedule): void
@@ -914,7 +930,10 @@ class ToolServiceProvider extends ServiceProvider
             return;
         }
 
-        $connection = (string)\config('database.redis_monitor.connection', 'redis-monitor');
+        $connection = (string)\config(
+            empty(\config('database.redis_monitor.targets')) ? 'database.redis_monitor.connection' : 'database.redis_monitor.state_connection',
+            'redis-monitor'
+        );
         if (!is_array(\config('database.redis.' . $connection))) {
             // 启用开关却缺少命名 profile 属于部署配置错误；只在应用启动时写一次，不进入每分钟循环。
             Log::error('Redis memory monitor schedule not registered: connection profile missing', [

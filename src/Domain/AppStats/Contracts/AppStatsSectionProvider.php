@@ -25,7 +25,8 @@ interface AppStatsSectionProvider
      *   status: string,
      *   sampled_at: ?string,
      *   metrics: array<string, int|float|string|bool|null>,
-     *   message: ?string
+     *   message: ?string,
+     *   instances?: array<int, array<string, mixed>>
      * }
      */
     public function read(): array;

@@ -7,7 +7,7 @@ AppStats 是 Laravel Admin“监控中心”下的只读集群运行状态页面
 - 每个 LaravelS Pod 的 Swoole Worker、Task Worker、连接数和 SkyLab TCP 快照；
 - 由现有 Laravel Scheduler 采集的 PostgreSQL 连接余量、锁等待、长事务和 `locators` 热表统计；
 - 由现有 Laravel Scheduler 采集的 MongoDB 可用性、连接容量和 WiredTiger 缓存状态；
-- 由现有 Laravel Scheduler 采集的共享 Redis 内存状态；
+- 由现有 Laravel Scheduler 采集的多个 Redis 实例内存、CPU、吞吐、响应与连接状态；
 - EasyLocation `mqtt-publish` 共享 Redis Stream 的长度、Pending 和消费者状态。
 
 管理页面地址为：
@@ -33,15 +33,15 @@ GET /admin/monitor/app_stats/data
 
 ### 2.1 连接语义
 
-AppStats 不要求新增 Redis 实例，三类命名连接有不同的 socket 使用方式，但都必须指向该环境所有
-Pod 可见的同一套共享 `REDIS_*` 端点和逻辑数据库：
+AppStats 不要求新增 Redis 实例。Pod、PostgreSQL、MongoDB 快照需要共享存储；Redis 实例监控
+则允许采集不同业务端点，并将结果写入单独的共享快照。每种数据的读写双方必须使用同一逻辑 DB：
 
 | 数据 | Laravel 连接 | 说明 |
 | --- | --- | --- |
 | Pod 快照 | `app_stats.redis_connection`，默认 `null`，即 Laravel `default` | 所有 Pod 必须共享；若指向 Pod 本地 Redis，页面只能看到当前 Pod |
 | PostgreSQL 状态 | `database.postgres_monitor.state_redis_connection`，默认 `redis-monitor` | 只保存 Scheduler 生成的一个小快照；AppStats 页面不会直接查询 PostgreSQL |
 | MongoDB 状态 | `database.mongodb_monitor.state_redis_connection`，默认 `redis-monitor` | 只保存 Scheduler 生成的一个小快照；AppStats 页面不会直接查询 MongoDB |
-| Redis 内存状态 | `database.redis_monitor.connection`，默认 `redis-monitor` | 使用非持久、短超时连接观察同一共享 Redis，避免 Scheduler 采样占用业务 socket |
+| Redis 实例状态 | `database.redis_monitor.state_connection`，默认 `redis-monitor` | 一次 GET/SETEX 保存全部目标；目标由 `targets` 指定，并克隆为短超时非持久探针 |
 | MQTT Publish Stream | `mqtt-publish` | 独立连接用于常驻发布进程，但端点仍是共享 `REDIS_*`，不能改为每个 Pod 的 `LOCAL_REDIS_*` |
 
 固定 Pod Key 为：
@@ -55,11 +55,12 @@ swoole_stats:pods:last_seen       # ZSet：member 为 hostname，score 为最近
 
 ```text
 easy-tool:redis-memory-monitor:{APP_ENV}:state
+easy-tool:redis-instance-monitor:{APP_UNIQUE:APP_ENV}:state
 easy-tool:postgres-monitor:{APP_ENV}:state
 easy-tool:mongodb-monitor:{APP_ENV}:state
 ```
 
-实际值以 `config('database.redis_monitor.state_key')` 为准。例如 `APP_ENV=production` 时通常为
+旧 v2 实际值以 `config('database.redis_monitor.state_key')` 为准。例如 `APP_ENV=production` 时通常为
 `easy-tool:redis-memory-monitor:{production}:state`。历史部署或显式覆盖为无环境后缀时，检查命令是：
 
 ```bash
@@ -162,7 +163,63 @@ redis-cli --raw GET easy-tool:redis-memory-monitor:state
 包含 `level`、`reasons`、`snapshot` 和 `last_sampled_at`。空结果可能是监控关闭、首次采样尚未
 发生、`allkeys-lru` 淘汰或 Scheduler 故障，不能把空结果诊断为正常内存状态。
 
-## 5. Redis 内存监控启用条件
+## 5. Redis 多实例监控与 CPU
+
+宿主配置默认启用 `targets`，包括 shared、horizon、queue、cache、local_cache、forever_cache、
+mqtt、notify；相同协议/host/port 的连接合并为一个实例，DB 和 Key 前缀不参与去重。
+配置不同 DNS 别名即使指向同一 Redis，也会作为独立端点采集。当前支持显式 standalone
+TCP host/port；URL、Cluster 配置及缺失 profile 显示该目标采样失败，不中断其他目标。
+
+`local_cache` 在本项目是集群共享的中心化 Redis。如果部署改为每 Pod 独立 Redis，单个
+onOneServer 调度不能覆盖所有本地实例，必须另行显式列出全部可直连端点，不能据此推断其他 Pod 健康。
+
+默认每个去重实例每分钟执行 `PING` 和 `INFO memory/stats/server/cpu/clients`，共六条命令；
+全部目标共用一次状态 GET 和一次 SETEX。页面 Redis 区块仍只 GET 一个快照，不直接采样，不遍历
+业务 Key。另有建连、认证/SELECT 和调度锁开销。所有探针固定非持久、0.2 秒连接超时、0.1 秒
+读取超时、零重试，不复用业务 socket，业务/global options 不能覆盖这些限制。
+
+CPU 使用率以一颗 CPU 核心为 100%：
+
+```text
+主线程 CPU % = Δ(used_cpu_sys_main_thread + used_cpu_user_main_thread) / Δ采样秒数 × 100
+进程 CPU % = Δ(used_cpu_sys + used_cpu_user) / Δ采样秒数 × 100
+```
+
+主线程值用于判断命令处理单核是否接近满载；进程值还包括其他线程，可能超过 100%，两者不能混用。
+首次采样、Redis 重启/run_id 变化、计数回退或采样失败后的第一轮显示“等待基线”，正常需要两次采样。
+Redis 版本或平台缺少主线程字段时显示“主线程指标不可用”，仍可单独查看进程 CPU；不能把它显示为 0%。
+CPU 为周期平均，ops/s 与网络吞吐为 Redis 瞬时统计，PING 为单次网络往返，不是 p95，也不等于纯命令执行耗时。
+Redis INFO 不提供容器 CPU 限额与宿主 CPU 状态，需要基础设施监控补充。
+
+默认内存和主线程 CPU 达到 70% 告警、90% 报错；PING 达到 50ms 告警、90ms 报错。
+淘汰/拒绝连接累计值增加报错，重启和首次不计算增量。详细指标缺失显示受限；每实例告警冷却
+默认 600 秒，恢复或严重度/原因变化会记录日志。采样失败仅记录脱敏类别，不输出凭据、地址或业务 Key。
+
+快照配置为 `instances_state_key`（v3），默认带 APP_UNIQUE 和 APP_ENV，独立于旧 v2 Key，
+避免滚动发布相互覆盖。`REDIS_MONITOR_STATE_CONNECTION` 默认 redis-monitor，也可指向其他
+专用短超时共享 Redis profile；不要指向长超时业务 profile。目标不可用时会写失败快照；状态存储
+自身故障则无法写新结果，页面显示读取失败或默认 120 秒后的采样延迟。
+
+环境变量：
+
+| 设置 | 默认 |
+| --- | --- |
+| REDIS_MEMORY_MONITOR_ENABLED | true |
+| REDIS_MONITOR_STATE_CONNECTION | redis-monitor |
+| REDIS_MONITOR_CPU_WARNING_PERCENT / REDIS_MONITOR_CPU_ERROR_PERCENT | 70 / 90 |
+| REDIS_MONITOR_PING_WARNING_MS / REDIS_MONITOR_PING_ERROR_MS | 50 / 90 |
+
+继续使用 `tool:redis_memory_monitor --json` 和每分钟单个调度任务。多 Pod 必须配置支持锁的共享
+cache store，使 onOneServer/withoutOverlapping 有效；默认 file cache 不能完成跨 Pod 去重。
+发布需同时更新宿主与 easy-tool、刷新配置缓存、分别重启 LaravelS 和 Horizon，无数据库迁移。
+CPU 第二轮才出现数值；未部署生产运行验证时，单元测试与本地 Redis 检查不能替代目标环境验收。
+
+Horizon 元数据使用 horizon.use，实际队列使用 queue.connections.*.connection。只修改
+HORIZON_REDIS_* 不会迁移任务队列。队列诊断的 INFO 已与实际队列连接对齐，诊断状态存储仍可在默认 Redis。
+
+### 5.0 旧单连接配置兼容
+
+没有 targets 或 targets 为空时，保留以下旧 v2 内存采样行为：
 
 Redis 内存采样默认开启；若某个部署需要停用，可在 `.env` 显式设置
 `REDIS_MEMORY_MONITOR_ENABLED=false`。要显示真实内存指标，发布配置还必须满足：

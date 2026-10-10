@@ -62,10 +62,11 @@ class QueueDiagnosticSnapshotter
     private function redisInfo(string $section): array
     {
         try {
-            $client = Redis::connection()->client();
+            $connection = Redis::connection((string)config('queue.connections.redis.connection', 'default'));
+            $client = $connection->client();
             $info = method_exists($client, 'info')
                 ? $client->info($section)
-                : Redis::command('INFO', [ $section ]);
+                : $connection->command('INFO', [ $section ]);
 
             return is_array($info) ? $this->flattenInfo($info) : [];
         } catch (\Throwable $throwable) {
