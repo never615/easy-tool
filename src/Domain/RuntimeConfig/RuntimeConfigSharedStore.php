@@ -3,6 +3,8 @@
 namespace Mallto\Tool\Domain\RuntimeConfig;
 
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Sleep;
 use Throwable;
 
 final class RuntimeConfigSharedStore
@@ -35,25 +37,40 @@ final class RuntimeConfigSharedStore
             $store = $this->store();
             $seconds = max(1, (int)config('runtime_config.identity_lock_seconds', 5));
 
-            return $store->lock($this->lockKey($identity), $seconds)->block(
-                $seconds,
-                function () use ($store, $identity, $loader, &$loaderStarted, &$loadedPayload): array {
-                    $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
-                    if ($cached !== null) {
-                        return $cached;
-                    }
+            $lock = $store->lock($this->lockKey($identity), $seconds);
+            $deadline = hrtime(true) + $seconds * 1_000_000_000;
 
-                    $loaderStarted = true;
-                    $loadedPayload = $this->payload($identity, $loader());
-                    try {
-                        $this->putWithStore($store, $identity, $loadedPayload);
-                    } catch (Throwable) {
-                        // The loaded database value remains correct when Redis writes fail.
-                    }
-
-                    return $loadedPayload;
+            // Cold readers share the first refill instead of serializing behind a now-hot key.
+            // fresh() still takes the same lock and always replaces the value after commit.
+            while (!$lock->get()) {
+                $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
+                if ($cached !== null) {
+                    return $cached;
                 }
-            );
+                if (hrtime(true) + 250_000_000 >= $deadline) {
+                    throw new LockTimeoutException();
+                }
+                Sleep::usleep(250_000);
+            }
+
+            try {
+                $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
+                if ($cached !== null) {
+                    return $cached;
+                }
+
+                $loaderStarted = true;
+                $loadedPayload = $this->payload($identity, $loader());
+                try {
+                    $this->putWithStore($store, $identity, $loadedPayload);
+                } catch (Throwable) {
+                    // The loaded database value remains correct when Redis writes fail.
+                }
+
+                return $loadedPayload;
+            } finally {
+                $lock->release();
+            }
         } catch (Throwable $exception) {
             if ($loaderStarted) {
                 if ($loadedPayload !== null) {
