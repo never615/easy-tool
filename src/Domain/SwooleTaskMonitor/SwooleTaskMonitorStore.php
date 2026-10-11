@@ -46,6 +46,17 @@ class SwooleTaskMonitorStore
     }
 
     /**
+     * Resolve the optional Redis connection once per operation. A dedicated connection
+     * keeps high-rate diagnostic counters away from the business queue/cache Redis.
+     */
+    private function redis()
+    {
+        $connection = config('swoole_task_monitor.redis_connection');
+
+        return $connection ? Redis::connection($connection) : Redis::connection();
+    }
+
+    /**
      * 记录 trace 采样命中的 Task 已提交，并保存投递前临时状态。
      *
      * 除 submitted 外，负载大小会进入聚合统计；start 键保存投递时间、上下文和负载，供
@@ -65,7 +76,7 @@ class SwooleTaskMonitorStore
         $this->recordMax($statsKey, $taskClass, 'payload_bytes_max', $payloadBytes);
         $this->touchMeta($date);
 
-        Redis::setex($this->startKey($taskId), self::START_TTL_SECONDS, json_encode([
+        $this->redis()->setex($this->startKey($taskId), self::START_TTL_SECONDS, json_encode([
             'task_id' => $taskId,
             'task_class' => $taskClass,
             'payload_bytes' => $payloadBytes,
@@ -119,7 +130,7 @@ class SwooleTaskMonitorStore
         $statsKey = $this->statsKey($date);
         $this->increment($statsKey, $taskClass, 'deliver_failed');
         if ($hasTraceState && $taskId !== '') {
-            Redis::del($this->startKey($taskId));
+            $this->redis()->del($this->startKey($taskId));
         }
         $this->recordErrorSample($date, $taskClass, 'deliver_failed', $reason, $exception);
         $this->touchMeta($date);
@@ -437,16 +448,16 @@ class SwooleTaskMonitorStore
     public function snapshot(?string $date = null): array
     {
         $date = $date ?: $this->date();
-        $stats = Redis::hgetall($this->statsKey($date)) ?: [];
+        $stats = $this->redis()->hgetall($this->statsKey($date)) ?: [];
         $rows = $this->rowsFromStats($stats);
         $summary = $this->summaryFromRows($rows);
 
         return [
             'date' => $date,
-            'meta' => Redis::hgetall($this->metaKey($date)) ?: [],
+            'meta' => $this->redis()->hgetall($this->metaKey($date)) ?: [],
             'summary' => $summary,
             'rows' => $rows,
-            'running' => $this->decodeHashRows(Redis::hgetall($this->runningKey($date)) ?: []),
+            'running' => $this->decodeHashRows($this->redis()->hgetall($this->runningKey($date)) ?: []),
             'recent_errors' => $this->decodeListRows($this->sampleKey($date, 'errors')),
             'recent_slow' => $this->decodeListRows($this->sampleKey($date, 'slow')),
             'recent_drops' => $this->decodeListRows($this->sampleKey($date, 'drops')),
@@ -478,7 +489,7 @@ class SwooleTaskMonitorStore
             $this->sampleKey($date, 'rejections'),
         ];
 
-        Redis::del(...$keys);
+        $this->redis()->del(...$keys);
 
         foreach ($keys as $key) {
             unset(self::$expireTouchedAt[$key], self::$metaTouchedAt[$key]);
@@ -508,7 +519,7 @@ class SwooleTaskMonitorStore
             return [];
         }
 
-        $raw = Redis::get($this->startKey($taskId));
+        $raw = $this->redis()->get($this->startKey($taskId));
         $decoded = json_decode((string)$raw, true);
 
         return is_array($decoded) ? $decoded : [];
@@ -522,8 +533,8 @@ class SwooleTaskMonitorStore
      */
     private function clearRuntimeState(string $date, string $taskId): void
     {
-        Redis::hdel($this->runningKey($date), $taskId);
-        Redis::del($this->startKey($taskId));
+        $this->redis()->hdel($this->runningKey($date), $taskId);
+        $this->redis()->del($this->startKey($taskId));
     }
 
     /**
@@ -537,7 +548,7 @@ class SwooleTaskMonitorStore
     private function runningSet(string $date, string $taskId, array $payload): void
     {
         $key = $this->runningKey($date);
-        Redis::hset($key, $taskId, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $this->redis()->hset($key, $taskId, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $this->expireKey($key);
     }
 
@@ -608,8 +619,8 @@ class SwooleTaskMonitorStore
             return;
         }
 
-        Redis::lpush($key, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        Redis::ltrim($key, 0, self::SAMPLE_LIMIT - 1);
+        $this->redis()->lpush($key, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $this->redis()->ltrim($key, 0, self::SAMPLE_LIMIT - 1);
         $this->expireKey($key);
     }
 
@@ -621,7 +632,7 @@ class SwooleTaskMonitorStore
      */
     private function increment(string $key, string $taskClass, string $metric, int $value = 1): void
     {
-        Redis::hIncrBy($key, $this->field($taskClass, $metric), $value);
+        $this->redis()->hIncrBy($key, $this->field($taskClass, $metric), $value);
         $this->expireKey($key);
     }
 
@@ -634,9 +645,9 @@ class SwooleTaskMonitorStore
     private function recordMax(string $key, string $taskClass, string $metric, int $value): void
     {
         $field = $this->field($taskClass, $metric);
-        $current = (int)Redis::hget($key, $field);
+        $current = (int)$this->redis()->hget($key, $field);
         if ($value > $current) {
-            Redis::hset($key, $field, $value);
+            $this->redis()->hset($key, $field, $value);
             $this->expireKey($key);
         }
     }
@@ -656,8 +667,8 @@ class SwooleTaskMonitorStore
         }
 
         self::$metaTouchedAt[$key] = $now;
-        Redis::hset($key, 'updated_at', time());
-        Redis::hset($key, 'updated_at_text', date('Y-m-d H:i:s'));
+        $this->redis()->hset($key, 'updated_at', time());
+        $this->redis()->hset($key, 'updated_at_text', date('Y-m-d H:i:s'));
         $this->expireKey($key);
     }
 
@@ -675,7 +686,7 @@ class SwooleTaskMonitorStore
         }
 
         self::$expireTouchedAt[$key] = $now;
-        Redis::expire($key, self::RETENTION_SECONDS);
+        $this->redis()->expire($key, self::RETENTION_SECONDS);
     }
 
     /**
@@ -808,7 +819,7 @@ class SwooleTaskMonitorStore
      */
     private function decodeListRows(string $key): array
     {
-        $items = Redis::lrange($key, 0, self::SAMPLE_LIMIT - 1) ?: [];
+        $items = $this->redis()->lrange($key, 0, self::SAMPLE_LIMIT - 1) ?: [];
         $rows = [];
         foreach ($items as $item) {
             $decoded = json_decode((string)$item, true);
