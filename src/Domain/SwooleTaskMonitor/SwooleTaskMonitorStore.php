@@ -46,7 +46,8 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Resolve the optional Redis connection once per operation. A dedicated connection
+     * Resolve the selected Redis connection; Laravel's manager reuses the connection.
+     * A dedicated connection
      * keeps high-rate diagnostic counters away from the business queue/cache Redis.
      */
     private function redis()
