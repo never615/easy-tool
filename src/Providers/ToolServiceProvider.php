@@ -274,12 +274,13 @@ class ToolServiceProvider extends ServiceProvider
     {
         Queue::createPayloadUsing(function ($connection, $queue, array $payload) {
             try {
-                if (!app(QueueDiagnosticConfig::class)->enabled()) {
+                $job = $payload['data']['commandName'] ?? null;
+                if (!$job instanceof ProvidesQueueDiagnosticContext) {
                     return [];
                 }
 
-                $job = $payload['data']['commandName'] ?? null;
-                if (!$job instanceof ProvidesQueueDiagnosticContext) {
+                // 无诊断上下文的任务不需要读取共享配置；有上下文时仍逐次检查动态开关。
+                if (!app(QueueDiagnosticConfig::class)->enabled()) {
                     return [];
                 }
 
