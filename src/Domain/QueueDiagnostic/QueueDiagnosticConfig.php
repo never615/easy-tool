@@ -33,10 +33,15 @@ class QueueDiagnosticConfig
 
     /**
      * Keep config cache short so direct DB edits self-heal, while status page
-     * saves still take effect immediately via clearSettingsCache().
+     * saves invalidate the shared cache and the current process immediately.
+     * Other processes may retain a disabled result for at most one second.
      */
     private const CONFIG_CACHE_SECONDS = 5;
     private const SETTINGS_CACHE_KEY = 'queue_diagnostic_settings';
+    private const DISABLED_CACHE_NS = 1_000_000_000;
+
+    /** @var \WeakMap<object, array{pid: int, until: int}>|null */
+    private static ?\WeakMap $disabledResults = null;
 
     /**
      * 处理「enabled」相关的内部协作步骤。
@@ -44,7 +49,24 @@ class QueueDiagnosticConfig
     public function enabled(): bool
     {
         try {
-            return $this->boolValue(self::KEY_ENABLED, false);
+            $store = Cache::store('local_redis');
+            $now = hrtime(true);
+            $pid = getmypid();
+            self::$disabledResults ??= new \WeakMap();
+            $cached = self::$disabledResults[$store] ?? null;
+            if ($cached !== null && $cached['pid'] === $pid && $now < $cached['until']) {
+                return false;
+            }
+
+            // Repository identity isolates applications/stores; PID rejects inherited fork state.
+            // Only disabled is cached, so enabled diagnostics still observe a stop on every call.
+            unset(self::$disabledResults[$store]);
+            $enabled = $this->boolValue(self::KEY_ENABLED, false);
+            if (!$enabled) {
+                self::$disabledResults[$store] = ['pid' => $pid, 'until' => $now + self::DISABLED_CACHE_NS];
+            }
+
+            return $enabled;
         } catch (\Throwable) {
             return false;
         }
@@ -462,7 +484,11 @@ class QueueDiagnosticConfig
      */
     public function clearSettingsCache(): void
     {
-        Cache::store('local_redis')->forget(self::SETTINGS_CACHE_KEY);
+        $store = Cache::store('local_redis');
+        if (self::$disabledResults !== null) {
+            unset(self::$disabledResults[$store]);
+        }
+        $store->forget(self::SETTINGS_CACHE_KEY);
     }
 
     /**

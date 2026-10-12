@@ -167,7 +167,7 @@ class QueueDiagnosticController extends Controller
         $usageButton = $this->renderUsageButton();
         $settingsPanel = $this->renderSettingsPanel($payload['settings'] ?? []);
         $savedAlert = request()->boolean('saved')
-            ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存，下一次队列事件或 snapshot 会读取新配置。</div>'
+            ? '<div class="alert alert-success queue-diag-alert">队列诊断配置已保存。其他进程启用诊断最多延后 1 秒；已开启的诊断在下一次事件读取停用配置。</div>'
             : '';
         $windowTime = !empty($snapshot['window_started_at'])
             ? date('Y-m-d H:i:s', (int)$snapshot['window_started_at'])
