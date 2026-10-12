@@ -25,6 +25,26 @@ final class GlobalConfigRuntimeResolver
         return $this->resolve($key, $default, $cacheNullValue, true);
     }
 
+    /** @param array<string, mixed> $defaults @return array<string, mixed> */
+    public function getMany(array $defaults, bool $cacheNullValue = true): array
+    {
+        $entries = [];
+        foreach ($defaults as $key => $default) {
+            $entries[$key] = [
+                'identity' => RuntimeConfigIdentity::global($key),
+                'mode' => GlobalConfigApplyMode::forKey($key),
+                'loader' => fn (): array => $this->load($key),
+            ];
+        }
+        $values = [];
+        foreach ($this->cache->rememberMany($entries) as $key => $payload) {
+            $values[$key] = $payload['found']
+                ? $payload['value']
+                : ($defaults[$key] ?? ($cacheNullValue ? '' : null));
+        }
+        return $values;
+    }
+
     public function replace(NewConfig $config): void
     {
         $key = trim((string)$config->key);

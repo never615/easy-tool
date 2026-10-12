@@ -69,6 +69,12 @@ class ConfigUtils
         );
     }
 
+    /** Batch independent runtime keys without adding a process-local cache window. */
+    public static function getMany(array $defaults, bool $cacheNullValue = true): array
+    {
+        return app(GlobalConfigRuntimeResolver::class)->getMany($defaults, $cacheNullValue);
+    }
+
 
     /**
      * 设置配置

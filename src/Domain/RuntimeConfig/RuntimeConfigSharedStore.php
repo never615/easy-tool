@@ -24,6 +24,30 @@ final class RuntimeConfigSharedStore
     }
 
     /**
+     * Read independent identities in one cache operation (MGET on Redis).
+     * Invalid/missing entries remain misses and retain the existing per-identity refill lock.
+     * @param array<string, RuntimeConfigIdentity> $identities
+     * @return array<string, array|null>
+     */
+    public function getMany(array $identities): array
+    {
+        if ($identities === []) {
+            return [];
+        }
+        try {
+            $keys = array_map(static fn (RuntimeConfigIdentity $identity): string => $identity->redisKey(), $identities);
+            $values = $this->store()->many(array_values($keys));
+            $result = [];
+            foreach ($identities as $key => $identity) {
+                $result[$key] = $this->validPayload($identity, $values[$keys[$key]] ?? null);
+            }
+            return $result;
+        } catch (Throwable) {
+            return array_fill_keys(array_keys($identities), null);
+        }
+    }
+
+    /**
      * @param callable(): array{found: bool, value: mixed} $loader
      * @return array{identity: string, found: bool, value: mixed}
      */
