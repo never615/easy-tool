@@ -447,18 +447,25 @@ class ToolServiceProvider extends ServiceProvider
     private function registerTransactionGuard(): void
     {
         $this->app->terminating(function () {
-            try {
-                $db = DB::connection();
-                if ($db->transactionLevel() > 0) {
-                    Log::warning('[TransactionGuard] 检测到请求结束时仍有未提交事务，强制回滚', [
-                        'level' => $db->transactionLevel(),
-                    ]);
-                    while ($db->transactionLevel() > 0) {
-                        $db->rollBack();
+            // 清理只能检查已有连接；新建连接会触发 PostgreSQL 会话初始化，
+            // 让 package:discover / vendor:publish 等离线命令在退出时等待数据库。
+            if (!$this->app->resolved('db')) {
+                return;
+            }
+
+            foreach ($this->app->make('db')->getConnections() as $db) {
+                try {
+                    if ($db->transactionLevel() > 0) {
+                        Log::warning('[TransactionGuard] 检测到请求结束时仍有未提交事务，强制回滚', [
+                            'level' => $db->transactionLevel(),
+                        ]);
+                        while ($db->transactionLevel() > 0) {
+                            $db->rollBack();
+                        }
                     }
+                } catch (\Throwable $e) {
+                    Log::error('[TransactionGuard] rollback failed: ' . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::error('[TransactionGuard] rollback failed: ' . $e->getMessage());
             }
         });
     }
