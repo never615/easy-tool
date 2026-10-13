@@ -43,56 +43,90 @@ class SwooleTaskMonitor
      *
      * @param array<string, mixed> $context 用于追踪和诊断的调用方上下文
      */
-    public static function deliver(Task $task, array $context = []): bool
+    public static function deliver(Task $task, array $context = [], ?\Closure $timing = null): bool
     {
-        $taskClass = get_class($task);
-        $traceSampled = self::traceSampled();
-        $taskId = $traceSampled ? self::taskId($task) : '';
-        $payloadBytes = $traceSampled ? self::payloadBytes($task) : 0;
+        $beforeStartedAt = $timing !== null ? hrtime(true) : null;
+        try {
+            $taskClass = get_class($task);
+            $traceSampled = self::traceSampled();
+            $taskId = $traceSampled ? self::taskId($task) : '';
+            $payloadBytes = $traceSampled ? self::payloadBytes($task) : 0;
 
-        if (method_exists($task, 'setSwooleTaskMonitorContext')) {
-            $task->setSwooleTaskMonitorContext($taskId, $context, $traceSampled);
-        }
-
-        self::safeRecord(function (SwooleTaskMonitorStore $store) use ($traceSampled, $taskId, $taskClass, $payloadBytes, $context) {
-            if ($traceSampled) {
-                $store->recordSubmitted($taskId, $taskClass, $payloadBytes, $context);
-
-                return;
+            if (method_exists($task, 'setSwooleTaskMonitorContext')) {
+                $task->setSwooleTaskMonitorContext($taskId, $context, $traceSampled);
             }
 
-            $store->recordSubmittedSummary($taskClass);
-        });
+            self::safeRecord(function (SwooleTaskMonitorStore $store) use ($traceSampled, $taskId, $taskClass, $payloadBytes, $context) {
+                if ($traceSampled) {
+                    $store->recordSubmitted($taskId, $taskClass, $payloadBytes, $context);
 
-        try {
-            $delivered = Task::deliver($task);
-        } catch (Throwable $exception) {
-            self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskId, $taskClass, $traceSampled, $exception) {
-                $store->recordDeliverFailed(
-                    $taskId,
-                    $taskClass,
-                    'exception: ' . $exception->getMessage(),
-                    $exception,
-                    $traceSampled
-                );
+                    return;
+                }
+
+                $store->recordSubmittedSummary($taskClass);
             });
+        } finally {
+            self::observeDeliveryTiming($timing, 'monitor_before', $beforeStartedAt);
+        }
+
+        $transportStartedAt = $timing !== null ? hrtime(true) : null;
+        try {
+            try {
+                $delivered = Task::deliver($task);
+            } finally {
+                // Custom MQTT processes measure their first sendMessage call to Web, not worker queue time.
+                self::observeDeliveryTiming($timing, 'task_transport', $transportStartedAt);
+            }
+        } catch (Throwable $exception) {
+            $afterStartedAt = $timing !== null ? hrtime(true) : null;
+            try {
+                self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskId, $taskClass, $traceSampled, $exception) {
+                    $store->recordDeliverFailed(
+                        $taskId,
+                        $taskClass,
+                        'exception: ' . $exception->getMessage(),
+                        $exception,
+                        $traceSampled
+                    );
+                });
+            } finally {
+                self::observeDeliveryTiming($timing, 'monitor_after', $afterStartedAt);
+            }
 
             throw $exception;
         }
 
-        if ($delivered === false) {
-            self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskId, $taskClass, $traceSampled) {
-                $store->recordDeliverFailed($taskId, $taskClass, 'Task::deliver returned false', null, $traceSampled);
+        $afterStartedAt = $timing !== null ? hrtime(true) : null;
+        try {
+            if ($delivered === false) {
+                self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskId, $taskClass, $traceSampled) {
+                    $store->recordDeliverFailed($taskId, $taskClass, 'Task::deliver returned false', null, $traceSampled);
+                });
+
+                return false;
+            }
+
+            self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass) {
+                $store->recordDelivered($taskClass);
             });
 
-            return false;
+            return true;
+        } finally {
+            self::observeDeliveryTiming($timing, 'monitor_after', $afterStartedAt);
         }
+    }
 
-        self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass) {
-            $store->recordDelivered($taskClass);
-        });
-
-        return true;
+    /** Optional local sink receives only a fixed stage and monotonic duration; failure cannot change transport. */
+    private static function observeDeliveryTiming(?\Closure $timing, string $stage, ?int $startedAt): void
+    {
+        if ($timing === null || $startedAt === null) {
+            return;
+        }
+        try {
+            $timing([$stage => max(0, hrtime(true) - $startedAt)]);
+        } catch (Throwable) {
+            // Timing is observational and must never alter Task delivery or the original exception.
+        }
     }
 
     /**
