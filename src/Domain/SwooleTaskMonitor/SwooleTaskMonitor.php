@@ -25,6 +25,14 @@ class SwooleTaskMonitor
 
     private static int $lastRecordFailureLogAt = 0;
 
+    private static int $recordFailures = 0;
+
+    /** Process-local observation health; a failed write may already have partially changed Redis. */
+    public static function recordFailureCount(): int
+    {
+        return self::$recordFailures;
+    }
+
     /**
      * 投递 Task，并在 Swoole 接收任务前后记录运输层事件。
      *
@@ -345,10 +353,15 @@ class SwooleTaskMonitor
         try {
             $callback(app(SwooleTaskMonitorStore::class));
         } catch (Throwable $exception) {
+            self::$recordFailures++;
             $now = time();
             if ($now - self::$lastRecordFailureLogAt >= 60) {
                 self::$lastRecordFailureLogAt = $now;
-                Log::warning('[SwooleTaskMonitor] record failed: ' . $exception->getMessage());
+                try {
+                    Log::warning('[SwooleTaskMonitor] record failed: ' . $exception->getMessage());
+                } catch (Throwable) {
+                    // Logging is also observational and must not interrupt Task delivery.
+                }
             }
         }
     }
