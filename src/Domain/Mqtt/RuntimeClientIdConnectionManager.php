@@ -122,6 +122,13 @@ class RuntimeClientIdConnectionManager
         $repository = Arr::get($config, 'repository', Repository::class);
         $loggingEnabled = (bool)Arr::get($config, 'enable_logging', true);
         $logChannel = Arr::get($config, 'log_channel', null);
+        $idleSleepValue = Arr::get($config, 'idle_sleep_ms', 100);
+        $idleSleepMs = filter_var($idleSleepValue, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 5, 'max_range' => 100],
+        ]);
+        if ((!is_int($idleSleepValue) && !is_string($idleSleepValue)) || $idleSleepMs === false) {
+            throw new ConfigurationInvalidException("MQTT connection [{$name}] idle_sleep_ms must be an integer between 5 and 100.");
+        }
         $runtimeClientIdPrefix = Arr::get(
             $config,
             'runtime_client_id.prefix',
@@ -166,7 +173,8 @@ class RuntimeClientIdConnectionManager
             $repository,
             $logger,
             $runtimeClientIdPrefix,
-            $runtimeClientIdMaxLength
+            $runtimeClientIdMaxLength,
+            $idleSleepMs * 1000
         );
         $client->connect($settings, $cleanSession);
 

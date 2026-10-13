@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Domain\Mqtt;
 
 use PhpMqtt\Client\Contracts\Repository;
+use PhpMqtt\Client\Exceptions\ConfigurationInvalidException;
 use PhpMqtt\Client\MqttClient;
 use Psr\Log\LoggerInterface;
 
@@ -19,6 +20,8 @@ class RuntimePrefixedMqttClient extends MqttClient
 
     protected int $runtimeClientIdMaxLength = 23;
 
+    private int $idleSleepMicroseconds;
+
     /**
      * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
      */
@@ -30,13 +33,29 @@ class RuntimePrefixedMqttClient extends MqttClient
         ?Repository $repository = null,
         ?LoggerInterface $logger = null,
         ?string $runtimeClientIdPrefix = null,
-        int $runtimeClientIdMaxLength = 23
+        int $runtimeClientIdMaxLength = 23,
+        int $idleSleepMicroseconds = 100000
     )
     {
         $this->runtimeClientIdPrefix = $runtimeClientIdPrefix;
         $this->runtimeClientIdMaxLength = max(1, $runtimeClientIdMaxLength);
+        if ($idleSleepMicroseconds < 5000 || $idleSleepMicroseconds > 100000) {
+            throw new ConfigurationInvalidException('MQTT idle sleep must be between 5000 and 100000 microseconds.');
+        }
+        $this->idleSleepMicroseconds = $idleSleepMicroseconds;
 
         parent::__construct($host, $port, $clientId, $protocol, $repository, $logger);
+    }
+
+    public function loopOnce(float $loopStartedAt, bool $allowSleep = false, int $sleepMicroseconds = 100000): void
+    {
+        // Parent loop() omits the third argument. Preserve explicit caller overrides,
+        // and let the parent sleep only when no socket data is available.
+        if ($allowSleep && func_num_args() < 3) {
+            $sleepMicroseconds = $this->idleSleepMicroseconds;
+        }
+
+        parent::loopOnce($loopStartedAt, $allowSleep, $sleepMicroseconds);
     }
 
     /**
