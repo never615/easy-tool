@@ -72,6 +72,9 @@ class SwooleTaskMonitor
         $transportStartedAt = $timing !== null ? hrtime(true) : null;
         try {
             try {
+                if ($task instanceof MonitoredSwooleTask) {
+                    $task->prepareSwooleTaskExecutionDiagnostics();
+                }
                 $delivered = Task::deliver($task);
             } finally {
                 // Custom MQTT processes measure their first sendMessage call to Web, not worker queue time.
