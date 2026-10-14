@@ -685,6 +685,12 @@ class SwooleTaskMonitorStore
                 Redis::purge($connectionName);
             } catch (Throwable) {
             }
+            try {
+                // A partially written new bucket still needs retention even if no later
+                // successful event arrives. Bypass the local TTL throttle, never replay counters.
+                $this->redis()->expire($key, self::RETENTION_SECONDS);
+            } catch (Throwable) {
+            }
             throw $exception;
         }
         $this->expireKey($key);
