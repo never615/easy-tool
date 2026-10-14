@@ -13,6 +13,8 @@ use Throwable;
  */
 final class SwooleTaskExecutionDiagnostics
 {
+    // Fixed bound covers a 512-worker pool plus replacements without unbounded Redis growth.
+    public const MAX_GENERATIONS = 2048;
     public const STAGES = ['submit_to_worker', 'monitor_started', 'handle_task', 'monitor_terminal', 'worker_total'];
     public const BUCKET_LIMITS_NS = [100000, 1000000, 5000000, 20000000, 100000000];
     public const CHANNELS = [
@@ -63,9 +65,9 @@ final class SwooleTaskExecutionDiagnostics
                         throw new \RuntimeException('Execution diagnostic record exceeds bound');
                     }
                     $accepted = Redis::connection(config('swoole_task_monitor.redis_connection') ?: 'default')->eval(
-                        "if redis.call('HEXISTS',KEYS[1],ARGV[1])==0 and redis.call('HLEN',KEYS[1])>=256 then return 0 end "
+                        "if redis.call('HEXISTS',KEYS[1],ARGV[1])==0 and redis.call('HLEN',KEYS[1])>=ARGV[3]+0 then return 0 end "
                         . "redis.call('HSET',KEYS[1],ARGV[1],ARGV[2]);redis.call('EXPIRE',KEYS[1],3600);return 1",
-                        1, 'swoole_task_execution:' . $runId, $generation, $encoded);
+                        1, 'swoole_task_execution:' . $runId, $generation, $encoded, self::MAX_GENERATIONS);
                     if ((int)$accepted !== 1) {
                         throw new \RuntimeException('Execution diagnostic generation bound reached');
                     }
