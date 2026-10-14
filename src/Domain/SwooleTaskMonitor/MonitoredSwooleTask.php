@@ -17,10 +17,13 @@ use Throwable;
  */
 abstract class MonitoredSwooleTask extends Task
 {
-    private ?string $swooleTaskMonitorId = null;
-    private array $swooleTaskMonitorContext = [];
-    private bool $swooleTaskMonitorTraceSampled = false;
-    private ?array $swooleTaskMonitorRejection = null;
+    // SerializesModels reflects the concrete child. Inherited private properties would be silently lost.
+    protected ?string $swooleTaskMonitorId = null;
+    protected array $swooleTaskMonitorContext = [];
+    protected bool $swooleTaskMonitorTraceSampled = false;
+    protected ?array $swooleTaskMonitorRejection = null;
+    /** Only scalars cross IPC; no collector, closure or Redis connection is serialized. */
+    protected ?array $swooleTaskExecutionContext = null;
 
     /**
      * Swoole 调用的固定执行入口，维护监控生命周期而不允许子类绕过它。
@@ -31,29 +34,79 @@ abstract class MonitoredSwooleTask extends Task
      */
     final public function handle()
     {
+        $entry = $this->swooleTaskExecutionContext !== null ? hrtime(true) : null;
+        $diagnostics = $this->swooleTaskExecutionContext !== null
+            ? SwooleTaskExecutionDiagnostics::start($this->swooleTaskExecutionContext['run_id']) : null;
+        $durations = [];
+        $outcome = 'finished';
+        $monitorFailures = $diagnostics !== null ? SwooleTaskMonitor::recordFailureCount() : 0;
         $start = microtime(true);
+        $startedAt = $diagnostics?->begin();
         SwooleTaskMonitor::recordStarted($this);
+        $businessAt = $diagnostics?->begin();
+        if ($startedAt !== null && $businessAt !== null) {
+            $durations['monitor_started'] = $businessAt - $startedAt;
+        }
 
         try {
             $this->handleTask();
         } catch (Throwable $exception) {
-            SwooleTaskMonitor::recordFailed($this, $this->elapsedMs($start), $exception);
-
+            $outcome = 'failed';
             throw $exception;
+        } finally {
+            $terminalAt = $diagnostics?->begin();
+            if ($businessAt !== null && $terminalAt !== null) {
+                $durations['handle_task'] = $terminalAt - $businessAt;
+            }
+            // Preserve the original duration boundary: started monitor plus business, excluding terminal monitor.
+            if ($outcome === 'failed') {
+                SwooleTaskMonitor::recordFailed($this, $this->elapsedMs($start), $exception);
+            } elseif ($this->swooleTaskMonitorRejection !== null) {
+                $outcome = 'rejected';
+                SwooleTaskMonitor::recordRejected($this, $this->elapsedMs($start),
+                    $this->swooleTaskMonitorRejection['reason'], $this->swooleTaskMonitorRejection['context']);
+            } else {
+                SwooleTaskMonitor::recordFinished($this, $this->elapsedMs($start));
+            }
+            if ($diagnostics !== null) {
+                try {
+                    $endedAt = $diagnostics->begin();
+                    if ($terminalAt !== null && $endedAt !== null) {
+                        $durations['monitor_terminal'] = $endedAt - $terminalAt;
+                    }
+                    if ($entry !== null && $endedAt !== null) {
+                        $durations['worker_total'] = $endedAt - $entry;
+                        $durations['submit_to_worker'] = $entry - $this->swooleTaskExecutionContext['submitted_at_ns'];
+                    }
+                    $diagnostics->record($this->swooleTaskExecutionContext['channel'], $outcome, $durations,
+                        SwooleTaskMonitor::recordFailureCount() - $monitorFailures);
+                    $diagnostics->flush();
+                } catch (Throwable) {
+                    // Observation must never replace a business result or its original Throwable.
+                }
+            }
         }
+    }
 
-        if ($this->swooleTaskMonitorRejection !== null) {
-            SwooleTaskMonitor::recordRejected(
-                $this,
-                $this->elapsedMs($start),
-                $this->swooleTaskMonitorRejection['reason'],
-                $this->swooleTaskMonitorRejection['context']
-            );
-
+    /** Called immediately before the first transport, after producer submitted monitoring. */
+    final public function prepareSwooleTaskExecutionDiagnostics(): void
+    {
+        if ($this->swooleTaskExecutionContext !== null || !isset(SwooleTaskExecutionDiagnostics::CHANNELS[static::class])) {
             return;
         }
-
-        SwooleTaskMonitor::recordFinished($this, $this->elapsedMs($start));
+        try {
+            if (config('swoole_task_monitor.execution_diagnostics.enabled', false) !== true) {
+                return;
+            }
+            $run = config('swoole_task_monitor.execution_diagnostics.run_id');
+            if (!SwooleTaskExecutionDiagnostics::validRun($run)) {
+                return;
+            }
+            $this->swooleTaskExecutionContext = ['run_id' => $run,
+                'channel' => SwooleTaskExecutionDiagnostics::CHANNELS[static::class], 'submitted_at_ns' => hrtime(true)];
+        } catch (Throwable) {
+            // Missing worker coverage is rejected by the evidence validator, never repaired as zero time.
+        }
     }
 
     /**
