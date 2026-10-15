@@ -71,7 +71,12 @@ final class SwooleTaskFirstTrace
         self::$instancesProperty ??= new \ReflectionProperty(\Illuminate\Container\Container::class, 'instances');
         $manager = self::$instancesProperty->getValue(app())['redis'] ?? null;
         if (is_object($manager) && method_exists($manager, 'connections')) {
-            $names = array_keys($manager->connections());
+            // Laravel 11 leaves connections null until its first connection is resolved.
+            $connections = $manager->connections();
+            if ($connections !== null && !is_array($connections)) {
+                throw new \UnexpectedValueException('Invalid existing Redis connections');
+            }
+            $names = array_keys($connections ?? []);
             $point['redis_connections'] = ['count' => count($names),
                 'allowlisted_names' => array_values(array_intersect(self::CONNECTION_NAMES, $names))];
         }
