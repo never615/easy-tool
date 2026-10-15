@@ -59,6 +59,7 @@ use Mallto\Tool\Domain\SwooleTaskTmp\SwooleTaskTmpSnapshotStore;
 use Mallto\Tool\Domain\Config\Config;
 use Mallto\Tool\Domain\Mqtt\RuntimeClientIdConnectionManager;
 use Mallto\Tool\Domain\Config\MtConfig;
+use Mallto\Tool\Domain\NewConfig\GlobalConfigRuntimeResolver;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
 use Mallto\Tool\Domain\MongoMonitor\MongoDatabaseMonitor;
@@ -510,6 +511,9 @@ class ToolServiceProvider extends ServiceProvider
         $this->commands($this->commands);
 
         $this->registerRouteMiddleware();
+
+        // This resolver retains only service references; config values remain dynamically read.
+        $this->app->singleton(GlobalConfigRuntimeResolver::class);
 
         $this->registerMail();
 
