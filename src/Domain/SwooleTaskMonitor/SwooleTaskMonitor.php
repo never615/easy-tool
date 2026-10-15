@@ -74,6 +74,7 @@ class SwooleTaskMonitor
             try {
                 if ($task instanceof MonitoredSwooleTask) {
                     $task->prepareSwooleTaskExecutionDiagnostics();
+                    $task->prepareSwooleTaskFirstTrace();
                 }
                 $delivered = Task::deliver($task);
             } finally {

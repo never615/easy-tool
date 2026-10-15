@@ -11,4 +11,11 @@ return [
         'enabled' => filter_var(env('SWOOLE_TASK_EXECUTION_DIAGNOSTICS_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'run_id' => env('SWOOLE_TASK_EXECUTION_DIAGNOSTICS_RUN_ID', ''),
     ],
+    // Diagnostic records only; full ingress and realtime PUT remain unchanged. Restart LaravelS.
+    // Files are local to storage/logs/task-first-trace/<UUID>, never exported to Redis.
+    'first_trace' => [
+        'enabled' => filter_var(env('SWOOLE_TASK_FIRST_TRACE_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'run_id' => env('SWOOLE_TASK_FIRST_TRACE_RUN_ID', ''),
+        'per_channel' => 2,
+    ],
 ];

@@ -24,6 +24,9 @@ abstract class MonitoredSwooleTask extends Task
     protected ?array $swooleTaskMonitorRejection = null;
     /** Only scalars cross IPC; no collector, closure or Redis connection is serialized. */
     protected ?array $swooleTaskExecutionContext = null;
+    /** Independent local diagnostic context; never serialize a collector or filesystem handle. */
+    protected ?array $swooleTaskFirstTraceContext = null;
+    private static ?array $firstTraceBudget = null;
 
     /**
      * Swoole 调用的固定执行入口，维护监控生命周期而不允许子类绕过它。
@@ -34,6 +37,22 @@ abstract class MonitoredSwooleTask extends Task
      */
     final public function handle()
     {
+        // Capture before recorder autoload; enabled recording is bounded, not message sampling.
+        $firstTrace = null;
+        try {
+            $firstCall = $this->reserveFirstTrace();
+            $firstEntry = $firstCall !== null ? [
+                'wall_ns' => hrtime(true), 'usage' => function_exists('getrusage') ? getrusage() : null,
+                'files' => count(get_included_files()), 'classes' => count(get_declared_classes()),
+                'memory_bytes' => memory_get_usage(true),
+            ] : null;
+            if ($firstEntry !== null) {
+                $firstEntry['sample_ns'] = hrtime(true) - $firstEntry['wall_ns'];
+                $firstTrace = SwooleTaskFirstTrace::start($this->swooleTaskFirstTraceContext, $firstEntry, $firstCall);
+            }
+        } catch (Throwable) {
+            // Even malformed in-flight diagnostic context must not prevent business execution.
+        }
         $entry = $this->swooleTaskExecutionContext !== null ? hrtime(true) : null;
         $diagnostics = $this->swooleTaskExecutionContext !== null
             ? SwooleTaskExecutionDiagnostics::start($this->swooleTaskExecutionContext['run_id']) : null;
@@ -42,7 +61,9 @@ abstract class MonitoredSwooleTask extends Task
         $monitorFailures = $diagnostics !== null ? SwooleTaskMonitor::recordFailureCount() : 0;
         $start = microtime(true);
         $startedAt = $diagnostics?->begin();
+        $firstTrace?->checkpoint('before_monitor_started');
         SwooleTaskMonitor::recordStarted($this);
+        $firstTrace?->checkpoint('before_business');
         $businessAt = $diagnostics?->begin();
         if ($startedAt !== null && $businessAt !== null) {
             $durations['monitor_started'] = $businessAt - $startedAt;
@@ -54,6 +75,7 @@ abstract class MonitoredSwooleTask extends Task
             $outcome = 'failed';
             throw $exception;
         } finally {
+            $firstTrace?->checkpoint('after_business');
             $terminalAt = $diagnostics?->begin();
             if ($businessAt !== null && $terminalAt !== null) {
                 $durations['handle_task'] = $terminalAt - $businessAt;
@@ -68,6 +90,8 @@ abstract class MonitoredSwooleTask extends Task
             } else {
                 SwooleTaskMonitor::recordFinished($this, $this->elapsedMs($start));
             }
+            $firstTrace?->checkpoint('after_terminal');
+            $firstTrace?->finish($outcome);
             if ($diagnostics !== null) {
                 try {
                     $endedAt = $diagnostics->begin();
@@ -85,6 +109,53 @@ abstract class MonitoredSwooleTask extends Task
                     // Observation must never replace a business result or its original Throwable.
                 }
             }
+        }
+    }
+
+    /** Cheap process-local bound: later messages do not enumerate classes/files or sample rusage. */
+    private function reserveFirstTrace(): ?int
+    {
+        $context = $this->swooleTaskFirstTraceContext;
+        if ($context === null || config('swoole_task_monitor.first_trace.enabled', false) !== true
+            || !is_string($context['run_id'] ?? null)
+            || config('swoole_task_monitor.first_trace.run_id') !== $context['run_id']
+            || preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/D', $context['run_id']) !== 1
+            || !is_int($context['submitted_at_ns'] ?? null) || $context['submitted_at_ns'] < 0
+            || !in_array($context['channel'] ?? null, ['location', 'diy'], true)) {
+            return null;
+        }
+        $pid = getmypid();
+        if (self::$firstTraceBudget === null || self::$firstTraceBudget['pid'] !== $pid
+            || self::$firstTraceBudget['run'] !== $context['run_id']) {
+            self::$firstTraceBudget = ['pid' => $pid, 'run' => $context['run_id'], 'calls' => 0,
+                'location' => 0, 'diy' => 0];
+        }
+        $call = ++self::$firstTraceBudget['calls'];
+        $channel = $context['channel'];
+        if (self::$firstTraceBudget[$channel] >= 2) {
+            return null;
+        }
+        self::$firstTraceBudget[$channel]++;
+        return $call;
+    }
+
+    /** Local tracing stays independent of the Redis-backed cumulative execution collector. */
+    final public function prepareSwooleTaskFirstTrace(): void
+    {
+        try {
+            if ($this->swooleTaskFirstTraceContext !== null
+                || config('swoole_task_monitor.first_trace.enabled', false) !== true
+                || !isset(SwooleTaskExecutionDiagnostics::CHANNELS[static::class])) {
+                return;
+            }
+            $run = config('swoole_task_monitor.first_trace.run_id');
+            if (SwooleTaskExecutionDiagnostics::validRun($run)) {
+                $this->swooleTaskFirstTraceContext = ['run_id' => $run,
+                    'channel' => SwooleTaskExecutionDiagnostics::CHANNELS[static::class],
+                    'submitted_at_ns' => hrtime(true)];
+            }
+        } catch (Throwable) {
+            // Invalid or absent diagnostic coverage never changes delivery.
         }
     }
 
