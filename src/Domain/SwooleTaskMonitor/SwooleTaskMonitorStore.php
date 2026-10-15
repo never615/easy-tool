@@ -2,7 +2,9 @@
 
 namespace Mallto\Tool\Domain\SwooleTaskMonitor;
 
+use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Support\Facades\Redis;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -279,11 +281,11 @@ class SwooleTaskMonitorStore
         $date = $this->date();
         $statsKey = $this->statsKey($date);
 
-        $this->increment($statsKey, $taskClass, 'finished');
-        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        $metrics = ['finished' => 1, 'duration_total_ms' => $durationMs];
         if ($durationMs >= self::SLOW_TASK_MS) {
-            $this->increment($statsKey, $taskClass, 'slow_count');
+            $metrics['slow_count'] = 1;
         }
+        $this->incrementSummaryTerminal($statsKey, $taskClass, $metrics);
         $this->touchMeta($date);
     }
 
@@ -345,8 +347,9 @@ class SwooleTaskMonitorStore
         $date = $this->date();
         $statsKey = $this->statsKey($date);
 
-        $this->increment($statsKey, $taskClass, 'rejected');
-        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        $this->incrementSummaryTerminal($statsKey, $taskClass, [
+            'rejected' => 1, 'duration_total_ms' => $durationMs,
+        ]);
         $this->recordRejectionSample($date, $taskClass, $reason, 'task', $context + [
             'duration_ms' => $durationMs,
         ]);
@@ -397,8 +400,9 @@ class SwooleTaskMonitorStore
         $date = $this->date();
         $statsKey = $this->statsKey($date);
 
-        $this->increment($statsKey, $taskClass, 'failed');
-        $this->increment($statsKey, $taskClass, 'duration_total_ms', $durationMs);
+        $this->incrementSummaryTerminal($statsKey, $taskClass, [
+            'failed' => 1, 'duration_total_ms' => $durationMs,
+        ]);
         $this->recordErrorSample($date, $taskClass, 'runtime_failed', $exception->getMessage(), $exception, [
             'duration_ms' => $durationMs,
         ]);
@@ -634,6 +638,61 @@ class SwooleTaskMonitorStore
     private function increment(string $key, string $taskClass, string $metric, int $value = 1): void
     {
         $this->redis()->hIncrBy($key, $this->field($taskClass, $metric), $value);
+        $this->expireKey($key);
+    }
+
+    /**
+     * Immediately send one summary terminal event's counters in one network round trip.
+     * Lifecycle boundaries, samples and metadata keep their existing recording times.
+     * Pipeline is not atomic: a failed reply can leave later counters written. Never
+     * replay after dispatch; safeRecord() reports the diagnostic failure without changing business results.
+     *
+     * @param array<string, int> $metrics Counters in the already captured daily bucket
+     */
+    private function incrementSummaryTerminal(string $key, string $taskClass, array $metrics): void
+    {
+        $connection = $this->redis();
+        if (!$connection instanceof PhpRedisConnection || !$connection->client() instanceof \Redis) {
+            foreach ($metrics as $metric => $value) {
+                $this->increment($key, $taskClass, $metric, $value);
+            }
+            return;
+        }
+
+        $connectionName = config('swoole_task_monitor.redis_connection') ?: 'default';
+        try {
+            $responses = $connection->pipeline(function (\Redis $pipe) use ($key, $taskClass, $metrics): void {
+                foreach ($metrics as $metric => $value) {
+                    $pipe->hIncrBy($key, $this->field($taskClass, $metric), $value);
+                }
+            });
+            if (!is_array($responses) || count($responses) !== count($metrics)) {
+                throw new RuntimeException('Task summary terminal pipeline returned incomplete replies; not replayed');
+            }
+            foreach ($responses as $response) {
+                if (!is_int($response)) {
+                    throw new RuntimeException('Task summary terminal pipeline counter failed; not replayed');
+                }
+            }
+        } catch (Throwable $exception) {
+            // Native pipeline bypasses Laravel's command reconnect handler. Rebuild on the
+            // next event so authentication, prefix and nonzero DB survive a broken socket.
+            try {
+                $connection->disconnect();
+            } catch (Throwable) {
+            }
+            try {
+                Redis::purge($connectionName);
+            } catch (Throwable) {
+            }
+            try {
+                // A partially written new bucket still needs retention even if no later
+                // successful event arrives. Bypass the local TTL throttle, never replay counters.
+                $this->redis()->expire($key, self::RETENTION_SECONDS);
+            } catch (Throwable) {
+            }
+            throw $exception;
+        }
         $this->expireKey($key);
     }
 
