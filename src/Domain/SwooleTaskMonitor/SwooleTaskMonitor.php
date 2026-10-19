@@ -432,11 +432,14 @@ class SwooleTaskMonitor
      */
     private static function traceSampled(): bool
     {
-        if (!self::enabled()) {
+        $settings = (array)config('swoole_task_monitor', []);
+        $mode = self::normalizeMode($settings['mode'] ?? self::MODE_SUMMARY);
+
+        if (!self::enabledFor($settings, $mode)) {
             return false;
         }
 
-        $rate = self::traceSampleRate(self::mode());
+        $rate = self::traceSampleRateFor($settings, $mode);
         if ($rate <= 0) {
             return false;
         }
@@ -456,13 +459,44 @@ class SwooleTaskMonitor
      */
     private static function mode(): string
     {
-        $mode = (string)config('swoole_task_monitor.mode', self::MODE_SUMMARY);
+        return self::normalizeMode(config('swoole_task_monitor.mode', self::MODE_SUMMARY));
+    }
 
-        $mode = strtolower(trim($mode));
+    private static function normalizeMode(mixed $mode): string
+    {
+        $mode = strtolower(trim((string)$mode));
 
         return in_array($mode, [self::MODE_OFF, self::MODE_SUMMARY, self::MODE_TRACE], true)
             ? $mode
             : self::MODE_SUMMARY;
+    }
+
+    /** @param array<string, mixed> $settings */
+    private static function enabledFor(array $settings, string $mode): bool
+    {
+        if ($mode === self::MODE_OFF) {
+            return false;
+        }
+
+        $enabled = $settings['enabled'] ?? false;
+
+        if (is_string($enabled)) {
+            return !in_array(strtolower($enabled), ['0', 'false', 'off', 'no'], true);
+        }
+
+        return (bool)$enabled;
+    }
+
+    /** @param array<string, mixed> $settings */
+    private static function traceSampleRateFor(array $settings, string $mode): float
+    {
+        $default = $mode === self::MODE_TRACE ? 1.0 : 0.0;
+        $rate = $settings['trace_sample_rate'] ?? $default;
+        if ($rate === null || $rate === '') {
+            $rate = $default;
+        }
+
+        return max(0.0, min(1.0, (float)$rate));
     }
 
     /**
