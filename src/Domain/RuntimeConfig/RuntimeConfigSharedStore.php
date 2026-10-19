@@ -65,6 +65,7 @@ final class RuntimeConfigSharedStore
 
             $lock = $store->lock($this->lockKey($identity), $seconds);
             $deadline = hrtime(true) + $seconds * 1_000_000_000;
+            $pollMicroseconds = 10_000;
 
             // Cold readers share the first refill instead of serializing behind a now-hot key.
             // fresh() still takes the same lock and always replaces the value after commit.
@@ -80,7 +81,10 @@ final class RuntimeConfigSharedStore
                 }
                 $sleepStarted = $trace?->begin();
                 try {
-                    Sleep::usleep(250_000);
+                    // A short refill must not stall a realtime Task for 250 ms.
+                    // Back off to the previous ceiling so a slow source keeps bounded polling cost.
+                    Sleep::usleep($pollMicroseconds);
+                    $pollMicroseconds = min(250_000, $pollMicroseconds * 2);
                 } finally {
                     $trace?->slept($sleepStarted);
                 }
