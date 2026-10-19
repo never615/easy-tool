@@ -53,6 +53,8 @@ final class RuntimeConfigSharedStore
      */
     public function remember(RuntimeConfigIdentity $identity, callable $loader): array
     {
+        $trace = RuntimeConfigRefillTrace::start($identity);
+        $outcome = 'exception';
         $loaderStarted = false;
         $loadedPayload = null;
         $store = null;
@@ -67,30 +69,44 @@ final class RuntimeConfigSharedStore
             // Cold readers share the first refill instead of serializing behind a now-hot key.
             // fresh() still takes the same lock and always replaces the value after commit.
             while (!$lock->get()) {
+                $trace?->lockMiss();
                 $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
+                    $outcome = 'contended_cache_hit';
                     return $cached;
                 }
                 if (hrtime(true) + 250_000_000 >= $deadline) {
                     throw new LockTimeoutException();
                 }
-                Sleep::usleep(250_000);
+                $sleepStarted = $trace?->begin();
+                try {
+                    Sleep::usleep(250_000);
+                } finally {
+                    $trace?->slept($sleepStarted);
+                }
             }
 
             try {
                 $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
+                    $outcome = 'locked_cache_hit';
                     return $cached;
                 }
 
                 $loaderStarted = true;
-                $loadedPayload = $this->payload($identity, $loader());
+                $loadStarted = $trace?->begin();
+                try {
+                    $loadedPayload = $this->payload($identity, $loader());
+                } finally {
+                    $trace?->loaded($loadStarted);
+                }
                 try {
                     $this->putWithStore($store, $identity, $loadedPayload);
                 } catch (Throwable) {
                     // The loaded database value remains correct when Redis writes fail.
                 }
 
+                $outcome = 'loader';
                 return $loadedPayload;
             } finally {
                 $lock->release();
@@ -98,6 +114,7 @@ final class RuntimeConfigSharedStore
         } catch (Throwable $exception) {
             if ($loaderStarted) {
                 if ($loadedPayload !== null) {
+                    $outcome = 'loaded_after_cache_error';
                     return $loadedPayload;
                 }
 
@@ -108,6 +125,7 @@ final class RuntimeConfigSharedStore
                 try {
                     $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                     if ($cached !== null) {
+                        $outcome = 'fallback_cache_hit';
                         return $cached;
                     }
                 } catch (Throwable) {
@@ -115,10 +133,18 @@ final class RuntimeConfigSharedStore
                 }
             }
 
-            $payload = $this->payload($identity, $loader());
+            $loadStarted = $trace?->begin();
+            try {
+                $payload = $this->payload($identity, $loader());
+            } finally {
+                $trace?->loaded($loadStarted);
+            }
             $this->put($identity, $payload);
 
+            $outcome = 'fallback_loader';
             return $payload;
+        } finally {
+            $trace?->finish($outcome);
         }
     }
 
