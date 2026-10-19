@@ -72,11 +72,11 @@ class ClearCacheUsecase
                     //本地 redis 库在部署的时候会清理一次缓存,但是还没启动会报错
                 }
 
-                $keys = Redis::connection('cache')
-                    ->keys($prefix);
+                $cacheConnection = Redis::connection('cache');
+                $keys = $cacheConnection->keys($prefix);
 
                 if (!empty($keys)) {
-                    Redis::del($keys);
+                    $cacheConnection->del($keys);
                 }
             } else {
                 if (!$cache) {

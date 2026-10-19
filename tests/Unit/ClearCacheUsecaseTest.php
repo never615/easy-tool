@@ -9,8 +9,10 @@ namespace Mallto\Tool\Tests\Unit;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Mallto\Tool\Domain\App\ClearCacheUsecase;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ClearCacheUsecaseTest extends TestCase
@@ -19,7 +21,7 @@ class ClearCacheUsecaseTest extends TestCase
     {
         Mockery::close();
 
-        foreach (['artisan', 'log'] as $facade) {
+        foreach (['artisan', 'log', 'redis'] as $facade) {
             Facade::clearResolvedInstance($facade);
         }
 
@@ -53,6 +55,47 @@ class ClearCacheUsecaseTest extends TestCase
 
         (new ClearCacheUsecase())->clearCache(true);
         $this->addToAssertionCount(1);
+    }
+
+    #[DataProvider('prefixKeys')]
+    public function test_prefix_cleanup_deletes_keys_only_on_the_connection_that_found_them(array $localKeys, array $cacheKeys): void
+    {
+        config()->set('cache.default', 'redis');
+        config()->set('cache.prefix', 'c_regression_test');
+        $this->expectCacheMaintenanceCommands();
+
+        $local = Mockery::mock();
+        $local->expects('keys')->with('c_regression_test:subject_*')->andReturn($localKeys);
+        $cache = Mockery::mock();
+        $cache->expects('keys')->with('c_regression_test:subject_*')->andReturn($cacheKeys);
+        foreach ([[$local, $localKeys], [$cache, $cacheKeys]] as [$connection, $keys]) {
+            if ($keys === []) {
+                $connection->expects('del')->never();
+            } else {
+                $connection->expects('del')->once()->with($keys);
+            }
+        }
+
+        $redis = Mockery::mock();
+        $redis->expects('keys')->with('l_res_c_*')->andReturn([]);
+        // The default connection may contain identical key names owned by other business data.
+        $redis->expects('del')->never();
+        $redis->shouldReceive('connection')->with('local_cache')->andReturn($local);
+        $redis->shouldReceive('connection')->with('cache')->andReturn($cache);
+        $this->app->instance('redis', $redis);
+        Redis::swap($redis);
+
+        (new ClearCacheUsecase())->clearCache(true, 'subject_');
+        $this->addToAssertionCount(1);
+    }
+
+    public static function prefixKeys(): array
+    {
+        return [
+            'same key on separate connections' => [['c_regression_test:subject_1'], ['c_regression_test:subject_1']],
+            'only cache has keys' => [[], ['c_regression_test:subject_1', 'c_regression_test:subject_2']],
+            'no matching keys' => [[], []],
+        ];
     }
 
     private function expectCacheMaintenanceCommands(): void
