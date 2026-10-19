@@ -195,6 +195,10 @@ Redis INFO 不提供容器 CPU 限额与宿主 CPU 状态，需要基础设施�
 淘汰/拒绝连接累计值增加报错，重启和首次不计算增量。详细指标缺失显示受限；每实例告警冷却
 默认 600 秒，恢复或严重度/原因变化会记录日志。采样失败仅记录脱敏类别，不输出凭据、地址或业务 Key。
 
+云 Redis 可能允许 PING 和业务读写，但拒绝部分 `INFO` 分区（返回 `NOPERM`）。这种情况表示
+实例在线、监控账号的详细指标权限不足，页面显示“在线，但当前账号无 INFO 详细指标权限”，不计入
+异常实例数；连接失败、超时、内存/CPU/PING 阈值压力仍按告警或错误显示。
+
 快照配置为 `instances_state_key`（v3），默认带 APP_UNIQUE 和 APP_ENV，独立于旧 v2 Key，
 避免滚动发布相互覆盖。`REDIS_MONITOR_STATE_CONNECTION` 默认 redis-monitor，也可指向其他
 专用短超时共享 Redis profile；不要指向长超时业务 profile。目标不可用时会写失败快照；状态存储

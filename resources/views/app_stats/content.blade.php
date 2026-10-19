@@ -332,6 +332,7 @@
                 rejected_connections_delta: '本周期拒绝连接增量',
                 instance_count: '实例数',
                 abnormal_instances: '异常实例数',
+                limited_instances: '指标受限实例数',
                 used_memory: '已用内存（used_memory）',
                 used_memory_rss: '常驻内存（used_memory_rss）',
                 maxmemory: '内存上限（maxmemory）',
@@ -506,6 +507,8 @@
                     && Number(redisMetrics.maxmemory) === 0;
                 const redisMemoryDisplay = Array.isArray(redis.instances)
                     ? redisMetrics.instance_count + ' 实例 / ' + redisMetrics.abnormal_instances + ' 异常'
+                        + (finiteNumber(redisMetrics.limited_instances) && Number(redisMetrics.limited_instances) > 0
+                            ? ' / ' + redisMetrics.limited_instances + ' 指标受限' : '')
                     : finiteNumber(redisMetrics.used_percent)
                     ? Number(redisMetrics.used_percent).toFixed(2) + '%'
                     : redisHasUnlimitedMemory && finiteNumber(redisMetrics.used_memory)
@@ -739,6 +742,7 @@
                 pod_store_read_failed: 'Pod 状态读取失败',
                 section_read_failed: '区块状态读取失败',
                 redis_instance_sampling_failed: 'Redis 实例采样失败',
+                redis_instance_permission_denied: 'Redis 在线，但当前账号无 INFO 详细指标权限',
                 redis_instance_metrics_limited: 'Redis 实例部分指标不可用',
                 redis_instance_cpu_error: 'Redis 主线程 CPU 达到错误阈值',
                 redis_instance_cpu_warning: 'Redis 主线程 CPU 达到告警阈值',

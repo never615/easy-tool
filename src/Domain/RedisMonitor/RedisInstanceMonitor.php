@@ -76,6 +76,7 @@ final class RedisInstanceMonitor
             $ping = round((hrtime(true) - $start) / 1e6, 3);
             $info = [];
             $limited = [];
+            $permissionDenied = false;
             foreach (['memory', 'stats', 'server', 'cpu', 'clients'] as $section) {
                 $stage = 'info_'.$section;
                 try {
@@ -87,6 +88,7 @@ final class RedisInstanceMonitor
                     }
                     $info[$section] = [];
                     $limited[] = $section;
+                    $permissionDenied = true;
                 }
             }
             $now = ($this->clock)();
@@ -140,7 +142,10 @@ final class RedisInstanceMonitor
             }
             if ($limited !== [] || $cpuStatus === 'unavailable' || $runId === null
                 || $snapshot['connected_clients'] === null || $snapshot['instantaneous_ops_per_sec'] === null) {
-                $level = $this->worst([$level, 'warning']);
+                $reasons[] = 'metrics_limited';
+            }
+            if ($permissionDenied) {
+                $reasons[] = 'permission_denied';
                 $reasons[] = 'metrics_limited';
             }
             $row += ['level' => $level, 'reasons' => $reasons, 'snapshot' => $snapshot, 'baseline' => $baseline];

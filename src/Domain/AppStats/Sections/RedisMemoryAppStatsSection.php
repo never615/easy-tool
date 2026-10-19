@@ -160,6 +160,7 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
                 $status === 'waiting' => 'redis_memory_waiting_for_first_sample',
                 $status === 'delayed' => 'redis_memory_sample_delayed',
                 in_array('sampling_failed', $reasons, true) => 'redis_instance_sampling_failed',
+                in_array('permission_denied', $reasons, true) => 'redis_instance_permission_denied',
                 in_array('metrics_limited', $reasons, true) => 'redis_instance_metrics_limited',
                 in_array('main_thread_cpu_error', $reasons, true) => 'redis_instance_cpu_error',
                 in_array('main_thread_cpu_warning', $reasons, true) => 'redis_instance_cpu_warning',
@@ -170,9 +171,26 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
             };
             $rows[] = ['id' => $target['id'], 'title' => 'Redis · '.implode(' / ', $target['roles']),
                 'status' => $status, 'sampled_at' => $at > 0 ? date(DATE_ATOM, (int)$at) : null,
-                'metrics' => $metrics, 'message' => $message];
+                'metrics' => $metrics, 'message' => $message, '_reasons' => $reasons];
         }
         $levels = array_column($rows, 'status');
+        $limitedInstances = 0;
+        $abnormalInstances = 0;
+        foreach ($rows as $row) {
+            $reasons = (array)($row['_reasons'] ?? []);
+            if (in_array('metrics_limited', $reasons, true)) {
+                $limitedInstances++;
+            }
+            $healthReasons = array_diff($reasons, ['permission_denied', 'metrics_limited']);
+            $permissionOnly = in_array('permission_denied', $reasons, true) && $healthReasons === [];
+            if (($row['status'] ?? 'error') !== 'normal' && !$permissionOnly) {
+                $abnormalInstances++;
+            }
+        }
+        $rows = array_map(static function (array $row): array {
+            unset($row['_reasons']);
+            return $row;
+        }, $rows);
         $status = 'normal';
         foreach (['error', 'delayed', 'waiting', 'warning'] as $level) {
             if (in_array($level, $levels, true)) {
@@ -183,7 +201,8 @@ final class RedisMemoryAppStatsSection implements AppStatsSectionProvider
         return ['title' => 'Redis 实例监控', 'status' => $status,
             'sampled_at' => isset($state['last_sampled_at']) ? date(DATE_ATOM, (int)$state['last_sampled_at']) : null,
             'metrics' => ['instance_count' => count($rows),
-                'abnormal_instances' => count(array_filter($levels, static fn ($level) => $level !== 'normal'))],
+                'abnormal_instances' => $abnormalInstances,
+                'limited_instances' => $limitedInstances],
             'message' => null, 'instances' => $rows];
     }
 
