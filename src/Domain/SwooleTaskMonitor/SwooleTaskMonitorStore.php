@@ -103,6 +103,36 @@ class SwooleTaskMonitorStore
     }
 
     /**
+     * Record the summary submitted event and the optimistic delivered event together.
+     *
+     * Summary mode has no task ID state. The caller compensates the delivered field if the
+     * transport later returns false or throws, so the final counters retain their original
+     * meaning while successful delivery avoids a second synchronous Redis round trip.
+     */
+    public function recordSubmittedAndExpectedDeliveredSummary(string $taskClass): void
+    {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+        $this->incrementSummaryCounters($statsKey, $taskClass, ['submitted' => 1, 'delivered' => 1]);
+        $this->touchMeta($date);
+    }
+
+    /**
+     * Undo the optimistic delivered counter and preserve the existing delivery failure metric.
+     */
+    public function recordSummaryDeliveryFailed(
+        string $taskClass,
+        string $reason,
+        ?Throwable $exception = null
+    ): void {
+        $date = $this->date();
+        $statsKey = $this->statsKey($date);
+        $this->incrementSummaryCounters($statsKey, $taskClass, ['delivered' => -1, 'deliver_failed' => 1]);
+        $this->recordErrorSample($date, $taskClass, 'deliver_failed', $reason, $exception);
+        $this->touchMeta($date);
+    }
+
+    /**
      * 在 Task::deliver() 已成功返回后记录 delivered。
      *
      * submitted 表示开始尝试投递，delivered 才表示 LaravelS 接口未报错且未返回 false；
@@ -688,6 +718,52 @@ class SwooleTaskMonitorStore
             try {
                 // A partially written new bucket still needs retention even if no later
                 // successful event arrives. Bypass the local TTL throttle, never replay counters.
+                $this->redis()->expire($key, self::RETENTION_SECONDS);
+            } catch (Throwable) {
+            }
+            throw $exception;
+        }
+        $this->expireKey($key);
+    }
+
+    /**
+     * Increment a small group of summary counters in one Redis round trip when PhpRedis is
+     * available. The fallback intentionally preserves the old per-counter behavior for tests and
+     * alternate Redis clients.
+     *
+     * @param array<string, int> $metrics
+     */
+    private function incrementSummaryCounters(string $key, string $taskClass, array $metrics): void
+    {
+        $connection = $this->redis();
+        if (!$connection instanceof PhpRedisConnection || !$connection->client() instanceof \Redis) {
+            foreach ($metrics as $metric => $value) {
+                $this->increment($key, $taskClass, $metric, $value);
+            }
+            return;
+        }
+
+        $connectionName = config('swoole_task_monitor.redis_connection') ?: 'default';
+        try {
+            $responses = $connection->pipeline(function (\Redis $pipe) use ($key, $taskClass, $metrics): void {
+                foreach ($metrics as $metric => $value) {
+                    $pipe->hIncrBy($key, $this->field($taskClass, $metric), $value);
+                }
+            });
+            if (!is_array($responses) || count($responses) !== count($metrics)
+                || array_filter($responses, static fn ($response): bool => !is_int($response)) !== []) {
+                throw new RuntimeException('Task summary counter pipeline returned incomplete replies');
+            }
+        } catch (Throwable $exception) {
+            try {
+                $connection->disconnect();
+            } catch (Throwable) {
+            }
+            try {
+                Redis::purge($connectionName);
+            } catch (Throwable) {
+            }
+            try {
                 $this->redis()->expire($key, self::RETENTION_SECONDS);
             } catch (Throwable) {
             }

@@ -63,7 +63,12 @@ class SwooleTaskMonitor
                     return;
                 }
 
-                $store->recordSubmittedSummary($taskClass);
+                // Summary mode has no per-task state to reconcile after transport. Count the
+                // successful-path delivered event in the same Redis round trip as submitted;
+                // a later transport failure rolls that delivered counter back. This removes one
+                // synchronous Redis command from every successful delivery without changing the
+                // final submitted/delivered counts or trace-mode ordering.
+                $store->recordSubmittedAndExpectedDeliveredSummary($taskClass);
             });
         } finally {
             self::observeDeliveryTiming($timing, 'monitor_before', $beforeStartedAt);
@@ -85,6 +90,11 @@ class SwooleTaskMonitor
             $afterStartedAt = $timing !== null ? hrtime(true) : null;
             try {
                 self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskId, $taskClass, $traceSampled, $exception) {
+                    if (!$traceSampled) {
+                        $store->recordSummaryDeliveryFailed($taskClass, 'exception: ' . $exception->getMessage(), $exception);
+
+                        return;
+                    }
                     $store->recordDeliverFailed(
                         $taskId,
                         $taskClass,
@@ -104,15 +114,24 @@ class SwooleTaskMonitor
         try {
             if ($delivered === false) {
                 self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskId, $taskClass, $traceSampled) {
+                    if (!$traceSampled) {
+                        $store->recordSummaryDeliveryFailed($taskClass, 'Task::deliver returned false');
+
+                        return;
+                    }
                     $store->recordDeliverFailed($taskId, $taskClass, 'Task::deliver returned false', null, $traceSampled);
                 });
 
                 return false;
             }
 
-            self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass) {
-                $store->recordDelivered($taskClass);
-            });
+            // Summary mode already counted delivered with submitted before transport. Trace mode
+            // keeps the original post-transport event because its task ID state must exist first.
+            if ($traceSampled) {
+                self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass) {
+                    $store->recordDelivered($taskClass);
+                });
+            }
 
             return true;
         } finally {
