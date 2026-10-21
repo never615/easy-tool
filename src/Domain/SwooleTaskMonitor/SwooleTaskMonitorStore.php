@@ -260,8 +260,7 @@ class SwooleTaskMonitorStore
     public function recordStartedSummary(string $taskClass): void
     {
         $date = $this->date();
-        $this->increment($this->statsKey($date), $taskClass, 'started');
-        $this->touchMeta($date);
+        $this->recordSummaryEvent($date, $taskClass, ['started' => 1]);
     }
 
     /**
@@ -309,14 +308,12 @@ class SwooleTaskMonitorStore
     public function recordFinishedSummary(string $taskClass, int $durationMs): void
     {
         $date = $this->date();
-        $statsKey = $this->statsKey($date);
 
         $metrics = ['finished' => 1, 'duration_total_ms' => $durationMs];
         if ($durationMs >= self::SLOW_TASK_MS) {
             $metrics['slow_count'] = 1;
         }
-        $this->incrementSummaryTerminal($statsKey, $taskClass, $metrics);
-        $this->touchMeta($date);
+        $this->recordSummaryEvent($date, $taskClass, $metrics);
     }
 
     /**
@@ -669,6 +666,105 @@ class SwooleTaskMonitorStore
     {
         $this->redis()->hIncrBy($key, $this->field($taskClass, $metric), $value);
         $this->expireKey($key);
+    }
+
+    /**
+     * Record a summary lifecycle event and coalesce its stats, metadata and TTL commands.
+     *
+     * The pipeline is deliberately limited to summary started/finished events. Trace events,
+     * samples and delivery accounting retain their existing command boundaries. A pipeline is
+     * not atomic; a failed dispatch is never replayed, and the next event rebuilds the Redis
+     * connection through the normal Laravel manager.
+     *
+     * @param array<string, int> $metrics Counters in the already captured daily bucket
+     */
+    private function recordSummaryEvent(string $date, string $taskClass, array $metrics): void
+    {
+        $statsKey = $this->statsKey($date);
+        $metaKey = $this->metaKey($date);
+        $now = time();
+        $touchMeta = ($now - (self::$metaTouchedAt[$metaKey] ?? 0)) >= self::META_TOUCH_INTERVAL_SECONDS;
+        $expireStats = ($now - (self::$expireTouchedAt[$statsKey] ?? 0)) >= self::KEY_EXPIRE_INTERVAL_SECONDS;
+        $expireMeta = ($now - (self::$expireTouchedAt[$metaKey] ?? 0)) >= self::KEY_EXPIRE_INTERVAL_SECONDS;
+
+        $connection = $this->redis();
+        if (!$connection instanceof PhpRedisConnection || !$connection->client() instanceof \Redis) {
+            foreach ($metrics as $metric => $value) {
+                $this->increment($statsKey, $taskClass, $metric, $value);
+            }
+            $this->touchMeta($date);
+            return;
+        }
+
+        $connectionName = config('swoole_task_monitor.redis_connection') ?: 'default';
+        $metaText = date('Y-m-d H:i:s', $now);
+        $commandCount = count($metrics) + ($expireStats ? 1 : 0)
+            + ($touchMeta ? 1 : 0) + ($expireMeta ? 1 : 0);
+
+        try {
+            $responses = $connection->pipeline(function (\Redis $pipe) use (
+                $statsKey,
+                $metaKey,
+                $taskClass,
+                $metrics,
+                $expireStats,
+                $touchMeta,
+                $expireMeta,
+                $now,
+                $metaText
+            ): void {
+                foreach ($metrics as $metric => $value) {
+                    $pipe->hIncrBy($statsKey, $this->field($taskClass, $metric), $value);
+                }
+                if ($expireStats) {
+                    $pipe->expire($statsKey, self::RETENTION_SECONDS);
+                }
+                if ($touchMeta) {
+                    $pipe->hMSet($metaKey, [
+                        'updated_at' => $now,
+                        'updated_at_text' => $metaText,
+                    ]);
+                }
+                if ($expireMeta) {
+                    $pipe->expire($metaKey, self::RETENTION_SECONDS);
+                }
+            });
+            if (!is_array($responses) || count($responses) !== $commandCount
+                || array_filter($responses, static fn ($response): bool => !is_int($response) && $response !== true) !== []) {
+                throw new RuntimeException('Task summary event pipeline returned incomplete replies; not replayed');
+            }
+        } catch (Throwable $exception) {
+            try {
+                $connection->disconnect();
+            } catch (Throwable) {
+            }
+            try {
+                Redis::purge($connectionName);
+            } catch (Throwable) {
+            }
+            // Preserve retention after a partially applied pipeline without replaying counters.
+            try {
+                $this->redis()->expire($statsKey, self::RETENTION_SECONDS);
+            } catch (Throwable) {
+            }
+            if ($touchMeta || $expireMeta) {
+                try {
+                    $this->redis()->expire($metaKey, self::RETENTION_SECONDS);
+                } catch (Throwable) {
+                }
+            }
+            throw $exception;
+        }
+
+        if ($touchMeta) {
+            self::$metaTouchedAt[$metaKey] = $now;
+        }
+        if ($expireStats) {
+            self::$expireTouchedAt[$statsKey] = $now;
+        }
+        if ($expireMeta) {
+            self::$expireTouchedAt[$metaKey] = $now;
+        }
     }
 
     /**
