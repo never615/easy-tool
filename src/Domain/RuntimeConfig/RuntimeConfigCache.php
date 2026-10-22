@@ -92,6 +92,41 @@ final class RuntimeConfigCache
         return $results;
     }
 
+    /**
+     * Read available payloads without refilling optional identities. Callers can
+     * defer their ordinary remember() until a condition actually needs the value.
+     * @param array<string, array{identity: RuntimeConfigIdentity, mode: string}> $entries
+     * @return array<string, array{found: bool, value: mixed}|null>
+     */
+    public function getMany(array $entries): array
+    {
+        $payloads = [];
+        $identities = [];
+        $modes = [];
+        foreach ($entries as $key => $entry) {
+            $modes[$key] = $this->runtimeMode($entry['mode']);
+            $payload = RuntimeConfigCacheMode::usesSwoole($modes[$key])
+                ? $this->swoole->get($entry['identity'])
+                : null;
+            if ($payload !== null) {
+                $payloads[$key] = $payload;
+            } else {
+                $identities[$key] = $entry['identity'];
+            }
+        }
+        foreach ($this->shared->getMany($identities) as $key => $payload) {
+            if ($payload !== null && RuntimeConfigCacheMode::usesSwoole($modes[$key])) {
+                $this->swoole->put($entries[$key]['identity'], $payload);
+            }
+            $payloads[$key] = $payload;
+        }
+        $results = [];
+        foreach ($entries as $key => $entry) {
+            $results[$key] = $payloads[$key] === null ? null : $this->result($payloads[$key]);
+        }
+        return $results;
+    }
+
     private function runtimeMode(string $mode): string
     {
         $mode = RuntimeConfigCacheMode::normalize($mode);
