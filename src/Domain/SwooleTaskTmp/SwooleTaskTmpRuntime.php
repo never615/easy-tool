@@ -46,6 +46,8 @@ final class SwooleTaskTmpRuntime
         $nextFilesystemSampleAt = 0;
         $nextInventoryAt = 0;
         $nextAutomaticCleanupAt = 0;
+        $nextCommandPollAt = 0;
+        $nextSnapshotAt = 0;
         $filesystem = $this->emptyFilesystem();
         $filesystemSampledAt = null;
         $inventory = $this->emptyInventory();
@@ -89,14 +91,15 @@ final class SwooleTaskTmpRuntime
                 }
 
                 $manualLeaseLost = false;
-                if ($manualCleanup === null) {
+                if ($manualCleanup === null && $now >= $nextCommandPollAt) {
+                    $nextCommandPollAt = $now + $settings['command_poll_interval_seconds'];
                     $command = $this->requests->claim($hostname, $instanceId, $now);
                     if ($command !== null) {
                         $manualCleanup = $this->newManualCleanup($command, $settings, $now);
                         $automaticCleanupBlockedUntil = null;
                         $cleanup = $this->manualPayload($manualCleanup);
                     }
-                } elseif (! $this->requests->renew($manualCleanup['request_id'], $hostname, $instanceId, $now)) {
+                } elseif ($manualCleanup !== null && ! $this->requests->renew($manualCleanup['request_id'], $hostname, $instanceId, $now)) {
                     // Do not continue deleting after this runtime loses the Redis lease. Another
                     // runtime may have claimed the same target after the original lease expired.
                     $cleanup = $this->completeCleanup($manualCleanup['cleanup'], 'timed_out', 'lease_lost');
@@ -140,19 +143,23 @@ final class SwooleTaskTmpRuntime
                     }
                 }
 
-                $this->snapshots->store($hostname, [
-                    'instance_id' => $instanceId,
-                    'path' => $directory,
-                    'process_enabled' => true,
-                    'auto_cleanup_enabled' => $settings['auto_cleanup_enabled'],
-                    'filesystem' => $filesystem,
-                    'filesystem_sampled_at' => $filesystemSampledAt,
-                    'inventory' => $inventory,
-                    'inventory_started_at' => $inventoryStartedAt,
-                    'cleanup' => $cleanup,
-                ], $this->now());
+                if ($this->now() >= $nextSnapshotAt) {
+                    $this->snapshots->store($hostname, [
+                        'instance_id' => $instanceId,
+                        'path' => $directory,
+                        'process_enabled' => true,
+                        'auto_cleanup_enabled' => $settings['auto_cleanup_enabled'],
+                        'filesystem' => $filesystem,
+                        'filesystem_sampled_at' => $filesystemSampledAt,
+                        'inventory' => $inventory,
+                        'inventory_started_at' => $inventoryStartedAt,
+                        'cleanup' => $cleanup,
+                    ], $this->now());
+                    $nextSnapshotAt = $this->now() + $settings['snapshot_interval_seconds'];
+                }
 
-                $sleep($settings['command_poll_interval_seconds']);
+                // Keep backlog progress, lease renewal and stop checks independent of idle Redis polling.
+                $sleep(1);
             }
         } finally {
             $this->snapshots->forget($hostname);
@@ -479,6 +486,7 @@ final class SwooleTaskTmpRuntime
             'filesystem_stats_interval_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.filesystem_stats_interval_seconds', 5)),
             'inventory_interval_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.inventory_interval_seconds', 300)),
             'command_poll_interval_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.command_poll_interval_seconds', 1)),
+            'snapshot_interval_seconds' => max(1, min(30, (int) $this->config->get('swoole_task_tmp_cleaner.snapshot_interval_seconds', 1))),
             'scan_interval_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.scan_interval_seconds', 30)),
             'backlog_retry_seconds' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.backlog_retry_seconds', 1)),
             'delete_limit' => max(1, (int) $this->config->get('swoole_task_tmp_cleaner.delete_limit', 100000)),

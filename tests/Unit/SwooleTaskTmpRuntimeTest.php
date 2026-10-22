@@ -149,6 +149,51 @@ class SwooleTaskTmpRuntimeTest extends TestCase
         $this->assertSame([$startedAt, $startedAt + 30], $automaticStarts);
     }
 
+    public function test_idle_command_and_snapshot_cadences_are_independent(): void
+    {
+        $start = $this->now;
+        $this->config->set('swoole_task_tmp_cleaner.command_poll_interval_seconds', 5);
+        $this->config->set('swoole_task_tmp_cleaner.snapshot_interval_seconds', 3);
+        $polls = [];
+        $this->requests->shouldReceive('claim')->times(3)->andReturnUsing(function () use (&$polls) {
+            $polls[] = $this->now;
+
+            return null;
+        });
+        $this->runUntil($start + 10);
+        $this->assertSame([$start, $start + 5, $start + 10], $polls);
+        $this->assertSame([$start, $start + 3, $start + 6, $start + 9], array_column($this->snapshots->stored, 'sampled_at'));
+        $this->assertSame([$start, $start + 5], array_values(array_unique(array_column(array_column($this->snapshots->stored, 'payload'), 'filesystem_sampled_at'))));
+    }
+
+    public function test_slow_idle_polling_does_not_slow_manual_batches_or_short_lease_renewal(): void
+    {
+        $start = $this->now;
+        $this->config->set('swoole_task_tmp_cleaner.command_poll_interval_seconds', 5);
+        $this->config->set('swoole_task_tmp_cleaner.snapshot_interval_seconds', 5);
+        $this->config->set('swoole_task_tmp_cleaner.cleanup_lease_seconds', 2);
+        $this->config->set('swoole_task_tmp_cleaner.delete_limit', 2);
+        foreach (range(1, 6) as $index) {
+            $this->writeTaskFile('swoole.task.'.$index, $start - 120);
+        }
+        $this->requests->shouldReceive('claim')->twice()->andReturn(['request_id' => 'request-1', 'deadline_at' => $start + 100], null);
+        $renewals = [];
+        $this->requests->shouldReceive('renew')->times(7)->andReturnUsing(function ($request, $host, $instance, $now) use (&$renewals) {
+            $renewals[] = $now;
+
+            return true;
+        });
+        $batches = [];
+        $this->requests->shouldReceive('markRunning')->times(4)->andReturnUsing(function () use (&$batches) {
+            $batches[] = $this->now;
+        });
+        $this->requests->shouldReceive('markFinished')->once()->with('request-1', 'pod-a', 'succeeded', Mockery::on(static fn ($r) => $r['deleted'] === 6));
+        $this->runUntil($start + 5);
+        $this->assertSame([$start, $start + 1, $start + 2, $start + 3], $batches);
+        $this->assertSame([$start, $start + 1, $start + 2, $start + 3], array_values(array_unique($renewals)));
+        $this->assertSame([], glob($this->directory.'/swoole.task.*'));
+    }
+
     public function test_limited_manual_batches_allow_capacity_refresh_between_retries(): void
     {
         $this->config->set('swoole_task_tmp_cleaner.delete_limit', 2);
