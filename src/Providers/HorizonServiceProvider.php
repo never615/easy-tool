@@ -11,7 +11,10 @@ use Laravel\Horizon\HorizonApplicationServiceProvider;
 use Laravel\Horizon\WorkerCommandString;
 use Illuminate\Queue\QueueManager;
 use Laravel\Horizon\Contracts\TagRepository;
+use Laravel\Horizon\Contracts\JobRepository;
+use Laravel\Horizon\Repositories\RedisJobRepository;
 use Laravel\Horizon\Repositories\RedisTagRepository;
+use Mallto\Tool\Domain\Queue\ChunkedHorizonJobRepository;
 use Mallto\Tool\Domain\Queue\EmptyAwareHorizonTagRepository;
 use Mallto\Tool\Domain\Queue\PipelinedHorizonRedisConnector;
 
@@ -38,6 +41,19 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             return get_class($repository) === RedisTagRepository::class
                 ? new EmptyAwareHorizonTagRepository($repository->redis)
                 : $repository;
+        });
+
+        $this->app->extend(JobRepository::class, function ($repository) {
+            if (get_class($repository) !== RedisJobRepository::class) {
+                return $repository;
+            }
+            $replacement = new ChunkedHorizonJobRepository($repository->redis);
+            // Preserve resolved public retention overrides and metadata fields;
+            // constructing a new repository alone would reset them to config.
+            foreach (get_object_vars($repository) as $property => $value) {
+                $replacement->{$property} = $value;
+            }
+            return $replacement;
         });
 
         if (filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)) {
