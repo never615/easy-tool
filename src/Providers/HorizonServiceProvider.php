@@ -10,6 +10,9 @@ use Laravel\Horizon\Horizon;
 use Laravel\Horizon\HorizonApplicationServiceProvider;
 use Laravel\Horizon\WorkerCommandString;
 use Illuminate\Queue\QueueManager;
+use Laravel\Horizon\Contracts\TagRepository;
+use Laravel\Horizon\Repositories\RedisTagRepository;
+use Mallto\Tool\Domain\Queue\EmptyAwareHorizonTagRepository;
 use Mallto\Tool\Domain\Queue\PipelinedHorizonRedisConnector;
 
 /**
@@ -28,6 +31,14 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     public function boot()
     {
         parent::boot();
+
+        // All providers have registered by boot. Extend without resolving the
+        // repository early or replacing another application's custom implementation.
+        $this->app->extend(TagRepository::class, function ($repository) {
+            return get_class($repository) === RedisTagRepository::class
+                ? new EmptyAwareHorizonTagRepository($repository->redis)
+                : $repository;
+        });
 
         if (filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)) {
             // Boot runs after Horizon registered its connector. Do not resolve queues early or
