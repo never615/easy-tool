@@ -26,6 +26,8 @@ abstract class MonitoredSwooleTask extends Task
     protected ?array $swooleTaskExecutionContext = null;
     /** Independent local diagnostic context; never serialize a collector or filesystem handle. */
     protected ?array $swooleTaskFirstTraceContext = null;
+    /** True when a custom IPC hop lost producer context and the worker rebuilt it locally. */
+    protected bool $swooleTaskFirstTraceWorkerFallback = false;
     private static ?array $firstTraceBudget = null;
 
     /**
@@ -40,6 +42,15 @@ abstract class MonitoredSwooleTask extends Task
         // Capture before recorder autoload; enabled recording is bounded, not message sampling.
         $firstTrace = null;
         try {
+            // Some custom Swoole IPC paths may serialize only the task's public payload and
+            // drop the protected diagnostic context. Recreate a worker-entry context for the
+            // bounded local trace so the actual Task stages remain observable. The fallback is
+            // diagnostic-only; its submitted_at_ns is intentionally the worker entry boundary
+            // and must never be interpreted as producer-to-worker queue latency.
+            $workerFallback = $this->swooleTaskFirstTraceContext === null;
+            $this->prepareSwooleTaskFirstTrace();
+            $this->swooleTaskFirstTraceWorkerFallback = $workerFallback
+                && $this->swooleTaskFirstTraceContext !== null;
             $firstCall = $this->reserveFirstTrace();
             $firstEntry = $firstCall !== null ? [
                 'wall_ns' => hrtime(true), 'usage' => function_exists('getrusage') ? getrusage() : null,
@@ -48,7 +59,8 @@ abstract class MonitoredSwooleTask extends Task
             ] : null;
             if ($firstEntry !== null) {
                 $firstEntry['sample_ns'] = hrtime(true) - $firstEntry['wall_ns'];
-                $firstTrace = SwooleTaskFirstTrace::start($this->swooleTaskFirstTraceContext, $firstEntry, $firstCall);
+                $firstTrace = SwooleTaskFirstTrace::start($this->swooleTaskFirstTraceContext, $firstEntry, $firstCall,
+                    $this->swooleTaskFirstTraceWorkerFallback);
             }
         } catch (Throwable) {
             // Even malformed in-flight diagnostic context must not prevent business execution.

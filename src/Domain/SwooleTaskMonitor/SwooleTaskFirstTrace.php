@@ -27,7 +27,7 @@ final class SwooleTaskFirstTrace
     }
 
     /** Called only with transported scalars, after an entry sample taken before this class autoloads. */
-    public static function start(array $context, array $entry, int $workerCall): ?self
+    public static function start(array $context, array $entry, int $workerCall, bool $workerFallback = false): ?self
     {
         try {
             if (config('swoole_task_monitor.first_trace.enabled', false) !== true
@@ -52,7 +52,8 @@ final class SwooleTaskFirstTrace
             $identity = ['schema_version' => 1, 'run_id' => $run, 'pid' => $pid,
                 'generation' => self::$worker['generation'], 'channel' => $channel,
                 'eligible_worker_call' => $workerCall, 'channel_call' => $ordinal,
-                'submitted_at_ns' => $context['submitted_at_ns']];
+                'submitted_at_ns' => $context['submitted_at_ns'],
+                'context_origin' => $workerFallback ? 'worker_entry_fallback' : 'producer'];
             $trace = new self($identity, self::sample(...), self::write(...));
             $trace->points['entry'] = $entry;
             $trace->captureNs = $entry['sample_ns'] ?? 0;
