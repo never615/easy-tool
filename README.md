@@ -1,4 +1,8 @@
-This library works with [laravel-admin-enhance](https://github.com/never615/laravel-admin-enhance/wiki)
+# easy-tool Project Overview
+
+This library works with [laravel-admin-enhance](https://github.com/never615/laravel-admin-enhance/wiki).
+
+For operational and troubleshooting guides, see the [documentation index](docs/README.md).
 
 1. Logging and Record Management: Easy Tool can integrate with Alibaba Cloud Log Service or local databases to manage 
 various logs, including application logs, interface logs, third-party request logs, scheduling task logs, and queue task logs.
