@@ -14,6 +14,7 @@ final class SwooleTaskFirstTrace
     private const CONNECTION_NAMES = ['default', 'local_cache', 'cache', 'queue', 'horizon',
         'task-monitor', 'task_monitor', 'task_monitor_isolated'];
     private static ?array $worker = null;
+    private static ?self $current = null;
     private static ?\ReflectionProperty $instancesProperty = null;
     private array $points = [];
     private int $captureNs = 0;
@@ -27,7 +28,8 @@ final class SwooleTaskFirstTrace
     }
 
     /** Called only with transported scalars, after an entry sample taken before this class autoloads. */
-    public static function start(array $context, array $entry, int $workerCall, bool $workerFallback = false): ?self
+    public static function start(array $context, array $entry, int $workerCall, bool $workerFallback = false,
+        array $transportPoints = []): ?self
     {
         try {
             if (config('swoole_task_monitor.first_trace.enabled', false) !== true
@@ -56,10 +58,29 @@ final class SwooleTaskFirstTrace
                 'context_origin' => $workerFallback ? 'worker_entry_fallback' : 'producer'];
             $trace = new self($identity, self::sample(...), self::write(...));
             $trace->points['entry'] = $entry;
+            foreach ($transportPoints as $name => $at) {
+                if (in_array($name, ['submitted', 'send_before', 'pipe_received'], true)
+                    && is_int($at) && $at >= 0) {
+                    $trace->points[$name] = ['wall_ns' => $at];
+                }
+            }
             $trace->captureNs = $entry['sample_ns'] ?? 0;
             return $trace;
         } catch (Throwable) {
             return null; // Missing records invalidate coverage; they are never fabricated as zero cost.
+        }
+    }
+
+    public static function setCurrent(?self $trace): void
+    {
+        self::$current = $trace;
+    }
+
+    /** Called only by already-enabled business-stage diagnostics. */
+    public static function checkpointCurrent(string $name): void
+    {
+        if (self::$current !== null && in_array($name, ['cache_first_put_start', 'cache_first_put_end'], true)) {
+            self::$current->checkpoint($name);
         }
     }
 
@@ -94,7 +115,8 @@ final class SwooleTaskFirstTrace
 
     public function checkpoint(string $name): void
     {
-        if (!in_array($name, ['before_monitor_started', 'before_business', 'after_business', 'after_terminal'], true)) {
+        if (!in_array($name, ['before_monitor_started', 'before_business', 'after_business', 'after_terminal',
+            'cache_first_put_start', 'cache_first_put_end'], true)) {
             return;
         }
         $before = hrtime(true);
@@ -155,6 +177,13 @@ final class SwooleTaskFirstTrace
             ] : null;
             $points[$name] = $clean;
         }
+        foreach (['submitted', 'send_before', 'pipe_received'] as $name) {
+            $point = $this->points[$name] ?? null;
+            $points[$name] = is_array($point) && is_int($point['wall_ns'] ?? null)
+                ? ['mono_ns' => $point['wall_ns']] : null;
+        }
+        $entryAt = $this->points['entry']['wall_ns'] ?? null;
+        $points['handle_entry'] = is_int($entryAt) ? ['mono_ns' => $entryAt] : null;
         return $points;
     }
 

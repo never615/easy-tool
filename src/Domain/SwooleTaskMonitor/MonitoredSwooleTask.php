@@ -26,6 +26,8 @@ abstract class MonitoredSwooleTask extends Task
     protected ?array $swooleTaskExecutionContext = null;
     /** Independent local diagnostic context; never serialize a collector or filesystem handle. */
     protected ?array $swooleTaskFirstTraceContext = null;
+    /** Bounded monotonic checkpoints carried only when first-trace diagnostics are enabled. */
+    protected array $swooleTaskFirstTraceTransportPoints = [];
     /** True when a custom IPC hop lost producer context and the worker rebuilt it locally. */
     protected bool $swooleTaskFirstTraceWorkerFallback = false;
     private static ?array $firstTraceBudget = null;
@@ -60,7 +62,8 @@ abstract class MonitoredSwooleTask extends Task
             if ($firstEntry !== null) {
                 $firstEntry['sample_ns'] = hrtime(true) - $firstEntry['wall_ns'];
                 $firstTrace = SwooleTaskFirstTrace::start($this->swooleTaskFirstTraceContext, $firstEntry, $firstCall,
-                    $this->swooleTaskFirstTraceWorkerFallback);
+                    $this->swooleTaskFirstTraceWorkerFallback, $this->swooleTaskFirstTraceTransportPoints);
+                SwooleTaskFirstTrace::setCurrent($firstTrace);
             }
         } catch (Throwable) {
             // Even malformed in-flight diagnostic context must not prevent business execution.
@@ -104,6 +107,7 @@ abstract class MonitoredSwooleTask extends Task
             }
             $firstTrace?->checkpoint('after_terminal');
             $firstTrace?->finish($outcome);
+            SwooleTaskFirstTrace::setCurrent(null);
             if ($diagnostics !== null) {
                 try {
                     $endedAt = $diagnostics->begin();
@@ -190,6 +194,16 @@ abstract class MonitoredSwooleTask extends Task
         } catch (Throwable) {
             // Missing worker coverage is rejected by the evidence validator, never repaired as zero time.
         }
+    }
+
+    /** Record a fixed, payload-free monotonic point for the bounded first-trace probe. */
+    final public function recordSwooleTaskFirstTracePoint(string $name): void
+    {
+        if (!in_array($name, ['submitted', 'send_before', 'pipe_received', 'handle_entry'], true)
+            || $this->swooleTaskFirstTraceContext === null) {
+            return;
+        }
+        $this->swooleTaskFirstTraceTransportPoints[$name] = hrtime(true);
     }
 
     /**

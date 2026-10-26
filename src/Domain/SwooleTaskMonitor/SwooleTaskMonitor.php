@@ -80,6 +80,7 @@ class SwooleTaskMonitor
                 if ($task instanceof MonitoredSwooleTask) {
                     $task->prepareSwooleTaskExecutionDiagnostics();
                     $task->prepareSwooleTaskFirstTrace();
+                    $task->recordSwooleTaskFirstTracePoint('submitted');
                 }
                 $delivered = Task::deliver($task);
             } finally {
