@@ -138,6 +138,7 @@ class NewConfigPublisher
     private function envValues(Collection $rows): array
     {
         $values = [];
+        $owners = [];
         foreach ($rows as $row) {
             $value = $this->publishValue($row);
             if ($value === null) {
@@ -154,6 +155,13 @@ class NewConfigPublisher
                 continue;
             }
 
+            if (isset($owners[$envKey])) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'env_key' => '环境配置键 ' . $envKey . ' 重复：' . $owners[$envKey]
+                        . ' 与 ' . $row->key . '（ID：' . $row->id . '）。发布已取消，请先处理冲突。',
+                ]);
+            }
+            $owners[$envKey] = $row->key . '（ID：' . $row->id . '）';
             $values[$envKey] = $this->normalizeValue($row, $value);
         }
 

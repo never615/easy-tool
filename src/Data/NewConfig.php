@@ -54,6 +54,15 @@ class NewConfig extends BaseModel
     protected static function booted(): void
     {
         static::saving(function (NewConfig $config) {
+            $duplicates = self::on($config->getConnectionName())->where('key', $config->key);
+            if ($config->exists) {
+                $duplicates->whereKeyNot($config->getKey());
+            }
+            if ($duplicates->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'key' => '配置键 ' . $config->key . ' 已存在；不同分组也不能重复使用同一 key，请编辑原记录。',
+                ]);
+            }
             GlobalConfigOverrideSource::assertValid($config->override_source);
             $config->env_key = NewConfigBootstrapKeyGuard::normalize($config->env_key);
             if ($config->group_key === self::GROUP_RUNTIME_ENV_OVERRIDE) {
@@ -61,8 +70,41 @@ class NewConfig extends BaseModel
             } else {
                 NewConfigBootstrapKeyGuard::assertAllowed($config->env_key);
             }
+            $config->assertUniquePublishedEnvKey();
         });
 
+    }
+
+    private function assertUniquePublishedEnvKey(): void
+    {
+        $groups = [self::GROUP_RUNTIME_ENV_OVERRIDE, self::GROUP_SWOOLE_TASK_MONITOR];
+        $keys = [self::KEY_SWOOLE_TASK_MONITOR_ENABLED, self::KEY_SWOOLE_TASK_MONITOR_MODE,
+            self::KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE];
+        // Business global_config env_key fields are compatibility metadata, not exported values.
+        if ((!in_array($this->group_key, $groups, true) && !in_array($this->key, $keys, true))
+            || $this->env_key === null || $this->publishableEnvValue() === null) {
+            return;
+        }
+        $query = self::on($this->getConnectionName())
+            ->whereRaw('UPPER(TRIM(env_key)) = ?', [$this->env_key])
+            ->where(fn($query) => $query->whereIn('group_key', $groups)->orWhereIn('key', $keys));
+        if ($this->exists) {
+            $query->whereKeyNot($this->getKey());
+        }
+        foreach ($query->get() as $other) {
+            if ($other->publishableEnvValue() !== null) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'env_key' => '环境配置键 ' . $this->env_key . ' 已被 ' . $other->key
+                        . '（ID：' . $other->id . '）使用，请修改后再提交。',
+                ]);
+            }
+        }
+    }
+
+    private function publishableEnvValue(): ?string
+    {
+        return !$this->is_enabled || $this->value === null || $this->value === ''
+            ? $this->default_value : $this->value;
     }
 
     /**
