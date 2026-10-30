@@ -337,7 +337,7 @@ class GlobalConfigAdminContractTest extends TestCase
         $method->setAccessible(true);
 
         $this->assertSame(
-            file_get_contents(base_path('docs/configuration-usage.md')),
+            file_get_contents(base_path('config/README.md')),
             $method->invoke(new NewConfigDocumentSeeder())
         );
     }
