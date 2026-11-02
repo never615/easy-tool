@@ -150,6 +150,13 @@ class NewConfigBootstrapKeyGuard
             return true;
         }
 
+        // This registered switch controls business history admission, not the
+        // Mongo connection or buffer topology. Keep the exception exact: all
+        // other MONGODB_* keys, including capacities and credentials, stay boot-only.
+        if ($envKey === 'MONGODB_HISTORY_PROTECTION_ENABLED') {
+            return false;
+        }
+
         foreach (self::FORBIDDEN_PREFIXES as $prefix) {
             if (str_starts_with($envKey, $prefix)) {
                 return true;
@@ -170,7 +177,7 @@ class NewConfigBootstrapKeyGuard
      */
     public static function forbiddenHint(): string
     {
-        return '禁止创建 APP_*、DB_*、REDIS_*、LOCAL_REDIS_*、MONGO_*、MONGODB_*、CACHE_*、SESSION_*、MAIL_*、QINIU_*、ALIYUN_*、WECHAT_*、MQTT_*、NEW_CONFIG_*、SUBJECT_CONFIG_*、LARAVELS_*、HORIZON_*、GLOBAL_CONFIG_* 等启动、连接、密钥、配置中心自身或内部生成 key；包含 PASSWORD、SECRET、TOKEN、ACCESS_KEY、PRIVATE_KEY、PASSPHRASE、CERT、KEY_PATH 的 key 也禁止配置。';
+        return '禁止创建 APP_*、DB_*、REDIS_*、LOCAL_REDIS_*、MONGO_*、MONGODB_*、CACHE_*、SESSION_*、MAIL_*、QINIU_*、ALIYUN_*、WECHAT_*、MQTT_*、NEW_CONFIG_*、SUBJECT_CONFIG_*、LARAVELS_*、HORIZON_*、GLOBAL_CONFIG_* 等启动、连接、密钥、配置中心自身或内部生成 key；包含 PASSWORD、SECRET、TOKEN、ACCESS_KEY、PRIVATE_KEY、PASSPHRASE、CERT、KEY_PATH 的 key 也禁止配置。MONGODB_HISTORY_PROTECTION_ENABLED 是已登记的业务开关例外，连接及容量配置仍禁止。';
     }
 
     /**
