@@ -12,7 +12,8 @@ use Throwable;
  *
  * 按日保存各任务类的聚合统计（Hash）、管理页刷新元数据（Hash）、运行中 trace（Hash）
  * 和限长诊断样本（List）；trace 模式另以 task ID 保存 submitted 临时状态（String）。
- * SwooleTaskMonitor::safeRecord() 负责在上层吞掉 Redis 异常，本类刻意不自行恢复错误。
+ * SwooleTaskMonitor::safeRecord() 负责隔离 Redis 异常；写入错误不重放。仅 started 前的
+ * 只读元数据 GET 可在连接丢失时重连后重试一次，避免恢复后的首个 Task 漏掉 started。
  *
  * 这些数据是无事务、尽力而为的诊断读模型，不应作为精确队列深度、审计日志或业务状态源。
  * 特别是最大值的读写并非原子操作，跨日执行、Redis 过期或重复事件都可能导致派生值偏差。
@@ -551,7 +552,17 @@ class SwooleTaskMonitorStore
             return [];
         }
 
-        $raw = $this->redis()->get($this->startKey($taskId));
+        $connection = $this->redis();
+        try {
+            $raw = $connection->get($this->startKey($taskId));
+        } catch (\RedisException $error) {
+            // Laravel 11 rebuilds the client after a lost connection but rethrows
+            // the failed command. This GET precedes every started counter write:
+            // retry only this read, never the lifecycle event or any increment.
+            try { $connection->disconnect(); } catch (Throwable) {}
+            Redis::purge(config('swoole_task_monitor.redis_connection') ?: null);
+            $raw = $this->redis()->get($this->startKey($taskId));
+        }
         $decoded = json_decode((string)$raw, true);
 
         return is_array($decoded) ? $decoded : [];
