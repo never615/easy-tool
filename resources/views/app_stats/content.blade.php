@@ -390,7 +390,32 @@
                 consumers: '消费者数量（consumers）',
                 last_delivered_id: '最后投递 ID（last_delivered_id）',
                 dead_stream_total: '预留 Dead Stream 长度（dead_stream_total）',
-                dead_stream_enabled: 'Dead Stream 自动写入（dead_stream_enabled）'
+                dead_stream_enabled: 'Dead Stream 自动写入（dead_stream_enabled）',
+                profile: '历史存储介质预设',
+                global_default_enabled: '历史保护全局默认开启（项目可覆盖）',
+                concurrency_limit: '历史操作共享槽位上限',
+                active_writes: '当前占用历史操作槽位',
+                entries: '历史缓冲条数',
+                max_entries: '历史缓冲条数上限',
+                entries_used_percent: '历史缓冲条数使用率',
+                payload_bytes: '历史缓冲载荷',
+                max_bytes: '历史缓冲载荷上限',
+                payload_used_percent: '历史缓冲载荷使用率',
+                cooldown_seconds: '历史保护剩余冷却（秒）',
+                lease_seconds: '历史操作最长剩余租约（秒）',
+                counter_accepted: '累计接纳历史条数',
+                counter_written: '累计写器成功返回条数',
+                counter_full: '累计缓冲满拒收条数',
+                counter_oversized: '累计超大载荷丢弃条数',
+                counter_circuit: '累计冷却拒收 / 物化跳过次数',
+                counter_expired: '累计过期丢弃条数',
+                counter_invalid: '累计无效记录丢弃条数',
+                counter_disabled: '累计业务停写丢弃条数',
+                counter_write_failed: '累计历史操作失败次数',
+                counter_slow: '累计历史操作慢执行次数',
+                counter_schedule_failed: '累计历史调度失败次数',
+                counter_materialize_failed: '累计 raw 后物化投递失败次数',
+                counter_state_lost: '累计缓冲状态损坏次数'
             };
 
             const metricValue = (key, value) => {
@@ -409,7 +434,9 @@
                     'virtual_memory_bytes',
                     'wiredtiger_cache_bytes',
                     'wiredtiger_cache_max_bytes',
-                    'wiredtiger_cache_dirty_bytes'
+                    'wiredtiger_cache_dirty_bytes',
+                    'payload_bytes',
+                    'max_bytes'
                 ].includes(key)) {
                     return bytes(value);
                 }
@@ -420,12 +447,17 @@
                     'connection_used_percent',
                     'cache_hit_percent',
                     'locators_hot_update_percent',
-                    'wiredtiger_cache_used_percent'
+                    'wiredtiger_cache_used_percent',
+                    'entries_used_percent',
+                    'payload_used_percent'
                 ].includes(key)) {
                     return finiteNumber(value) ? Number(value).toFixed(2) + '%' : '未知';
                 }
                 if (key === 'cpu_status') {
                     return {available: '可用', waiting_baseline: '等待基线', unavailable: '主线程指标不可用'}[value] || '未知';
+                }
+                if (key === 'profile') {
+                    return {hdd: 'HDD', ssd: 'SSD / NVMe'}[value] || '未知';
                 }
                 if (key === 'monitoring_mode') {
                     return value === 'server_status' ? '完整指标' : '仅可用性';
@@ -769,7 +801,9 @@
                 mongodb_monitor_metrics_unavailable: 'MongoDB 在线，但本次 serverStatus 详细指标暂不可用',
                 mongodb_monitor_sampling_failed: 'MongoDB 采样失败',
                 mongodb_monitor_state_read_failed: 'MongoDB 状态读取失败',
-                mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败'
+                mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败',
+                mongodb_history_protection_default_disabled: '全局默认关闭；显式启用项目及在途任务仍共享以下状态',
+                mongodb_history_protection_state_read_failed: 'Mongo 历史保护 Redis 状态不可用'
             }[message] || '运行状态异常');
 
             const renderSections = (sectionsValue) => {
@@ -804,6 +838,9 @@
                     }
                     if (section.message) {
                         card.append(text('p', messageLabel(section.message), 'app-stats__message'));
+                    }
+                    if (key === 'mongodb_history_protection') {
+                        card.append(text('p', '应用共享缓冲快照，不代表 MongoDB 或磁盘健康。计数为累计值，请比较增量；Redis 故障时计数可能缺失。'));
                     }
                     card.append(metricList(section.metrics || {}));
 
