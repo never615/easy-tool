@@ -65,7 +65,7 @@ class NewConfigDocumentSeeder extends Seeder
 | 配置文件 | 具体职责与查阅入口 |
 | --- | --- |
 | [location.php](location.php) | 定位业务、算法、历史、报警、设备状态、通知、队列保护及后置业务异步开关；见下文及[定位开关手册](../packages/mallto/easy-location/docs/runbooks/location-feature-switches.md)。 |
-| [lance_aoa.php](lance_aoa.php) | Lance AOA Task 亲和与路由启动参数；参数有显式校验，修改后须重新加载进程。消费合并由 `lance_realtime.php` 单独控制。 |
+| [lance_realtime.php](lance_realtime.php) | Lance 位置与 DIY 共享 Redis 消费合并；默认关闭，项目可覆盖，位置/运动间隔与电量周期独立。通知与未合并任务均由框架原生调度；配置和生效验证见[消费合并指南](../packages/mallto/easy-location/docs/runbooks/lance-realtime-coalescing.md)。 |
 | [lierda.php](lierda.php) | 利尔达签名请求的时间容差、共享缓存重放保护。 |
 | [hytera_dmr_mock.php](hytera_dmr_mock.php) | Hytera DMR 模拟服务配置，用于测试联调；不代表真实设备连接配置。 |
 | [subject-config.php](subject-config.php) | 项目配置的宿主兼容入口；项目动态配置的完整定义还在各业务包中，读取与生效方式见下文。 |
