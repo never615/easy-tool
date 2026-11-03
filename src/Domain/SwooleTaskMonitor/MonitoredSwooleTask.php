@@ -24,6 +24,8 @@ abstract class MonitoredSwooleTask extends Task
     protected ?array $swooleTaskMonitorRejection = null;
     /** Only scalars cross IPC; no collector, closure or Redis connection is serialized. */
     protected ?array $swooleTaskExecutionContext = null;
+    /** Default-off scalar checkpoints; a subclass may carry them in its existing receipt. */
+    protected ?array $swooleTaskWorkerBoundaryNs = null;
     /** Independent local diagnostic context; never serialize a collector or filesystem handle. */
     protected ?array $swooleTaskFirstTraceContext = null;
     /** Bounded monotonic checkpoints carried only when first-trace diagnostics are enabled. */
@@ -41,6 +43,10 @@ abstract class MonitoredSwooleTask extends Task
      */
     final public function handle()
     {
+        if ($this->swooleTaskWorkerBoundaryNs !== null) {
+            // Reset per attempt: framework retries must not reuse an earlier worker entry.
+            $this->swooleTaskWorkerBoundaryNs = ['raw_handle_entry' => hrtime(true)];
+        }
         // Capture before recorder autoload; enabled recording is bounded, not message sampling.
         $firstTrace = null;
         try {
@@ -77,7 +83,13 @@ abstract class MonitoredSwooleTask extends Task
         $start = microtime(true);
         $startedAt = $diagnostics?->begin();
         $firstTrace?->checkpoint('before_monitor_started');
+        if ($this->swooleTaskWorkerBoundaryNs !== null) {
+            $this->swooleTaskWorkerBoundaryNs['before_monitor_started'] = hrtime(true);
+        }
         SwooleTaskMonitor::recordStarted($this);
+        if ($this->swooleTaskWorkerBoundaryNs !== null) {
+            $this->swooleTaskWorkerBoundaryNs['after_monitor_started'] = hrtime(true);
+        }
         $firstTrace?->checkpoint('before_business');
         $businessAt = $diagnostics?->begin();
         if ($startedAt !== null && $businessAt !== null) {
