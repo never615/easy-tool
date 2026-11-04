@@ -38,7 +38,6 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("配置中心手动重启", "new_configs.reload", false, 0);
         $this->createPermissions("Swoole Task配置", "new_configs.swoole_task_monitor", false, 0);
         $this->createPermissions("Swoole Task配置保存", "new_configs.swoole_task_monitor.save", false, 0);
-        $this->createPermissions("运行期 Env 覆盖", "new_configs.runtime_env_overrides", false, 0);
         $this->createPermissions("队列诊断监控", "queue_diagnostics.index", false, 0);
         $this->createPermissions("队列诊断使用说明", "queue_diagnostics.usage", false, 0);
         $this->createPermissions("队列诊断配置保存", "queue_diagnostics.settings", false, 0);
@@ -50,8 +49,6 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("应用运行监控临时文件清理", "admin_monitor.app_stats.task_tmp_cleanup", false, 0);
         $this->createPermissions("定位诊断中心", "admin_monitor.location_ingress", false, 0);
         $this->createPermissions("定位诊断中心数据", "admin_monitor.location_ingress.data", false, 0);
-        $this->createPermissions("定位入口调试开关", "admin_monitor.location_ingress.switch", false, 0);
-        $this->createPermissions("定位诊断模式开关", "admin_monitor.location_ingress.mode", false, 0);
         $this->createPermissions("定位诊断明细", "location_ingress_trace.index", false, 0);
         /*
          * 旧路由仍为现有 Grafana/JSON 调用、历史角色授权和内部链接提供兼容入口。

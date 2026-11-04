@@ -116,8 +116,7 @@ class NewConfigPublisher
             ->whereNotNull('env_key')
             ->where('env_key', '<>', '')
             ->where(function ($query) {
-                $query->where('group_key', NewConfig::GROUP_RUNTIME_ENV_OVERRIDE)
-                    ->orWhere('group_key', NewConfig::GROUP_SWOOLE_TASK_MONITOR)
+                $query->where('group_key', NewConfig::GROUP_SWOOLE_TASK_MONITOR)
                     ->orWhereIn('key', [
                         NewConfig::KEY_SWOOLE_TASK_MONITOR_ENABLED,
                         NewConfig::KEY_SWOOLE_TASK_MONITOR_MODE,
@@ -133,7 +132,7 @@ class NewConfigPublisher
     /**
      * 将配置记录转换为环境变量快照所需的键值对。
      *
-     * 运行态覆写组使用更严格的 bootstrap key 白名单，防止配置中心破坏连接和启动基础设施。
+     * 启动配置使用 bootstrap key 白名单，防止配置中心破坏连接和启动基础设施。
      */
     private function envValues(Collection $rows): array
     {
@@ -146,11 +145,7 @@ class NewConfigPublisher
             }
 
             $envKey = NewConfigBootstrapKeyGuard::normalize($row->env_key);
-            if ($row->group_key === NewConfig::GROUP_RUNTIME_ENV_OVERRIDE) {
-                NewConfigBootstrapKeyGuard::assertAllowedForRuntimeOverride($envKey);
-            } else {
-                NewConfigBootstrapKeyGuard::assertAllowed($envKey);
-            }
+            NewConfigBootstrapKeyGuard::assertAllowed($envKey);
             if ($envKey === null) {
                 continue;
             }

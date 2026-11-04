@@ -56,9 +56,6 @@ class ConfigMenuSeeder extends Seeder
             "new_configs.swoole_task_monitor", $configCenterMenu->id, 70, "Swoole Task配置", "fa-tasks");
 
         $this->updateOrCreate(
-            "new_configs.runtime_env_overrides.index", $configCenterMenu->id, 75, "运行期 Env 覆盖", "fa-terminal");
-
-        $this->updateOrCreate(
             "new_configs.publish_restart", $configCenterMenu->id, 80, "发布启动配置", "fa-refresh");
 
         $traditionalConfigMenu = $this->updateOrCreate(

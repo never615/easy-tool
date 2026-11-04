@@ -108,19 +108,6 @@ Route::group($attributes, function ($router) {
                             ->name('new_configs.swoole_task_monitor');
                         Route::post('new_configs/swoole-task-monitor', 'NewConfigSwooleTaskMonitorController@save')
                             ->name('new_configs.swoole_task_monitor.save');
-                        Route::resource('new_configs/runtime-env-overrides', 'RuntimeEnvOverrideController', [
-                            'names' => [
-                                'index' => 'new_configs.runtime_env_overrides.index',
-                                'create' => 'new_configs.runtime_env_overrides.create',
-                                'store' => 'new_configs.runtime_env_overrides.store',
-                                'show' => 'new_configs.runtime_env_overrides.show',
-                                'edit' => 'new_configs.runtime_env_overrides.edit',
-                                'update' => 'new_configs.runtime_env_overrides.update',
-                                'destroy' => 'new_configs.runtime_env_overrides.destroy',
-                            ],
-                        ])->where([
-                            'runtime_env_override' => '[0-9]+',
-                        ]);
                         Route::resource('new_configs', 'NewConfigController')->where([
                             'new_config' => '[0-9]+',
                         ]);
@@ -151,10 +138,6 @@ Route::group($attributes, function ($router) {
                             ->name('admin_monitor.location_ingress');
                         Route::get('monitor/location_ingress/data', 'LocationIngressCounterController@data')
                             ->name('admin_monitor.location_ingress.data');
-                        Route::post('monitor/location_ingress/switch', 'LocationIngressCounterController@switch')
-                            ->name('admin_monitor.location_ingress.switch');
-                        Route::post('monitor/location_ingress/diagnostics-mode', 'LocationIngressCounterController@mode')
-                            ->name('admin_monitor.location_ingress.mode');
                         Route::get('monitor/location_ingress/traces', 'LocationIngressCounterController@traces')
                             ->name('location_ingress_trace.index');
                         Route::get('monitor/location_ingress/traces/{traceId}', 'LocationIngressCounterController@trace')

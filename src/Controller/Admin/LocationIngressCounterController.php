@@ -11,8 +11,6 @@ use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticSchema;
 use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticStore;
 use Mallto\Location\Support\Telemetry\LocationIngestDiagnosticsConfig;
 use Mallto\Location\Support\Telemetry\LocationIngressCounter;
-use Mallto\Tool\Domain\NewConfig\LocationIngressCounterSwitch;
-use Mallto\Tool\Domain\NewConfig\LocationIngressDiagnosticsModeSwitch;
 use Throwable;
 
 /**
@@ -25,38 +23,13 @@ final class LocationIngressCounterController extends Controller
 {
     public function index(): mixed
     {
-        /** @var LocationIngressCounterSwitch $switch */
-        $switch = app(LocationIngressCounterSwitch::class);
-        $switchState = array_merge($switch->status(), [
-            'effective_enabled' => LocationIngressCounter::enabled(),
-        ]);
-        $canSwitch = (bool) Admin::user()?->can('admin_monitor.location_ingress.switch');
-        /** @var LocationIngressDiagnosticsModeSwitch $modeSwitch */
-        $modeSwitch = app(LocationIngressDiagnosticsModeSwitch::class);
-        $diagnosticsModeState = array_merge($modeSwitch->status(), [
-            'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
-        ]);
-        $canModeSwitch = (bool) Admin::user()?->can('admin_monitor.location_ingress.mode');
         $canTraceDetails = (bool) Admin::user()?->can('location_ingress_trace.index');
 
-        return Admin::content(function (Content $content) use (
-            $switchState,
-            $canSwitch,
-            $diagnosticsModeState,
-            $canModeSwitch,
-            $canTraceDetails
-        ): void {
+        return Admin::content(function (Content $content) use ($canTraceDetails): void {
             $content->header('定位诊断中心');
             $content->description('入口量、项目归属、业务阶段漏斗与短期诊断样本');
             $content->body(view('easy-tool::location_ingress_counter.content', [
                 'dataUrl' => route('admin_monitor.location_ingress.data'),
-                'switchUrl' => route('admin_monitor.location_ingress.switch'),
-                'modeSwitchUrl' => route('admin_monitor.location_ingress.mode'),
-                'csrfToken' => csrf_token(),
-                'switchState' => $switchState,
-                'diagnosticsModeState' => $diagnosticsModeState,
-                'canSwitch' => $canSwitch,
-                'canModeSwitch' => $canModeSwitch,
                 'canTraceDetails' => $canTraceDetails,
                 'traceListUrl' => $canTraceDetails ? route('location_ingress_trace.index') : null,
                 'traceDetailUrlTemplate' => $canTraceDetails
@@ -136,147 +109,6 @@ final class LocationIngressCounterController extends Controller
         }
 
         return response()->json($trace);
-    }
-
-    /**
-     * 仅允许拥有独立权限的管理员变更固定的入口计数开关。
-     *
-     * 浏览器不能提交 Env Key、配置类型或重启参数；领域服务始终以固定 Env 覆盖项发布启动配置。
-     */
-    public function switch(Request $request): JsonResponse
-    {
-        if (! Admin::user()?->can('admin_monitor.location_ingress.switch')) {
-            return response()->json(['accepted' => false, 'message' => 'forbidden'], 403);
-        }
-
-        if (! in_array($request->input('enabled'), ['0', '1', 0, 1], true)) {
-            return response()->json(['accepted' => false, 'message' => 'enabled_must_be_boolean'], 422);
-        }
-
-        $requestedEnabled = (bool) ((int) $request->input('enabled'));
-
-        try {
-            /** @var LocationIngressCounterSwitch $switch */
-            $switch = app(LocationIngressCounterSwitch::class);
-            $result = $switch->set($requestedEnabled);
-            $publish = $result['publish'] ?? null;
-            $payload = [
-                'accepted' => true,
-                'requested_enabled' => array_key_exists('requested_enabled', $result)
-                    ? $result['requested_enabled']
-                    : $requestedEnabled,
-                'effective_enabled' => LocationIngressCounter::enabled(),
-            ];
-
-            if ($publish === null) {
-                return response()->json($payload + [
-                    'publish_status' => 'publish_throttled',
-                    'message' => 'publish_throttled',
-                ], 429);
-            }
-
-            $restart = $publish['restart'] ?? null;
-            if (is_array($restart) && ($restart['reason'] ?? null) === 'new_config.restart.enabled is false') {
-                return response()->json($payload + [
-                    'publish_status' => 'restart_disabled',
-                    'message' => 'restart_disabled',
-                ]);
-            }
-
-            if (is_array($restart) && ($restart['skipped'] ?? false)) {
-                return response()->json($payload + [
-                    'publish_status' => 'restart_not_scheduled',
-                    'message' => 'restart_not_scheduled',
-                ]);
-            }
-
-            if (is_array($restart) && ! ($restart['skipped'] ?? false)) {
-                return response()->json($payload + [
-                    'publish_status' => 'restart_scheduled',
-                    'message' => 'restart_scheduled',
-                ]);
-            }
-
-            return response()->json($payload + [
-                'publish_status' => 'published',
-                'message' => 'published',
-            ]);
-        } catch (Throwable) {
-            return response()->json([
-                'accepted' => false,
-                'effective_enabled' => LocationIngressCounter::enabled(),
-                'publish_status' => 'publish_failed',
-                'message' => 'publish_failed',
-            ], 503);
-        }
-    }
-
-    /**
-     * 固定模式发布入口；requested 仅表示发布目标，effective 表示当前常驻进程的真实加载值。
-     */
-    public function mode(Request $request): JsonResponse
-    {
-        if (! Admin::user()?->can('admin_monitor.location_ingress.mode')) {
-            return response()->json(['accepted' => false, 'message' => 'forbidden'], 403);
-        }
-
-        $mode = $request->input('mode');
-        if (!is_string($mode) || !in_array($mode, LocationIngressDiagnosticsModeSwitch::MODES, true)) {
-            return response()->json(['accepted' => false, 'message' => 'diagnostics_mode_invalid'], 422);
-        }
-
-        try {
-            /** @var LocationIngressDiagnosticsModeSwitch $switch */
-            $switch = app(LocationIngressDiagnosticsModeSwitch::class);
-            $result = $switch->set($mode);
-            $publish = $result['publish'] ?? null;
-            $payload = [
-                'accepted' => true,
-                'requested_mode' => $result['requested_mode'] ?? $mode,
-                'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
-            ];
-
-            if ($publish === null) {
-                return response()->json($payload + [
-                    'publish_status' => 'publish_throttled',
-                    'message' => 'publish_throttled',
-                ], 429);
-            }
-
-            $restart = $publish['restart'] ?? null;
-            if (is_array($restart) && ($restart['reason'] ?? null) === 'new_config.restart.enabled is false') {
-                return response()->json($payload + [
-                    'publish_status' => 'restart_disabled',
-                    'message' => 'restart_disabled',
-                ]);
-            }
-
-            if (is_array($restart) && ($restart['skipped'] ?? false)) {
-                return response()->json($payload + [
-                    'publish_status' => 'restart_not_scheduled',
-                    'message' => 'restart_not_scheduled',
-                ]);
-            }
-
-            if (is_array($restart) && ! ($restart['skipped'] ?? false)) {
-                return response()->json($payload + [
-                    'publish_status' => 'restart_scheduled',
-                    'message' => 'restart_scheduled',
-                ]);
-            }
-
-            return response()->json($payload + [
-                'publish_status' => 'published',
-                'message' => 'published',
-            ]);
-        } catch (Throwable) {
-            return response()->json([
-                'accepted' => false,
-                'effective_mode' => LocationIngestDiagnosticsConfig::mode(),
-                'publish_status' => 'publish_failed',
-                'message' => 'publish_failed',
-            ], 503);
-        }
     }
 
     /** @return array<string, string|int>|null */

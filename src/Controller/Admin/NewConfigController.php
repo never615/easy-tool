@@ -40,6 +40,7 @@ class NewConfigController extends AdminCommonController
     protected function gridOption(Grid $grid)
     {
         $grid->model()
+            ->where('group_key', '<>', NewConfig::GROUP_RUNTIME_ENV_OVERRIDE)
             ->orderBy('group_key')
             ->orderBy('sort')
             ->orderBy('id');
@@ -97,6 +98,7 @@ class NewConfigController extends AdminCommonController
 
         $grid->tools(function ($tools) {
             $tools->append('<a class="btn btn-sm btn-warning" href="' . route('new_configs.publish_restart') . '"><i class="fa fa-refresh"></i> 发布启动配置</a>');
+            $tools->append('<div class="alert alert-info" style="margin:10px 0 0;">此列表不显示历史启动 Env 覆盖。动态业务配置仅在已登记的配置模块中维护；需重启的 Env 参数请按运维文档修改部署配置并人工重启。</div>');
         });
     }
 
@@ -171,6 +173,10 @@ class NewConfigController extends AdminCommonController
             ->help('导出为运行期环境变量名，例如 SWOOLE_TASK_MONITOR_ENABLED。<br>' . NewConfigBootstrapKeyGuard::forbiddenHint());
 
         $form->editing(function (Form $form) {
+            if ((string)$form->model()->group_key === NewConfig::GROUP_RUNTIME_ENV_OVERRIDE) {
+                throw new ResourceException('历史运行期 Env 覆盖已停用，需重启参数请通过部署配置维护。');
+            }
+
             if ((string)$form->model()->key !== 'app_secret') {
                 return;
             }

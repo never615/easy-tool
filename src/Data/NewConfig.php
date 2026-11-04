@@ -26,7 +26,6 @@ class NewConfig extends BaseModel
     {
         return [
             self::GROUP_GLOBAL_CONFIG => '运行时业务配置',
-            self::GROUP_RUNTIME_ENV_OVERRIDE => '运行期 Env 覆盖',
             self::GROUP_SWOOLE_TASK_MONITOR => 'Swoole Task 启动配置',
         ];
     }
@@ -66,10 +65,11 @@ class NewConfig extends BaseModel
             GlobalConfigOverrideSource::assertValid($config->override_source);
             $config->env_key = NewConfigBootstrapKeyGuard::normalize($config->env_key);
             if ($config->group_key === self::GROUP_RUNTIME_ENV_OVERRIDE) {
-                NewConfigBootstrapKeyGuard::assertAllowedForRuntimeOverride($config->env_key);
-            } else {
-                NewConfigBootstrapKeyGuard::assertAllowed($config->env_key);
+                throw new \Mallto\Tool\Exception\ResourceException(
+                    '运行期 Env 覆盖已停用；请通过部署配置维护需要重启的参数。'
+                );
             }
+            NewConfigBootstrapKeyGuard::assertAllowed($config->env_key);
             $config->assertUniquePublishedEnvKey();
         });
 
@@ -77,7 +77,7 @@ class NewConfig extends BaseModel
 
     private function assertUniquePublishedEnvKey(): void
     {
-        $groups = [self::GROUP_RUNTIME_ENV_OVERRIDE, self::GROUP_SWOOLE_TASK_MONITOR];
+        $groups = [self::GROUP_SWOOLE_TASK_MONITOR];
         $keys = [self::KEY_SWOOLE_TASK_MONITOR_ENABLED, self::KEY_SWOOLE_TASK_MONITOR_MODE,
             self::KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE];
         // Business global_config env_key fields are compatibility metadata, not exported values.

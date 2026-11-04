@@ -60,7 +60,8 @@ class NewConfigPublishController extends Controller
     <div class="new-config-publish-actions">
         {$reloadButton}
         <p class="new-config-publish-help">
-            此处仅发布配置中心生成的启动配置，不会修改真实 .env。{$restartDescription}<br>
+            此处仅发布 Swoole Task 启动配置，不会修改真实 .env。{$restartDescription}<br>
+            历史运行期 Env 覆盖不再发布；其他需重启参数由部署配置维护，并需人工重启。<br>
             普通业务配置保存后通过运行缓存生效，不需要在此发布。
         </p>
     </div>

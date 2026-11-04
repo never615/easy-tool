@@ -182,7 +182,7 @@ DIY MQTT/UDP 状态解析，都可能在进入 `LocatorUpdateUsecase` 前同步�
 - 项目动态配置
 - 基础业务配置、短信与告警配置
 - 定位算法、定位维护、BeaconArea、定位日志配置
-- Swoole Task 配置、运行期 Env 覆盖
+- Swoole Task 启动配置
 - 发布启动配置
 
 新增业务 key 时，应先在所属包的 Global / Subject definitions 中登记，再执行 `php artisan tool:update` 补齐目录记录。`fromConfig()` 定义表示“环境 config 基线 + 可选数据库覆盖”，普通 `make()` 定义表示“数据库主配置 + 代码兜底值”。后台按定义来源展示对应控件。apply mode 由代码定义，管理员不能在 UI 中任意修改。
@@ -279,7 +279,7 @@ Timer 仍负责 accepted 派发，因此全为 `direct` 时也不能关闭 `LARA
 - [被动定位架构与 Redis 流程](../packages/mallto/easy-location/docs/architecture/passive-gateway-redis-logic.md)
 - [被动定位实施配置说明](../packages/mallto/easy-location/docs/reference/passive-gateway-aggregation-configuration.md)
 
-只有 `runtime_env_override` 和 `swoole_task_monitor` 属于生成 env 的启动配置。它们发布到：
+配置中心仅保留 `swoole_task_monitor` 作为可发布的启动配置，发布到：
 
 ```text
 storage/framework/new_configs.env
@@ -287,16 +287,16 @@ storage/framework/new_configs.env
 
 该文件供启动脚本 source 和 `config:cache` 子进程使用。配置中心不是 `.env` 编辑器：发布不会读取、展示或修改真实 `.env`。
 
-启动配置需要计划内重启新进程才能完整生效。后台进入“配置中心 > 发布启动配置”，或使用：
+Swoole Task 启动配置需要重启新进程才能完整生效。后台进入“配置中心 > 发布启动配置”，或使用：
 
 ```bash
 php artisan tool:new_config_publish --force-config-cache
 php artisan tool:new_config_publish --restart --force-config-cache
 ```
 
-`NEW_CONFIG_RESTART_ENABLED` 默认开启，并可独立关闭。关闭后仍会发布 `new_configs.env`、刷新 config cache，业务缓存更新也完全不受影响；仅跳过 restart generation、LaravelS restart 和 Horizon terminate。页面或 CLI 的“已发布”不代表真实 `.env` 被修改，也不代表服务已经重启。
+配置发布不会读取、展示或修改真实 `.env`。需要重启的其他 Env 参数由部署配置维护，并由运维人员安排 LaravelS 与 Horizon 重启。历史 `runtime_env_override` 记录保留供审计，不再显示、编辑或发布。`NEW_CONFIG_RESTART_ENABLED` 只影响仍保留的 Swoole Task 启动配置重启流程，不控制动态业务配置缓存。
 
-`LOCATION_QUEUE_LIMITER_ENABLED`、四个按组 `*_LIMITER_ENABLED` 开关、`LOCATION_PGSQL_WRITE_CONCURRENCY` 和 `LOCATION_RESULT_STORAGE_CONCURRENCY` 是定位队列限流的启动配置。业务任务只读取本地 `config()`，不会在热路径读取运行时配置中心、Redis 或 Swoole Table。按组开关默认开启，关闭只旁路对应 Redis funnel 并保留专用队列；需要先核验所有 worker 与数据库预算。升级时 `location:update` 会把三个历史全局显式覆盖转换为 `runtime_env_override`；按组开关由 `.env`/Secret/ConfigMap 提供，随后发布并重启 LaravelS 和 Horizon，所有新进程才会使用同一数值。
+`LOCATION_QUEUE_LIMITER_ENABLED`、四个按组 `*_LIMITER_ENABLED` 开关、`LOCATION_PGSQL_WRITE_CONCURRENCY` 和 `LOCATION_RESULT_STORAGE_CONCURRENCY` 是定位队列限流的启动配置。业务任务只读取本地 `config()`，不会在热路径读取运行时配置中心、Redis 或 Swoole Table。按组开关默认开启，关闭只旁路对应 Redis funnel 并保留专用队列；需要先核验所有 worker 与数据库预算。上述参数由 `.env`/Secret/ConfigMap 提供，修改后人工重启 LaravelS 和 Horizon。`location:update` 不再把历史全局显式覆盖转换为启动 Env 覆盖。
 
 定位队列截止和 failed provider 的建议基线为：
 
@@ -329,7 +329,7 @@ LOCATION_RESULT_STORAGE_MAX_WAIT_SECONDS=60
 - MQTT、Cache、Session、Mail 和云厂商连接凭据
 - LaravelS/Horizon 与配置中心自身的启动依赖
 
-后台会拒绝把这些 bootstrap key 作为运行期 Env 覆盖发布。
+后台不会提供 bootstrap key 或其他需重启 Env 参数的编辑入口；这类值由部署环境维护。历史 `runtime_env_override` 行保留审计，不再编辑或发布。
 
 ## 新增配置规范
 
