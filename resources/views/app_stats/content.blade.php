@@ -164,6 +164,7 @@
                     <th scope="col">连接数</th>
                     <th scope="col">SkyLab TCP（4001）连接数</th>
                     <th scope="col">SkyLab TCP（4401）连接数</th>
+                    <th scope="col">配置缓存累计命中 / 未命中</th>
                     <th scope="col">启动时间</th>
                     <th scope="col">Task 临时文件</th>
                     @if($canCleanup ?? false)
@@ -681,7 +682,7 @@
                 if (!Array.isArray(pods) || pods.length === 0) {
                     const row = document.createElement('tr');
                     const cell = text('td', '暂无在线或延迟 Pod 数据', 'app-stats__empty');
-                    cell.colSpan = canCleanup ? 12 : 11;
+                    cell.colSpan = canCleanup ? 13 : 12;
                     row.append(cell);
                     podsRoot.replaceChildren(row);
                     return;
@@ -691,6 +692,7 @@
                     const pod = podValue || {};
                     const metrics = pod.metrics || {};
                     const skyLabTcp = pod.skylab_tcp || {};
+                    const runtimeConfigCache = pod.runtime_config_cache;
                     const safeStatus = statusKey(pod.status);
                     const row = document.createElement('tr');
                     const identity = document.createElement('td');
@@ -743,6 +745,18 @@
                             : skyLabTcp.skylab_ota_connection_count_backend === 'disabled'
                                 ? '未启用'
                                 : '未知',
+                        'app-stats__data'
+                    ));
+                    row.append(text(
+                        'td',
+                        runtimeConfigCache && runtimeConfigCache.status === 'unavailable'
+                            ? '不可用'
+                            : runtimeConfigCache && typeof runtimeConfigCache === 'object'
+                            ? 'L1 ' + Number(runtimeConfigCache.l1_hit || 0)
+                                + ' / ' + Number(runtimeConfigCache.l1_miss || 0)
+                                + '；共享 ' + Number(runtimeConfigCache.shared_hit || 0)
+                                + ' / ' + Number(runtimeConfigCache.shared_miss || 0)
+                            : '未启用',
                         'app-stats__data'
                     ));
                     row.append(text('td', formatTimestamp(metrics.start_time)));

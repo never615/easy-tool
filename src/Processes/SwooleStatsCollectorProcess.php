@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Mallto\Tool\Domain\AppStats\AppStatsPodWriter;
 use Mallto\Tool\Domain\AppStats\SwooleInstanceIdentity;
 use Mallto\Tool\Domain\AppStats\SwooleStatsSnapshotFactory;
+use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigSwooleStore;
 use Swoole\Http\Server;
 use Swoole\Process;
 use Throwable;
@@ -83,9 +84,19 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
                 $stats = $swoole->stats();
                 $extra = [];
 
+                if ((bool) config('runtime_config.cache_metrics_enabled', false)) {
+                    try {
+                        $extra['runtime_config_cache'] = app(RuntimeConfigSwooleStore::class)->metricsSnapshot()
+                            ?? ['status' => 'unavailable'];
+                    } catch (Throwable) {
+                        // Runtime cache diagnostics are optional and must not block the base snapshot.
+                        $extra['runtime_config_cache'] = ['status' => 'unavailable'];
+                    }
+                }
+
                 // 业务扩展采集失败时仍写入基础 Swoole 快照；日志只记录异常类型，避免泄露连接信息。
                 try {
-                    $extra = static::collectExtraStats($swoole, $hostname);
+                    $extra = array_merge($extra, static::collectExtraStats($swoole, $hostname));
                 } catch (Throwable $exception) {
                     Log::warning('[SwooleStatsCollector] extra stats failed', [
                         'error_type' => $exception::class,

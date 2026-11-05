@@ -207,6 +207,7 @@ class AppStatsPodRepository
                 'start_time' => max(0, (int) ($metrics['start_time'] ?? 0)),
             ],
             'stats' => $stats,
+            'runtime_config_cache' => $this->normalizeRuntimeConfigCache($payload['runtime_config_cache'] ?? null),
             'skylab_tcp' => is_array($payload['skylab_tcp'] ?? null) ? $payload['skylab_tcp'] : [],
             'task_tmp' => $this->normalizeTaskTmp(
                 $hostname,
@@ -218,6 +219,31 @@ class AppStatsPodRepository
                 $taskTmpSnapshot
             ),
         ];
+    }
+
+    /**
+     * Keep the optional diagnostic section bounded and distinguish disabled snapshots from zero traffic.
+     *
+     * @param mixed $metrics
+     * @return array<string, int|string>|null
+     */
+    private function normalizeRuntimeConfigCache(mixed $metrics): ?array
+    {
+        if (! is_array($metrics)) {
+            return null;
+        }
+
+        if (($metrics['status'] ?? null) === 'unavailable') {
+            return ['status' => 'unavailable'];
+        }
+
+        $normalized = [];
+        foreach (['l1_hit', 'l1_miss', 'shared_hit', 'shared_miss'] as $key) {
+            $value = $metrics[$key] ?? 0;
+            $normalized[$key] = is_numeric($value) ? max(0, (int) $value) : 0;
+        }
+
+        return $normalized;
     }
 
     /**

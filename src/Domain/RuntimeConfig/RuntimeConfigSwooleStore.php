@@ -10,6 +10,8 @@ final class RuntimeConfigSwooleStore
 {
     private const MAX_KEY_BYTES = 64;
     private const DEFAULT_VALUE_BYTES = 2048;
+    private const METRIC_SHARDS = 32;
+    private const METRICS = ['l1_hit', 'l1_miss', 'shared_hit', 'shared_miss'];
 
     public function __construct(
         private readonly Application $app,
@@ -106,6 +108,51 @@ final class RuntimeConfigSwooleStore
         }
     }
 
+    /** Record fixed-cardinality, Pod-local diagnostic counters without Redis I/O. */
+    public function recordMetric(string $metric): void
+    {
+        if (!in_array($metric, self::METRICS, true)
+            || !(bool)$this->config->get('runtime_config.cache_metrics_enabled', false)
+            || !$this->enabled()) {
+            return;
+        }
+
+        try {
+            $table = $this->metricsTable();
+            if ($table !== null) {
+                $table->incr('shard:' . ((int)getmypid() % self::METRIC_SHARDS), $metric, 1);
+            }
+        } catch (Throwable) {
+            // Metrics must never affect cache reads or writes.
+        }
+    }
+
+    /** @return array<string, int>|null */
+    public function metricsSnapshot(): ?array
+    {
+        $snapshot = array_fill_keys(self::METRICS, 0);
+        if (!(bool)$this->config->get('runtime_config.cache_metrics_enabled', false) || !$this->enabled()) {
+            return null;
+        }
+
+        try {
+            $table = $this->metricsTable();
+            if ($table === null) {
+                return null;
+            }
+            foreach ($table as $row) {
+                foreach (self::METRICS as $metric) {
+                    $snapshot[$metric] += max(0, (int)($row[$metric] ?? 0));
+                }
+            }
+        } catch (Throwable) {
+            // Monitoring is best-effort and does not participate in cache correctness.
+            return null;
+        }
+
+        return $snapshot;
+    }
+
     public function flush(): bool
     {
         if (!$this->enabled()) {
@@ -153,6 +200,15 @@ final class RuntimeConfigSwooleStore
         }
 
         return $this->app->make('swoole')->{$tableName . 'Table'} ?? null;
+    }
+
+    private function metricsTable()
+    {
+        if (!$this->app->bound('swoole')) {
+            return null;
+        }
+
+        return $this->app->make('swoole')->runtime_config_cache_metricsTable ?? null;
     }
 
     private function valueBytes(): int
