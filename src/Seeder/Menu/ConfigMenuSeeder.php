@@ -6,6 +6,7 @@
 namespace Mallto\Tool\Seeder\Menu;
 
 use Illuminate\Database\Seeder;
+use Mallto\Admin\CacheUtils;
 use Mallto\Admin\Data\Menu;
 use Mallto\Admin\Seeder\MenuSeederMaker;
 
@@ -42,6 +43,14 @@ class ConfigMenuSeeder extends Seeder
             '配置中心',
             'fa-sliders'
         );
+
+        // 路由退役后也要清理已落库的旧入口；逐条删除以触发角色关联清理。
+        Menu::query()
+            ->where('uri', 'new_configs.runtime_env_overrides.index')
+            ->get()
+            ->each(fn (Menu $menu) => $menu->delete());
+        // 重复升级也清理缓存，避免上次删除后中断留下旧菜单。
+        CacheUtils::clearMenuCache();
 
         $this->updateOrCreate(
             "new_configs.usage", $configCenterMenu->id, 1, "使用说明", "fa-book");
