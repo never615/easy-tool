@@ -79,7 +79,9 @@ final class SwooleTaskFirstTrace
     /** Called only by already-enabled business-stage diagnostics. */
     public static function checkpointCurrent(string $name): void
     {
-        if (self::$current !== null && in_array($name, ['cache_first_put_start', 'cache_first_put_end'], true)) {
+        if (self::$current !== null && in_array($name, ['cache_first_put_start', 'cache_first_put_end',
+            'parser_resolve_start', 'parser_resolve_end', 'parse_floor_end', 'parse_lookup_end',
+            'parse_coordinate_end'], true)) {
             self::$current->checkpoint($name);
         }
     }
@@ -116,7 +118,8 @@ final class SwooleTaskFirstTrace
     public function checkpoint(string $name): void
     {
         if (!in_array($name, ['before_monitor_started', 'before_business', 'after_business', 'after_terminal',
-            'cache_first_put_start', 'cache_first_put_end'], true)) {
+            'cache_first_put_start', 'cache_first_put_end', 'parser_resolve_start', 'parser_resolve_end',
+            'parse_floor_end', 'parse_lookup_end', 'parse_coordinate_end'], true)) {
             return;
         }
         $before = hrtime(true);
