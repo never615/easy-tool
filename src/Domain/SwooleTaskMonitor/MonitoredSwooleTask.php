@@ -137,8 +137,13 @@ abstract class MonitoredSwooleTask extends Task
                     // Observation must never replace a business result or its original Throwable.
                 }
             }
+            // Completion-dependent schedulers advance only after terminal accounting.
+            // The default hook is empty and does not change ordinary Task transport.
+            $this->afterMonitoredTaskTerminal($outcome);
         }
     }
+
+    protected function afterMonitoredTaskTerminal(string $outcome): void {}
 
     /** Cheap process-local bound: later messages do not enumerate classes/files or sample rusage. */
     private function reserveFirstTrace(): ?int
