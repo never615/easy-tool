@@ -11,6 +11,9 @@ return [
     'channel' => env('RUNTIME_CONFIG_INVALIDATION_CHANNEL', 'runtime_config:invalidate'),
     'revision_key' => env('RUNTIME_CONFIG_REVISION_KEY', 'runtime_config:revision'),
     'revision_poll_seconds' => (int)env('RUNTIME_CONFIG_REVISION_POLL_SECONDS', 5),
+    // Test/local only; a short-lived local control selects one hashed identity, never an env project list.
+    'branch_trace_enabled' => (bool)env('RUNTIME_CONFIG_BRANCH_TRACE_ENABLED', false),
+    'branch_trace_control_path' => storage_path('framework/runtime-config-branch-control.json'),
     // Bounded local evidence for cold refills only; restart resident processes to change.
     'refill_trace_enabled' => (bool)env('RUNTIME_CONFIG_REFILL_TRACE_ENABLED', false),
     'refill_trace_run_id' => env('RUNTIME_CONFIG_REFILL_TRACE_RUN_ID', ''),

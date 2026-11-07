@@ -5,6 +5,7 @@ namespace Mallto\Tool\Processes;
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
 use Illuminate\Support\Facades\Log;
 use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigSwooleStore;
+use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigBranchTrace;
 use Swoole\Http\Server;
 use Swoole\Process;
 use Throwable;
@@ -91,6 +92,7 @@ final class RuntimeConfigInvalidationSubscriberProcess implements CustomProcessI
         }
 
         foreach (array_unique($keys) as $key) {
+            RuntimeConfigBranchTrace::record(substr($key, 3), 'subscriber_delete_attempt');
             $store->deleteKey($key);
         }
     }

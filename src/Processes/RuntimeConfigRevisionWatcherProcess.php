@@ -5,6 +5,7 @@ namespace Mallto\Tool\Processes;
 use Hhxsv5\LaravelS\Swoole\Process\CustomProcessInterface;
 use Illuminate\Support\Facades\Log;
 use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigRevisionStore;
+use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigBranchTrace;
 use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigSwooleStore;
 use Swoole\Http\Server;
 use Swoole\Process;
@@ -47,7 +48,12 @@ final class RuntimeConfigRevisionWatcherProcess implements CustomProcessInterfac
             return $baseline;
         }
 
-        return $swooleStore->flush() ? $current : $baseline;
+        if (!$swooleStore->flush()) {
+            return $baseline;
+        }
+        RuntimeConfigBranchTrace::revisionFlushed($baseline, $current);
+
+        return $current;
     }
 
     public static function onReload(Server $swoole, Process $process)

@@ -24,17 +24,21 @@ final class RuntimeConfigCache
             $payload = $this->swoole->get($identity);
             if ($payload !== null) {
                 $this->swoole->recordMetric('l1_hit');
+                RuntimeConfigBranchTrace::record($identity->fingerprint(), 'l1_hit');
                 return $this->result($payload);
             }
             $this->swoole->recordMetric('l1_miss');
+            RuntimeConfigBranchTrace::record($identity->fingerprint(), 'l1_miss');
         }
 
         $payload = $this->shared->get($identity);
         if ($payload === null) {
             $this->swoole->recordMetric('shared_miss');
+            RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_miss');
             $payload = $this->shared->remember($identity, $loader);
         } else {
             $this->swoole->recordMetric('shared_hit');
+            RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_hit');
         }
 
         if (RuntimeConfigCacheMode::usesSwoole($mode)) {
@@ -79,15 +83,18 @@ final class RuntimeConfigCache
             if ($payload !== null) {
                 $payloads[$key] = $payload;
                 $this->swoole->recordMetric('l1_hit');
+                RuntimeConfigBranchTrace::record($entry['identity']->fingerprint(), 'l1_hit');
             } else {
                 $identities[$key] = $entry['identity'];
                 if (RuntimeConfigCacheMode::usesSwoole($modes[$key])) {
                     $this->swoole->recordMetric('l1_miss');
+                    RuntimeConfigBranchTrace::record($entry['identity']->fingerprint(), 'l1_miss');
                 }
             }
         }
         foreach ($this->shared->getMany($identities) as $key => $payload) {
             $this->swoole->recordMetric($payload === null ? 'shared_miss' : 'shared_hit');
+            RuntimeConfigBranchTrace::record($entries[$key]['identity']->fingerprint(), $payload === null ? 'shared_miss' : 'shared_hit');
             $entry = $entries[$key];
             $payload ??= $this->shared->remember($entry['identity'], $entry['loader']);
             if (RuntimeConfigCacheMode::usesSwoole($modes[$key])) {
@@ -121,15 +128,18 @@ final class RuntimeConfigCache
             if ($payload !== null) {
                 $payloads[$key] = $payload;
                 $this->swoole->recordMetric('l1_hit');
+                RuntimeConfigBranchTrace::record($entry['identity']->fingerprint(), 'l1_hit');
             } else {
                 $identities[$key] = $entry['identity'];
                 if (RuntimeConfigCacheMode::usesSwoole($modes[$key])) {
                     $this->swoole->recordMetric('l1_miss');
+                    RuntimeConfigBranchTrace::record($entry['identity']->fingerprint(), 'l1_miss');
                 }
             }
         }
         foreach ($this->shared->getMany($identities) as $key => $payload) {
             $this->swoole->recordMetric($payload === null ? 'shared_miss' : 'shared_hit');
+            RuntimeConfigBranchTrace::record($entries[$key]['identity']->fingerprint(), $payload === null ? 'shared_miss' : 'shared_hit');
             if ($payload !== null && RuntimeConfigCacheMode::usesSwoole($modes[$key])) {
                 $this->swoole->put($entries[$key]['identity'], $payload);
             }
