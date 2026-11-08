@@ -56,12 +56,15 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             return $replacement;
         });
 
-        if (filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)) {
+        if (filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
+            || filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
             // Boot runs after Horizon registered its connector. Do not resolve queues early or
             // replace an already-live connection; both resident applications need a restart.
             $this->callAfterResolving(QueueManager::class, function ($manager): void {
                 $manager->addConnector('redis', function () {
-                    return new PipelinedHorizonRedisConnector($this->app['redis']);
+                    return new PipelinedHorizonRedisConnector($this->app['redis'], null,
+                        filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN),
+                        filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN));
                 });
             });
         }
