@@ -3,6 +3,7 @@
 namespace Mallto\Tool\Domain\SwooleTaskMonitor;
 
 use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Redis\RedisManager;
 use Illuminate\Support\Facades\Redis;
 use RuntimeException;
 use Throwable;
@@ -44,7 +45,8 @@ class SwooleTaskMonitorStore
     /** @var array<string, int> 当前进程已写入样本身份及时间戳。 */
     private static array $samplePushedAt = [];
 
-    public function __construct(private readonly string $prefix = self::PREFIX)
+    public function __construct(private readonly string $prefix = self::PREFIX,
+        private readonly ?RedisManager $redisManager = null)
     {
     }
 
@@ -57,7 +59,15 @@ class SwooleTaskMonitorStore
     {
         $connection = config('swoole_task_monitor.redis_connection');
 
+        if ($this->redisManager !== null) return $this->redisManager->connection($connection ?: null);
         return $connection ? Redis::connection($connection) : Redis::connection();
+    }
+
+    /** Disconnect/reconnect only this recorder's manager, never another coroutine's socket. */
+    private function purgeConnection(?string $name): void
+    {
+        if ($this->redisManager !== null) $this->redisManager->purge($name);
+        else Redis::purge($name);
     }
 
     /**
@@ -560,7 +570,7 @@ class SwooleTaskMonitorStore
             // the failed command. This GET precedes every started counter write:
             // retry only this read, never the lifecycle event or any increment.
             try { $connection->disconnect(); } catch (Throwable) {}
-            Redis::purge(config('swoole_task_monitor.redis_connection') ?: null);
+            $this->purgeConnection(config('swoole_task_monitor.redis_connection') ?: null);
             $raw = $this->redis()->get($this->startKey($taskId));
         }
         $decoded = json_decode((string)$raw, true);
@@ -750,7 +760,7 @@ class SwooleTaskMonitorStore
             } catch (Throwable) {
             }
             try {
-                Redis::purge($connectionName);
+                $this->purgeConnection($connectionName);
             } catch (Throwable) {
             }
             // Preserve retention after a partially applied pipeline without replaying counters.
@@ -819,7 +829,7 @@ class SwooleTaskMonitorStore
             } catch (Throwable) {
             }
             try {
-                Redis::purge($connectionName);
+                $this->purgeConnection($connectionName);
             } catch (Throwable) {
             }
             try {
@@ -867,7 +877,7 @@ class SwooleTaskMonitorStore
             } catch (Throwable) {
             }
             try {
-                Redis::purge($connectionName);
+                $this->purgeConnection($connectionName);
             } catch (Throwable) {
             }
             try {

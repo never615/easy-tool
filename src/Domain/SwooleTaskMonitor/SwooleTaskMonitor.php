@@ -42,9 +42,10 @@ class SwooleTaskMonitor
      * 未使用 MonitoredSwooleTask 的普通 Task 仍可得到 summary 指标。
      *
      * @param array<string, mixed> $context 用于追踪和诊断的调用方上下文
+     * @param ?SwooleTaskMonitorStore $recorder 可选的独立连接记录器，避免协程共用 Redis socket
      */
     public static function deliver(Task $task, array $context = [], ?\Closure $timing = null,
-        ?\Closure $transport = null): bool
+        ?\Closure $transport = null, ?SwooleTaskMonitorStore $recorder = null): bool
     {
         $beforeStartedAt = $timing !== null ? hrtime(true) : null;
         try {
@@ -70,7 +71,7 @@ class SwooleTaskMonitor
                 // synchronous Redis command from every successful delivery without changing the
                 // final submitted/delivered counts or trace-mode ordering.
                 $store->recordSubmittedAndExpectedDeliveredSummary($taskClass);
-            });
+            }, $recorder);
         } finally {
             self::observeDeliveryTiming($timing, 'monitor_before', $beforeStartedAt);
         }
@@ -104,7 +105,7 @@ class SwooleTaskMonitor
                         $exception,
                         $traceSampled
                     );
-                });
+                }, $recorder);
             } finally {
                 self::observeDeliveryTiming($timing, 'monitor_after', $afterStartedAt);
             }
@@ -122,7 +123,7 @@ class SwooleTaskMonitor
                         return;
                     }
                     $store->recordDeliverFailed($taskId, $taskClass, 'Task::deliver returned false', null, $traceSampled);
-                });
+                }, $recorder);
 
                 return false;
             }
@@ -132,7 +133,7 @@ class SwooleTaskMonitor
             if ($traceSampled) {
                 self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass) {
                     $store->recordDelivered($taskClass);
-                });
+                }, $recorder);
             }
 
             return true;
@@ -163,13 +164,14 @@ class SwooleTaskMonitor
      * @param string|Task $task 任务实例或任务类名
      * @param array<string, mixed> $context 丢弃发生位置的诊断上下文
      */
-    public static function recordDropped(string|Task $task, string $reason, array $context = []): void
+    public static function recordDropped(string|Task $task, string $reason, array $context = [],
+        ?SwooleTaskMonitorStore $recorder = null): void
     {
         $taskClass = is_string($task) ? $task : get_class($task);
 
         self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass, $reason, $context) {
             $store->recordDropped($taskClass, $reason, $context);
-        });
+        }, $recorder);
     }
 
     /**
@@ -403,14 +405,14 @@ class SwooleTaskMonitor
      * 记录失败最多每 60 秒写一条 warning，避免 Redis 故障时大量 Task 放大日志噪音。
      * 回调异常被吞掉是刻意设计，保证监控为旁路能力而不是业务可用性的依赖。
      */
-    private static function safeRecord(callable $callback): void
+    private static function safeRecord(callable $callback, ?SwooleTaskMonitorStore $recorder = null): void
     {
         if (!self::enabled()) {
             return;
         }
 
         try {
-            $callback(app(SwooleTaskMonitorStore::class));
+            $callback($recorder ?? app(SwooleTaskMonitorStore::class));
         } catch (Throwable $exception) {
             self::$recordFailures++;
             $now = time();
