@@ -5,11 +5,10 @@ namespace Mallto\Tool\Domain\Queue;
 use Illuminate\Queue\LuaScripts;
 use Illuminate\Redis\Connections\PhpRedisConnection;
 use Laravel\Horizon\Events\JobsMigrated;
-use Laravel\Horizon\RedisQueue;
 use RuntimeException;
 
 /** Batch migration reads/writes only; reservation, blocking, ACK and release stay in Horizon. */
-class PipelinedHorizonRedisQueue extends RedisQueue
+class PipelinedHorizonRedisQueue extends PayloadCachingHorizonRedisQueue
 {
     protected function migrate($queue)
     {
