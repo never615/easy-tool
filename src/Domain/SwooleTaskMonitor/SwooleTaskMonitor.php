@@ -43,7 +43,8 @@ class SwooleTaskMonitor
      *
      * @param array<string, mixed> $context 用于追踪和诊断的调用方上下文
      */
-    public static function deliver(Task $task, array $context = [], ?\Closure $timing = null): bool
+    public static function deliver(Task $task, array $context = [], ?\Closure $timing = null,
+        ?\Closure $transport = null): bool
     {
         $beforeStartedAt = $timing !== null ? hrtime(true) : null;
         try {
@@ -82,7 +83,7 @@ class SwooleTaskMonitor
                     $task->prepareSwooleTaskFirstTrace();
                     $task->recordSwooleTaskFirstTracePoint('submitted');
                 }
-                $delivered = Task::deliver($task);
+                $delivered = $transport !== null ? $transport($task) : Task::deliver($task);
             } finally {
                 // Custom MQTT processes measure their first sendMessage call to Web, not worker queue time.
                 self::observeDeliveryTiming($timing, 'task_transport', $transportStartedAt);
