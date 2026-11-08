@@ -55,6 +55,17 @@ class QueueDiagnosticConfig
      */
     public function enabled(): bool
     {
+        return $this->readEnabled(true);
+    }
+
+    /** Optional payload context must not wait for another process's cold refill. */
+    public function enabledForPayload(): bool
+    {
+        return $this->readEnabled(false);
+    }
+
+    private function readEnabled(bool $waitForRefill): bool
+    {
         try {
             $store = Cache::store('local_redis');
             $now = hrtime(true);
@@ -68,7 +79,8 @@ class QueueDiagnosticConfig
             // Repository identity isolates applications/stores; PID rejects inherited fork state.
             // Only disabled is cached, so enabled diagnostics still observe a stop on every call.
             unset(self::$disabledResults[$store]);
-            $enabled = $this->boolValue(self::KEY_ENABLED, false);
+            $settings = $this->settings($waitForRefill);
+            $enabled = filter_var($settings[self::KEY_ENABLED] ?? '0', FILTER_VALIDATE_BOOLEAN);
             if (!$enabled) {
                 self::$disabledResults[$store] = ['pid' => $pid, 'until' => $now + self::DISABLED_CACHE_NS];
             }
@@ -567,7 +579,7 @@ class QueueDiagnosticConfig
     /**
      * 处理「settings」相关的内部协作步骤。
      */
-    private function settings(): array
+    private function settings(bool $waitForRefill = true): array
     {
         $store = Cache::store('local_redis');
         $settings = $store->get(self::SETTINGS_CACHE_KEY);
@@ -602,6 +614,11 @@ class QueueDiagnosticConfig
             $settings = $store->get(self::SETTINGS_CACHE_KEY);
             if (is_array($settings)) {
                 return $settings;
+            }
+            if (!$waitForRefill) {
+                // Skip only this optional context. Do not remember a false setting,
+                // release the winner's lock or fan out to the database.
+                throw new \RuntimeException('Queue diagnostic settings refill in progress');
             }
             $remainingNs = $deadline - hrtime(true);
             if ($remainingNs <= 0) {

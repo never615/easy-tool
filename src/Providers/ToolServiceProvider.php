@@ -280,8 +280,8 @@ class ToolServiceProvider extends ServiceProvider
                     return [];
                 }
 
-                // 无诊断上下文的任务不需要读取共享配置；有上下文时仍逐次检查动态开关。
-                if (!app(QueueDiagnosticConfig::class)->enabled()) {
+                // 无上下文不读配置；有上下文仍检查动态开关，但不等待其他进程回填可选诊断。
+                if (!app(QueueDiagnosticConfig::class)->enabledForPayload()) {
                     return [];
                 }
 
