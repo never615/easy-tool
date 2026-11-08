@@ -3,6 +3,10 @@
 namespace Mallto\Tool\Domain\QueueDiagnostic;
 
 use Carbon\Carbon;
+use Illuminate\Cache\RedisStore;
+use Illuminate\Cache\Repository;
+use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Support\Facades\Cache;
 use Mallto\Tool\Data\QueueDiagnosticSetting;
 
@@ -38,6 +42,9 @@ class QueueDiagnosticConfig
      */
     private const CONFIG_CACHE_SECONDS = 5;
     private const SETTINGS_CACHE_KEY = 'queue_diagnostic_settings';
+    private const REFILL_LOCK_KEY = 'queue_diagnostic_settings:refill';
+    private const REFILL_LOCK_SECONDS = 5;
+    private const REFILL_WAIT_NS = 250_000_000;
     private const DISABLED_CACHE_NS = 1_000_000_000;
 
     /** @var \WeakMap<object, array{pid: int, until: int}>|null */
@@ -488,7 +495,19 @@ class QueueDiagnosticConfig
         if (self::$disabledResults !== null) {
             unset(self::$disabledResults[$store]);
         }
-        $store->forget(self::SETTINGS_CACHE_KEY);
+        $backend = $store->getStore();
+        if ($backend instanceof RedisStore) {
+            $connection = $backend->connection();
+            if ($connection !== $backend->lockConnection()) {
+                throw new \RuntimeException('Queue diagnostic cache and refill lock must share a Redis connection');
+            }
+            // Atomically revoke old refill owners and remove their published value.
+            // A late owner can no longer resurrect settings from before this save.
+            $connection->del($backend->getPrefix().self::SETTINGS_CACHE_KEY,
+                $backend->getPrefix().self::REFILL_LOCK_KEY);
+        } else {
+            $store->forget(self::SETTINGS_CACHE_KEY);
+        }
     }
 
     /**
@@ -550,19 +569,81 @@ class QueueDiagnosticConfig
      */
     private function settings(): array
     {
-        $settings = Cache::store('local_redis')->get(self::SETTINGS_CACHE_KEY);
+        $store = Cache::store('local_redis');
+        $settings = $store->get(self::SETTINGS_CACHE_KEY);
         if (is_array($settings)) {
             return $settings;
         }
 
-        $settings = $this->loadSettings();
-        Cache::store('local_redis')->put(
-            self::SETTINGS_CACHE_KEY,
-            $settings,
-            Carbon::now()->addSeconds(self::CONFIG_CACHE_SECONDS)
-        );
+        // Only the cold miss path coordinates across workers. Keep the existing
+        // store, raw array key and five-second freshness contract unchanged.
+        $lock = $store->lock(self::REFILL_LOCK_KEY, self::REFILL_LOCK_SECONDS);
+        $deadline = hrtime(true) + self::REFILL_WAIT_NS;
+        $sleepUs = 10_000;
+        do {
+            if ($lock->get()) {
+                try {
+                    // Another worker may have filled between our first GET and lock.
+                    $settings = $store->get(self::SETTINGS_CACHE_KEY);
+                    if (is_array($settings)) {
+                        return $settings;
+                    }
+                    $settings = $this->loadSettings();
+                    $this->publishSettings($store, $lock, $settings);
 
-        return $settings;
+                    return $settings;
+                } finally {
+                    $lock->release();
+                }
+            }
+
+            // Read the winner's value before sleeping. A contended miss must not
+            // fan out to the database or cache an infrastructure failure as disabled.
+            $settings = $store->get(self::SETTINGS_CACHE_KEY);
+            if (is_array($settings)) {
+                return $settings;
+            }
+            $remainingNs = $deadline - hrtime(true);
+            if ($remainingNs <= 0) {
+                throw new \RuntimeException('Queue diagnostic settings refill timed out');
+            }
+            usleep((int)min($sleepUs, max(1, intdiv($remainingNs, 1000))));
+            $sleepUs = min(100_000, $sleepUs * 2);
+        } while (true);
+    }
+
+    /** Publish with the cache's own serialization, fenced by the cold-fill owner. */
+    private function publishSettings(Repository $store, Lock $lock, array $settings): void
+    {
+        $backend = $store->getStore();
+        if ($backend instanceof RedisStore) {
+            $connection = $backend->connection();
+            if ($connection !== $backend->lockConnection()) {
+                throw new \RuntimeException('Queue diagnostic cache and refill lock must share a Redis connection');
+            }
+            $temporary = self::SETTINGS_CACHE_KEY.':refill-value:'.$lock->owner();
+            // Repository::put preserves RedisStore's serializer/compression behavior.
+            // RENAME preserves this short TTL and the public raw-array cache format.
+            $store->put($temporary, $settings, Carbon::now()->addSeconds(self::CONFIG_CACHE_SECONDS));
+            $owner = $connection instanceof PhpRedisConnection
+                ? $connection->pack([$lock->owner()])[0] : $lock->owner();
+            $published = $connection->eval(
+                "if redis.call('get',KEYS[1]) == ARGV[1] and redis.call('exists',KEYS[2]) == 1 then "
+                ."redis.call('rename',KEYS[2],KEYS[3]); return 1 end; redis.call('del',KEYS[2]); return 0",
+                3, $backend->getPrefix().self::REFILL_LOCK_KEY,
+                $backend->getPrefix().$temporary, $backend->getPrefix().self::SETTINGS_CACHE_KEY, $owner
+            );
+            if ((int)$published !== 1) {
+                throw new \RuntimeException('Queue diagnostic settings refill lease expired or was invalidated');
+            }
+            return;
+        }
+
+        if (!$lock->isOwnedByCurrentProcess()) {
+            throw new \RuntimeException('Queue diagnostic settings refill lease expired');
+        }
+        $store->put(self::SETTINGS_CACHE_KEY, $settings,
+            Carbon::now()->addSeconds(self::CONFIG_CACHE_SECONDS));
     }
 
     /**
