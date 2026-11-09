@@ -85,6 +85,8 @@ class RuntimePrefixedMqttClient extends MqttClient
      * Opt-in QoS1 ingress hook. The handler calls $deliver exactly once, then
      * confirms durable admission before returning. No PUBACK precedes its return.
      * This is at-least-once delivery, not an exactly-once side-effect guarantee.
+     * Its optional second argument contains this bounded batch's topic/payload
+     * values for shared lookups; delivery still uses the original messages.
      */
     public function registerConfirmedPublishBatchHandler(\Closure $handler, int $maxMessages = 8): void
     {
@@ -141,7 +143,9 @@ class RuntimePrefixedMqttClient extends MqttClient
                     $this->deliverPublishedMessage($message->getTopic(), $message->getContent(),
                         $message->getQualityOfService(), $message->getRetained());
                 }
-            });
+            }, array_map(static fn (Message $message): array => [
+                'topic' => $message->getTopic(), 'payload' => $message->getContent(),
+            ], $messages));
             if (!$delivered) throw new \LogicException('Confirmed publish handler skipped delivery');
             foreach ($messages as $message) parent::sendPublishAcknowledgement($message->getMessageId());
         } catch (\Throwable $error) {
