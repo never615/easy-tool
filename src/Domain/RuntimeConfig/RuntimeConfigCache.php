@@ -20,6 +20,7 @@ final class RuntimeConfigCache
     {
         $mode = $this->runtimeMode($mode);
         $localHit = false;
+        $localPublicationAttempted = false;
 
         if (RuntimeConfigCacheMode::usesSwoole($mode)) {
             $payload = $this->swoole->get($identity);
@@ -41,14 +42,21 @@ final class RuntimeConfigCache
                     $value = $this->swoole->get($identity);
                     $localHit = $value !== null;
                     return $value;
-                } : null);
+                } : null,
+                RuntimeConfigCacheMode::usesSwoole($mode)
+                    ? function (array $value) use ($identity, &$localPublicationAttempted): void {
+                        // Mark the attempt even if L1 is unavailable: an invalidation
+                        // during unlock must never be undone by a second outer write.
+                        $localPublicationAttempted = true;
+                        $this->swoole->put($identity, $value);
+                    } : null);
         } else {
             $this->swoole->recordMetric('shared_hit');
             RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_hit');
         }
 
-        // An L1 hit must not renew its TTL or republish across a concurrent invalidation.
-        if (RuntimeConfigCacheMode::usesSwoole($mode) && !$localHit) {
+        // An L1 hit or lock-owned publication must not renew its TTL or republish across a concurrent invalidation.
+        if (RuntimeConfigCacheMode::usesSwoole($mode) && !$localHit && !$localPublicationAttempted) {
             $this->swoole->put($identity, $payload);
         }
 
@@ -104,14 +112,20 @@ final class RuntimeConfigCache
             RuntimeConfigBranchTrace::record($entries[$key]['identity']->fingerprint(), $payload === null ? 'shared_miss' : 'shared_hit');
             $entry = $entries[$key];
             $localHit = false;
+            $localPublicationAttempted = false;
             $payload ??= $this->shared->remember($entry['identity'], $entry['loader'],
                 RuntimeConfigCacheMode::usesSwoole($modes[$key])
                     ? function () use ($entry, &$localHit): ?array {
                         $value = $this->swoole->get($entry['identity']);
                         $localHit = $value !== null;
                         return $value;
+                    } : null,
+                RuntimeConfigCacheMode::usesSwoole($modes[$key])
+                    ? function (array $value) use ($entry, &$localPublicationAttempted): void {
+                        $localPublicationAttempted = true;
+                        $this->swoole->put($entry['identity'], $value);
                     } : null);
-            if (RuntimeConfigCacheMode::usesSwoole($modes[$key]) && !$localHit) {
+            if (RuntimeConfigCacheMode::usesSwoole($modes[$key]) && !$localHit && !$localPublicationAttempted) {
                 $this->swoole->put($entry['identity'], $payload);
             }
             $payloads[$key] = $payload;

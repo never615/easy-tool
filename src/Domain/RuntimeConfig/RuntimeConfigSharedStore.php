@@ -50,9 +50,13 @@ final class RuntimeConfigSharedStore
     /**
      * @param callable(): array{found: bool, value: mixed} $loader
      * @param null|callable(): ?array $localReader Existing caller-approved L1 only; never performs shared I/O.
+     * @param null|callable(array): void $localPublisher Publish caller-approved L1 before unlock can yield.
      * @return array{identity: string, found: bool, value: mixed}
      */
-    public function remember(RuntimeConfigIdentity $identity, callable $loader, ?callable $localReader = null): array
+    public function remember(
+        RuntimeConfigIdentity $identity, callable $loader,
+        ?callable $localReader = null, ?callable $localPublisher = null
+    ): array
     {
         $trace = RuntimeConfigRefillTrace::start($identity);
         $outcome = 'exception';
@@ -112,6 +116,7 @@ final class RuntimeConfigSharedStore
                 $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
                     $outcome = 'locked_cache_hit';
+                    $this->publishLocal($localPublisher, $cached);
                     return $cached;
                 }
 
@@ -129,6 +134,9 @@ final class RuntimeConfigSharedStore
                 }
 
                 $outcome = 'loader';
+                // Followers can use the completed value while release waits on Redis.
+                // The caller must not republish it after a concurrent invalidation.
+                $this->publishLocal($localPublisher, $loadedPayload);
                 return $loadedPayload;
             } finally {
                 $lock->release();
@@ -167,6 +175,17 @@ final class RuntimeConfigSharedStore
             return $payload;
         } finally {
             $trace?->finish($outcome);
+        }
+    }
+
+    private function publishLocal(?callable $publisher, array $payload): void
+    {
+        if ($publisher !== null) {
+            try {
+                $publisher($payload);
+            } catch (Throwable) {
+                // An unavailable L1 never changes the value or retries the source.
+            }
         }
     }
 
