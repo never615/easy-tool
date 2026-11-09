@@ -4,6 +4,15 @@ namespace Mallto\Tool\Domain\RuntimeConfig;
 
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Cache\Events\CacheHit;
+use Illuminate\Cache\Events\CacheMissed;
+use Illuminate\Cache\Events\RetrievingKey;
+use Illuminate\Cache\Events\RetrievingManyKeys;
+use Illuminate\Cache\RedisStore;
+use Illuminate\Cache\Repository;
+use Illuminate\Events\Dispatcher;
+use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Redis\Events\CommandExecuted;
 use Illuminate\Support\Sleep;
 use Throwable;
 
@@ -45,6 +54,113 @@ final class RuntimeConfigSharedStore
         } catch (Throwable) {
             return array_fill_keys(array_keys($identities), null);
         }
+    }
+
+    /**
+     * Observe one config and an array-valued companion in a single MGET.
+     * Only two valid hits are reusable. Unsupported stores, listeners, misses and
+     * errors leave both original read/refill paths responsible for their semantics.
+     * No values survive this call and no TTL or refill lock is changed.
+     * @return ?array{config: array, companion: array}
+     */
+    public function getWithArray(RuntimeConfigIdentity $identity, object $companion, string $key): ?array
+    {
+        try {
+            $repository = $this->store();
+            if (get_class($repository) !== Repository::class || get_class($companion) !== Repository::class) {
+                return null;
+            }
+            $a = $repository->getStore();
+            $b = $companion->getStore();
+            if (get_class($a) !== RedisStore::class || get_class($b) !== RedisStore::class
+                || $a->getRedis() !== $b->getRedis() || $a->getPrefix() !== $b->getPrefix()) {
+                return null;
+            }
+            // Identical connection objects preserve prefix, authentication,
+            // timeouts and failure policy. Let RedisStore decode supported values.
+            $connection = $a->connection();
+            if ($connection !== $b->connection()) {
+                return null;
+            }
+            if (get_class($connection) !== PhpRedisConnection::class) {
+                return null;
+            }
+            $client = $connection->client();
+            if (get_class($client) !== \Redis::class || $client->getMode() !== \Redis::ATOMIC
+                || $client->getOption(\Redis::OPT_SERIALIZER) !== \Redis::SERIALIZER_NONE
+                || (defined('Redis::OPT_COMPRESSION')
+                    && $client->getOption(\Redis::OPT_COMPRESSION) !== \Redis::COMPRESSION_NONE)) {
+                return null;
+            }
+            foreach ([$repository->getEventDispatcher(), $companion->getEventDispatcher()] as $dispatcher) {
+                if (!$this->noReadListeners($dispatcher, [RetrievingKey::class, RetrievingManyKeys::class,
+                    CacheHit::class, CacheMissed::class])) {
+                    return null;
+                }
+            }
+            if (!$this->noReadListeners($connection->getEventDispatcher(), [CommandExecuted::class])) {
+                return null;
+            }
+            $raw = $connection->mget([$a->getPrefix() . $identity->redisKey(), $a->getPrefix() . $key]);
+            if (!is_array($raw) || count($raw) !== 2) {
+                return null;
+            }
+            // Inspect without invoking foreign __wakeup hooks. A discarded
+            // observation must leave deserialization to the original GET once.
+            $configShape = $this->arrayShape($raw[0]);
+            $bindingShape = $this->arrayShape($raw[1]);
+            if ($this->validPayload($identity, $configShape) === null || $bindingShape === null
+                || !$this->scalarTree($configShape) || !$this->scalarTree($bindingShape)) {
+                return null;
+            }
+            $payload = $this->validPayload($identity, RuntimeConfigPairedRedisDecoder::decode($a, $raw[0], $connection));
+            $binding = RuntimeConfigPairedRedisDecoder::decode($b, $raw[1], $connection);
+            return $payload !== null && is_array($binding)
+                ? ['config' => $payload, 'companion' => $binding] : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function arrayShape(mixed $raw): ?array
+    {
+        $shape = is_string($raw) && str_starts_with($raw, 'a:')
+            ? @unserialize($raw, ['allowed_classes' => false]) : null;
+        return is_array($shape) ? $shape : null;
+    }
+
+    private function scalarTree(mixed $value, int $depth = 0): bool
+    {
+        if (!is_array($value)) {
+            return is_scalar($value) || $value === null;
+        }
+        if ($depth >= 16 || count($value) > 4096) {
+            return false;
+        }
+        foreach ($value as $item) {
+            if (!$this->scalarTree($item, $depth + 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function noReadListeners(?object $dispatcher, array $events): bool
+    {
+        if ($dispatcher === null) {
+            return true;
+        }
+        if (get_class($dispatcher) !== Dispatcher::class) {
+            return false;
+        }
+        foreach ($events as $event) {
+            // Includes wildcard and interface listeners; combining reads must not
+            // change application-observable cache/command event behavior.
+            if ($dispatcher->getListeners($event)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -289,5 +405,14 @@ final class RuntimeConfigSharedStore
             $payload,
             max(1, (int)config('runtime_config.shared_ttl_seconds', 60))
         );
+    }
+}
+
+/** Reuse Laravel's connection-aware codec; never maintain a parallel decoder. */
+final class RuntimeConfigPairedRedisDecoder extends RedisStore
+{
+    public static function decode(RedisStore $store, mixed $raw, PhpRedisConnection $connection): mixed
+    {
+        return $raw === null || $raw === false ? null : $store->connectionAwareUnserialize($raw, $connection);
     }
 }

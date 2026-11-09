@@ -190,6 +190,29 @@ final class RuntimeConfigCache
         return $mode;
     }
 
+    /** @return ?array{config: array{found: bool, value: mixed}, companion: array} */
+    public function getWithArray(RuntimeConfigIdentity $identity, string $mode, object $companion, string $key): ?array
+    {
+        $mode = $this->runtimeMode($mode);
+        // A valid L1 always wins. Its ordinary caller keeps metrics/TTL behavior;
+        // do not replace it with a shared observation just to combine a read.
+        if (RuntimeConfigCacheMode::usesSwoole($mode) && $this->swoole->get($identity) !== null) {
+            return null;
+        }
+        $observed = $this->shared->getWithArray($identity, $companion, $key);
+        if ($observed === null) {
+            return null;
+        }
+        if (RuntimeConfigCacheMode::usesSwoole($mode)) {
+            $this->swoole->recordMetric('l1_miss');
+            RuntimeConfigBranchTrace::record($identity->fingerprint(), 'l1_miss');
+            $this->swoole->put($identity, $observed['config']);
+        }
+        $this->swoole->recordMetric('shared_hit');
+        RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_hit');
+        return ['config' => $this->result($observed['config']), 'companion' => $observed['companion']];
+    }
+
     /** @return array{found: bool, value: mixed} */
     private function result(array $payload): array
     {
