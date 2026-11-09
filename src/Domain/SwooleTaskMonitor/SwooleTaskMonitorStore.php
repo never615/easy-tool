@@ -123,9 +123,7 @@ class SwooleTaskMonitorStore
     public function recordSubmittedAndExpectedDeliveredSummary(string $taskClass): void
     {
         $date = $this->date();
-        $statsKey = $this->statsKey($date);
-        $this->incrementSummaryCounters($statsKey, $taskClass, ['submitted' => 1, 'delivered' => 1]);
-        $this->touchMeta($date);
+        $this->recordSummaryEvent($date, $taskClass, ['submitted' => 1, 'delivered' => 1]);
     }
 
     /**
@@ -692,8 +690,8 @@ class SwooleTaskMonitorStore
     /**
      * Record a summary lifecycle event and coalesce its stats, metadata and TTL commands.
      *
-     * The pipeline is deliberately limited to summary started/finished events. Trace events,
-     * samples and delivery accounting retain their existing command boundaries. A pipeline is
+     * The pipeline covers combined summary submission and started/finished events. Trace events,
+     * samples and delivery failure accounting retain their existing command boundaries. A pipeline is
      * not atomic; a failed dispatch is never replayed, and the next event rebuilds the Redis
      * connection through the normal Laravel manager.
      *
