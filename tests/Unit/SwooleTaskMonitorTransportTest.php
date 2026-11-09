@@ -70,7 +70,7 @@ final class SwooleTaskMonitorTransportTest extends TestCase
         $connection->shouldReceive('client')->andReturn(new \Redis());
         $connection->shouldReceive('pipeline')->once()->andThrow(new \RuntimeException('pipeline failure'));
         $connection->shouldReceive('disconnect')->once();
-        $connection->shouldReceive('expire')->once()->andReturn(true);
+        $connection->shouldReceive('expire')->twice()->andReturn(true);
         $manager = \Mockery::mock(\Illuminate\Redis\RedisManager::class);
         $manager->shouldReceive('connection')->with('task-monitor')->andReturn($connection);
         $manager->shouldReceive('purge')->with('task-monitor')->once();
