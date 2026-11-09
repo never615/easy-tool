@@ -19,6 +19,7 @@ final class RuntimeConfigCache
     public function remember(RuntimeConfigIdentity $identity, string $mode, callable $loader): array
     {
         $mode = $this->runtimeMode($mode);
+        $localHit = false;
 
         if (RuntimeConfigCacheMode::usesSwoole($mode)) {
             $payload = $this->swoole->get($identity);
@@ -35,13 +36,19 @@ final class RuntimeConfigCache
         if ($payload === null) {
             $this->swoole->recordMetric('shared_miss');
             RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_miss');
-            $payload = $this->shared->remember($identity, $loader);
+            $payload = $this->shared->remember($identity, $loader,
+                RuntimeConfigCacheMode::usesSwoole($mode) ? function () use ($identity, &$localHit): ?array {
+                    $value = $this->swoole->get($identity);
+                    $localHit = $value !== null;
+                    return $value;
+                } : null);
         } else {
             $this->swoole->recordMetric('shared_hit');
             RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_hit');
         }
 
-        if (RuntimeConfigCacheMode::usesSwoole($mode)) {
+        // An L1 hit must not renew its TTL or republish across a concurrent invalidation.
+        if (RuntimeConfigCacheMode::usesSwoole($mode) && !$localHit) {
             $this->swoole->put($identity, $payload);
         }
 
@@ -96,8 +103,15 @@ final class RuntimeConfigCache
             $this->swoole->recordMetric($payload === null ? 'shared_miss' : 'shared_hit');
             RuntimeConfigBranchTrace::record($entries[$key]['identity']->fingerprint(), $payload === null ? 'shared_miss' : 'shared_hit');
             $entry = $entries[$key];
-            $payload ??= $this->shared->remember($entry['identity'], $entry['loader']);
-            if (RuntimeConfigCacheMode::usesSwoole($modes[$key])) {
+            $localHit = false;
+            $payload ??= $this->shared->remember($entry['identity'], $entry['loader'],
+                RuntimeConfigCacheMode::usesSwoole($modes[$key])
+                    ? function () use ($entry, &$localHit): ?array {
+                        $value = $this->swoole->get($entry['identity']);
+                        $localHit = $value !== null;
+                        return $value;
+                    } : null);
+            if (RuntimeConfigCacheMode::usesSwoole($modes[$key]) && !$localHit) {
                 $this->swoole->put($entry['identity'], $payload);
             }
             $payloads[$key] = $payload;

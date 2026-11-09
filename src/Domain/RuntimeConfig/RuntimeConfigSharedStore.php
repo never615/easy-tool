@@ -49,9 +49,10 @@ final class RuntimeConfigSharedStore
 
     /**
      * @param callable(): array{found: bool, value: mixed} $loader
+     * @param null|callable(): ?array $localReader Existing caller-approved L1 only; never performs shared I/O.
      * @return array{identity: string, found: bool, value: mixed}
      */
-    public function remember(RuntimeConfigIdentity $identity, callable $loader): array
+    public function remember(RuntimeConfigIdentity $identity, callable $loader, ?callable $localReader = null): array
     {
         $trace = RuntimeConfigRefillTrace::start($identity);
         $outcome = 'exception';
@@ -69,7 +70,24 @@ final class RuntimeConfigSharedStore
 
             // Cold readers share the first refill instead of serializing behind a now-hot key.
             // fresh() still takes the same lock and always replaces the value after commit.
-            while (!$lock->get()) {
+            while (true) {
+                // Another worker may have filled the caller's shared-memory L1 while
+                // this reader waited. Reuse it before another Redis lock/read round;
+                // a missing, invalid or unavailable L1 retains the original protocol.
+                if ($localReader !== null) {
+                    try {
+                        $local = $this->validPayload($identity, $localReader());
+                    } catch (Throwable) {
+                        $local = null;
+                    }
+                    if ($local !== null) {
+                        $outcome = 'local_cache_hit';
+                        return $local;
+                    }
+                }
+                if ($lock->get()) {
+                    break;
+                }
                 $trace?->lockMiss();
                 $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
