@@ -194,25 +194,30 @@ final class RuntimeConfigSharedStore
                 // Another worker may have filled the caller's shared-memory L1 while
                 // this reader waited. Reuse it before another Redis lock/read round;
                 // a missing, invalid or unavailable L1 retains the original protocol.
-                if ($localReader !== null) {
-                    try {
-                        $local = $this->validPayload($identity, $localReader());
-                    } catch (Throwable) {
-                        $local = null;
-                    }
-                    if ($local !== null) {
-                        $outcome = 'local_cache_hit';
-                        return $local;
-                    }
+                if (($local = $this->readLocal($identity, $localReader)) !== null) {
+                    $outcome = 'local_cache_hit';
+                    return $local;
                 }
                 if ($lock->get()) {
                     break;
                 }
                 $trace?->lockMiss();
+                // The lock request can yield while its owner publishes L1.
+                // Recheck before paying for another shared-cache round trip.
+                if (($local = $this->readLocal($identity, $localReader)) !== null) {
+                    $outcome = 'local_cache_hit';
+                    return $local;
+                }
                 $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
                     $outcome = 'contended_cache_hit';
                     return $cached;
+                }
+                // A shared miss may have been observed before the owner filled
+                // L1 during that request. Do not sleep behind an available value.
+                if (($local = $this->readLocal($identity, $localReader)) !== null) {
+                    $outcome = 'local_cache_hit';
+                    return $local;
                 }
                 if (hrtime(true) + 250_000_000 >= $deadline) {
                     throw new LockTimeoutException();
@@ -291,6 +296,18 @@ final class RuntimeConfigSharedStore
             return $payload;
         } finally {
             $trace?->finish($outcome);
+        }
+    }
+
+    private function readLocal(RuntimeConfigIdentity $identity, ?callable $reader): ?array
+    {
+        if ($reader === null) {
+            return null;
+        }
+        try {
+            return $this->validPayload($identity, $reader());
+        } catch (Throwable) {
+            return null;
         }
     }
 
