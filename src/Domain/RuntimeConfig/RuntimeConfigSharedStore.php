@@ -9,7 +9,6 @@ use Illuminate\Cache\Events\CacheMissed;
 use Illuminate\Cache\Events\RetrievingKey;
 use Illuminate\Cache\Events\RetrievingManyKeys;
 use Illuminate\Cache\RedisStore;
-use Illuminate\Cache\PhpRedisLock;
 use Illuminate\Cache\Repository;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Redis\Connections\PhpRedisConnection;
@@ -206,14 +205,11 @@ final class RuntimeConfigSharedStore
                         return $local;
                     }
                 }
-                $combined = $this->acquireAndRead($store, $lock, $identity, $seconds);
-                if ($combined === null ? $lock->get() : $combined['owned']) {
+                if ($lock->get()) {
                     break;
                 }
                 $trace?->lockMiss();
-                $cached = $this->validPayload($identity, $combined === null
-                    ? $store->get($identity->redisKey())
-                    : RuntimeConfigPairedRedisDecoder::decode($combined['store'], $combined['raw'], $combined['connection']));
+                $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
                     $outcome = 'contended_cache_hit';
                     return $cached;
@@ -233,10 +229,7 @@ final class RuntimeConfigSharedStore
             }
 
             try {
-                // Decode inside the owned finally: a bad payload must still release our token.
-                $cached = $this->validPayload($identity, $combined === null
-                    ? $store->get($identity->redisKey())
-                    : RuntimeConfigPairedRedisDecoder::decode($combined['store'], $combined['raw'], $combined['connection']));
+                $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
                     $outcome = 'locked_cache_hit';
                     $this->publishLocal($localPublisher, $cached);
@@ -299,54 +292,6 @@ final class RuntimeConfigSharedStore
         } finally {
             $trace?->finish($outcome);
         }
-    }
-
-    /**
-     * Preserve SET-NX then GET order, removing only their network wait boundary.
-     * This is a pipeline, not a transaction. Unsupported adapters keep scalar calls;
-     * once commands start, an uncertain reply must never replay lock acquisition.
-     * @return ?array{owned: bool, raw: mixed, store: RedisStore, connection: PhpRedisConnection}
-     */
-    private function acquireAndRead(object $repository, object $lock, RuntimeConfigIdentity $identity, int $seconds): ?array
-    {
-        try {
-            if (get_class($repository) !== Repository::class || Repository::hasMacro('lock')
-                || get_class($lock) !== PhpRedisLock::class) return null;
-            $store = $repository->getStore();
-            if (get_class($store) !== RedisStore::class) return null;
-            $connection = $store->connection();
-            if (get_class($connection) !== PhpRedisConnection::class
-                || $connection !== $store->lockConnection()) return null;
-            $client = $connection->client();
-            if (get_class($client) !== \Redis::class || $client->getMode() !== \Redis::ATOMIC
-                || $client->getOption(\Redis::OPT_SERIALIZER) !== \Redis::SERIALIZER_NONE
-                || (defined('Redis::OPT_COMPRESSION')
-                    && $client->getOption(\Redis::OPT_COMPRESSION) !== \Redis::COMPRESSION_NONE)) return null;
-            if (!$this->noReadListeners($repository->getEventDispatcher(),
-                [RetrievingKey::class, CacheHit::class, CacheMissed::class])
-                || !$this->noReadListeners($connection->getEventDispatcher(), [CommandExecuted::class])) return null;
-        } catch (Throwable) {
-            return null; // Eligibility checks have not sent any commands.
-        }
-
-        try {
-            $reply = $connection->pipeline(function (\Redis $pipeline) use ($store, $identity, $lock, $seconds): void {
-                $pipeline->set($store->getPrefix() . $this->lockKey($identity), $lock->owner(), ['nx', 'ex' => $seconds]);
-                $pipeline->get($store->getPrefix() . $identity->redisKey());
-            });
-            if (!is_array($reply) || count($reply) !== 2
-                || !in_array($reply[0], [true, false, 'OK'], true)) {
-                throw new \RuntimeException('Uncertain runtime config refill pipeline reply');
-            }
-        } catch (Throwable $error) {
-            // A failed enqueue/exec may leave pipeline mode or a committed SET.
-            // Discard unsent work, then compare-and-release only this lock's token.
-            try { if ($client->getMode() !== \Redis::ATOMIC) $client->discard(); } catch (Throwable) {}
-            try { $lock->release(); } catch (Throwable) {}
-            throw $error;
-        }
-
-        return ['owned' => $reply[0] !== false, 'raw' => $reply[1], 'store' => $store, 'connection' => $connection];
     }
 
     private function publishLocal(?callable $publisher, array $payload): void
