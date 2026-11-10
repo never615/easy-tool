@@ -17,11 +17,6 @@ use Laravel\Horizon\Repositories\RedisTagRepository;
 use Mallto\Tool\Domain\Queue\ChunkedHorizonJobRepository;
 use Mallto\Tool\Domain\Queue\EmptyAwareHorizonTagRepository;
 use Mallto\Tool\Domain\Queue\PipelinedHorizonRedisConnector;
-use Mallto\Tool\Domain\Queue\QueueWorkerControlStore;
-use Illuminate\Cache\Repository as CacheRepository;
-use Illuminate\Queue\Console\WorkCommand;
-use Illuminate\Queue\Console\RestartCommand;
-use Laravel\Horizon\Console\WorkCommand as HorizonWorkCommand;
 
 /**
  * User: never615 <never615.com>
@@ -39,29 +34,6 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     public function boot()
     {
         parent::boot();
-
-        $controlStore = config('horizon.worker_control_cache_store');
-        if (is_string($controlStore) && trim($controlStore) !== '') {
-            // Laravel/Horizon factories explicitly inject cache.store, bypassing
-            // contextual constructor bindings. Extend their real command instances.
-            foreach ([WorkCommand::class, HorizonWorkCommand::class, RestartCommand::class] as $commandClass) {
-                $this->app->extend($commandClass, function ($command, $app) use ($controlStore, $commandClass) {
-                    if (get_class($command) !== $commandClass) return $command;
-                    $property = new \ReflectionProperty($command, 'cache');
-                    $original = $property->getValue($command);
-                    if (get_class($original) !== CacheRepository::class) return $command;
-                    $control = $app['cache']->store($controlStore);
-                    // Keep custom Repository behavior and global/business injections intact.
-                    if ($original === $control || get_class($control) !== CacheRepository::class
-                        || $original->getStore() instanceof QueueWorkerControlStore) return $command;
-                    $repository = clone $original;
-                    $repository->setStore(new QueueWorkerControlStore(
-                        $original->getStore(), $control->getStore()));
-                    $property->setValue($command, $repository);
-                    return $command;
-                });
-            }
-        }
 
         // All providers have registered by boot. Extend without resolving the
         // repository early or replacing another application's custom implementation.
