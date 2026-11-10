@@ -9,7 +9,6 @@ use Illuminate\Cache\Events\CacheMissed;
 use Illuminate\Cache\Events\RetrievingKey;
 use Illuminate\Cache\Events\RetrievingManyKeys;
 use Illuminate\Cache\RedisStore;
-use Illuminate\Cache\PhpRedisLock;
 use Illuminate\Cache\Repository;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Redis\Connections\PhpRedisConnection;
@@ -123,56 +122,6 @@ final class RuntimeConfigSharedStore
         }
     }
 
-    /**
-     * Collapse only the stock Redis lock/read round trip. The same owner, TTL,
-     * locked recheck and compare-owner release remain in force; fresh is unchanged.
-     * Unsupported adapters/listeners keep their original method calls.
-     * @return ?array{owned: bool, observed: bool, payload: ?array}
-     */
-    private function acquireWithObservation($repository, $lock, RuntimeConfigIdentity $identity, int $seconds): ?array
-    {
-        $invoked = false;
-        try {
-            if (get_class($repository) !== Repository::class || get_class($lock) !== PhpRedisLock::class) return null;
-            $store = $repository->getStore();
-            if (get_class($store) !== RedisStore::class) return null;
-            $connection = $store->connection();
-            if ($connection !== $store->lockConnection() || get_class($connection) !== PhpRedisConnection::class) return null;
-            $client = $connection->client();
-            if (get_class($client) !== \Redis::class || $client->getMode() !== \Redis::ATOMIC
-                || $client->getOption(\Redis::OPT_SERIALIZER) !== \Redis::SERIALIZER_NONE
-                || (defined('Redis::OPT_COMPRESSION')
-                    && $client->getOption(\Redis::OPT_COMPRESSION) !== \Redis::COMPRESSION_NONE)) return null;
-            if (!$this->noReadListeners($repository->getEventDispatcher(), [RetrievingKey::class,
-                    RetrievingManyKeys::class, CacheHit::class, CacheMissed::class])
-                || !$this->noReadListeners($connection->getEventDispatcher(), [CommandExecuted::class])) return null;
-            $invoked = true;
-            $raw = $connection->eval(
-                "local owned=redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[2],'NX');"
-                . "return {owned and 1 or 0,redis.call('GET',KEYS[2])}", 2,
-                $store->getPrefix() . $this->lockKey($identity),
-                $store->getPrefix() . $identity->redisKey(), $lock->owner(), $seconds);
-            if (!is_array($raw) || count($raw) !== 2 || !in_array($raw[0], [0, 1], true)
-                || !(is_string($raw[1]) || $raw[1] === false || $raw[1] === null)) {
-                throw new \UnexpectedValueException('Invalid runtime refill lock/read observation');
-            }
-            // Foreign serialized objects must be decoded by the ordinary GET once,
-            // after ownership is handled. Never invoke their hooks speculatively.
-            $shape = $this->arrayShape($raw[1]);
-            $safe = $raw[1] === false || $raw[1] === null
-                || ($this->validPayload($identity, $shape) !== null && $this->scalarTree($shape));
-            return ['owned' => $raw[0] === 1, 'observed' => $safe,
-                'payload' => $safe ? $this->validPayload($identity,
-                    RuntimeConfigPairedRedisDecoder::decode($store, $raw[1], $connection)) : null];
-        } catch (Throwable $error) {
-            if (!$invoked) return null;
-            // A lost reply may have acquired the lock. Release only our owner;
-            // never replay the mutating EVAL or leave it until its lease expires.
-            try { $lock->release(); } catch (Throwable) {}
-            throw $error;
-        }
-    }
-
     private function arrayShape(mixed $raw): ?array
     {
         $shape = is_string($raw) && str_starts_with($raw, 'a:')
@@ -249,8 +198,7 @@ final class RuntimeConfigSharedStore
                     $outcome = 'local_cache_hit';
                     return $local;
                 }
-                $observation = $this->acquireWithObservation($store, $lock, $identity, $seconds);
-                if ($observation !== null ? $observation['owned'] : $lock->get()) {
+                if ($lock->get()) {
                     break;
                 }
                 $trace?->lockMiss();
@@ -260,9 +208,7 @@ final class RuntimeConfigSharedStore
                     $outcome = 'local_cache_hit';
                     return $local;
                 }
-                $cached = $observation !== null && $observation['observed']
-                    ? $observation['payload']
-                    : $this->validPayload($identity, $store->get($identity->redisKey()));
+                $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
                     $outcome = 'contended_cache_hit';
                     return $cached;
@@ -288,9 +234,7 @@ final class RuntimeConfigSharedStore
             }
 
             try {
-                $cached = $observation !== null && $observation['observed']
-                    ? $observation['payload']
-                    : $this->validPayload($identity, $store->get($identity->redisKey()));
+                $cached = $this->validPayload($identity, $store->get($identity->redisKey()));
                 if ($cached !== null) {
                     $outcome = 'locked_cache_hit';
                     $this->publishLocal($localPublisher, $cached);
