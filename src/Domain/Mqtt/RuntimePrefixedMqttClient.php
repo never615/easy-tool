@@ -33,6 +33,15 @@ class RuntimePrefixedMqttClient extends MqttClient
     private int $confirmedPublishBatchBytes = 0;
     private int $confirmedPublishBatchLimit = 8;
     private bool $flushingConfirmedPublishBatch = false;
+    private bool $confirmedTimingEnabled = false;
+    private int $confirmedTimingMessages = 0;
+    private int $confirmedTimingSamples = 0;
+    private int $confirmedTimingLoops = 0;
+    private array $confirmedLoopTiming = [];
+    private array $confirmedQueuedTiming = [];
+    private ?array $confirmedCallbackTiming = null;
+    private int $confirmedTimingBatches = 0;
+    private ?array $confirmedPreviousBatch = null;
 
     /**
      * 注入本组件运行所需的协作依赖，保持构造与业务执行解耦。
@@ -64,6 +73,10 @@ class RuntimePrefixedMqttClient extends MqttClient
 
     public function loopOnce(float $loopStartedAt, bool $allowSleep = false, int $sleepMicroseconds = 100000): void
     {
+        if ($this->confirmedTimingEnabled) {
+            $this->confirmedLoopTiming = ['loop_started_ns' => hrtime(true),
+                'loop_sequence' => ++$this->confirmedTimingLoops];
+        }
         // Parent loop() omits the third argument. Preserve explicit caller overrides,
         // and let the parent sleep only when no socket data is available.
         if ($allowSleep && func_num_args() < 3) {
@@ -78,7 +91,34 @@ class RuntimePrefixedMqttClient extends MqttClient
         } catch (\Throwable $error) {
             if ($this->confirmedPublishBatchHandler !== null) $this->abortConfirmedPublishBatch();
             throw $error;
+        } finally {
+            $this->confirmedLoopTiming = [];
         }
+    }
+
+    /** Opt-in receipt clocks only: first 32 messages, then every 32nd, cap 256/client. */
+    public function enableConfirmedPublishTiming(): void { $this->confirmedTimingEnabled = true; }
+
+    /** Available only inside the original subscription callback; contains no source identity. */
+    public function confirmedPublishTiming(): ?array { return $this->confirmedCallbackTiming; }
+
+    /** Current loop and most recent fully written ACK batch; no broker-delivery claim. */
+    public function confirmedLoopTiming(): array
+    {
+        return $this->confirmedTimingEnabled
+            ? ['loop' => $this->confirmedLoopTiming, 'previous_batch' => $this->confirmedPreviousBatch] : [];
+    }
+
+    protected function readAllAvailableDataFromSocket(bool $withAutoReconnectIfConfigured = false): string
+    {
+        if (!$this->confirmedTimingEnabled) return parent::readAllAvailableDataFromSocket($withAutoReconnectIfConfigured);
+        $started = hrtime(true);
+        $data = parent::readAllAvailableDataFromSocket($withAutoReconnectIfConfigured);
+        $this->confirmedLoopTiming += ['read_started_ns' => $started,
+            'read_returned_ns' => hrtime(true), 'read_bytes' => strlen($data)];
+        // This is the current nonblocking read, not the arrival of every buffered
+        // byte. A partial packet may include bytes retained from an earlier loop.
+        return $data;
     }
 
     /**
@@ -111,6 +151,14 @@ class RuntimePrefixedMqttClient extends MqttClient
                     throw new \LengthException('Confirmed MQTT publish exceeds the 256 KiB admission budget');
                 }
                 if ($this->confirmedPublishBatchBytes + $bytes > 262144) $this->flushConfirmedPublishBatch();
+                if ($this->confirmedTimingEnabled) {
+                    $ordinal = ++$this->confirmedTimingMessages;
+                    if ($this->confirmedTimingSamples < 256 && ($ordinal <= 32 || $ordinal % 32 === 0)) {
+                        ++$this->confirmedTimingSamples;
+                        $this->confirmedQueuedTiming[spl_object_id($message)] = $this->confirmedLoopTiming
+                            + ['decoded_ns' => hrtime(true), 'message_ordinal' => $ordinal];
+                    }
+                }
                 $this->confirmedPublishBatch[] = $message;
                 $this->confirmedPublishBatchBytes += $bytes;
                 if (count($this->confirmedPublishBatch) >= $this->confirmedPublishBatchLimit
@@ -131,23 +179,41 @@ class RuntimePrefixedMqttClient extends MqttClient
         if ($this->confirmedPublishBatch === []) return;
         if ($this->flushingConfirmedPublishBatch) throw new \LogicException('Reentrant confirmed publish batch');
         $messages = $this->confirmedPublishBatch;
+        $timings = $this->confirmedQueuedTiming;
+        $this->confirmedQueuedTiming = [];
+        $batch = $this->confirmedTimingEnabled ? ['batch_sequence' => ++$this->confirmedTimingBatches,
+            'loop_sequence' => $this->confirmedLoopTiming['loop_sequence'] ?? null,
+            'started_ns' => hrtime(true), 'messages' => count($messages)] : null;
         $this->confirmedPublishBatch = [];
         $this->confirmedPublishBatchBytes = 0;
         $this->flushingConfirmedPublishBatch = true;
         $delivered = false;
         try {
-            ($this->confirmedPublishBatchHandler)(function () use ($messages, &$delivered): void {
+            ($this->confirmedPublishBatchHandler)(function () use ($messages, $timings, $batch, &$delivered): void {
                 if ($delivered) throw new \LogicException('Confirmed publish callbacks already delivered');
                 $delivered = true;
                 foreach ($messages as $message) {
-                    $this->deliverPublishedMessage($message->getTopic(), $message->getContent(),
-                        $message->getQualityOfService(), $message->getRetained());
+                    $timing = $timings[spl_object_id($message)] ?? null;
+                    $this->confirmedCallbackTiming = $timing === null ? null : $timing
+                        + ['batch_started_ns' => $batch['started_ns'], 'batch_sequence' => $batch['batch_sequence'],
+                            'callback_started_ns' => hrtime(true), 'previous_batch' => $this->confirmedPreviousBatch];
+                    try {
+                        $this->deliverPublishedMessage($message->getTopic(), $message->getContent(),
+                            $message->getQualityOfService(), $message->getRetained());
+                    } finally {
+                        $this->confirmedCallbackTiming = null;
+                    }
                 }
             }, array_map(static fn (Message $message): array => [
                 'topic' => $message->getTopic(), 'payload' => $message->getContent(),
             ], $messages));
             if (!$delivered) throw new \LogicException('Confirmed publish handler skipped delivery');
+            if ($batch !== null) $batch['handler_returned_ns'] = $batch['ack_started_ns'] = hrtime(true);
             foreach ($messages as $message) parent::sendPublishAcknowledgement($message->getMessageId());
+            if ($batch !== null) {
+                $batch['ack_returned_ns'] = hrtime(true);
+                $this->confirmedPreviousBatch = $batch;
+            }
         } catch (\Throwable $error) {
             // Some Redis commands or ACK writes may have succeeded. Never retry
             // this batch locally or send old packet IDs on a new MQTT session.
@@ -205,6 +271,8 @@ class RuntimePrefixedMqttClient extends MqttClient
 
     private function abortConfirmedPublishBatch(): void
     {
+        $this->confirmedQueuedTiming = [];
+        $this->confirmedCallbackTiming = null;
         $this->confirmedPublishBatch = [];
         $this->confirmedPublishBatchBytes = 0;
         $this->closeSocket();
