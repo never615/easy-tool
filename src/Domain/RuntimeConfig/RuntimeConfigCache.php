@@ -18,6 +18,23 @@ final class RuntimeConfigCache
      */
     public function remember(RuntimeConfigIdentity $identity, string $mode, callable $loader): array
     {
+        return $this->rememberObserved($identity, $mode, $loader, false);
+    }
+
+    /**
+     * Reuse an earlier shared miss without repeating the unlocked GET.
+     * The ordinary L1 check, refill lock, locked recheck and error policy remain.
+     * Even a raced/stale miss cannot authorize loading over a newly cached value.
+     * @param callable(): array{found: bool, value: mixed} $loader
+     * @return array{found: bool, value: mixed}
+     */
+    public function rememberAfterSharedMiss(RuntimeConfigIdentity $identity, string $mode, callable $loader): array
+    {
+        return $this->rememberObserved($identity, $mode, $loader, true);
+    }
+
+    private function rememberObserved(RuntimeConfigIdentity $identity, string $mode, callable $loader, bool $sharedMiss): array
+    {
         $mode = $this->runtimeMode($mode);
         $localHit = false;
         $localPublicationAttempted = false;
@@ -33,7 +50,7 @@ final class RuntimeConfigCache
             RuntimeConfigBranchTrace::record($identity->fingerprint(), 'l1_miss');
         }
 
-        $payload = $this->shared->get($identity);
+        $payload = $sharedMiss ? null : $this->shared->get($identity);
         if ($payload === null) {
             $this->swoole->recordMetric('shared_miss');
             RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_miss');
