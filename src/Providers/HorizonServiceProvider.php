@@ -17,6 +17,7 @@ use Laravel\Horizon\Repositories\RedisTagRepository;
 use Mallto\Tool\Domain\Queue\ChunkedHorizonJobRepository;
 use Mallto\Tool\Domain\Queue\EmptyAwareHorizonTagRepository;
 use Mallto\Tool\Domain\Queue\PipelinedHorizonRedisConnector;
+use Mallto\Tool\Domain\Queue\QuietAwareHorizonWorkCommand;
 
 /**
  * User: never615 <never615.com>
@@ -34,6 +35,14 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     public function boot()
     {
         parent::boot();
+
+        // Artisan resolves this command after provider boot. Preserve custom command
+        // subclasses; only skip output formatting that --quiet already discards.
+        $this->app->extend(\Laravel\Horizon\Console\WorkCommand::class, function ($command) {
+            return get_class($command) === \Laravel\Horizon\Console\WorkCommand::class
+                ? QuietAwareHorizonWorkCommand::fromOriginal($command)
+                : $command;
+        });
 
         // All providers have registered by boot. Extend without resolving the
         // repository early or replacing another application's custom implementation.
