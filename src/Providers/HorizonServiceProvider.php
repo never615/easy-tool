@@ -45,6 +45,11 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 : $command;
         });
 
+        $this->app->extend(\Illuminate\Queue\Console\RetryCommand::class, function ($command) {
+            return get_class($command) === \Illuminate\Queue\Console\RetryCommand::class
+                ? new \Mallto\Tool\Domain\Queue\BoundedQueueRetryCommand() : $command;
+        });
+
         // All providers have registered by boot. Extend without resolving the
         // repository early or replacing another application's custom implementation.
         $this->app->extend(TagRepository::class, function ($repository) {
@@ -74,7 +79,8 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 break;
             }
         }
-        if ($hasMigrationBatch
+        if (filter_var(config('queue.high_backlog.enabled', true), FILTER_VALIDATE_BOOLEAN)
+            || $hasMigrationBatch
             || filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
             || filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
             // Boot runs after Horizon registered its connector. Do not resolve queues early or

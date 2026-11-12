@@ -3,6 +3,7 @@
 namespace Mallto\Tool\Domain\Queue;
 
 use Illuminate\Support\Arr;
+use Illuminate\Container\Container;
 use Laravel\Horizon\Connectors\RedisConnector;
 use Laravel\Horizon\RedisQueue;
 
@@ -11,7 +12,9 @@ class MigrationBatchHorizonRedisConnector extends RedisConnector
 {
     public function connect(array $config)
     {
-        return $this->createQueue($config, RedisQueue::class);
+        return $this->createQueue($config, Container::getInstance()->bound('config')
+            && filter_var(config('queue.high_backlog.enabled', true), FILTER_VALIDATE_BOOLEAN)
+            ? BoundedHorizonRedisQueue::class : RedisQueue::class);
     }
 
     protected function createQueue(array $config, string $queueClass): RedisQueue

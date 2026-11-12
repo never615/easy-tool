@@ -4,6 +4,7 @@ namespace Mallto\Tool\Domain\Queue;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Redis\Connections\PhpRedisConnection;
+use Laravel\Horizon\JobPayload;
 use Laravel\Horizon\Repositories\RedisJobRepository;
 use RuntimeException;
 use Throwable;
@@ -18,6 +19,30 @@ local members = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], '+inf', 'LIMIT', 0
 if #members == 0 then return 0 end
 return redis.call('ZREM', KEYS[1], unpack(members))
 LUA;
+
+    /** Admission completes before metadata: fill identity without rolling state backwards. */
+    public function pushed($connection, $queue, JobPayload $payload)
+    {
+        if (empty($payload->decoded['bounded_high'])) return parent::pushed($connection, $queue, $payload);
+        $time = str_replace(',', '.', microtime(true));
+        HighQueueRedisConnection::get($this->redis, 'horizon')->eval(<<<'LUA'
+local status = redis.call('HGET', KEYS[1], 'status')
+local fields = {'id', 'connection', 'queue', 'name', 'payload', 'created_at', 'updated_at'}
+for i, field in ipairs(fields) do redis.call('HSETNX', KEYS[1], field, ARGV[i]) end
+redis.call('ZADD', KEYS[2], 'NX', ARGV[8], ARGV[1])
+if not status then
+    redis.call('HSET', KEYS[1], 'status', 'pending')
+    redis.call('EXPIREAT', KEYS[1], ARGV[9])
+end
+if not status or status == 'pending' or status == 'reserved' then
+    if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIREAT', KEYS[1], ARGV[9]) end
+    redis.call('ZADD', KEYS[3], 'NX', ARGV[8], ARGV[1])
+end
+return 1
+LUA, 3, $payload->id(), 'recent_jobs', 'pending_jobs',
+            $payload->id(), $connection, $queue, $payload->displayName(), $payload->value, $time, $time,
+            -1 * CarbonImmutable::now()->getTimestamp(), CarbonImmutable::now()->addMinutes($this->pendingJobExpires)->getTimestamp());
+    }
 
     public function trimRecentJobs()
     {

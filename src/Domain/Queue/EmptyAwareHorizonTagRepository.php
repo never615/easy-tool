@@ -7,6 +7,14 @@ use Laravel\Horizon\Repositories\RedisTagRepository;
 /** Preserve live monitoring for tagged jobs without querying an empty intersection. */
 class EmptyAwareHorizonTagRepository extends RedisTagRepository
 {
+    protected function connection()
+    {
+        if (app()->bound('queue.high_metadata_context') && app('queue.high_metadata_context') === true) {
+            return HighQueueRedisConnection::get($this->redis, 'horizon');
+        }
+        return parent::connection();
+    }
+
     public function monitored(array $tags)
     {
         // No tag can be monitored when the job has none. Do not cache nonempty
