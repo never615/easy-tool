@@ -18,6 +18,7 @@ use Mallto\Tool\Domain\Queue\ChunkedHorizonJobRepository;
 use Mallto\Tool\Domain\Queue\EmptyAwareHorizonTagRepository;
 use Mallto\Tool\Domain\Queue\PipelinedHorizonRedisConnector;
 use Mallto\Tool\Domain\Queue\QuietAwareHorizonWorkCommand;
+use Mallto\Tool\Domain\Queue\MigrationBatchHorizonRedisConnector;
 
 /**
  * User: never615 <never615.com>
@@ -65,12 +66,25 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             return $replacement;
         });
 
-        if (filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
+        $hasMigrationBatch = false;
+        foreach ((array) config('queue.connections', []) as $connection) {
+            if (($connection['driver'] ?? null) === 'redis'
+                && (int) ($connection['migration_batch_size'] ?? -1) > 0) {
+                $hasMigrationBatch = true;
+                break;
+            }
+        }
+        if ($hasMigrationBatch
+            || filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
             || filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
             // Boot runs after Horizon registered its connector. Do not resolve queues early or
             // replace an already-live connection; both resident applications need a restart.
             $this->callAfterResolving(QueueManager::class, function ($manager): void {
                 $manager->addConnector('redis', function () {
+                    if (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
+                        && !filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
+                        return new MigrationBatchHorizonRedisConnector($this->app['redis']);
+                    }
                     return new PipelinedHorizonRedisConnector($this->app['redis'], null,
                         filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN),
                         filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN));
