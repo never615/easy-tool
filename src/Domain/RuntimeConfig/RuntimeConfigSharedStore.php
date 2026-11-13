@@ -82,7 +82,7 @@ final class RuntimeConfigSharedStore
             if ($connection !== $b->connection()) {
                 return null;
             }
-            if (get_class($connection) !== PhpRedisConnection::class) {
+            if (!in_array(get_class($connection), [PhpRedisConnection::class, \Mallto\Tool\Domain\RedisMonitor\RecoveringPhpRedisConnection::class], true)) {
                 return null;
             }
             $client = $connection->client();

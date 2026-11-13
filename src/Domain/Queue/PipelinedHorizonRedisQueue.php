@@ -38,6 +38,7 @@ class PipelinedHorizonRedisQueue extends PayloadCachingHorizonRedisQueue
         // commands or pop on failure; the next normal attempt can consume them safely.
         if (!is_array($responses) || count($responses) !== 2
             || !is_array($responses[0]) || !is_array($responses[1])) {
+            $connection->disconnect();
             throw new RuntimeException('Queue migration pipeline failed; no Job was reserved');
         }
         foreach ($responses as $jobs) {
