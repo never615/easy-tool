@@ -115,6 +115,20 @@ final class OwnerApiLogTest extends TestCase
         $this->assertFalse($this->logs('/api/tp/locator'));
     }
 
+    public function test_missing_filter_mode_defaults_to_whitelist_and_collects_nothing_without_rules(): void
+    {
+        $config = config('owner_api_log');
+        unset($config['filter_mode']);
+        config(['owner_api_log' => $config, 'app.log.owner_api' => true]);
+        $resolver = Mockery::mock();
+        $resolver->shouldReceive('getMany')->andReturnUsing(static fn (array $defaults): array => $defaults);
+        $this->app->instance(GlobalConfigRuntimeResolver::class, $resolver);
+        $this->app->instance(OwnerApiLogSettings::class, new OwnerApiLogSettings());
+
+        $this->assertFalse($this->logs('/api/tp/locator'));
+        $this->assertFalse($this->logs('/api/tp/locator/42', 'DELETE'));
+    }
+
     public function test_blacklist_falls_back_to_legacy_rules_but_explicit_empty_rules_override_them(): void
     {
         $this->legacyBypass = false;

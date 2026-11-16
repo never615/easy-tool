@@ -36,7 +36,7 @@ class OwnerApiLogConfigController extends Controller
                 ? (filter_var($overrides['owner_api_log.enabled'], FILTER_VALIDATE_BOOLEAN) ? '1' : '0')
                 : 'inherit',
             'baselineEnabled' => (bool) config('app.log.owner_api', false),
-            'baselineFilterMode' => (string) config('owner_api_log.filter_mode', 'blacklist'),
+            'baselineFilterMode' => (string) config('owner_api_log.filter_mode', 'whitelist'),
             'rulesSource' => $hasRulesOverride ? 'override' : 'inherit',
             'rules' => $rules,
             'retentionSource' => array_key_exists('owner_api_log.retention_days', $overrides) ? 'override' : 'inherit',

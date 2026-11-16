@@ -25,8 +25,8 @@ return [
     // 管理页基线规则：由下方 include 路径列表生成，默认每条启用。
     'admin_rules' => array_map(static fn (string $path): array => ['path' => $path, 'enabled' => true],
         $rules(env('OWNER_API_LOG_INCLUDE', ''))),
-    // 默认兼容旧黑名单；内网部署建议显式选择 whitelist，空白名单不采集。
-    'filter_mode' => env('OWNER_API_LOG_FILTER_MODE', 'blacklist'),
+    // 默认白名单，空白名单不采集；需要兼容旧黑名单时显式选择 blacklist。
+    'filter_mode' => env('OWNER_API_LOG_FILTER_MODE', 'whitelist'),
     'include' => $rules(env('OWNER_API_LOG_INCLUDE', '')),
     // 未配置时继续使用 app.log.except；显式空字符串表示空黑名单。
     'exclude' => $exclude === null ? null : $rules($exclude),

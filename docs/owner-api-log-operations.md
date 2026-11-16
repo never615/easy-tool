@@ -74,7 +74,7 @@ OWNER_API_LOG_CLEANUP_BATCH_SIZE=500
 | 配置项 | 默认值 | 含义 |
 | --- | --- | --- |
 | `OWNER_API_LOG` | `false` | 入站日志采集总开关 |
-| `OWNER_API_LOG_FILTER_MODE` | `blacklist` | 选择 `whitelist` 或 `blacklist` |
+| `OWNER_API_LOG_FILTER_MODE` | `whitelist` | 默认白名单；可显式选择兼容的 `blacklist` |
 | `OWNER_API_LOG_INCLUDE` | 空 | 白名单，只有命中规则才采集 |
 | `OWNER_API_LOG_EXCLUDE` | 未设置 | 黑名单；未设置时沿用 `app.log.except`，显式空字符串表示空黑名单 |
 | `LOG_DISPATCH_NOW` | `false` | 默认异步投递日志，避免请求内直接写库 |
@@ -84,6 +84,7 @@ OWNER_API_LOG_CLEANUP_BATCH_SIZE=500
 - 路径从应用入口开始，不包含域名和查询参数；开头、结尾的 `/` 可省略，`*` 表示通配符。
 - `api/tp/locator` 只匹配列表，详情需要另外配置 `api/tp/locator/*`。
 - 白名单模式只检查 INCLUDE，黑名单模式只检查 EXCLUDE。白名单为空时不记录任何接口；模式拼写无效时也不采集。
+- 默认使用白名单；未配置部署规则、管理端也没有覆盖规则时，即使打开日志总开关，也不会采集任何接口。
 - 高频固定排除 `owner_api_log.hard_exclude` 优先于两种模式，不能被 INCLUDE、空 EXCLUDE 或管理页规则覆盖。
 - 旧全局配置 `close_owner_api_log_except=1` 只会绕过普通黑名单，不能绕过白名单或高频固定排除。内网白名单部署无需开启这个旧选项。
 

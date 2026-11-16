@@ -16,7 +16,7 @@ class OwnerApiLogSettings
         ]);
         $settings = [
             'enabled' => filter_var($values['owner_api_log.enabled'], FILTER_VALIDATE_BOOLEAN),
-            'filter_mode' => config('owner_api_log.filter_mode', 'blacklist'),
+            'filter_mode' => config('owner_api_log.filter_mode', 'whitelist'),
             'include' => (array) config('owner_api_log.include', []),
             'exclude' => (array) (config('owner_api_log.exclude') ?? config('app.log.except', [])),
             'legacy_bypass' => filter_var($values['close_owner_api_log_except'], FILTER_VALIDATE_BOOLEAN),
