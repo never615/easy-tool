@@ -8,6 +8,7 @@ namespace Mallto\Tool\Domain\Log;
 use Illuminate\Support\Facades\Log;
 use Mallto\Admin\Data\OperationLog;
 use Mallto\Tool\Data\ThirdApiLog;
+use Mallto\Tool\Data\OwnerApiLog;
 
 /**
  * Created by PhpStorm.
@@ -73,7 +74,15 @@ class LoggerDb implements Logger
      */
     public function logOwnerApi($content)
     {
-        // TODO: Implement logOwnerApi() method.
+        if (!$this->switch) {
+            return;
+        }
+
+        // 不吞掉写入异常，让现有 LogJob 重试并暴露失败，避免“开了日志却没有资料”。
+        OwnerApiLog::create(array_only($content, [
+            'request_id', 'uuid', 'action', 'method', 'url', 'request_ip',
+            'user_id', 'header', 'input', 'status',
+        ]));
     }
 
 

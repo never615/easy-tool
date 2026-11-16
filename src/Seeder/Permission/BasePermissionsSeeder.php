@@ -31,6 +31,8 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("基础业务配置保存", "configs.basic.save", false, 0);
         $this->createPermissions("短信与告警配置", "configs.sms", false, 0);
         $this->createPermissions("短信与告警配置保存", "configs.sms.save", false, 0);
+        $this->createPermissions("入站接口日志配置", "owner_api_log.settings", false, 0);
+        $this->createPermissions("入站接口日志配置保存", "owner_api_log.save", false, 0);
         $this->createPermissions("配置中心", "new_configs");
         $this->createPermissions("配置中心使用说明", "new_configs.usage", false, 0);
         $this->createPermissions("配置中心发布启动配置", "new_configs.publish_restart", false, 0);

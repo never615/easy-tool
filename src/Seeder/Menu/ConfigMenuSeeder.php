@@ -62,6 +62,9 @@ class ConfigMenuSeeder extends Seeder
             "configs.sms", $configCenterMenu->id, 20, "短信与告警配置", "fa-envelope");
 
         $this->updateOrCreate(
+            "owner_api_log.settings", $configCenterMenu->id, 25, "入站接口日志", "fa-filter");
+
+        $this->updateOrCreate(
             "new_configs.swoole_task_monitor", $configCenterMenu->id, 70, "Swoole Task配置", "fa-tasks");
 
         $this->updateOrCreate(

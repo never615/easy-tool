@@ -3,13 +3,19 @@
 `easy-tool` 为 Laravel 与 Laravel Admin 扩展提供通用能力。本文档按当前用途索引运维、监控与排障资料；
 开始修改包代码时也请阅读包根目录 README，并检查本仓库的 Git 状态。
 
-## 运行监控
+## 运维实施
+
+### 接口日志
+
+- [内网部署：入站接口日志配置与自动清理](owner-api-log-operations.md)：指定接口白名单/黑名单、本地数据库存储与默认 7 天保留、每日批量清理。
+
+### 运行监控
 
 - [应用统计监控](app-stats-monitor.md)：应用级统计信息采集与查看。
 - [Swoole Task 监控 Redis 连接](swoole-task-monitor-redis-connection.md)：Task 监控相关 Redis 连接使用说明。
 - [运行时配置补填跟踪](runtime-config-refill-trace.md)：排查运行时配置补填链路。
 
-## 队列与消息排障
+### 队列与消息排障
 
 - [Horizon Worker 控制台输出](horizon-worker-console-output.md)：Worker 控制台日志与输出行为。
 - [MQTT 空闲休眠](mqtt-idle-sleep.md)：MQTT 订阅进程空闲处理说明。

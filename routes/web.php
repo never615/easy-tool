@@ -75,6 +75,10 @@ Route::group($attributes, function ($router) {
                         Route::resource('app_secrets_permission', 'AppSecretPermissionController');
 
                         //----------------------------  系统配置 开始  -----------------------------------------------
+                        Route::get('configs/owner-api-log', 'OwnerApiLogConfigController@index')
+                            ->name('owner_api_log.settings');
+                        Route::post('configs/owner-api-log', 'OwnerApiLogConfigController@save')
+                            ->name('owner_api_log.save');
                         Route::resource("wechat_template_ids", "WechatTemplateMsgContoller");
                         //-----ScaffoldController-----------------------  系统配置 结束-----------------------------------------------
 

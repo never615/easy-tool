@@ -7,11 +7,12 @@ namespace Mallto\Tool\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Mallto\Admin\SubjectUtils;
 use Mallto\Tool\Jobs\LogJob;
+use Mallto\Tool\Domain\Log\OwnerApiLogFilter;
+use Mallto\Tool\Domain\Log\OwnerApiLogPayload;
+use Mallto\Tool\Domain\Log\OwnerApiLogSettings;
 use Mallto\Tool\Utils\AppUtils;
-use Mallto\Tool\Utils\ConfigUtils;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -56,15 +57,16 @@ class OwnerApiLog
         $uuid = SubjectUtils::getUUIDNoException() ?: 0;
 
         $requestId = AppUtils::create_uuid();
+        $payload = new OwnerApiLogPayload();
 
         $log = [
             'action'     => '请求',
             'method'     => $request->method(),
-            'url'        => $request->fullUrl(),
+            'url'        => $payload->url($request->fullUrl()),
             'request_ip' => $ip,
             'user_id'    => $userId,
-            'input'      => json_encode($request->all(), JSON_UNESCAPED_UNICODE),
-            'header'     => json_encode($request->headers->all(), JSON_UNESCAPED_UNICODE),
+            'input'      => $payload->json($request->all()),
+            'header'     => $payload->json($request->headers->all()),
             'uuid'       => $uuid,
             'request_id' => $requestId,
         ];
@@ -80,16 +82,18 @@ class OwnerApiLog
         $response = $next($request);
 
         if (is_array($response->getContent())) {
-            $input = json_encode($response->getContent());
+            $input = $payload->json($response->getContent());
         } else {
             if (is_string($response->getContent())) {
                 try {
                     //也是为了防止图片响应异常
-                    $input = json_decode($response->getContent());
+                    $input = json_decode($response->getContent(), true);
                     if (is_null($input)) {
                         $input = '非json数据';
                     } else {
-                        $input = $response->getContent();
+                        $input = is_array($input)
+                            ? $payload->json($input)
+                            : $payload->text($response->getContent());
                     }
                 } catch (\Exception $exception) {
                     Log::warning($exception);
@@ -103,7 +107,7 @@ class OwnerApiLog
         $log = [
             'action'     => '响应',
             'method'     => $request->method(),
-            'url'        => $request->fullUrl(),
+            'url'        => $payload->url($request->fullUrl()),
             'request_ip' => $ip,
             'user_id'    => $userId,
             'input'      => $input,
@@ -132,47 +136,26 @@ class OwnerApiLog
     protected function shouldLogOperation(Request $request)
     {
 
-        return config('app.log.owner_api')
-            && ! $this->inExceptArray($request);
-    }
-
-
-    /**
-     * Determine if the request has a URI that should pass through CSRF verification.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return bool
-     */
-    protected function inExceptArray($request)
-    {
-        //是否关闭owner api log的排除规则，1关闭，0不关闭
-        $ownerApiLogExcept = ConfigUtils::get('close_owner_api_log_except', 0);
-        if ($ownerApiLogExcept) {
+        // 高频接口在最外层只做本地路径匹配，禁止为日志规则访问 Redis / PostgreSQL。
+        $filter = new OwnerApiLogFilter();
+        if ($filter->matches($request, (array) config('owner_api_log.hard_exclude', []))) {
             return false;
         }
 
-        $excepts = config('app.log.except') ?? [];
-        foreach ($excepts as $except) {
-            if ($except !== '/') {
-                $except = trim($except, '/');
-            }
-
-            $methods = [];
-
-            if (Str::contains($except, ':')) {
-                [ $methods, $except ] = explode(':', $except);
-                $methods = explode(',', $methods);
-            }
-
-            $methods = array_map('strtoupper', $methods);
-
-            if ($request->is($except) &&
-                (empty($methods) || in_array($request->method(), $methods))) {
-                return true;
-            }
+        $settings = app(OwnerApiLogSettings::class)->forRequest();
+        if (!$settings['enabled']) {
+            return false;
         }
 
-        return false;
+        $mode = $settings['filter_mode'];
+        if ($mode === 'whitelist') {
+            // 旧的“关闭排除规则”开关不能扩大白名单的采集范围。
+            return $filter->matches($request, $settings['include']);
+        }
+
+        // 拼写错误时不退化为全量记录，避免内网数据库意外承压。
+        return $mode === 'blacklist' && ($settings['legacy_bypass']
+            || !$filter->matches($request, $settings['exclude']));
     }
+
 }

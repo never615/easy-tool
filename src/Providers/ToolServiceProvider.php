@@ -31,6 +31,7 @@ use Mallto\Tool\Commands\CreateTableIdSeqCommand;
 use Mallto\Tool\Commands\AdoptGlobalConfigOverridesCommand;
 use Mallto\Tool\Commands\AuditGlobalConfigOverridesCommand;
 use Mallto\Tool\Commands\DeleteFailedJobsCommand;
+use Mallto\Tool\Commands\PruneOwnerApiLogsCommand;
 use Mallto\Tool\Commands\MongoDatabaseMonitorCommand;
 use Mallto\Tool\Commands\PublishNewConfigCommand;
 use Mallto\Tool\Commands\PostgresDatabaseMonitorCommand;
@@ -62,6 +63,7 @@ use Mallto\Tool\Domain\Config\MtConfig;
 use Mallto\Tool\Domain\NewConfig\GlobalConfigRuntimeResolver;
 use Mallto\Tool\Domain\Log\Logger;
 use Mallto\Tool\Domain\Log\LoggerAliyun;
+use Mallto\Tool\Domain\Log\OwnerApiLogConfigDefinitions;
 use Mallto\Tool\Domain\MongoMonitor\MongoDatabaseMonitor;
 use Mallto\Tool\Domain\MongoDb\MongoDbAccessPolicy;
 use Mallto\Tool\Domain\QueueDiagnostic\ProvidesQueueDiagnosticContext;
@@ -108,6 +110,7 @@ class ToolServiceProvider extends ServiceProvider
         RedisDelPrefixCommand::class,
         CreateTableIdSeqCommand::class,
         DeleteFailedJobsCommand::class,
+        PruneOwnerApiLogsCommand::class,
         QueueDiagnosticSnapshotCommand::class,
         MongoDatabaseMonitorCommand::class,
         PostgresDatabaseMonitorCommand::class,
@@ -486,6 +489,8 @@ class ToolServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/swoole_task_monitor.php', 'swoole_task_monitor');
         $this->mergeConfigFrom(__DIR__ . '/../../config/webview.php', 'webview');
         $this->mergeConfigFrom(__DIR__ . '/../../config/app_stats.php', 'app_stats');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/owner_api_log.php', 'owner_api_log');
+        OwnerApiLogConfigDefinitions::register();
 
         $this->registerAppStats();
         $this->registerMongoDatabaseMonitor();
@@ -777,6 +782,7 @@ class ToolServiceProvider extends ServiceProvider
             $schedule = $this->app->make(Schedule::class);
 
             $this->scheduleAppSecretRotation($schedule);
+            $this->scheduleOwnerApiLogCleanup($schedule);
 
             $schedule->command('sanctum:prune-expired --hours=24')
                 ->onOneServer()
@@ -824,6 +830,25 @@ class ToolServiceProvider extends ServiceProvider
             $this->schedulePostgresDatabaseMonitor($schedule);
             $this->scheduleMongoDatabaseMonitor($schedule);
         });
+    }
+
+    /** 每日清理独立于采集开关，关闭日志后仍删除过期记录。 */
+    private function scheduleOwnerApiLogCleanup(Schedule $schedule): void
+    {
+        if (!config('owner_api_log.cleanup_enabled', true)) {
+            return;
+        }
+        $at = (string) config('owner_api_log.cleanup_at', '04:20');
+        if (preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/D', $at) !== 1) {
+            throw new \InvalidArgumentException('owner_api_log.cleanup_at 必须为 HH:MM');
+        }
+
+        $schedule->command('tool:prune_owner_api_logs')
+            ->dailyAt($at)
+            ->name('prune owner api logs')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
