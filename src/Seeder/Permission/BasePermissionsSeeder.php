@@ -59,6 +59,8 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("swoole 监控兼容入口", "admin_monitor.swoole_stats", false, 0);
         $this->createPermissions("第三方接口通讯日志", "third_logs");
         $this->createPermissions("自己上报的日志", "owner_logs");
+        $this->createPermissions("入站接口日志查看", "owner_api_logs.index", false, 0);
+        $this->createPermissions("入站接口日志详情", "owner_api_logs.show", false, 0);
         $this->createPermissions("项目日志", "system_logs.index", false, 0);
     }
 }

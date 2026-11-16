@@ -54,6 +54,11 @@ Route::group($attributes, function ($router) {
                         //自己日志上报接口的日志
                         Route::resource("owner_logs", 'LogController');
 
+                        // 数据库入站接口日志仅提供只读查看。
+                        Route::get('owner_api_logs', 'OwnerApiLogController@index')->name('owner_api_logs.index');
+                        Route::get('owner_api_logs/{id}', 'OwnerApiLogController@show')
+                            ->whereNumber('id')->name('owner_api_logs.show');
+
                         //接口管理
                         Route::resource('api_pv_managers', 'ApiPvManagerController');
                         //前端页面管理

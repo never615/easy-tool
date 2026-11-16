@@ -144,5 +144,8 @@ class ConfigMenuSeeder extends Seeder
         $this->updateOrCreate(
             "owner_logs.index", $logCenterMenu->id, 30, "自己上报的日志", "fa-database");
 
+        $this->updateOrCreate(
+            "owner_api_logs.index", $logCenterMenu->id, 35, "入站接口日志", "fa-exchange");
+
     }
 }
