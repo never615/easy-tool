@@ -34,7 +34,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
         $message = null,
         $errCode = 0,
         $content = null,
-        \Exception $previous = null,
+        ?\Exception $previous = null,
         array $headers = [],
         $code = 0
     ) {
