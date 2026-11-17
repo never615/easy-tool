@@ -10,20 +10,15 @@
             <div class="form-group">
                 <label for="owner-log-enabled">是否启用接口日志</label>
                 <select class="form-control" id="owner-log-enabled" name="enabled">
-                    @foreach (['inherit' => '继承部署配置', '1' => '开启', '0' => '关闭'] as $value => $label)
+                    @foreach (['1' => '开启', '0' => '关闭'] as $value => $label)
                         <option value="{{ $value }}" {{ (string) old('enabled', $enabled) === (string) $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
-                <p class="help-block">部署默认：{{ $baselineEnabled ? '开启' : '关闭' }}。此处与统一配置中心共用同一个开关；关闭后不记录任何接口。</p>
+                <p class="help-block">{{ $usingDeploymentEnabled ? '当前值来自本次部署的默认配置。' : '当前值由此页面设置。' }}此处与统一配置中心共用同一个开关；关闭后不记录任何接口。</p>
             </div>
             <div class="form-group">
-                <label for="owner-log-rules-source">白名单规则来源</label>
-                <select class="form-control" id="owner-log-rules-source" name="rules_source">
-                    <option value="inherit" {{ old('rules_source', $rulesSource) === 'inherit' ? 'selected' : '' }}>继承部署配置</option>
-                    <option value="override" {{ old('rules_source', $rulesSource) === 'override' ? 'selected' : '' }}>使用本页白名单</option>
-                </select>
-                <p class="help-block">选择“使用本页白名单”后，仅记录下面已启用规则匹配的接口。空白名单或全部关闭表示不记录任何接口。</p>
-                <p class="help-block">继承部署配置时，过滤模式为：<strong>{{ $baselineFilterMode === 'whitelist' ? '白名单' : ($baselineFilterMode === 'blacklist' ? '黑名单' : '无效模式（不采集）') }}</strong>。本页覆盖规则只使用白名单。</p>
+                <label>接口白名单</label>
+                <p class="help-block">{{ $usingDeploymentRules ? '以下路径来自本次部署的默认配置；保存后将固定为本页白名单。' : '仅记录下面已启用规则匹配的接口。' }}空白名单或全部关闭表示不记录任何接口。</p>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered">
@@ -43,13 +38,9 @@
             <button type="button" class="btn btn-default btn-sm" id="owner-log-add-rule">添加规则</button>
             <p class="help-block">例如 <code>api/tp/locator</code> 匹配列表路径，<code>api/tp/locator/*</code> 匹配详情路径，包括 GET、DELETE 等方法。路径不含域名和 ? 后的查询参数，最多 100 条。</p>
             <div class="form-group">
-                <label for="owner-log-retention-source">保留时间来源</label>
-                <select class="form-control" id="owner-log-retention-source" name="retention_source">
-                    <option value="inherit" {{ old('retention_source', $retentionSource) === 'inherit' ? 'selected' : '' }}>继承部署配置（{{ $baselineRetentionDays }} 天）</option>
-                    <option value="override" {{ old('retention_source', $retentionSource) === 'override' ? 'selected' : '' }}>使用本页保留天数</option>
-                </select>
                 <label for="owner-log-retention-days">日志保留天数</label>
                 <input class="form-control" id="owner-log-retention-days" type="number" min="1" max="36500" step="1" name="retention_days" value="{{ old('retention_days', $retentionDays) }}">
+                <p class="help-block">{{ $usingDeploymentRetention ? '当前值来自本次部署的默认配置，保存后将固定为上方填写的天数。' : '当前值由此页面设置。' }}</p>
                 <p class="help-block">每日清理超过保留时间的本地入站日志。关闭日志采集后，历史日志仍按保留时间清理。</p>
             </div>
             <button class="btn btn-primary" type="submit">保存配置</button>

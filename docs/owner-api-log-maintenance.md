@@ -21,7 +21,6 @@ DB_LOG=true
 MALLTO_LOG='Mallto\Tool\Domain\Log\LoggerDb'
 LOG_DISPATCH_NOW=false
 
-OWNER_API_LOG_FILTER_MODE=whitelist
 OWNER_API_LOG_INCLUDE='api/tp/locator;api/tp/locator/*'
 
 OWNER_API_LOG_RETENTION_DAYS=7
@@ -35,18 +34,16 @@ OWNER_API_LOG_CLEANUP_BATCH_SIZE=500
 | 设置 | 默认值及维护说明 |
 | --- | --- |
 | `OWNER_API_LOG` | `false`，采集总开关 |
-| `OWNER_API_LOG_FILTER_MODE` | `whitelist`，默认白名单 |
 | `OWNER_API_LOG_INCLUDE` | 空；白名单为空时不采集，多条路径以逗号或分号分隔 |
-| `OWNER_API_LOG_EXCLUDE` | 仅兼容黑名单模式；未设置时沿用原排除项，显式空字符串表示空黑名单 |
 | `LOG_DISPATCH_NOW` | `false`，默认异步处理日志 |
 | `OWNER_API_LOG_RETENTION_DAYS` | `7`，支持 1–36500 的整数天数 |
 | `OWNER_API_LOG_CLEANUP_ENABLED` | `true`，是否启用每日自动清理 |
 | `OWNER_API_LOG_CLEANUP_AT` | `04:20`，按应用时区执行，格式为 `HH:MM` |
 | `OWNER_API_LOG_CLEANUP_BATCH_SIZE` | `500`，每批支持 1–5000 条 |
 
-管理页的显式开关、白名单及保留天数优先于部署默认值；选择“继承部署配置”才撤销对应覆盖。使用本页白名单后始终按白名单处理，空规则表示不采集。部署配置中的兼容黑名单仅在继承时生效；两种模式不叠加，模式无效时不采集。
+管理页将开关、白名单及保留天数作为明确的动态配置保存。尚未在管理页保存过的设置显示当前部署默认值；首次保存会将页面当前显示的三项值写入配置中心。采集仅使用白名单，空规则表示不采集。旧的 `OWNER_API_LOG_FILTER_MODE`、`OWNER_API_LOG_EXCLUDE` 和 `close_owner_api_log_except` 已停用，不会扩大采集范围。
 
-`owner_api_log.hard_exclude` 是优先执行的固定排除清单，覆盖部分高频定位和历史轨迹接口。它不能被管理页、通配符或兼容黑名单绕过。旧配置 `close_owner_api_log_except` 只可绕过普通黑名单，不绕过白名单和固定排除。
+`owner_api_log.hard_exclude` 是优先执行的固定排除清单，覆盖部分高频定位和历史轨迹接口。即使配置 `*` 白名单也不能绕过固定排除。
 
 ## 3. 发布与生效检查
 
@@ -84,7 +81,7 @@ php artisan tool:prune_owner_api_logs
 | 问题 | 检查方向 |
 | --- | --- |
 | 配置正确但没有新记录 | 接口中间件、有效开关和规则、固定排除、日志后端、`DB_LOG` |
-| 保存后采集范围没有变化 | 页面是否仍选择继承、逐条开关、运行缓存刷新是否正常 |
+| 保存后采集范围没有变化 | 页面上的部署默认值提示、逐条开关、运行缓存刷新是否正常 |
 | 有请求 ID，但暂时没有数据库记录 | 是否使用 SLS、Horizon 默认队列是否积压或失败 |
 | 只有请求记录 | 后续处理可能抛出异常；当前中间件只采集正常返回的响应 |
 | 日志没有按期删除 | 清理开关、时区、调度触发、共享缓存锁及命令执行结果 |

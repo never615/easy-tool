@@ -5,8 +5,6 @@ $rules = static function ($value): array {
     return array_values(array_filter(array_map('trim', preg_split('/[;,]/', (string) $value)),
         static fn (string $rule): bool => $rule !== ''));
 };
-$exclude = env('OWNER_API_LOG_EXCLUDE');
-
 return [
     // 本层先于管理端规则运行：仅本地 config 匹配，不访问规则缓存。
     // 覆盖既有 app.log.except 高频路径，并补全实时/历史接口的实际前缀。
@@ -25,11 +23,8 @@ return [
     // 管理页基线规则：由下方 include 路径列表生成，默认每条启用。
     'admin_rules' => array_map(static fn (string $path): array => ['path' => $path, 'enabled' => true],
         $rules(env('OWNER_API_LOG_INCLUDE', ''))),
-    // 默认白名单，空白名单不采集；需要兼容旧黑名单时显式选择 blacklist。
-    'filter_mode' => env('OWNER_API_LOG_FILTER_MODE', 'whitelist'),
+    // 仅白名单规则生效；空白名单不采集。
     'include' => $rules(env('OWNER_API_LOG_INCLUDE', '')),
-    // 未配置时继续使用 app.log.except；显式空字符串表示空黑名单。
-    'exclude' => $exclude === null ? null : $rules($exclude),
     'retention_days' => env('OWNER_API_LOG_RETENTION_DAYS', 7),
     'cleanup_enabled' => filter_var(env('OWNER_API_LOG_CLEANUP_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
     'cleanup_at' => env('OWNER_API_LOG_CLEANUP_AT', '04:20'),

@@ -147,15 +147,7 @@ class OwnerApiLog
             return false;
         }
 
-        $mode = $settings['filter_mode'];
-        if ($mode === 'whitelist') {
-            // 旧的“关闭排除规则”开关不能扩大白名单的采集范围。
-            return $filter->matches($request, $settings['include']);
-        }
-
-        // 拼写错误时不退化为全量记录，避免内网数据库意外承压。
-        return $mode === 'blacklist' && ($settings['legacy_bypass']
-            || !$filter->matches($request, $settings['exclude']));
+        return $filter->matches($request, $settings['include']);
     }
 
 }

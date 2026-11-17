@@ -34,14 +34,12 @@ class OwnerApiLogConfigController extends Controller
         $snapshot = [
             'enabled' => array_key_exists('owner_api_log.enabled', $overrides)
                 ? (filter_var($overrides['owner_api_log.enabled'], FILTER_VALIDATE_BOOLEAN) ? '1' : '0')
-                : 'inherit',
-            'baselineEnabled' => (bool) config('app.log.owner_api', false),
-            'baselineFilterMode' => (string) config('owner_api_log.filter_mode', 'whitelist'),
-            'rulesSource' => $hasRulesOverride ? 'override' : 'inherit',
+                : (config('app.log.owner_api', false) ? '1' : '0'),
             'rules' => $rules,
-            'retentionSource' => array_key_exists('owner_api_log.retention_days', $overrides) ? 'override' : 'inherit',
             'retentionDays' => $overrides['owner_api_log.retention_days'] ?? config('owner_api_log.retention_days', 7),
-            'baselineRetentionDays' => config('owner_api_log.retention_days', 7),
+            'usingDeploymentRules' => !$hasRulesOverride,
+            'usingDeploymentRetention' => !array_key_exists('owner_api_log.retention_days', $overrides),
+            'usingDeploymentEnabled' => !array_key_exists('owner_api_log.enabled', $overrides),
             'hardExclude' => (array) config('owner_api_log.hard_exclude', []),
         ];
 
@@ -57,41 +55,27 @@ class OwnerApiLogConfigController extends Controller
         // 全部输入先完成校验，再一次事务写入，避免只有部分设置保存成功。
         $input = $this->validatedInput($request);
         DB::transaction(function () use ($input, $manager): void {
-            if ($input['enabled'] === 'inherit') {
-                $manager->clear('owner_api_log.enabled');
-            } else {
-                $manager->setManual('owner_api_log.enabled', $input['enabled']);
-            }
-            if ($input['rules_source'] === 'inherit') {
-                $manager->clear('owner_api_log.rules');
-            } else {
-                $manager->setManual('owner_api_log.rules', json_encode($input['rules'],
-                    JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            }
-            if ($input['retention_source'] === 'inherit') {
-                $manager->clear('owner_api_log.retention_days');
-            } else {
-                $manager->setManual('owner_api_log.retention_days', (string) $input['retention_days']);
-            }
+            $manager->setManual('owner_api_log.enabled', $input['enabled']);
+            $manager->setManual('owner_api_log.rules', json_encode($input['rules'],
+                JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            $manager->setManual('owner_api_log.retention_days', (string) $input['retention_days']);
         });
 
         admin_toastr('接口日志配置已保存，将通过运行缓存生效。');
         return redirect()->route('owner_api_log.settings');
     }
 
-    /** @return array{enabled: string, rules_source: string, rules: array, retention_source: string, retention_days?: mixed} */
+    /** @return array{enabled: string, rules: array, retention_days: mixed} */
     public function validatedInput(Request $request): array
     {
-        $input = $request->only('enabled', 'rules_source', 'rules', 'retention_source', 'retention_days');
+        $input = $request->only('enabled', 'rules', 'retention_days');
         $validated = Validator::make($input, [
-            'enabled' => ['required', Rule::in(['inherit', '0', '1'])],
-            'rules_source' => ['required', Rule::in(['inherit', 'override'])],
+            'enabled' => ['required', Rule::in(['0', '1'])],
             'rules' => ['nullable', 'array', 'max:100'],
             'rules.*' => ['array'],
             'rules.*.path' => ['nullable', 'string', 'max:255'],
             'rules.*.enabled' => ['required', 'boolean'],
-            'retention_source' => ['required', Rule::in(['inherit', 'override'])],
-            'retention_days' => ['required_if:retention_source,override', 'nullable', 'integer', 'between:1,36500'],
+            'retention_days' => ['required', 'integer', 'between:1,36500'],
         ], [
             'rules.max' => '白名单最多支持 100 条规则。',
             'rules.*.path.max' => '接口路径不能超过 255 个字符。',

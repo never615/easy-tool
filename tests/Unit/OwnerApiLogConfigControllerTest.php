@@ -46,7 +46,6 @@ final class OwnerApiLogConfigControllerTest extends TestCase
             ],
             'session.driver' => 'array',
             'app.log.owner_api' => true,
-            'owner_api_log.filter_mode' => 'blacklist',
             'owner_api_log.include' => ['api/tp/locator', 'api/tp/locator/*'],
             'owner_api_log.retention_days' => 7,
             'owner_api_log.hard_exclude' => ['api/tp/location/results'],
@@ -114,17 +113,15 @@ final class OwnerApiLogConfigControllerTest extends TestCase
         $this->assertInvalid(['rules' => [['path' => 'api/tp/locator', 'enabled' => 'invalid']]], 'rules.0.enabled');
         $this->assertInvalid(['rules' => [['path' => 'api/tp/locator']]], 'rules.0.enabled');
         $this->assertInvalid(['enabled' => 'invalid'], 'enabled');
+        $this->assertInvalid(['enabled' => 'inherit'], 'enabled');
         $this->assertInvalid(['rules' => array_fill(0, 101, ['path' => '*', 'enabled' => '1'])], 'rules');
     }
 
-    public function test_retention_override_requires_valid_days_and_inheritance_needs_no_days(): void
+    public function test_retention_requires_valid_days(): void
     {
         foreach ([null, 0, -1, 36501, 'seven', '1.5'] as $days) {
-            $this->assertInvalid(['retention_source' => 'override', 'retention_days' => $days], 'retention_days');
+            $this->assertInvalid(['retention_days' => $days], 'retention_days');
         }
-        $this->assertSame('inherit', $this->controller()->validatedInput($this->request([
-            'retention_source' => 'inherit', 'retention_days' => null,
-        ]))['retention_source']);
     }
 
     public function test_save_uses_shared_config_keys_and_invalidates_runtime_values_including_explicit_false(): void
@@ -156,27 +153,15 @@ final class OwnerApiLogConfigControllerTest extends TestCase
         Event::assertDispatchedTimes(GlobalConfigChanged::class, 3);
     }
 
-    public function test_empty_whitelist_is_explicit_and_restoring_inherit_clears_all_three_overrides(): void
+    public function test_empty_whitelist_is_saved_as_explicit_value_and_page_has_no_inheritance_action(): void
     {
         $this->controller()->save($this->request(), new GlobalConfigOverrideManager());
         $this->assertSame('[]', NewConfig::query()->where('key', 'owner_api_log.rules')->value('value'));
         $this->assertSame(['found' => true, 'value' => '[]'], $this->cacheUpdates[1]['payload']);
-
-        $this->controller()->save($this->request([
-            'enabled' => 'inherit', 'rules_source' => 'inherit',
-            'retention_source' => 'inherit', 'retention_days' => null,
-        ]), new GlobalConfigOverrideManager());
-
-        foreach (NewConfig::all() as $row) {
-            $this->assertNull($row->value);
-            $this->assertNull($row->override_source);
-            $this->assertFalse($row->is_enabled);
-        }
-        foreach (array_slice($this->cacheUpdates, 3) as $update) {
-            $this->assertSame(['found' => false, 'value' => null], $update['payload']);
-        }
-        $this->assertCount(6, $this->cacheUpdates);
-        Event::assertDispatchedTimes(GlobalConfigChanged::class, 6);
+        $html = $this->indexHtml();
+        $this->assertStringNotContainsString('继承部署配置', $html);
+        $this->assertStringNotContainsString('rules_source', $html);
+        $this->assertStringNotContainsString('retention_source', $html);
     }
 
     public function test_invalid_save_does_not_partially_write_or_invalidate_configuration(): void
@@ -208,7 +193,7 @@ final class OwnerApiLogConfigControllerTest extends TestCase
         $this->assertStringNotContainsString('name="filter_mode"', $html);
     }
 
-    public function test_index_inherits_deployment_values_when_rows_are_disabled_or_unclaimed(): void
+    public function test_index_displays_deployment_values_when_no_page_override_exists(): void
     {
         DB::table('new_configs')->insert([
             ['key' => 'owner_api_log.enabled', 'group_key' => NewConfig::GROUP_GLOBAL_CONFIG,
@@ -217,17 +202,34 @@ final class OwnerApiLogConfigControllerTest extends TestCase
                 'value' => '[]', 'is_enabled' => false, 'override_source' => GlobalConfigOverrideSource::MANUAL],
         ]);
         $xpath = $this->xpath($this->indexHtml());
-        foreach (['enabled', 'rules_source', 'retention_source'] as $name) {
-            $this->assertSame(1, $xpath->query('//select[@name="' . $name . '"]/option[@value="inherit"][@selected]')->length);
-        }
+        $this->assertSame(1, $xpath->query('//select[@name="enabled"]/option[@value="1"][@selected]')->length);
+        $this->assertSame(0, $xpath->query('//select[@name="enabled"]/option[@value="inherit"]')->length);
         $this->assertSame(1, $xpath->query('//input[@name="rules[0][path]"][@value="api/tp/locator"]')->length);
         $this->assertSame(1, $xpath->query('//input[@name="retention_days"][@value="7"]')->length);
+        $this->assertStringContainsString('当前值来自本次部署的默认配置', $this->indexHtml());
+    }
+
+    public function test_saving_displayed_defaults_pins_all_values_against_later_deployment_changes(): void
+    {
+        $this->controller()->save($this->request([
+            'enabled' => '1', 'retention_days' => '7',
+            'rules' => [['path' => 'api/tp/locator', 'enabled' => '1']],
+        ]), new GlobalConfigOverrideManager());
+        config(['app.log.owner_api' => false, 'owner_api_log.retention_days' => 30,
+            'owner_api_log.admin_rules' => [['path' => 'api/tp/floor', 'enabled' => true]]]);
+        $html = $this->indexHtml();
+        $xpath = $this->xpath($html);
+        $this->assertSame(1, $xpath->query('//select[@name="enabled"]/option[@value="1"][@selected]')->length);
+        $this->assertSame(1, $xpath->query('//input[@name="retention_days"][@value="7"]')->length);
+        $this->assertSame(1, $xpath->query('//input[@name="rules[0][path]"][@value="api/tp/locator"]')->length);
+        $this->assertStringNotContainsString('api/tp/floor', $html);
+        $this->assertStringNotContainsString('当前值来自本次部署的默认配置', $html);
     }
 
     public function test_validation_old_input_wins_over_saved_values_and_is_html_escaped(): void
     {
         session()->flashInput([
-            'enabled' => '0', 'rules_source' => 'override', 'retention_source' => 'override',
+            'enabled' => '0',
             'retention_days' => '12', 'rules' => [4 => ['path' => '<script>alert(1)</script>', 'enabled' => '0']],
         ]);
         $html = $this->indexHtml();
@@ -270,8 +272,7 @@ final class OwnerApiLogConfigControllerTest extends TestCase
     private function request(array $input = []): Request
     {
         return Request::create('/admin/configs/owner-api-log', 'POST', array_replace([
-            'enabled' => '0', 'rules_source' => 'override', 'rules' => [],
-            'retention_source' => 'override', 'retention_days' => '7',
+            'enabled' => '0', 'rules' => [], 'retention_days' => '7',
         ], $input));
     }
 

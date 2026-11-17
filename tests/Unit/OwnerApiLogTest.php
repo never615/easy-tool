@@ -32,7 +32,6 @@ final class OwnerApiLogTest extends TestCase
 {
     private string $originalDefaultConnection;
 
-    private bool $legacyBypass = false;
 
     public function setUp(): void
     {
@@ -52,9 +51,7 @@ final class OwnerApiLogTest extends TestCase
             'app.db_log' => true,
             'app.log.dispatch_now' => false,
             'auth.guards.api.provider' => null,
-            'owner_api_log.filter_mode' => 'blacklist',
             'owner_api_log.include' => [],
-            'owner_api_log.exclude' => null,
             'owner_api_log.retention_days' => 7,
             'owner_api_log.cleanup_enabled' => true,
             'owner_api_log.cleanup_at' => '04:20',
@@ -65,10 +62,7 @@ final class OwnerApiLogTest extends TestCase
         $settings = Mockery::mock(OwnerApiLogSettings::class);
         $settings->shouldReceive('forRequest')->andReturnUsing(fn (): array => [
             'enabled' => (bool) config('app.log.owner_api'),
-            'filter_mode' => config('owner_api_log.filter_mode'),
             'include' => config('owner_api_log.include', []),
-            'exclude' => config('owner_api_log.exclude') ?? config('app.log.except', []),
-            'legacy_bypass' => $this->legacyBypass,
         ]);
         $settings->shouldReceive('retentionDays')->andReturnUsing(
             static fn () => config('owner_api_log.retention_days', 7)
@@ -87,8 +81,7 @@ final class OwnerApiLogTest extends TestCase
 
     public function test_whitelist_matches_full_path_and_all_methods_without_query_parameters(): void
     {
-        config(['owner_api_log.filter_mode' => 'whitelist',
-            'owner_api_log.include' => ['api/tp/locator']]);
+        config(['owner_api_log.include' => ['api/tp/locator']]);
 
         $this->assertTrue($this->logs('/api/tp/locator?third_slug=45C671000141&with_area=1'));
         $this->assertTrue($this->logs('/api/tp/locator?third_slug=different'));
@@ -105,61 +98,34 @@ final class OwnerApiLogTest extends TestCase
             ['', null, 42, 'GET:api/tp/locator', 'api/tp/locator?with_area=1']));
     }
 
-    public function test_empty_whitelist_invalid_mode_and_global_switch_do_not_collect(): void
+    public function test_empty_whitelist_and_global_switch_do_not_collect(): void
     {
-        config(['owner_api_log.filter_mode' => 'whitelist', 'owner_api_log.include' => []]);
+        config(['owner_api_log.include' => []]);
         $this->assertFalse($this->logs('/api/tp/locator'));
-        config(['owner_api_log.filter_mode' => 'whitelits', 'owner_api_log.include' => ['*']]);
-        $this->assertFalse($this->logs('/api/tp/locator'));
-        config(['owner_api_log.filter_mode' => 'whitelist', 'app.log.owner_api' => false]);
+        config(['owner_api_log.include' => ['api/tp/locator'], 'app.log.owner_api' => false]);
         $this->assertFalse($this->logs('/api/tp/locator'));
     }
 
-    public function test_missing_filter_mode_defaults_to_whitelist_and_collects_nothing_without_rules(): void
+    public function test_obsolete_blacklist_settings_cannot_expand_collection(): void
     {
-        $config = config('owner_api_log');
-        unset($config['filter_mode']);
-        config(['owner_api_log' => $config, 'app.log.owner_api' => true]);
+        config(['owner_api_log.filter_mode' => 'blacklist', 'owner_api_log.exclude' => [],
+            'app.log.except' => [], 'owner_api_log.include' => ['api/tp/locator']]);
         $resolver = Mockery::mock();
-        $resolver->shouldReceive('getMany')->andReturnUsing(static fn (array $defaults): array => $defaults);
+        $resolver->shouldReceive('getMany')->with([
+            'owner_api_log.enabled' => true, 'owner_api_log.rules' => '',
+        ])->andReturnUsing(static fn (array $defaults): array => $defaults);
         $this->app->instance(GlobalConfigRuntimeResolver::class, $resolver);
         $this->app->instance(OwnerApiLogSettings::class, new OwnerApiLogSettings());
-
+        $this->assertTrue($this->logs('/api/tp/locator'));
+        $this->assertFalse($this->logs('/api/tp/floor'));
+        config(['owner_api_log.include' => []]);
         $this->assertFalse($this->logs('/api/tp/locator'));
-        $this->assertFalse($this->logs('/api/tp/locator/42', 'DELETE'));
-    }
-
-    public function test_blacklist_falls_back_to_legacy_rules_but_explicit_empty_rules_override_them(): void
-    {
-        $this->legacyBypass = false;
-        config(['app.log.except' => ['api/tp/locator']]);
-        $this->assertFalse($this->logs('/api/tp/locator?with_area=1'));
-        $this->assertFalse($this->logs('/api/tp/locator', 'POST'));
-        $this->assertTrue($this->logs('/api/tp/floor'));
-
-        config(['owner_api_log.exclude' => []]);
-        $this->assertTrue($this->logs('/api/tp/locator'));
-        config(['owner_api_log.exclude' => ['api/tp/floor']]);
-        $this->assertTrue($this->logs('/api/tp/locator'));
-        $this->assertFalse($this->logs('/api/tp/floor'));
-    }
-
-    public function test_legacy_close_except_switch_only_bypasses_blacklist(): void
-    {
-        $this->legacyBypass = true;
-        config(['owner_api_log.exclude' => ['*']]);
-        $this->assertTrue($this->logs('/api/tp/locator'));
-
-        config(['owner_api_log.filter_mode' => 'whitelist',
-            'owner_api_log.include' => ['api/tp/locator']]);
-        $this->assertFalse($this->logs('/api/tp/floor'));
-        $this->assertTrue($this->logs('/api/tp/locator'));
     }
 
     public function test_static_high_frequency_exclusion_skips_settings_and_jobs_before_any_runtime_lookup(): void
     {
         config(['owner_api_log.hard_exclude' => ['api/lbs/*'],
-            'owner_api_log.filter_mode' => 'whitelist', 'owner_api_log.include' => ['*']]);
+            'owner_api_log.include' => ['*']]);
         $this->app->forgetInstance(OwnerApiLogSettings::class);
         $this->app->bind(OwnerApiLogSettings::class, static function (): never {
             throw new \LogicException('Statically excluded requests must not resolve runtime settings');
@@ -180,26 +146,20 @@ final class OwnerApiLogTest extends TestCase
         Bus::assertNothingDispatched();
     }
 
-    public function test_real_settings_batch_runtime_reads_and_inherit_file_baseline_when_no_rule_override_exists(): void
+    public function test_real_settings_batch_runtime_reads_use_deployment_whitelist_when_no_override_exists(): void
     {
-        config(['app.log.owner_api' => true, 'owner_api_log.filter_mode' => 'blacklist',
-            'owner_api_log.include' => ['api/tp/locator'], 'owner_api_log.exclude' => null,
-            'app.log.except' => ['api/lbs/location_data']]);
+        config(['app.log.owner_api' => true, 'owner_api_log.include' => ['api/tp/locator']]);
         $resolver = Mockery::mock();
         $resolver->shouldReceive('getMany')->once()->with([
             'owner_api_log.enabled' => true,
             'owner_api_log.rules' => '',
-            'close_owner_api_log_except' => 0,
         ])->andReturnUsing(static fn (array $defaults): array => $defaults);
         $resolver->shouldNotReceive('get');
         $this->app->instance(GlobalConfigRuntimeResolver::class, $resolver);
 
         $settings = (new OwnerApiLogSettings())->forRequest();
         $this->assertTrue($settings['enabled']);
-        $this->assertSame('blacklist', $settings['filter_mode']);
         $this->assertSame(['api/tp/locator'], $settings['include']);
-        $this->assertSame(['api/lbs/location_data'], $settings['exclude']);
-        $this->assertFalse($settings['legacy_bypass']);
     }
 
     public function test_real_settings_preserve_explicit_disabled_collection_and_per_rule_switches(): void
@@ -212,16 +172,13 @@ final class OwnerApiLogTest extends TestCase
                 ['path' => 'api/tp/locator', 'enabled' => true],
                 ['path' => 'api/tp/locator/*', 'enabled' => false],
             ], JSON_THROW_ON_ERROR),
-            'close_owner_api_log_except' => 1,
         ]);
         $resolver->shouldNotReceive('get');
         $this->app->instance(GlobalConfigRuntimeResolver::class, $resolver);
 
         $settings = (new OwnerApiLogSettings())->forRequest();
         $this->assertFalse($settings['enabled']);
-        $this->assertSame('whitelist', $settings['filter_mode']);
         $this->assertSame(['api/tp/locator'], $settings['include']);
-        $this->assertTrue($settings['legacy_bypass']);
     }
 
     public function test_real_settings_empty_or_invalid_rule_overrides_fail_closed_instead_of_using_legacy_allow_all(): void
@@ -231,13 +188,11 @@ final class OwnerApiLogTest extends TestCase
         foreach (['[]', [], '{invalid-json'] as $rules) {
             $resolver->shouldReceive('getMany')->once()->ordered()->andReturn([
                 'owner_api_log.enabled' => true, 'owner_api_log.rules' => $rules,
-                'close_owner_api_log_except' => 1,
             ]);
         }
         $this->app->instance(GlobalConfigRuntimeResolver::class, $resolver);
         foreach (range(1, 3) as $_) {
             $settings = (new OwnerApiLogSettings())->forRequest();
-            $this->assertSame('whitelist', $settings['filter_mode']);
             $this->assertSame([], $settings['include']);
         }
     }
@@ -291,8 +246,7 @@ final class OwnerApiLogTest extends TestCase
 
     public function test_middleware_dispatches_paired_sanitized_logs_and_preserves_business_response(): void
     {
-        config(['owner_api_log.filter_mode' => 'whitelist',
-            'owner_api_log.include' => ['api/tp/locator']]);
+        config(['owner_api_log.include' => ['api/tp/locator']]);
         Bus::fake([LogJob::class]);
         $request = Request::create('/api/tp/locator?third_slug=45C671000141&token=fake-token');
         $request->headers->set('X-UUID', 'test-project');
@@ -328,7 +282,7 @@ final class OwnerApiLogTest extends TestCase
 
     public function test_unlisted_request_skips_both_log_jobs(): void
     {
-        config(['owner_api_log.filter_mode' => 'whitelist', 'owner_api_log.include' => []]);
+        config(['owner_api_log.include' => []]);
         Bus::fake([LogJob::class]);
         $response = (new OwnerApiLog())->handle(Request::create('/api/tp/locator'),
             static fn () => response()->json(['data' => []]));
