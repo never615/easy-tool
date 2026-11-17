@@ -17,6 +17,7 @@ use Mallto\Tool\Domain\NewConfig\GlobalConfigOverrideManager;
 use Mallto\Tool\Domain\NewConfig\NewConfigPublisher;
 use Mallto\Tool\Seeder\NewConfigDocumentSeeder;
 use ReflectionMethod;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class GlobalConfigAdminContractTest extends TestCase
@@ -234,6 +235,91 @@ class GlobalConfigAdminContractTest extends TestCase
         $this->assertSame('laravel_config', $maintenance['location.trajectory_segments.chunk_minutes']['effective_source']);
     }
 
+    public function test_select_definition_options_reach_the_actual_trajectory_mode_dropdown(): void
+    {
+        config()->set('location.trajectory.mode', 'lbs_log2s');
+        $snapshot = $this->selectForm()->snapshot('location_maintenance');
+        $row = collect($snapshot['rows'])->firstWhere('key', 'location.trajectory.mode');
+        $this->assertSame('select', $row['type']);
+        $this->assertSame('lbs_log2s,segments_v2', $row['options']);
+
+        $document = new \DOMDocument();
+        @$document->loadHTML('<?xml encoding="UTF-8">' . $this->renderModuleHtml($snapshot));
+        $xpath = new \DOMXPath($document);
+        $select = $xpath->query('//select[@name="overrides[location.trajectory.mode][value]"]');
+        $this->assertCount(1, $select);
+        $options = $xpath->query('./option', $select->item(0));
+        $this->assertCount(2, $options);
+        $this->assertSame('lbs_log2s', $options->item(0)->getAttribute('value'));
+        $this->assertTrue($options->item(0)->hasAttribute('selected'));
+        $this->assertSame('segments_v2', $options->item(1)->getAttribute('value'));
+        $this->assertFalse($options->item(1)->hasAttribute('selected'));
+    }
+
+    public function test_select_form_saves_a_valid_mode_and_clears_override_when_returning_to_baseline(): void
+    {
+        $key = 'location.trajectory.mode';
+        config()->set($key, 'lbs_log2s');
+        $form = $this->selectForm();
+        $this->createdKeys[] = $key;
+        $snapshot = NewConfig::withoutEvents(fn () => $form->save('location_maintenance', [
+            'overrides' => [$key => ['value' => 'segments_v2']],
+        ]));
+
+        $row = NewConfig::query()->where('key', $key)->firstOrFail();
+        $this->assertSame('segments_v2', $row->value);
+        $this->assertSame(GlobalConfigOverrideSource::MANUAL, $row->override_source);
+        $this->assertTrue((bool)$row->is_enabled);
+        $this->assertSame('segments_v2', collect($snapshot['rows'])->firstWhere('key', $key)['effective_value']);
+
+        $snapshot = NewConfig::withoutEvents(fn () => $form->save('location_maintenance', [
+            'overrides' => [$key => ['value' => 'lbs_log2s']],
+        ]));
+        $row->refresh();
+        $this->assertNull($row->value);
+        $this->assertNull($row->override_source);
+        $this->assertFalse((bool)$row->is_enabled);
+        $this->assertSame('lbs_log2s', collect($snapshot['rows'])->firstWhere('key', $key)['effective_value']);
+    }
+
+    public function test_select_form_rejects_invalid_modes_without_changing_the_existing_override(): void
+    {
+        $key = 'location.trajectory.mode';
+        config()->set($key, 'lbs_log2s');
+        $form = $this->selectForm();
+        $this->createdKeys[] = $key;
+        NewConfig::withoutEvents(fn () => $form->save('location_maintenance', [
+            'overrides' => [$key => ['value' => 'segments_v2']],
+        ]));
+
+        foreach (['segments', 'segments_v22', '', null, ['segments_v2']] as $invalid) {
+            try {
+                NewConfig::withoutEvents(fn () => $form->save('location_maintenance', [
+                    'overrides' => [$key => ['value' => $invalid]],
+                ]));
+                $this->fail('An invalid selection must fail validation.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('value', $exception->errors());
+            }
+            $row = NewConfig::query()->where('key', $key)->firstOrFail();
+            $this->assertSame('segments_v2', $row->value);
+            $this->assertSame(GlobalConfigOverrideSource::MANUAL, $row->override_source);
+            $this->assertTrue((bool)$row->is_enabled);
+        }
+    }
+
+    public function test_select_renderer_escapes_option_values_and_labels(): void
+    {
+        $method = new ReflectionMethod(ConfigModuleController::class, 'renderInput');
+        $html = $method->invoke(new ConfigModuleController(), [
+            'type' => 'select', 'options' => ' plain , <tag>&"quote ',
+        ], 'test.select', '<tag>&"quote');
+
+        $this->assertStringContainsString('<option value="plain">plain</option>', $html);
+        $this->assertStringContainsString('<option value="&lt;tag&gt;&amp;&quot;quote" selected>&lt;tag&gt;&amp;&quot;quote</option>', $html);
+        $this->assertStringNotContainsString('<tag>', $html);
+    }
+
     public function test_database_native_module_form_keeps_normal_enable_semantics(): void
     {
         $form = new GlobalConfigModuleForm(new class extends NewConfigPublisher {
@@ -359,6 +445,15 @@ class GlobalConfigAdminContractTest extends TestCase
                 'requires_reload' => false,
                 'override_source' => null,
             ]);
+        });
+    }
+
+    private function selectForm(): GlobalConfigModuleForm
+    {
+        return new GlobalConfigModuleForm(new class extends NewConfigPublisher {
+            public function __construct()
+            {
+            }
         });
     }
 

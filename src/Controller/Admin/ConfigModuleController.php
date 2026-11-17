@@ -317,6 +317,18 @@ HTML;
                 . '</select>';
         }
 
+        if ($type === 'select') {
+            $options = '';
+            foreach (explode(',', (string)($row['options'] ?? '')) as $option) {
+                $option = trim($option);
+                if ($option !== '') {
+                    $options .= $this->option($option, $option, $value);
+                }
+            }
+
+            return '<select class="form-control input-sm" name="' . $name . '">' . $options . '</select>';
+        }
+
         if ($type === 'integer') {
             return '<input class="form-control input-sm" type="number" step="1" name="' . $name . '" value="' . $this->escape($value) . '"' . $placeholder . '>';
         }

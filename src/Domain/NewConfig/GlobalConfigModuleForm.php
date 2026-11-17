@@ -140,6 +140,7 @@ class GlobalConfigModuleForm
             'sensitive' => $sensitive,
             'type' => (string)($definition['type'] ?? 'string'),
             'ui' => (string)($definition['ui'] ?? 'input'),
+            'options' => (string)($definition['options'] ?? ''),
             'placeholder' => (string)($definition['placeholder'] ?? ''),
             'family_key' => (string)($definition['family_key'] ?? ''),
             'family_label' => (string)($definition['family_label'] ?? ''),
@@ -160,6 +161,10 @@ class GlobalConfigModuleForm
     {
         return match ((string)($definition['type'] ?? 'string')) {
             'boolean' => [ 'required', Rule::in([ '0', '1', 0, 1, true, false ]) ],
+            'select' => ['required', 'string', Rule::in(array_values(array_filter(
+                array_map('trim', explode(',', (string)($definition['options'] ?? ''))),
+                static fn (string $option): bool => $option !== ''
+            )))],
             'integer' => [ 'required', 'integer' ],
             'float' => [ 'required', 'numeric' ],
             'json' => [ 'nullable', 'json' ],
@@ -182,7 +187,8 @@ class GlobalConfigModuleForm
         ];
         $messages = [
             'value.required' => $name . '不能为空。',
-            'value.in' => $name . '只能选择开启或关闭。',
+            'value.in' => $name . ((string)($definition['type'] ?? '') === 'boolean'
+                ? '只能选择开启或关闭。' : '必须选择有效选项。'),
             'value.integer' => $name . '必须是整数。',
             'value.numeric' => $name . '必须是数字。',
             'value.json' => $name . '必须是合法 JSON。',
