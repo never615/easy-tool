@@ -12,7 +12,12 @@ class OwnerApiLogViewer
 {
     public function query(Administrator $admin, array $filters = []): Builder
     {
-        $query = OwnerApiLog::query();
+        return $this->applyTo(OwnerApiLog::query(), $admin, $filters);
+    }
+
+    /** Grid 与详情复用相同的项目范围和筛选条件。 */
+    public function applyTo(Builder $query, Administrator $admin, array $filters = []): Builder
+    {
         if (!$admin->isOwner()) {
             $roots = array_values(array_unique(array_filter(
                 array_merge([$admin->subject_id], (array) $admin->manager_subject_ids),
@@ -32,6 +37,11 @@ class OwnerApiLogViewer
             }
         }
 
+        return $this->applyFilters($query, $filters);
+    }
+
+    public function applyFilters(Builder $query, array $filters): Builder
+    {
         foreach (['request_id', 'uuid', 'method', 'action', 'status'] as $key) {
             if (isset($filters[$key]) && $filters[$key] !== '') {
                 $query->where($key, $filters[$key]);

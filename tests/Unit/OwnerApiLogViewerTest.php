@@ -130,17 +130,20 @@ final class OwnerApiLogViewerTest extends TestCase
         $this->assertSame(20, $xpath->query('//tbody/tr')->length);
         $this->assertSame('22', trim($xpath->query('//tbody/tr[1]/td[1]')->item(0)->textContent));
         $this->assertSame(0, $xpath->query('//tbody/tr/td[1][text()="' . $older . '"]')->length);
-        $next = $xpath->query('//li[@class="next"]/a')->item(0)->getAttribute('href');
+        $next = $xpath->query('//a[@rel="next"]')->item(0)->getAttribute('href');
         parse_str((string) parse_url($next, PHP_URL_QUERY), $nextFilters);
         $this->assertSame('paged-request', $nextFilters['request_id']);
         $this->assertSame('GET', $nextFilters['method']);
         $this->assertSame('2', $nextFilters['page']);
         $this->assertStringNotContainsString('PRIVATE_PAYLOAD_', $html);
         $sql = implode("\n", array_column($queries, 'query'));
-        $this->assertStringNotContainsString('count(', strtolower($sql));
+        $this->assertStringContainsString('count(', strtolower($sql));
         $this->assertStringNotContainsString('"input"', $sql);
         $this->assertStringNotContainsString('"header"', $sql);
-        $this->assertStringContainsString('limit 21', strtolower($sql));
+        $this->assertStringContainsString('limit 20', strtolower($sql));
+        $this->assertSame(1, $xpath->query('//ul[contains(@class,"pagination")]//a[text()="2"]')->length);
+        $this->assertSame(1, $xpath->query('//select[contains(@class,"per-page")]')->length);
+        $this->assertSame(0, $xpath->query('//a[contains(@href,"/edit")]|//a[contains(@class,"grid-row-delete")]|//input[contains(@class,"grid-row-checkbox")]')->length);
     }
 
     public function test_index_displays_backend_notice_and_safe_empty_state(): void
@@ -150,15 +153,36 @@ final class OwnerApiLogViewerTest extends TestCase
         $html = $this->pageHtml($this->admin(true), '数据库记录',
             fn () => (new OwnerApiLogController())->index($request, new OwnerApiLogViewer()));
         $this->assertStringContainsString('当前部署默认未启用数据库日志后端', $html);
-        $this->assertStringContainsString('暂无符合条件的数据库记录', $html);
+        $this->assertSame(1, $this->xpath($html)->query('//td[contains(@class,"empty-grid")]')->length);
         $this->assertStringContainsString('&lt;script&gt;', $html);
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
+    }
+
+    public function test_grid_page_numbers_and_page_size_preserve_project_scope_and_filters(): void
+    {
+        for ($i = 1; $i <= 55; $i++) {
+            $this->log(['request_id' => 'paged-request']);
+        }
+        $this->log(['request_id' => 'another-request']);
+        $this->log(['request_id' => 'paged-request', 'uuid' => 'foreign-project']);
+        foreach ([[20, 2, 20, '35'], [50, 1, 50, '55'], [50, 2, 5, '5']] as [$perPage, $page, $count, $firstId]) {
+            $request = $this->request(['request_id' => 'paged-request', 'per_page' => $perPage, 'page' => $page]);
+            $html = $this->pageHtml($this->admin(false, 1), '数据库记录',
+                fn () => (new OwnerApiLogController())->index($request, new OwnerApiLogViewer()));
+            $xpath = $this->xpath($html);
+            $this->assertSame($count, $xpath->query('//tbody/tr')->length);
+            $this->assertSame($firstId, trim($xpath->query('//tbody/tr[1]/td[1]')->item(0)->textContent));
+            $this->assertSame((string) $page, trim($xpath->query('//ul[contains(@class,"pagination")]/li[contains(@class,"active")]/span')->item(0)->textContent));
+            $this->assertSame((string) $perPage, trim($xpath->query('//select[contains(@class,"per-page")]/option[@selected]')->item(0)->textContent));
+            $this->assertStringNotContainsString('foreign-project', $html);
+            $this->assertStringNotContainsString('another-request', $html);
+        }
     }
 
     public function test_index_rejects_invalid_filters_before_querying_logs(): void
     {
         foreach (['status' => 99, 'method' => 'TRACE', 'action' => 'delete', 'page' => 0,
-            'created_from' => 'not-a-date', 'request_id' => str_repeat('x', 65)] as $key => $value) {
+            'created_from' => 'not-a-date', 'request_id' => str_repeat('x', 65), 'per_page' => 1000] as $key => $value) {
             try {
                 (new OwnerApiLogController())->index($this->request([$key => $value]), new OwnerApiLogViewer());
                 $this->fail('Expected validation to reject ' . $key);
@@ -166,6 +190,13 @@ final class OwnerApiLogViewerTest extends TestCase
                 $this->assertArrayHasKey($key, $exception->errors());
             }
         }
+    }
+
+    public function test_index_rejects_direct_grid_export_requests(): void
+    {
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectExceptionCode(0);
+        (new OwnerApiLogController())->index($this->request(['_export_' => 'all']), new OwnerApiLogViewer());
     }
 
     public function test_index_accepts_end_only_time_filter_and_rejects_reversed_range(): void
@@ -321,6 +352,7 @@ JSON;
     {
         $html = '';
         Admin::shouldReceive('user')->andReturn($admin);
+        Admin::shouldReceive('script')->andReturnNull();
         $content = Mockery::mock(Content::class);
         $content->shouldReceive('header')->once()->with('入站接口日志');
         $content->shouldReceive('description')->once()->with($description);
