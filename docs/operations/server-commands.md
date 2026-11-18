@@ -13,7 +13,7 @@
 3. Web 与 Horizon 使用同一控制 PostgreSQL 数据库、Redis 队列和应用加密密钥。不要把此执行队列配置为 `sync`；不要让普通业务 worker 订阅 `server-commands`。
 4. 在部署环境配置 `SERVER_COMMANDS_ENABLED=true`。这是单一全局开关，默认 `false`，不填写项目 ID 环境名单；项目范围由预设参数和账号权限决定。
 5. 按现有发布流程生成配置缓存并分别重启 LaravelS、Horizon。确认 Horizon 出现 `supervisor-server-commands`，连接/队列均为 `server-commands`，每实例 1 个进程。只刷新页面不能更新常驻进程配置。
-6. 授权测试账号后，在页面执行「Horizon 运行状态」和「应用环境摘要」。检查完成状态、输出、执行 hostname、角色与预期环境。再对现场项目执行「主动定位折叠配置检查」。
+6. 授权测试账号后，在页面执行「Horizon 运行状态」和「应用环境摘要」。检查完成状态、输出、执行 hostname、角色与预期环境。按现场已安装能力选择定位诊断；只有目录提供「主动定位折叠配置检查」时才执行该项。
 
 专用 Job 超时 330 秒、Redis 重投窗口 360 秒，CLI 上限 300 秒。这些预算独立于定位队列。多实例通过 PostgreSQL 共享占用避免并发启动；多个独立环境若错误地共用控制数据库，也会共用这一个占用。
 
@@ -56,9 +56,10 @@
 3. 需要编辑时点击「加载到编辑区」，修改编号后点「预览 / 执行」。例如：
 
 ```text
-location:active-coalescing:inspect --subject=123 --locator=456
 location:sos:recent --subject=123 --locator=456 --limit=3
 ```
+
+已安装主动定位折叠模块的环境，也可以加载对应预设编辑项目/定位器编号；未显示该预设时，参照定位诊断手册确认能力，不把缺少模块当成执行器故障。
 
 改变命令名或增加预设未声明的选项，会按自定义命令重新校验权限和确认。例如增加 `--env` 不再视为原来的只读预设授权。
 
