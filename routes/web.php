@@ -41,6 +41,21 @@ Route::group($attributes, function ($router) {
 
             Route::group(["namespace" => 'Admin'], function () {
 
+                // The command service checks its own view/execute/recovery capabilities.
+                // Exclude whole request/response capture: command text and output may contain secrets.
+                // Retain admin authentication, web session and CSRF middleware.
+                Route::prefix('configs/server-commands')->withoutMiddleware([
+                    'adminE.log', \Mallto\Admin\Middleware\OperationLog::class,
+                    'adminE.auto_permission', \Mallto\Admin\Middleware\AutoPermissionMiddleware::class,
+                ])->group(function (): void {
+                    Route::get('/', 'ServerCommandController@index')->name('server_commands.index');
+                    Route::post('preview', 'ServerCommandController@preview')->name('server_commands.preview');
+                    Route::post('submit', 'ServerCommandController@submit')->name('server_commands.submit');
+                    Route::get('history', 'ServerCommandController@history')->name('server_commands.history');
+                    Route::get('runs/{id}', 'ServerCommandController@show')->whereUuid('id')->name('server_commands.show');
+                    Route::post('runs/{id}/release', 'ServerCommandController@release')->whereUuid('id')->name('server_commands.release');
+                });
+
 
                 Route::group(['middleware' => ['adminE.auto_permission']],
                     function ($router) {  //指定auth的guard为mall

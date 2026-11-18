@@ -38,6 +38,13 @@ class BasePermissionsSeeder extends Seeder
         $this->createPermissions("配置中心发布启动配置", "new_configs.publish_restart", false, 0);
         $this->createPermissions("配置中心 Env 预览", "new_configs.env_preview", false, 0);
         $this->createPermissions("配置中心手动重启", "new_configs.reload", false, 0);
+        // Independent application-level capabilities; never grant arbitrary CLI access to
+        // existing deployment roles merely because they can maintain a specific feature.
+        $this->createPermissions("服务器命令查看", "server_commands.index", false, 0);
+        $this->createPermissions("服务器预设命令执行", "server_commands.execute_presets", false, 0);
+        $this->createPermissions("任意 Artisan 命令执行", "server_commands.execute_any", false, 0);
+        $this->createPermissions("服务器命令全部记录查看", "server_commands.view_all", false, 0);
+        $this->createPermissions("服务器命令故障占用恢复", "server_commands.recover", false, 0);
         $this->createPermissions("Swoole Task配置", "new_configs.swoole_task_monitor", false, 0);
         $this->createPermissions("Swoole Task配置保存", "new_configs.swoole_task_monitor.save", false, 0);
         $this->createPermissions("队列诊断监控", "queue_diagnostics.index", false, 0);

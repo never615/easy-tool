@@ -118,6 +118,7 @@ class ToolServiceProvider extends ServiceProvider
         PublishNewConfigCommand::class,
         AuditGlobalConfigOverridesCommand::class,
         AdoptGlobalConfigOverridesCommand::class,
+        \Mallto\Tool\Commands\PruneServerCommandsCommand::class,
     ];
 
     /**
@@ -488,6 +489,12 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__ . '/../../config/server_commands.php', 'server_commands');
+        $this->app->singleton(\Mallto\Tool\Domain\ServerCommands\CommandPresetRegistry::class, function () {
+            $registry = new \Mallto\Tool\Domain\ServerCommands\CommandPresetRegistry();
+            $registry->registerDefaults();
+            return $registry;
+        });
         $this->mergeConfigFrom(__DIR__ . '/../../config/new_config.php', 'new_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/runtime_config.php', 'runtime_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/pagination.php', 'easy_tool.pagination');
@@ -789,6 +796,8 @@ class ToolServiceProvider extends ServiceProvider
 
             $this->scheduleAppSecretRotation($schedule);
             $this->scheduleOwnerApiLogCleanup($schedule);
+            $schedule->command('tool:server-commands:prune')->dailyAt('04:20')
+                ->onOneServer()->withoutOverlapping()->runInBackground();
 
             $schedule->command('sanctum:prune-expired --hours=24')
                 ->onOneServer()
