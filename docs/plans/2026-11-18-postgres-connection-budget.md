@@ -25,6 +25,8 @@ test 的四个 LaravelS Pod 各有 60 个 Task worker，调查时共持有 240 �
 
 ## 阶段三：事务连接池隔离验证
 
+前置：先处理结果存储消费容量。2026-11-19 诊断确认 test 的 CPU HPA 将 Horizon 从 4 缩至 1，storage worker 从 22–23 降至 6；200 条失败样本均为首次领取即超过 60 秒截止时间。优先预算并试验 storage 专用消费者数量、改进队列扩缩容指标，再推进事务池。详见[积压诊断记录](../reports/2026-11-19-location-result-storage-backlog.md)。
+
 选择固定 PgBouncer 版本，在隔离环境验证 PHP 8.2 / PDO_pgsql 的实际 prepare 行为、时区、search_path、超时、SET LOCAL、事务回滚、重试及 advisory lock。维护、VACUUM 和依赖会话锁的 benchmark 保留直连通道。先验证一组队列，再考虑 LaravelS Task。
 
 评估客户端连接数与 PG 后端数、事务耗时、池等待、业务吞吐及队列年龄；不能依据低频 active 快照直接指定池大小，多实例池额度必须纳入总预算。
@@ -39,6 +41,9 @@ test 的四个 LaravelS Pod 各有 60 个 Task worker，调查时共持有 240 �
 - [x] 建立分阶段计划。
 - [x] 阶段一实现及回归：PHP 8.2 最小容器 13 项 / 33 断言通过；原代码同套测试 6 项失败。
 - [x] test 发布与前后观察：守卫探针通过；原滚动策略已恢复。副本变化使整体连接下降不可直接归因，定位结果队列仍有容量问题，见[阶段一验收记录](../reports/2026-11-18-lazy-transaction-guard-test.md)。
-- [ ] 评估后续阶段的实施范围。
+- [x] 诊断结果存储积压：已确认缩容时间线和首次领取过期，尚未执行容量调整。
+- [ ] 计算稳态与滚动连接预算，分级验证 storage 专用 worker 容量及队列指标扩缩容。
+- [ ] 分离短存储任务与长导出任务的 reservation 回收配置，并验证异常退出恢复。
+- [ ] 在上述问题处理后推进事务连接池隔离验证。
 
 返回[文档索引](../README.md)。

@@ -57,6 +57,8 @@ Mongo history 在新 Horizon 初期仅 1/8 持有 PG，约 8 分钟后变为 6/8
 
 应继续按计划评估连接预算和队列消费容量，特别是 HPA 按 CPU 缩容后队列等待与失败的关系。无用建连修复验收通过，不代表共享 test 的容量及队列问题已解决。
 
+后续只读调查已核实 HPA 缩容时间线，并确认抽样任务首次领取即过期，详见[结果存储积压诊断](2026-11-19-location-result-storage-backlog.md)。本报告保留发布时的原始观察口径。
+
 ## 证据位置
 
 本次工作树 ignored 目录 `storage/framework/lazy-guard-release/` 保存 `before.json`、`after.json`、`stable-recheck.json`、`release-target.json`、`trigger.json`、`rollout-history.json`、`deployed-verification.json`、`temporary-rollout-strategy.json`、`guard-probe-before.json`、`failure-summary.json`、`final-log-counts.json` 和测试日志。报告仅包含脱敏聚合指标，未登记飞书发布。
