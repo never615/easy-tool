@@ -85,7 +85,7 @@ class NewConfigDocumentSeeder extends Seeder
 | [laravels.php](laravels.php) | LaravelS/Swoole Worker、Task、Socket、自定义进程与 Timer 的启动配置；与启动脚本一起核对。 |
 | [swoole_task_tmp_cleaner.php](swoole_task_tmp_cleaner.php) | Task 临时文件自动清理、过期时间、采样/盘点周期、单轮删除上限及手动请求租约。 |
 | [queue.php](queue.php) | 队列连接、重试可见性及失败任务存储；见[队列保护与运行配置](../docs/queue-protection-and-runtime-configuration.md)。 |
-| [horizon.php](horizon.php) | Horizon 各环境 Supervisor、消费队列、并发与超时；仅投递 Job 不代表已有 Worker 消费对应队列。 |
+| [horizon.php](horizon.php) | Horizon 各环境 Supervisor、消费队列、并发与超时；仅投递 Job 不代表已有 Worker 消费对应队列。现场进程数建议见[Horizon 部署进程配置](horizon-deployment.md)。 |
 | [database.php](database.php) | PostgreSQL、MongoDB、Redis 等连接和连接池基线；属于启动依赖。 |
 | [cache.php](cache.php) | 缓存驱动、存储连接和前缀；业务运行配置缓存机制见下文。 |
 | [filesystems.php](filesystems.php) | 本地与云存储磁盘、访问路径。 |
