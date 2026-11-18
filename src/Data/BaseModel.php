@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2024. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2024. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 namespace Mallto\Tool\Data;
 
@@ -8,9 +8,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * User: never615 <never615.com>
- * Date: 2024/8/29
- * Time: 16:41
+ * 作者： never615 <never615.com>
+ * 日期： 2024/8/29
+ * 时间： 16:41
  */
 abstract class BaseModel extends Model
 {

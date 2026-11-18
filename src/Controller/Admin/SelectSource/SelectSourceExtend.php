@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2021. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2021. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Admin\SelectSource;
@@ -16,9 +16,9 @@ use Mallto\Tool\Data\PagePvManager;
 use Mallto\Tool\Data\Tag;
 
 /**
- * User: never615 <never615.com>
- * Date: 2021/2/7
- * Time: 1:56 上午
+ * 作者： never615 <never615.com>
+ * 日期： 2021/2/7
+ * 时间： 1:56 上午
  */
 class SelectSourceExtend implements SelectSourceExtendInterface
 {

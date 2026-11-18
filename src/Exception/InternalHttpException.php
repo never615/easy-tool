@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Exception;
@@ -17,7 +17,7 @@ class InternalHttpException extends HttpException
 {
 
     /**
-     * The response.
+     * 响应。
      *
      * @var \Illuminate\Http\Response
      */
@@ -25,7 +25,7 @@ class InternalHttpException extends HttpException
 
 
     /**
-     * Create a new internal HTTP exception instance.
+     * 创建内部 HTTP 异常实例。
      *
      * @param \Symfony\Component\HttpFoundation\Response $response
      * @param string                                     $message

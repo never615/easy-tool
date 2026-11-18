@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2020. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Admin\Subject;
@@ -11,9 +11,9 @@ use Mallto\Admin\Controllers\Base\SubjectConfigExtendInterface;
 use Mallto\Tool\SubjectConfigConstants;
 
 /**
- * User: never615 <never615.com>
- * Date: 2020/7/22
- * Time: 7:03 下午
+ * 作者： never615 <never615.com>
+ * 日期： 2020/7/22
+ * 时间： 7:03 下午
  */
 class SubjectConfigExtend implements SubjectConfigExtendInterface
 {
@@ -41,7 +41,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      */
     public function basicInfoExtend(Form $form, $currentId)
     {
-        // TODO: Implement basicInfoExtend() method.
+        // 待办：实现 basicInfoExtend() 方法。
     }
 
 
@@ -64,7 +64,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      */
     public function subjectOwnerExtraConfigByJson(EmbeddedForm $form, $currentId)
     {
-        // TODO: Implement subjectOwnerExtraConfigByJson() method.
+        // 待办：实现 subjectOwnerExtraConfigByJson() 方法。
     }
 
 
@@ -81,7 +81,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      */
     public function subjectOwnerExtend(Form $form, $currentId)
     {
-        // TODO: Implement subjectOwnerExtend() method.
+        // 待办：实现 subjectOwnerExtend() 方法。
     }
 
 
@@ -100,7 +100,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      */
     public function projectOwnerConfig(Form $form, $currentId)
     {
-        // TODO: Implement projectOwnerConfig() method.
+        // 待办：实现 projectOwnerConfig() 方法。
         foreach ($this->subjectConfigExpandObjs as $subjectConfigExpandObj) {
             $subjectConfigExpandObj->projectOwnerConfig($form);
         }
@@ -148,7 +148,7 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      */
     public function formSaving(Form $form, $adminUser)
     {
-        // TODO: Implement formSaving() method.
+        // 待办：实现 formSaving() 方法。
     }
 
 
@@ -159,6 +159,6 @@ class SubjectConfigExtend implements SubjectConfigExtendInterface
      */
     public function formSaved(Form $form)
     {
-        // TODO: Implement formSaved() method.
+        // 待办：实现 formSaved() 方法。
     }
 }

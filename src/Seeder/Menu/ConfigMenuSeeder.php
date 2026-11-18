@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Seeder\Menu;
@@ -20,7 +20,7 @@ class ConfigMenuSeeder extends Seeder
     use MenuSeederMaker;
 
     /**
-     * Run the database seeds.
+     * 填充数据库初始数据。
      *
      * @return void
      */

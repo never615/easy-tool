@@ -230,8 +230,8 @@ class SwooleTaskTmpRuntimeTest extends TestCase
             array_column($this->snapshots->stored, 'payload'),
             'filesystem_sampled_at'
         )));
-        // Cleaner reaches its limit at the end of the third delete batch, so one final
-        // empty batch confirms that no matching files remain.
+        // 清理器在第三批删除结束时达到上限，因此最后还需要一个
+        // 空批次以确认没有匹配文件残留。
         $this->assertSame([2, 4, 6, 6], array_column($progress, 'deleted'));
         $this->assertSame([$startedAt, $startedAt + 5], $filesystemSamples);
         $this->assertSame([], glob($this->directory.'/swoole.task.*'));

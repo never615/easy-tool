@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /**
- * Copyright (c) 2022. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2022. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Log;
@@ -13,18 +13,18 @@ use Monolog\LogRecord;
 use Monolog\Utils;
 
 /**
- * Sends dingding notifications through Webhooks
+ * 通过 Webhook 发送钉钉通知
  *
- * Created by PhpStorm.
- * User: never615
- * Date: 02/11/2022
- * Time: 12:25 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 02/11/2022
+ * 时间： 12:25 下午
  */
 class DingdingWebhookHandler extends AbstractProcessingHandler
 {
 
     /**
-     * Slack Webhook token
+     * Slack Webhook 令牌
      *
      * @var string
      */
@@ -38,7 +38,7 @@ class DingdingWebhookHandler extends AbstractProcessingHandler
 
 
     /**
-     * @param string $url Webhook URL
+     * @param string $url Webhook 地址
      * @param string $accessToken
      * @param string $secret
      * @param string $unique
@@ -99,7 +99,7 @@ class DingdingWebhookHandler extends AbstractProcessingHandler
 
         $postString = Utils::jsonEncode($postData);
 
-        //sign
+        //签名
         $timestamp = time() * 1000;
 
         $stringToSign = $timestamp . "\n" . $this->secret;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 use Illuminate\Database\Migrations\Migration;
@@ -8,14 +8,14 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * api pv
- * Class CreatePagePvTable
+ * 接口访问量
+ * CreatePagePvTable 类
  */
 class CreateApiPvTable extends Migration
 {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -33,7 +33,7 @@ class CreateApiPvTable extends Migration
 
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

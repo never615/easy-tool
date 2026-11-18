@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 17/07/2017
- * Time: 10:44 AM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 17/07/2017
+ * 时间： 10:44 上午
  */
 
 namespace Mallto\Tool\Controller\Admin;
@@ -26,7 +26,7 @@ use Mallto\Tool\Exception\ResourceException;
  * 微信模板消息配置管理
  * 因为同一个模板的模板id在不同公众号中是不一样的,所以各个主体需要各自配置
  *
- * Class WechatTemplateMsgContoller
+ * WechatTemplateMsgContoller 类
  *
  * @package Mallto\Activity\Controller\Admin
  */

@@ -74,7 +74,7 @@
 
 
         /**
-        * DARK MODE CSS
+        * 深色模式样式
         */
 
         body[data-theme="dark"] {
@@ -282,13 +282,13 @@
         </div>
     </div>
 </div>
-<!-- jQuery for Bootstrap -->
+<!-- 供 Bootstrap 使用的 jQuery -->
 <script src="{{admin_asset("vendor/laravel-log/js/jquery-3.2.1.slim.min.js")}}"></script>
 <script src="{{admin_asset("vendor/laravel-log/js/bootstrap.min.js")}}"></script>
-<!-- FontAwesome -->
+<!-- FontAwesome 图标库 -->
 <script defer src="{{admin_asset("vendor/laravel-log/js/all.js")}}"></script>
 
-<!-- Datatables -->
+<!-- Datatables 表格库 -->
 <script defer src="{{admin_asset("vendor/laravel-log/js/jquery.dataTables.min.js")}}"></script>
 
 <script defer src="{{admin_asset("vendor/laravel-log/js/dataTables.bootstrap4.min.js")}}"></script>
@@ -296,11 +296,10 @@
 
 <script>
 
-    // dark mode by https://github.com/coliff/dark-mode-switch
+    // 深色模式基于 https://github.com/coliff/dark-mode-switch
     const darkSwitch = document.getElementById('darkSwitch');
 
-    // this is here so we can get the body dark mode before the page displays
-    // otherwise the page will be white for a second...
+    // 在页面显示前为 body 启用深色模式，避免页面短暂闪白。
     initTheme();
 
     window.addEventListener('load', () => {
@@ -312,7 +311,7 @@
         }
     });
 
-    // end darkmode js
+    // 深色模式脚本结束
 
     $(document).ready(function () {
         $('.table-container tr').on('click', function () {

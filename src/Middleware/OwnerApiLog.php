@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Middleware;
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * 向第三方提供的接口通讯日志记录
  * 记录的都是自己的接口
- * Class ThirdApiLog
+ * ThirdApiLog 类
  *
  * @package Encore\Admin\Middleware
  */
@@ -26,7 +26,7 @@ class OwnerApiLog
 {
 
     /**
-     * Handle an incoming request.
+     * 处理传入请求。
      *
      * @param \Illuminate\Http\Request $request
      * @param \Closure                 $next

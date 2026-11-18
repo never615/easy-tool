@@ -36,9 +36,9 @@ class QueueDiagnosticConfig
     public const KEY_SCAN_COUNT = 'queue_diagnostic_scan_count';
 
     /**
-     * Keep config cache short so direct DB edits self-heal, while status page
-     * saves invalidate the shared cache and the current process immediately.
-     * Other processes may retain a disabled result for at most one second.
+     * 缩短配置缓存期限，让直接修改数据库的结果能够自动生效，同时让状态页
+     * 保存时立即使共享缓存和当前进程失效。
+     * 其他进程最多保留禁用结果一秒。
      */
     private const CONFIG_CACHE_SECONDS = 5;
     private const SETTINGS_CACHE_KEY = 'queue_diagnostic_settings';
@@ -65,8 +65,8 @@ class QueueDiagnosticConfig
                 return false;
             }
 
-            // Repository identity isolates applications/stores; PID rejects inherited fork state.
-            // Only disabled is cached, so enabled diagnostics still observe a stop on every call.
+            // 仓库身份用于隔离应用和存储；PID 用于拒绝继承的派生进程状态。
+            // 仅缓存禁用状态，使启用中的诊断在每次调用时仍能发现停止信号。
             unset(self::$disabledResults[$store]);
             $enabled = $this->boolValue(self::KEY_ENABLED, false);
             if (!$enabled) {
@@ -501,8 +501,8 @@ class QueueDiagnosticConfig
             if ($connection !== $backend->lockConnection()) {
                 throw new \RuntimeException('Queue diagnostic cache and refill lock must share a Redis connection');
             }
-            // Atomically revoke old refill owners and remove their published value.
-            // A late owner can no longer resurrect settings from before this save.
+            // 原子撤销旧回填持有者并移除其已发布的值。
+            // 延迟返回的持有者不能恢复本次保存前的设置。
             $connection->del($backend->getPrefix().self::SETTINGS_CACHE_KEY,
                 $backend->getPrefix().self::REFILL_LOCK_KEY);
         } else {
@@ -575,15 +575,15 @@ class QueueDiagnosticConfig
             return $settings;
         }
 
-        // Only the cold miss path coordinates across workers. Keep the existing
-        // store, raw array key and five-second freshness contract unchanged.
+        // 仅冷缓存未命中路径需要跨工作进程协调。保留现有的
+        // 存储、原始数组键及五秒新鲜度合同不变。
         $lock = $store->lock(self::REFILL_LOCK_KEY, self::REFILL_LOCK_SECONDS);
         $deadline = hrtime(true) + self::REFILL_WAIT_NS;
         $sleepUs = 10_000;
         do {
             if ($lock->get()) {
                 try {
-                    // Another worker may have filled between our first GET and lock.
+                    // 首次 GET 到加锁之间，其他工作进程可能已完成填充。
                     $settings = $store->get(self::SETTINGS_CACHE_KEY);
                     if (is_array($settings)) {
                         return $settings;
@@ -597,8 +597,8 @@ class QueueDiagnosticConfig
                 }
             }
 
-            // Read the winner's value before sleeping. A contended miss must not
-            // fan out to the database or cache an infrastructure failure as disabled.
+            // 休眠前读取获胜者的值。竞争未命中时，不得
+            // 重复访问数据库，也不能将基础设施故障缓存为禁用。
             $settings = $store->get(self::SETTINGS_CACHE_KEY);
             if (is_array($settings)) {
                 return $settings;
@@ -612,7 +612,7 @@ class QueueDiagnosticConfig
         } while (true);
     }
 
-    /** Publish with the cache's own serialization, fenced by the cold-fill owner. */
+    /** 使用缓存自身的序列化方式发布，并由冷缓存回填持有者隔离竞争写入。 */
     private function publishSettings(Repository $store, Lock $lock, array $settings): void
     {
         $backend = $store->getStore();
@@ -622,8 +622,8 @@ class QueueDiagnosticConfig
                 throw new \RuntimeException('Queue diagnostic cache and refill lock must share a Redis connection');
             }
             $temporary = self::SETTINGS_CACHE_KEY.':refill-value:'.$lock->owner();
-            // Repository::put preserves RedisStore's serializer/compression behavior.
-            // RENAME preserves this short TTL and the public raw-array cache format.
+            // Repository::put 保留 RedisStore 的序列化及压缩行为。
+            // RENAME 保留此短 TTL 及对外的原始数组缓存格式。
             $store->put($temporary, $settings, Carbon::now()->addSeconds(self::CONFIG_CACHE_SECONDS));
             $owner = $connection instanceof PhpRedisConnection
                 ? $connection->pack([$lock->owner()])[0] : $lock->owner();

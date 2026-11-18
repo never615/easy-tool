@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Exception;
@@ -33,7 +33,7 @@ use Throwable;
  * 1. 检查转化所有到来的异常
  * 2. 检查请求的方式,是期望json响应还是视图响应,然后针对异常做不同的处理
  *
- * Class Handler
+ * Handler 类
  *
  * @package Mallto\Tool\Exception
  */
@@ -41,7 +41,7 @@ class Handler extends ExceptionHandler
 {
 
     /**
-     * A list of the exception types that should not be reported.
+     * 不应上报的异常类型列表。
      *
      * @var array
      */
@@ -59,9 +59,9 @@ class Handler extends ExceptionHandler
 
 
     /**
-     * Report or log an exception.
+     * 上报或记录异常。
      *
-     * This is a great spot to send exceptions to Sentry, Bugsnag, etc.
+     * 可以在此处将异常发送到 Sentry、Bugsnag 等服务。
      *
      * @param Throwable $exception
      *
@@ -115,7 +115,7 @@ class Handler extends ExceptionHandler
 
 
     /**
-     * Render an exception into an HTTP response.
+     * 将异常渲染为 HTTP 响应。
      *
      * @param \Illuminate\Http\Request $request
      * @param Throwable $exception
@@ -334,7 +334,7 @@ class Handler extends ExceptionHandler
 
 
     /**
-     * Convert an authentication exception into an unauthenticated response.
+     * 将身份认证异常转换为未认证响应。
      *
      * @param \Illuminate\Http\Request $request
      * @param AuthenticationException $exception
@@ -362,7 +362,7 @@ class Handler extends ExceptionHandler
 
 
     /**
-     * Convert a validation exception into a JSON response.
+     * 将校验异常转换为 JSON 响应。
      *
      * @param \Illuminate\Http\Request $request
      * @param \Illuminate\Validation\ValidationException $exception
@@ -495,7 +495,7 @@ class Handler extends ExceptionHandler
 
 
     /**
-     * Get the view used to render HTTP exceptions.
+     * 获取渲染 HTTP 异常的视图。
      *
      * @param \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e
      *

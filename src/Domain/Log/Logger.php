@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Log;
 
 /**
- * Created by PhpStorm.
- * User: never615
- * Date: 12/01/2017
- * Time: 3:21 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 12/01/2017
+ * 时间： 3:21 下午
  */
 interface Logger
 {

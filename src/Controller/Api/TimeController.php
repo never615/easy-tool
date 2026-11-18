@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Api;
@@ -8,10 +8,10 @@ namespace Mallto\Tool\Controller\Api;
 use Illuminate\Routing\Controller;
 
 /**
- * Created by PhpStorm.
- * User: never615
- * Date: 20/04/2017
- * Time: 11:45 AM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 20/04/2017
+ * 时间： 11:45 上午
  */
 class TimeController extends Controller
 {

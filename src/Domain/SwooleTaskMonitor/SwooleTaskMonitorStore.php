@@ -51,9 +51,9 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Resolve the selected Redis connection; Laravel's manager reuses the connection.
-     * A dedicated connection
-     * keeps high-rate diagnostic counters away from the business queue/cache Redis.
+     * 解析选定的 Redis 连接；Laravel 管理器会复用该连接。
+     * 使用独立连接，
+     * 避免高频诊断计数占用业务队列和缓存 Redis。
      */
     private function redis()
     {
@@ -63,7 +63,7 @@ class SwooleTaskMonitorStore
         return $connection ? Redis::connection($connection) : Redis::connection();
     }
 
-    /** Disconnect/reconnect only this recorder's manager, never another coroutine's socket. */
+    /** 仅断开或重连当前记录器的管理器，不操作其他协程的套接字。 */
     private function purgeConnection(?string $name): void
     {
         if ($this->redisManager !== null) $this->redisManager->purge($name);
@@ -114,11 +114,11 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Record the summary submitted event and the optimistic delivered event together.
+     * 同时记录汇总 submitted 事件和乐观 delivered 事件。
      *
-     * Summary mode has no task ID state. The caller compensates the delivered field if the
-     * transport later returns false or throws, so the final counters retain their original
-     * meaning while successful delivery avoids a second synchronous Redis round trip.
+     * 汇总模式没有任务 ID 状态。如果后续传输
+     * 返回 false 或抛出异常，调用方会补偿 delivered 字段，以保持最终计数原有的
+     * 含义，而成功投递可避免第二次同步 Redis 往返。
      */
     public function recordSubmittedAndExpectedDeliveredSummary(string $taskClass): void
     {
@@ -127,7 +127,7 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Undo the optimistic delivered counter and preserve the existing delivery failure metric.
+     * 撤销乐观 delivered 计数，保留现有投递失败指标。
      */
     public function recordSummaryDeliveryFailed(
         string $taskClass,
@@ -564,9 +564,9 @@ class SwooleTaskMonitorStore
         try {
             $raw = $connection->get($this->startKey($taskId));
         } catch (\RedisException $error) {
-            // Laravel 11 rebuilds the client after a lost connection but rethrows
-            // the failed command. This GET precedes every started counter write:
-            // retry only this read, never the lifecycle event or any increment.
+            // Laravel 11 在连接丢失后重建客户端，但仍会重新抛出
+            // 失败命令。此 GET 位于所有 started 计数写入之前：
+            // 仅重试此次读取，不重试生命周期事件或任何递增操作。
             try { $connection->disconnect(); } catch (Throwable) {}
             $this->purgeConnection(config('swoole_task_monitor.redis_connection') ?: null);
             $raw = $this->redis()->get($this->startKey($taskId));
@@ -688,14 +688,14 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Record a summary lifecycle event and coalesce its stats, metadata and TTL commands.
+     * 记录汇总生命周期事件，并合并其统计、元数据和 TTL 命令。
      *
-     * The pipeline covers combined summary submission and started/finished events. Trace events,
-     * samples and delivery failure accounting retain their existing command boundaries. A pipeline is
-     * not atomic; a failed dispatch is never replayed, and the next event rebuilds the Redis
-     * connection through the normal Laravel manager.
+     * 管道覆盖合并后的汇总提交以及开始、完成事件。追踪事件、
+     * 样本及投递失败统计保留现有命令边界。管道并非原子操作；
+     * 调度失败不重放，下个事件会通过常规 Laravel
+     * 管理器重建 Redis 连接。
      *
-     * @param array<string, int> $metrics Counters in the already captured daily bucket
+     * @param array<string, int> $metrics 已采集日桶中的计数
      */
     private function recordSummaryEvent(string $date, string $taskClass, array $metrics): void
     {
@@ -761,7 +761,7 @@ class SwooleTaskMonitorStore
                 $this->purgeConnection($connectionName);
             } catch (Throwable) {
             }
-            // Preserve retention after a partially applied pipeline without replaying counters.
+            // 管道部分生效后仍设置保留期限，不重放计数。
             try {
                 $this->redis()->expire($statsKey, self::RETENTION_SECONDS);
             } catch (Throwable) {
@@ -787,12 +787,12 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Immediately send one summary terminal event's counters in one network round trip.
-     * Lifecycle boundaries, samples and metadata keep their existing recording times.
-     * Pipeline is not atomic: a failed reply can leave later counters written. Never
-     * replay after dispatch; safeRecord() reports the diagnostic failure without changing business results.
+     * 在一次网络往返中立即发送一个汇总终态事件的计数。
+     * 生命周期边界、样本和元数据保留现有记录时点。
+     * 管道不是原子操作：某个响应失败时，后续计数可能已经写入。
+     * 调度后不要重放；safeRecord() 上报诊断失败，但不改变业务结果。
      *
-     * @param array<string, int> $metrics Counters in the already captured daily bucket
+     * @param array<string, int> $metrics 已采集日桶中的计数
      */
     private function incrementSummaryTerminal(string $key, string $taskClass, array $metrics): void
     {
@@ -820,8 +820,8 @@ class SwooleTaskMonitorStore
                 }
             }
         } catch (Throwable $exception) {
-            // Native pipeline bypasses Laravel's command reconnect handler. Rebuild on the
-            // next event so authentication, prefix and nonzero DB survive a broken socket.
+            // 原生管道绕过 Laravel 的命令重连处理器。在下一个
+            // 事件时重建，使套接字故障后仍保留认证、前缀及非零数据库编号。
             try {
                 $connection->disconnect();
             } catch (Throwable) {
@@ -831,8 +831,8 @@ class SwooleTaskMonitorStore
             } catch (Throwable) {
             }
             try {
-                // A partially written new bucket still needs retention even if no later
-                // successful event arrives. Bypass the local TTL throttle, never replay counters.
+                // 即使后续没有成功事件，部分写入的新桶仍需要保留期限。
+                // 绕过本地 TTL 节流，不重放计数。
                 $this->redis()->expire($key, self::RETENTION_SECONDS);
             } catch (Throwable) {
             }
@@ -842,9 +842,9 @@ class SwooleTaskMonitorStore
     }
 
     /**
-     * Increment a small group of summary counters in one Redis round trip when PhpRedis is
-     * available. The fallback intentionally preserves the old per-counter behavior for tests and
-     * alternate Redis clients.
+     * PhpRedis 可用时，在一次 Redis 往返中递增一小组汇总计数。
+     * 降级路径为测试及其他 Redis 客户端
+     * 保留原有逐项递增行为。
      *
      * @param array<string, int> $metrics
      */

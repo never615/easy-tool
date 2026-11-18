@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 use Illuminate\Database\Migrations\Migration;
@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 模块广告/头图模块添加链接
  * 增加广告类型,支持单图/文字/多图广告
- * Class UpdateHeadImageAddLink
+ * UpdateHeadImageAddLink 类
  */
 class UpdateHeadImagesEnhance extends Migration
 {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -51,7 +51,7 @@ class UpdateHeadImagesEnhance extends Migration
 
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

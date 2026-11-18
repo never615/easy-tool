@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\App;
@@ -18,10 +18,10 @@ use Mallto\Tool\Utils\ConfigUtils;
  *
  * 秘钥用做请求定位接口,如果没有按期更新秘钥,则会无权限请求相应的接口
  *
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2019/3/14
- * Time: 5:07 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2019/3/14
+ * 时间： 5:07 下午
  */
 class AppSecretUsecase extends AbstractAPI
 {
@@ -65,7 +65,7 @@ class AppSecretUsecase extends AbstractAPI
 
     /**
      * 不同的实现需要重写此方法 标准的json请求使用
-     * Check the array data errors, and Throw exception when the contents contains error.
+     * 检查数组中的错误，内容包含错误时抛出异常。
      *
      * @param array $contents
      *
@@ -75,6 +75,6 @@ class AppSecretUsecase extends AbstractAPI
     protected function checkAndThrow(
         array $contents
     ) {
-        // TODO: Implement checkAndThrow() method.
+        // 待办：实现 checkAndThrow() 方法。
     }
 }

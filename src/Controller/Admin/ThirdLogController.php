@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Admin;
@@ -13,7 +13,7 @@ use Mallto\Tool\Data\ThirdApiLog;
 /**
  * 第三方接口请求日志记录
  *
- * Class ThirdLogController
+ * ThirdLogController 类
  *
  * @package Mallto\Tool\Controller\Admin
  */

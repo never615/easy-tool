@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
@@ -8,7 +8,7 @@ namespace Mallto\Tool\Utils;
 /**
  * 微信小程序加密信息解密工具
  *
- * Class WXBizDataCrypt
+ * WXBizDataCrypt 类
  *
  * @package Mallto\Tool\Utils
  */
@@ -37,7 +37,7 @@ class WXBizDataCrypt
 
 
     /**
-     * WXBizDataCrypt constructor.
+     * WXBizDataCrypt 构造函数。
      *
      * @param $sessionKey string 用户在小程序登录后获取的会话密钥
      * @param $appid      string 小程序的appid

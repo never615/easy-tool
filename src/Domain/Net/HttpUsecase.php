@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2020. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Net;
@@ -21,15 +21,15 @@ use Psr\Http\Message\ResponseInterface;
 use Illuminate\Support\Facades\Log;
 
 /**
- * User: never615 <never615.com>
- * Date: 2020/4/20
- * Time: 5:17 下午
+ * 作者： never615 <never615.com>
+ * 日期： 2020/4/20
+ * 时间： 5:17 下午
  */
 class HttpUsecase
 {
 
     /**
-     * Http instance.
+     * HTTP 实例。
      *
      * @var
      */
@@ -68,7 +68,7 @@ class HttpUsecase
 
 
     /**
-     * Return the http instance.
+     * 返回 HTTP 实例。
      *
      * @return
      */
@@ -87,7 +87,7 @@ class HttpUsecase
 
 
     /**
-     * Set the http instance.
+     * 设置 HTTP 实例。
      *
      * @param Http $http
      *
@@ -102,7 +102,7 @@ class HttpUsecase
 
 
     /**
-     * Parse JSON from response and check error.
+     * 解析响应中的 JSON 并检查错误。
      *
      * @param string $method
      * @param array  $args
@@ -139,19 +139,19 @@ class HttpUsecase
 
 
     /**
-     * Register Guzzle middlewares.
+     * 注册 Guzzle 中间件。
      */
     protected function registerHttpMiddlewares()
     {
-        // log
+        // 日志
         $this->http->addMiddleware($this->logMiddleware());
-        // retry
+        // 重试
         $this->http->addMiddleware($this->retryMiddleware());
     }
 
 
     /**
-     * Log the request.
+     * 记录请求日志。
      *
      * @return \Closure
      */
@@ -218,7 +218,7 @@ class HttpUsecase
 
 
     /**
-     * Return retry middleware.
+     * 返回重试中间件。
      *
      * @return \Closure
      */
@@ -230,7 +230,7 @@ class HttpUsecase
             ResponseInterface $response = null,
             $exception
         ) {
-            // Limit the number of retries to MAX_RETRIES
+            // 将重试次数限制为 MAX_RETRIES
             if ($retries && $retries > $this->getMaxRetries()) {
                 return false;
             }

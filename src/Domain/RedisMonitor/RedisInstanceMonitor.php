@@ -8,7 +8,7 @@ use Illuminate\Redis\Connections\PhpRedisConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-/** Fixed-cost sampling; all instance baselines and failures share one atomic snapshot. */
+/** 固定成本采样；全部实例基线及失败共享一个原子快照。 */
 final class RedisInstanceMonitor
 {
     private readonly Closure $clock;
@@ -66,7 +66,7 @@ final class RedisInstanceMonitor
             }
             $connection = $this->probes->connection($target['id']);
             if ($connection instanceof PhpRedisConnection) {
-                // Older phpredis versions require a connected socket before setting this option.
+                // 旧版 phpredis 要求在设置此选项前先连接套接字。
                 $stage = 'probe_options';
                 $connection->client()->setOption(\Redis::OPT_MAX_RETRIES, 0);
             }
@@ -82,7 +82,7 @@ final class RedisInstanceMonitor
                 try {
                     $info[$section] = $this->normalize($connection->command('INFO', [$section]));
                 } catch (Throwable $exception) {
-                    // A timed-out socket may contain an unread reply; never reuse it for more INFO.
+                    // 超时套接字可能残留未读响应，不得复用它继续请求 INFO。
                     if (!str_contains(strtolower($exception->getMessage()), 'noperm')) {
                         throw $exception;
                     }
@@ -159,14 +159,14 @@ final class RedisInstanceMonitor
                     $this->probes->purge($target['id']);
                 }
             } catch (Throwable) {
-                // A failed probe cleanup must not suppress other instances.
+                // 探针清理失败不能影响其他实例。
             }
         }
         $changed = ($old['level'] ?? 'normal') !== $row['level'] || ($old['reasons'] ?? []) !== $row['reasons'];
         if ($changed || ($row['level'] !== 'normal' && $row['last_sampled_at'] - $row['last_logged_at'] >= max(1, (int)($this->config['log_cooldown_seconds'] ?? 600)))) {
             $this->safeLog($row['level'] === 'normal' ? 'info' : $row['level'], [
                 'instance' => $row['id'], 'connection' => $row['connection'], 'reasons' => $row['reasons'],
-                // Fixed stages and exception classes identify failures without exposing client messages.
+                // 使用固定阶段和异常类识别失败，不暴露客户端消息。
                 'error_stage' => $row['error_stage'] ?? null, 'error_kind' => $row['error_kind'] ?? null,
             ]);
             $row['last_logged_at'] = $row['last_sampled_at'];
@@ -229,7 +229,7 @@ final class RedisInstanceMonitor
         try {
             $this->logger->log($level, 'Redis instance monitor status', $context);
         } catch (Throwable) {
-            // Monitoring logs cannot interrupt sampling.
+            // 监控日志不能中断采样。
         }
     }
 }

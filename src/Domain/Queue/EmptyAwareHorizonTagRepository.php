@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\Queue;
 
 use Laravel\Horizon\Repositories\RedisTagRepository;
 
-/** Preserve live monitoring for tagged jobs without querying an empty intersection. */
+/** 保留带标签任务的实时监控，避免查询空交集。 */
 class EmptyAwareHorizonTagRepository extends RedisTagRepository
 {
     protected function connection()
@@ -17,8 +17,8 @@ class EmptyAwareHorizonTagRepository extends RedisTagRepository
 
     public function monitored(array $tags)
     {
-        // No tag can be monitored when the job has none. Do not cache nonempty
-        // intersections: dashboard monitoring changes must remain immediately visible.
+        // 任务没有标签时，没有可监控的标签。不要缓存非空
+        // 交集：仪表盘监控变更必须立即可见。
         return $tags === [] ? [] : parent::monitored($tags);
     }
 }

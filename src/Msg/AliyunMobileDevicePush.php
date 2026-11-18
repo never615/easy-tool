@@ -9,10 +9,10 @@ use Mallto\Tool\Exception\ThirdPartException;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2018/3/19
- * Time: 下午6:02
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2018/3/19
+ * 时间： 下午6:02
  */
 class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
 {
@@ -86,7 +86,7 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
 
     /**
      * 不同的实现需要重写此方法 标准的json请求使用
-     * Check the array data errors, and Throw exception when the contents contains error.
+     * 检查数组中的错误，内容包含错误时抛出异常。
      *
      * @param array $contents
      *
@@ -96,6 +96,6 @@ class AliyunMobileDevicePush extends AbstractAPI implements MobileDevicePush
     protected function checkAndThrow(
         array $contents
     ) {
-        // TODO: Implement checkAndThrow() method.
+        // 待办：实现 checkAndThrow() 方法。
     }
 }

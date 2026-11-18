@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2022. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2022. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\App;
@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Redis;
 use Predis\Connection\ConnectionException;
 
 /**
- * User: never615 <never615.com>
- * Date: 2022/9/7
- * Time: 2:57 PM
+ * 作者： never615 <never615.com>
+ * 日期： 2022/9/7
+ * 时间： 2:57 下午
  */
 class ClearCacheUsecase
 {

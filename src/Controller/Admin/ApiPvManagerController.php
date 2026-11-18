@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright () 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * Copyright () 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Admin;

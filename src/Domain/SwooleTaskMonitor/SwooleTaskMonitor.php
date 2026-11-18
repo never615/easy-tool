@@ -27,7 +27,7 @@ class SwooleTaskMonitor
 
     private static int $recordFailures = 0;
 
-    /** Process-local observation health; a failed write may already have partially changed Redis. */
+    /** 进程本地观测健康状态；写入失败时 Redis 可能已部分变化。 */
     public static function recordFailureCount(): int
     {
         return self::$recordFailures;
@@ -65,11 +65,11 @@ class SwooleTaskMonitor
                     return;
                 }
 
-                // Summary mode has no per-task state to reconcile after transport. Count the
-                // successful-path delivered event in the same Redis round trip as submitted;
-                // a later transport failure rolls that delivered counter back. This removes one
-                // synchronous Redis command from every successful delivery without changing the
-                // final submitted/delivered counts or trace-mode ordering.
+                // 汇总模式无需在传输后协调逐任务状态。
+                // 成功路径的 delivered 事件与 submitted 在同一次 Redis 往返中统计；
+                // 后续传输失败时回退 delivered 计数。这样可从每次成功投递中移除一次
+                // 同步 Redis 命令，同时不改变
+                // 最终 submitted、delivered 计数或追踪模式的顺序。
                 $store->recordSubmittedAndExpectedDeliveredSummary($taskClass);
             }, $recorder);
         } finally {
@@ -86,7 +86,7 @@ class SwooleTaskMonitor
                 }
                 $delivered = $transport !== null ? $transport($task) : Task::deliver($task);
             } finally {
-                // Custom MQTT processes measure their first sendMessage call to Web, not worker queue time.
+                // 自定义 MQTT 进程测量首次向 Web 调用 sendMessage 的耗时，不是工作进程的排队时间。
                 self::observeDeliveryTiming($timing, 'task_transport', $transportStartedAt);
             }
         } catch (Throwable $exception) {
@@ -128,8 +128,8 @@ class SwooleTaskMonitor
                 return false;
             }
 
-            // Summary mode already counted delivered with submitted before transport. Trace mode
-            // keeps the original post-transport event because its task ID state must exist first.
+            // 汇总模式已在传输前随 submitted 统计 delivered。追踪模式
+            // 保留原有传输后事件，因为必须先存在对应的任务 ID 状态。
             if ($traceSampled) {
                 self::safeRecord(function (SwooleTaskMonitorStore $store) use ($taskClass) {
                     $store->recordDelivered($taskClass);
@@ -142,7 +142,7 @@ class SwooleTaskMonitor
         }
     }
 
-    /** Optional local sink receives only a fixed stage and monotonic duration; failure cannot change transport. */
+    /** 可选本地接收器仅接收固定阶段和单调时钟耗时，失败不得改变传输。 */
     private static function observeDeliveryTiming(?\Closure $timing, string $stage, ?int $startedAt): void
     {
         if ($timing === null || $startedAt === null) {
@@ -151,7 +151,7 @@ class SwooleTaskMonitor
         try {
             $timing([$stage => max(0, hrtime(true) - $startedAt)]);
         } catch (Throwable) {
-            // Timing is observational and must never alter Task delivery or the original exception.
+            // 计时仅用于观测，不得改变 Task 投递或原始异常。
         }
     }
 
@@ -421,7 +421,7 @@ class SwooleTaskMonitor
                 try {
                     Log::warning('[SwooleTaskMonitor] record failed: ' . $exception->getMessage());
                 } catch (Throwable) {
-                    // Logging is also observational and must not interrupt Task delivery.
+                    // 日志也仅用于观测，不得中断 Task 投递。
                 }
             }
         }

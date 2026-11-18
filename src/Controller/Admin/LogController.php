@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Admin;
@@ -11,9 +11,9 @@ use Mallto\Admin\Controllers\Base\AdminCommonController;
 use Mallto\Tool\Data\Log;
 
 /**
- * User: never615 <never615.com>
- * Date: 2019-09-23
- * Time: 15:11
+ * 作者： never615 <never615.com>
+ * 日期： 2019-09-23
+ * 时间： 15:11
  */
 class LogController extends AdminCommonController
 {

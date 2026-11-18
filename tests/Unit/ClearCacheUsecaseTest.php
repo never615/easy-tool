@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2026. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2026. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Tests\Unit;
@@ -78,7 +78,7 @@ class ClearCacheUsecaseTest extends TestCase
 
         $redis = Mockery::mock();
         $redis->expects('keys')->with('l_res_c_*')->andReturn([]);
-        // The default connection may contain identical key names owned by other business data.
+        // 默认连接可能包含归属于其他业务数据的同名键。
         $redis->expects('del')->never();
         $redis->shouldReceive('connection')->with('local_cache')->andReturn($local);
         $redis->shouldReceive('connection')->with('cache')->andReturn($cache);

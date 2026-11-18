@@ -9,7 +9,7 @@ use Laravel\Horizon\Repositories\RedisJobRepository;
 use RuntimeException;
 use Throwable;
 
-/** Preserve Horizon retention while bounding each standalone Redis trim command. */
+/** 保留 Horizon 的保留策略，并限制每条独立 Redis 清理命令的规模。 */
 class ChunkedHorizonJobRepository extends RedisJobRepository
 {
     public const BATCH_SIZE = 256;
@@ -20,7 +20,7 @@ if #members == 0 then return 0 end
 return redis.call('ZREM', KEYS[1], unpack(members))
 LUA;
 
-    /** Admission completes before metadata: fill identity without rolling state backwards. */
+    /** 准入先于元数据写入完成：补全身份信息时不要回退状态。 */
     public function pushed($connection, $queue, JobPayload $payload)
     {
         if (empty($payload->decoded['bounded_queue']) && empty($payload->decoded['bounded_high'])) {
@@ -52,8 +52,8 @@ LUA, 3, $payload->id(), 'recent_jobs', 'pending_jobs',
             return parent::trimRecentJobs();
         }
 
-        // Compute all boundaries before issuing commands, as the original
-        // pipeline does. Negative scores sort older Jobs toward +infinity.
+        // 与原有管道一致，在发出命令前计算所有边界。
+        // 负分值使较早任务排向正无穷。
         $cutoffs = [];
         foreach (['recent_jobs' => $this->recentJobExpires,
             'recent_failed_jobs' => $this->recentFailedJobExpires,
@@ -67,8 +67,8 @@ LUA, 3, $payload->id(), 'recent_jobs', 'pending_jobs',
             try {
                 $this->trimKey($key, $cutoff);
             } catch (Throwable $error) {
-                // The parent's pipeline also sends later keys when one key is
-                // invalid. Do not starve healthy sets behind a bad first key.
+                // 某个键无效时，父类管道仍会发送后续键。
+                // 不能让首个坏键阻塞后续健康集合。
                 $firstError ??= $error;
             }
         }
@@ -96,16 +96,16 @@ LUA, 3, $payload->id(), 'recent_jobs', 'pending_jobs',
     protected function supportsChunkedTrim(): bool
     {
         $connection = $this->connection();
-        // Cluster uses a different pipeline/transaction contract in Horizon.
-        // Keep the original implementation for all unverified clients.
+        // Horizon 对集群使用不同的管道和事务合同。
+        // 对所有未经验证的客户端保留原有实现。
         return $connection instanceof PhpRedisConnection && $connection->client() instanceof \Redis;
     }
 
     private function trimKey(string $key, int $cutoff): void
     {
-        // A separate request per bounded block lets Redis serve other clients
-        // between blocks. Never put this whole loop in Lua, MULTI or pipeline.
-        // The cutoff is fixed and offset stays zero as members are removed.
+        // 每个有界分块独立请求，使 Redis 能在分块之间服务其他客户端。
+        // 不要将整个循环放进 Lua、MULTI 或管道。
+        // 移除成员时保持截止值固定，偏移量始终为零。
         while ($this->removeExpiredBatch($key, $cutoff) !== 0) {
         }
     }
@@ -114,8 +114,8 @@ LUA, 3, $payload->id(), 'recent_jobs', 'pending_jobs',
     {
         $removed = $this->connection()->eval(self::REMOVE_EXPIRED_BATCH, 1, $key, $cutoff, self::BATCH_SIZE);
         if (!is_int($removed) || $removed < 0 || $removed > self::BATCH_SIZE) {
-            // No broad-command fallback or ambiguous-response replay. The next
-            // ordinary trim retries only members still expired at its cutoff.
+            // 不回退到宽泛命令，也不重放结果不明确的响应。下一次
+            // 常规清理仅重试截止时仍已过期的成员。
             throw new RuntimeException('Horizon bounded trim was not acknowledged.');
         }
         return $removed;

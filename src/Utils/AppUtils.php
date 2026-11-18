@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
@@ -12,10 +12,10 @@ use RuntimeException;
 
 /**
  * 工具类
- * Created by PhpStorm.
- * User: never615
- * Date: 05/11/2016
- * Time: 4:22 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 05/11/2016
+ * 时间： 4:22 下午
  */
 class AppUtils
 {
@@ -245,7 +245,7 @@ class AppUtils
     public static function getRandomString($length = 42)
     {
         /*
-         * Use OpenSSL (if available)
+         * 使用 OpenSSL（若可用）
          */
         if (function_exists('openssl_random_pseudo_bytes')) {
             $bytes = openssl_random_pseudo_bytes($length * 2);

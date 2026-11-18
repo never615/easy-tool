@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Api;
@@ -18,10 +18,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2018/11/2
- * Time: 下午5:05
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2018/11/2
+ * 时间： 下午5:05
  */
 class QrController extends Controller
 {

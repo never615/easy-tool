@@ -34,7 +34,7 @@ final class RuntimeConfigInvalidationSubscriberProcess implements CustomProcessI
                 try {
                     $redis->close();
                 } catch (Throwable) {
-                    // The process is already stopping or reconnecting after a broken socket.
+                    // 进程已在停止，或在套接字断开后重连。
                 }
             }
         }

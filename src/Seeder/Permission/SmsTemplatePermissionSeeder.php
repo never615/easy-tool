@@ -17,7 +17,7 @@ class SmsTemplatePermissionSeeder extends Seeder
 
 
     /**
-     * Run the database seeds.
+     * 填充数据库初始数据。
      *
      * @return void
      * @throws \Exception

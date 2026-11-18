@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Exception;
@@ -15,7 +15,7 @@ class ValidationHttpException extends ResourceException
 {
 
     /**
-     * Create a new validation HTTP exception instance.
+     * 创建 HTTP 校验异常实例。
      *
      * @param \Illuminate\Support\MessageBag|array $errors
      * @param \Exception                           $previous

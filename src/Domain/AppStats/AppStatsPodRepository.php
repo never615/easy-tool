@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2026. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2026. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\AppStats;
@@ -222,7 +222,7 @@ class AppStatsPodRepository
     }
 
     /**
-     * Keep the optional diagnostic section bounded and distinguish disabled snapshots from zero traffic.
+     * 限制可选诊断区块的规模，并区分已禁用快照和零流量。
      *
      * @param mixed $metrics
      * @return array<string, int|string>|null

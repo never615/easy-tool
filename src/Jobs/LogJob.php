@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Jobs;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * 日志投递任务
- * Class LogJob
+ * LogJob 类
  *
  * @package Mallto\Tool\Jobs
  */
@@ -26,14 +26,14 @@ class LogJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * The number of seconds the job can run before timing out.
+     * 任务超时前最多可运行的秒数。
      *
      * @var int
      */
     public $timeout = 5;
 
     /**
-     * The number of times the job may be attempted.
+     * 任务最多可尝试的次数。
      *
      * @var int
      */
@@ -50,7 +50,7 @@ class LogJob implements ShouldQueue
 
 
     /**
-     * Create a new job instance.
+     * 创建任务实例。
      *
      * @param $type
      * @param $content
@@ -63,7 +63,7 @@ class LogJob implements ShouldQueue
 
 
     /**
-     * Execute the job.
+     * 执行任务。
      *
      * @return void
      */
@@ -76,7 +76,7 @@ class LogJob implements ShouldQueue
 
 
     /**
-     * The job failed to process.
+     * 任务处理失败。
      *
      * @param Exception $e
      */

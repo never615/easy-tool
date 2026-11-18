@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 use Illuminate\Database\Migrations\Migration;
@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Schema;
  *
  * 添加自定义模板链接和备注字段
  *
- * Class CreateMemberUpdateRulesTable
+ * CreateMemberUpdateRulesTable 类
  */
 class UpdateWechatTemplateMsgsAddDiy extends Migration
 {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -32,7 +32,7 @@ class UpdateWechatTemplateMsgsAddDiy extends Migration
 
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

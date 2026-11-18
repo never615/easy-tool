@@ -80,7 +80,7 @@ class NewConfig extends BaseModel
         $groups = [self::GROUP_SWOOLE_TASK_MONITOR];
         $keys = [self::KEY_SWOOLE_TASK_MONITOR_ENABLED, self::KEY_SWOOLE_TASK_MONITOR_MODE,
             self::KEY_SWOOLE_TASK_MONITOR_TRACE_SAMPLE_RATE];
-        // Business global_config env_key fields are compatibility metadata, not exported values.
+        // 业务 global_config 的 env_key 字段是兼容元数据，不是导出值。
         if ((!in_array($this->group_key, $groups, true) && !in_array($this->key, $keys, true))
             || $this->env_key === null || $this->publishableEnvValue() === null) {
             return;

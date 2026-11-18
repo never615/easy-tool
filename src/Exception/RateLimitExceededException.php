@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Exception;
@@ -16,7 +16,7 @@ class RateLimitExceededException extends HttpException
 {
 
     /**
-     * Create a new rate limit exceeded exception instance.
+     * 创建超出速率限制的异常实例。
      *
      * @param string     $message
      * @param \Exception $previous

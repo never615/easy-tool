@@ -9,7 +9,7 @@ namespace Mallto\Tool\Domain\QueueDiagnostic;
 interface ProvidesQueueDiagnosticContext
 {
     /**
-     * Return a small, safe context payload for queue diagnostics.
+     * 返回用于队列诊断的小型安全上下文负载。
      */
     public function queueDiagnosticContext(): array;
 }

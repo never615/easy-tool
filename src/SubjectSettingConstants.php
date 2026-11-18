@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool;
@@ -9,7 +9,7 @@ namespace Mallto\Tool;
  * 一般某个模块定义的常量,就写在模块中.
  *
  * 多个模块公用的写在这里
- * Class Constants
+ * Constants 类
  *
  * @package Mallto\Tool
  */

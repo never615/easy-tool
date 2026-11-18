@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container">
-        <!-- Jumbotron -->
+        <!-- 主展示区 -->
         <div class="jumbotron">
             <h1><i class="fa fa-bolt orange"></i> 502 Bad Gateway</h1>
             <p class="lead">The web server is returning an unexpected networking error for <em><span

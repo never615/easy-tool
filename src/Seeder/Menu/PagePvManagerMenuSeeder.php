@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright () 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * Copyright () 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Seeder\Menu;
@@ -20,7 +20,7 @@ class PagePvManagerMenuSeeder extends Seeder
 
 
     /**
-     * Run the database seeds.
+     * 填充数据库初始数据。
      *
      * @return void
      */

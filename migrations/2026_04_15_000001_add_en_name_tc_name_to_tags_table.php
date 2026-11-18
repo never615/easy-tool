@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 class AddEnNameTcNameToTagsTable extends Migration
 {
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -20,7 +20,7 @@ class AddEnNameTcNameToTagsTable extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

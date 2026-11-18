@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -19,7 +19,7 @@ return new class extends Migration {
     }
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

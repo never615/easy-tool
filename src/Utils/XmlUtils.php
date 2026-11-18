@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
 
 /**
- * Class XmlUtils
+ * XmlUtils 类
  *
  * @package Mallto\Tool\Utils
  */

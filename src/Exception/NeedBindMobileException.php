@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /**
- * Created by PhpStorm.
- * User: never615
- * Date: 12/07/2017
- * Time: 3:03 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 12/07/2017
+ * 时间： 3:03 下午
  */
 
 namespace Mallto\Tool\Exception;

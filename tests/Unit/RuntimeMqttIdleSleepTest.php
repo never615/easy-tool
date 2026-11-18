@@ -93,7 +93,7 @@ class RuntimeMqttIdleSleepTest extends TestCase
             $socket = stream_socket_accept($server, 3);
             if ($socket === false) { exit(2); }
             stream_set_timeout($socket, 3);
-            // Consume a complete CONNECT before replying with MQTT 3.1.1 CONNACK.
+            // 读取完整 CONNECT 后，才返回 MQTT 3.1.1 CONNACK。
             $header = fread($socket, 1);
             $length = 0;
             $multiplier = 1;

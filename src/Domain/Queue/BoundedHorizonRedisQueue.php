@@ -10,7 +10,7 @@ use Laravel\Horizon\JobPayload;
 use Laravel\Horizon\RedisQueue;
 use Throwable;
 
-/** Cross-producer admission; native queue state is the only capacity ledger. */
+/** 跨生产者准入；原生队列状态是唯一容量账本。 */
 class BoundedHorizonRedisQueue extends RedisQueue
 {
     private float $blockedUntil = 0;
@@ -18,7 +18,7 @@ class BoundedHorizonRedisQueue extends RedisQueue
     private const ADMIT = <<<'LUA'
 local count = redis.call('LLEN', KEYS[1]) + redis.call('ZCARD', KEYS[2]) + redis.call('ZCARD', KEYS[3])
 if count >= tonumber(ARGV[1]) then return 0 end
--- Validate notify before writes: Lua errors do not roll back earlier writes.
+-- 写入前校验通知：Lua 错误不会回滚此前的写入。
 local notifyType = redis.call('TYPE', KEYS[4]).ok
 if notifyType ~= 'none' and notifyType ~= 'list' then return redis.error_reply('invalid queue notify type') end
 if ARGV[3] == 'ready' then
@@ -42,7 +42,7 @@ LUA;
         if ($name === 'high' && $setting === 'max_jobs') {
             $fallback = config('queue.high_backlog.max_jobs', $fallback);
         }
-        // Index by literal queue name: dots and Redis hash tags are valid names.
+        // 按队列名称原文建立索引：点号和 Redis 哈希标签都是合法名称。
         $overrides = (array) config('queue.backlog.queues', []);
         return max(1, (int) ($overrides[$name][$setting] ?? $fallback));
     }
@@ -52,8 +52,8 @@ LUA;
         if ($result !== false) return $result;
         $manualRetry = $payload->isRetry() || ($this->container?->bound('queue.high_retry_context')
             && $this->container->make('queue.high_retry_context') === true);
-        // Preserve the existing lossy high path. Other queues must signal rejection
-        // to callers (including chains/batches), never report an unqueued job as delivered.
+        // 保留现有允许丢弃的 high 路径。其他队列必须向调用方报告拒绝，
+        // 包括链和批次的调用方，绝不能将未入队的任务报告为已投递。
         if ($this->queueName($queue) === 'high' && !$manualRetry) return false;
         $exception = $this->queueName($queue) === 'high'
             ? HighQueueAdmissionRejected::class : QueueAdmissionRejected::class;
@@ -86,8 +86,8 @@ LUA;
 
     public function bulk($jobs, $data = '', $queue = null)
     {
-        // Parent wraps pushes in MULTI/pipeline, hiding individual admission responses.
-        // Each item instead has an acknowledged atomic admission; partial acceptance is intentional.
+        // 父类将推送包在 MULTI 或管道中，隐藏了逐项准入响应。
+        // 改为对每项执行带确认的原子准入，允许部分接受。
         foreach ((array) $jobs as $job) {
             if (isset($job->delay)) $this->later($job->delay, $job, $data, $queue);
             else $this->push($job, $data, $queue);
@@ -103,8 +103,8 @@ LUA;
     public function deleteAndRelease($queue, $job, $delay)
     {
         $key = $this->getQueue($queue);
-        // A late worker must not recreate work already migrated from its expired
-        // reservation. Only an existing reservation may move into delayed.
+        // 延迟执行的工作进程不能重新创建已从过期预留中迁移的任务。
+        // 只有已存在的预留才能移入 delayed。
         $released = $this->getConnection()->eval(<<<'LUA'
 local delayedType = redis.call('TYPE', KEYS[1]).ok
 if delayedType ~= 'none' and delayedType ~= 'zset' then return redis.error_reply('invalid delayed queue type') end
@@ -136,7 +136,7 @@ LUA, 2, $key.':delayed', $key.':reserved', $job->getReservedJob(), $this->availa
         } catch (Throwable $error) {
             HighQueueRedisConnection::forget($this->redis, $this->connection);
             $this->blockedUntil = microtime(true) + 2;
-            // Never retry an ambiguous write or fall back to synchronous business execution.
+            // 不要重试结果不明确的写入，也不要回退为同步执行业务。
             HighQueueAdmissionLog::write($this->redis, 'redis_error', $payload, $limit, $error, $name, $this->connection);
             return false;
         }
@@ -144,13 +144,13 @@ LUA, 2, $key.':delayed', $key.':reserved', $job->getReservedJob(), $this->availa
             ? $this->container->make('queue.high_metadata_context') : false;
         $this->container?->instance('queue.high_metadata_context', true);
         try {
-            // Rejected work must never be stored in Horizon. ChunkedHorizonJobRepository
-            // guards this late pending update against an already-reserved/completed job.
+            // 被拒绝的任务不得写入 Horizon。ChunkedHorizonJobRepository
+            // 防止延迟的 pending 更新作用于已预留或已完成的任务。
             $this->event($key, new JobPending($payload->value));
             $this->event($key, new JobPushed($payload->value));
         } catch (Throwable $error) {
             HighQueueRedisConnection::forget($this->redis, 'horizon');
-            // Queue acceptance already happened. Metadata failure must not cause a duplicate retry.
+            // 队列已接受任务。元数据失败不能导致重复重试。
             HighQueueAdmissionLog::write($this->redis, 'horizon_metadata', $payload, $limit, $error, $name, $this->connection);
         } finally {
             $this->container?->instance('queue.high_metadata_context', $previousMetadataContext);

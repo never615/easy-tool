@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2022. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2022. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain;
@@ -16,7 +16,7 @@ use Mallto\Tool\Exception\PermissionDeniedException;
  *
  * 这个最开始是给测试写的,一些情况下,如命令,任务也需要这种方式进行对象创建
  *
- * Class DynamicInject
+ * DynamicInject 类
  *
  */
 class DynamicInject

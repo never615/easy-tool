@@ -8,7 +8,7 @@
 
 @section('content')
     <div class="container">
-        <!-- Jumbotron -->
+        <!-- 主展示区 -->
         <div class="jumbotron">
             <h1><span class="glyphicon glyphicon-fire red"></span> 服务繁忙</h1>
             <p class="lead">服务繁忙,请稍后再试 <em><span id="display-domain"></span></em>.

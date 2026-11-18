@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\RedisMonitor;
 
 final class RedisMonitorTargets
 {
-    /** Resolve aliases by endpoint; INFO describes an instance, not a logical DB. */
+    /** 按端点解析别名；INFO 描述实例，不描述逻辑数据库。 */
     public static function resolve(array $targets, array $redis): array
     {
         $resolved = [];
@@ -15,7 +15,7 @@ final class RedisMonitorTargets
                     'roles' => [(string)$role], 'profile' => []];
                 continue;
             }
-            // Match Laravel's effective options before enforcing the probe budget.
+            // 先匹配 Laravel 的实际选项，再强制执行探针预算。
             $profile = array_merge($redis[$name], (array)($redis['options'] ?? []),
                 (array)($redis[$name]['options'] ?? []));
             unset($profile['options']);
@@ -36,7 +36,7 @@ final class RedisMonitorTargets
             unset($profile['prefix'], $profile['persistent_id'], $profile['backoff_algorithm'],
                 $profile['backoff_base'], $profile['backoff_cap'], $profile['max_retries']);
             $profile['options'] = [];
-            // phpredis 5.3.x rejects OPT_MAX_RETRIES before connect(); set it on the live probe instead.
+            // phpredis 5.3.x 在 connect() 前拒绝 OPT_MAX_RETRIES，应在已连接的探针上设置。
             $profile = array_merge($profile, [
                 'persistent' => false, 'timeout' => 0.2, 'read_timeout' => 0.1,
                 'read_write_timeout' => 0.1, 'retry_interval' => 0,

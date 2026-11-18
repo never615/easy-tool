@@ -17,20 +17,20 @@ use Throwable;
  */
 abstract class MonitoredSwooleTask extends Task
 {
-    // SerializesModels reflects the concrete child. Inherited private properties would be silently lost.
+    // SerializesModels 反射具体子类。继承的私有属性会静默丢失。
     protected ?string $swooleTaskMonitorId = null;
     protected array $swooleTaskMonitorContext = [];
     protected bool $swooleTaskMonitorTraceSampled = false;
     protected ?array $swooleTaskMonitorRejection = null;
-    /** Only scalars cross IPC; no collector, closure or Redis connection is serialized. */
+    /** 仅通过 IPC 传输标量，不序列化采集器、闭包或 Redis 连接。 */
     protected ?array $swooleTaskExecutionContext = null;
-    /** Default-off scalar checkpoints; a subclass may carry them in its existing receipt. */
+    /** 默认关闭的标量检查点；子类可通过现有回执携带。 */
     protected ?array $swooleTaskWorkerBoundaryNs = null;
-    /** Independent local diagnostic context; never serialize a collector or filesystem handle. */
+    /** 独立的本地诊断上下文；绝不序列化采集器或文件系统句柄。 */
     protected ?array $swooleTaskFirstTraceContext = null;
-    /** Bounded monotonic checkpoints carried only when first-trace diagnostics are enabled. */
+    /** 仅在首次追踪诊断开启时携带数量受限的单调时钟检查点。 */
     protected array $swooleTaskFirstTraceTransportPoints = [];
-    /** True when a custom IPC hop lost producer context and the worker rebuilt it locally. */
+    /** 自定义 IPC 跳转丢失生产者上下文、工作进程在本地重建后为 true。 */
     protected bool $swooleTaskFirstTraceWorkerFallback = false;
     private static ?array $firstTraceBudget = null;
 
@@ -44,17 +44,17 @@ abstract class MonitoredSwooleTask extends Task
     final public function handle()
     {
         if ($this->swooleTaskWorkerBoundaryNs !== null) {
-            // Reset per attempt: framework retries must not reuse an earlier worker entry.
+            // 每次尝试均重置：框架重试不能复用更早的工作进程入口时间。
             $this->swooleTaskWorkerBoundaryNs = ['raw_handle_entry' => hrtime(true)];
         }
-        // Capture before recorder autoload; enabled recording is bounded, not message sampling.
+        // 在记录器自动加载前采集；限制启用后的记录数量，不采样消息。
         $firstTrace = null;
         try {
-            // Some custom Swoole IPC paths may serialize only the task's public payload and
-            // drop the protected diagnostic context. Recreate a worker-entry context for the
-            // bounded local trace so the actual Task stages remain observable. The fallback is
-            // diagnostic-only; its submitted_at_ns is intentionally the worker entry boundary
-            // and must never be interpreted as producer-to-worker queue latency.
+            // 部分自定义 Swoole IPC 路径可能仅序列化任务的公开负载，并
+            // 丢弃受保护的诊断上下文。为工作进程入口重建
+            // 有界本地追踪，以保持实际 Task 阶段可观测。该降级
+            // 仅用于诊断，其 submitted_at_ns 刻意使用工作进程入口边界，
+            // 绝不能解释为生产者到工作进程的排队延迟。
             $workerFallback = $this->swooleTaskFirstTraceContext === null;
             $this->prepareSwooleTaskFirstTrace();
             $this->swooleTaskFirstTraceWorkerFallback = $workerFallback
@@ -72,7 +72,7 @@ abstract class MonitoredSwooleTask extends Task
                 SwooleTaskFirstTrace::setCurrent($firstTrace);
             }
         } catch (Throwable) {
-            // Even malformed in-flight diagnostic context must not prevent business execution.
+            // 即使传输中的诊断上下文格式错误，也不能阻止业务执行。
         }
         $entry = $this->swooleTaskExecutionContext !== null ? hrtime(true) : null;
         $diagnostics = $this->swooleTaskExecutionContext !== null
@@ -107,7 +107,7 @@ abstract class MonitoredSwooleTask extends Task
             if ($businessAt !== null && $terminalAt !== null) {
                 $durations['handle_task'] = $terminalAt - $businessAt;
             }
-            // Preserve the original duration boundary: started monitor plus business, excluding terminal monitor.
+            // 保留原耗时边界：包括开始监控和业务处理，不包括终态监控。
             if ($outcome === 'failed') {
                 SwooleTaskMonitor::recordFailed($this, $this->elapsedMs($start), $exception);
             } elseif ($this->swooleTaskMonitorRejection !== null) {
@@ -134,18 +134,18 @@ abstract class MonitoredSwooleTask extends Task
                         SwooleTaskMonitor::recordFailureCount() - $monitorFailures);
                     $diagnostics->flush();
                 } catch (Throwable) {
-                    // Observation must never replace a business result or its original Throwable.
+                    // 观测不能替换业务结果或其原始 Throwable。
                 }
             }
-            // Completion-dependent schedulers advance only after terminal accounting.
-            // The default hook is empty and does not change ordinary Task transport.
+            // 依赖完成状态的调度器仅在终态统计后继续推进。
+            // 默认钩子为空，不改变普通 Task 传输。
             $this->afterMonitoredTaskTerminal($outcome);
         }
     }
 
     protected function afterMonitoredTaskTerminal(string $outcome): void {}
 
-    /** Cheap process-local bound: later messages do not enumerate classes/files or sample rusage. */
+    /** 采用低成本的进程本地限额：后续消息不再枚举类和文件，也不再采样 rusage。 */
     private function reserveFirstTrace(): ?int
     {
         $context = $this->swooleTaskFirstTraceContext;
@@ -172,7 +172,7 @@ abstract class MonitoredSwooleTask extends Task
         return $call;
     }
 
-    /** Local tracing stays independent of the Redis-backed cumulative execution collector. */
+    /** 本地追踪独立于基于 Redis 的累计执行采集器。 */
     final public function prepareSwooleTaskFirstTrace(): void
     {
         try {
@@ -188,11 +188,11 @@ abstract class MonitoredSwooleTask extends Task
                     'submitted_at_ns' => hrtime(true)];
             }
         } catch (Throwable) {
-            // Invalid or absent diagnostic coverage never changes delivery.
+            // 诊断覆盖无效或缺失时，不改变投递行为。
         }
     }
 
-    /** Called immediately before the first transport, after producer submitted monitoring. */
+    /** 生产者提交监控后、首次传输前立即调用。 */
     final public function prepareSwooleTaskExecutionDiagnostics(): void
     {
         if ($this->swooleTaskExecutionContext !== null || !isset(SwooleTaskExecutionDiagnostics::CHANNELS[static::class])) {
@@ -209,11 +209,11 @@ abstract class MonitoredSwooleTask extends Task
             $this->swooleTaskExecutionContext = ['run_id' => $run,
                 'channel' => SwooleTaskExecutionDiagnostics::CHANNELS[static::class], 'submitted_at_ns' => hrtime(true)];
         } catch (Throwable) {
-            // Missing worker coverage is rejected by the evidence validator, never repaired as zero time.
+            // 证据校验器会拒绝缺失的工作进程覆盖，不得用零耗时补齐。
         }
     }
 
-    /** Record a fixed, payload-free monotonic point for the bounded first-trace probe. */
+    /** 为有界首次追踪探针记录固定、不含负载的单调时钟点。 */
     final public function recordSwooleTaskFirstTracePoint(string $name): void
     {
         if (!in_array($name, ['submitted', 'send_before', 'pipe_received', 'handle_entry'], true)

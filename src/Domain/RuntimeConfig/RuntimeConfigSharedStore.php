@@ -33,8 +33,8 @@ final class RuntimeConfigSharedStore
     }
 
     /**
-     * Read independent identities in one cache operation (MGET on Redis).
-     * Invalid/missing entries remain misses and retain the existing per-identity refill lock.
+     * 通过一次缓存操作读取独立身份（Redis 使用 MGET）。
+     * 无效或缺失条目仍视为未命中，并保留现有的逐身份回填锁。
      * @param array<string, RuntimeConfigIdentity> $identities
      * @return array<string, array|null>
      */
@@ -57,10 +57,10 @@ final class RuntimeConfigSharedStore
     }
 
     /**
-     * Observe one config and an array-valued companion in a single MGET.
-     * Only two valid hits are reusable. Unsupported stores, listeners, misses and
-     * errors leave both original read/refill paths responsible for their semantics.
-     * No values survive this call and no TTL or refill lock is changed.
+     * 通过一次 MGET 观测一个配置及其数组形式的配套配置。
+     * 仅两个有效命中可以复用。遇到不支持的存储、监听器、未命中或
+     * 错误时，两个原有读取和回填路径仍各自负责自身语义。
+     * 不跨调用保留任何值，也不改变 TTL 或回填锁。
      * @return ?array{config: array, companion: array}
      */
     public function getWithArray(RuntimeConfigIdentity $identity, object $companion, string $key): ?array
@@ -76,8 +76,8 @@ final class RuntimeConfigSharedStore
                 || $a->getRedis() !== $b->getRedis() || $a->getPrefix() !== $b->getPrefix()) {
                 return null;
             }
-            // Identical connection objects preserve prefix, authentication,
-            // timeouts and failure policy. Let RedisStore decode supported values.
+            // 复用相同连接对象，保留前缀、认证、
+            // 超时与失败策略。让 RedisStore 解码受支持的值。
             $connection = $a->connection();
             if ($connection !== $b->connection()) {
                 return null;
@@ -105,8 +105,8 @@ final class RuntimeConfigSharedStore
             if (!is_array($raw) || count($raw) !== 2) {
                 return null;
             }
-            // Inspect without invoking foreign __wakeup hooks. A discarded
-            // observation must leave deserialization to the original GET once.
+            // 检查时不触发外部 __wakeup 钩子。被丢弃的
+            // 观测必须将反序列化留给原始 GET，且仅执行一次。
             $configShape = $this->arrayShape($raw[0]);
             $bindingShape = $this->arrayShape($raw[1]);
             if ($this->validPayload($identity, $configShape) === null || $bindingShape === null
@@ -154,8 +154,8 @@ final class RuntimeConfigSharedStore
             return false;
         }
         foreach ($events as $event) {
-            // Includes wildcard and interface listeners; combining reads must not
-            // change application-observable cache/command event behavior.
+            // 包括通配符及接口监听器；合并读取不得
+            // 改变应用可观测的缓存或命令事件行为。
             if ($dispatcher->getListeners($event)) {
                 return false;
             }
@@ -165,8 +165,8 @@ final class RuntimeConfigSharedStore
 
     /**
      * @param callable(): array{found: bool, value: mixed} $loader
-     * @param null|callable(): ?array $localReader Existing caller-approved L1 only; never performs shared I/O.
-     * @param null|callable(array): void $localPublisher Publish caller-approved L1 before unlock can yield.
+     * @param null|callable(): ?array $localReader 仅使用调用方认可的现有 L1，不进行共享 I/O。
+     * @param null|callable(array): void $localPublisher 在解锁可能让出执行权之前发布调用方认可的 L1。
      * @return array{identity: string, found: bool, value: mixed}
      */
     public function remember(
@@ -188,12 +188,12 @@ final class RuntimeConfigSharedStore
             $deadline = hrtime(true) + $seconds * 1_000_000_000;
             $pollMicroseconds = 10_000;
 
-            // Cold readers share the first refill instead of serializing behind a now-hot key.
-            // fresh() still takes the same lock and always replaces the value after commit.
+            // 冷缓存读取者共享首次回填，不在已变热的键后串行等待。
+            // fresh() 仍获取同一把锁，并始终在提交后替换该值。
             while (true) {
-                // Another worker may have filled the caller's shared-memory L1 while
-                // this reader waited. Reuse it before another Redis lock/read round;
-                // a missing, invalid or unavailable L1 retains the original protocol.
+                // 当前读取者等待期间，其他工作进程可能已填充调用方的共享内存 L1。
+                // 再次请求 Redis 锁或读取前先复用该值；
+                // L1 缺失、无效或不可用时，保留原有协议。
                 if (($local = $this->readLocal($identity, $localReader)) !== null) {
                     $outcome = 'local_cache_hit';
                     return $local;
@@ -202,8 +202,8 @@ final class RuntimeConfigSharedStore
                     break;
                 }
                 $trace?->lockMiss();
-                // The lock request can yield while its owner publishes L1.
-                // Recheck before paying for another shared-cache round trip.
+                // 锁请求可能让出执行权，此时持有者可能发布 L1。
+                // 增加一次共享缓存往返前先复查。
                 if (($local = $this->readLocal($identity, $localReader)) !== null) {
                     $outcome = 'local_cache_hit';
                     return $local;
@@ -213,8 +213,8 @@ final class RuntimeConfigSharedStore
                     $outcome = 'contended_cache_hit';
                     return $cached;
                 }
-                // A shared miss may have been observed before the owner filled
-                // L1 during that request. Do not sleep behind an available value.
+                // 共享缓存未命中可能发生在持有者于本次请求期间填充 L1 之前。
+                // 已有可用值时不要继续休眠等待。
                 if (($local = $this->readLocal($identity, $localReader)) !== null) {
                     $outcome = 'local_cache_hit';
                     return $local;
@@ -224,8 +224,8 @@ final class RuntimeConfigSharedStore
                 }
                 $sleepStarted = $trace?->begin();
                 try {
-                    // A short refill must not stall a realtime Task for 250 ms.
-                    // Back off to the previous ceiling so a slow source keeps bounded polling cost.
+                    // 短暂回填不能让实时 Task 阻塞 250 毫秒。
+                    // 退避到之前的上限，限制慢数据源的轮询成本。
                     Sleep::usleep($pollMicroseconds);
                     $pollMicroseconds = min(250_000, $pollMicroseconds * 2);
                 } finally {
@@ -251,12 +251,12 @@ final class RuntimeConfigSharedStore
                 try {
                     $this->putWithStore($store, $identity, $loadedPayload);
                 } catch (Throwable) {
-                    // The loaded database value remains correct when Redis writes fail.
+                    // Redis 写入失败时，已加载的数据库值仍然正确。
                 }
 
                 $outcome = 'loader';
-                // Followers can use the completed value while release waits on Redis.
-                // The caller must not republish it after a concurrent invalidation.
+                // 释放锁等待 Redis 响应期间，跟随者可以使用已完成的值。
+                // 并发失效后，调用方不得重新发布该值。
                 $this->publishLocal($localPublisher, $loadedPayload);
                 return $loadedPayload;
             } finally {
@@ -280,7 +280,7 @@ final class RuntimeConfigSharedStore
                         return $cached;
                     }
                 } catch (Throwable) {
-                    // Continue to the source only after the final shared-cache recheck fails.
+                    // 最终复查共享缓存仍未命中后，才继续读取数据源。
                 }
             }
 
@@ -317,7 +317,7 @@ final class RuntimeConfigSharedStore
             try {
                 $publisher($payload);
             } catch (Throwable) {
-                // An unavailable L1 never changes the value or retries the source.
+                // L1 不可用时不得修改值或重试数据源。
             }
         }
     }
@@ -343,7 +343,7 @@ final class RuntimeConfigSharedStore
                     try {
                         $this->putWithStore($store, $identity, $loadedPayload);
                     } catch (Throwable) {
-                        // The loaded database value remains correct when Redis writes fail.
+                        // Redis 写入失败时，已加载的数据库值仍然正确。
                     }
 
                     return $loadedPayload;
@@ -371,7 +371,7 @@ final class RuntimeConfigSharedStore
         try {
             $this->putWithStore($this->store(), $identity, $payload);
         } catch (Throwable) {
-            // PostgreSQL remains the source of truth when the shared cache is unavailable.
+            // 共享缓存不可用时，PostgreSQL 仍是真实数据源。
         }
     }
 
@@ -425,7 +425,7 @@ final class RuntimeConfigSharedStore
     }
 }
 
-/** Reuse Laravel's connection-aware codec; never maintain a parallel decoder. */
+/** 复用 Laravel 按连接处理的编解码器，不维护另一套解码器。 */
 final class RuntimeConfigPairedRedisDecoder extends RedisStore
 {
     public static function decode(RedisStore $store, mixed $raw, PhpRedisConnection $connection): mixed

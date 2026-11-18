@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2018/11/7
- * Time: 7:41 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2018/11/7
+ * 时间： 7:41 下午
  */
 class DESUtils
 {

@@ -1,14 +1,14 @@
 <?php
 /*
- * Copyright (c) 2023. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2023. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
 
 /**
- * User: never615 <never615.com>
- * Date: 2023/10/12
- * Time: 19:10
+ * 作者： never615 <never615.com>
+ * 日期： 2023/10/12
+ * 时间： 19:10
  */
 class RandomUtils
 {

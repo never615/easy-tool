@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 use Illuminate\Database\Migrations\Migration;
@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 页面轮播图表
- * Class CreateMemberUpdateRulesTable
+ * CreateMemberUpdateRulesTable 类
  */
 class CreatePageBannersTable extends Migration
 {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -45,7 +45,7 @@ class CreatePageBannersTable extends Migration
 
 
     /**7
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
@@ -8,16 +8,16 @@ namespace Mallto\Tool\Utils;
 use Illuminate\Http\UploadedFile;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2019/5/21
- * Time: 3:41 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2019/5/21
+ * 时间： 3:41 下午
  */
 class FileUtils
 {
 
     /**
-     * create Illuminate\Http\UploadedFile
+     * 创建 Illuminate\Http\UploadedFile
      *
      * @param      $url
      * @param bool $uniqid

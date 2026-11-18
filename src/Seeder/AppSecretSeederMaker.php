@@ -5,7 +5,7 @@ namespace Mallto\Tool\Seeder;
 use Mallto\Tool\Data\AppSecretsPermission;
 
 /**
- * Trait AppSecretSeederMaker
+ * AppSecretSeederMaker 特征
  *
  * @package Mallto\Admin\Seeder
  */

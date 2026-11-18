@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /**
  * 签名校验
  *
- * Created by PhpStorm.
- * User: never615
- * Date: 11/11/2016
- * Time: 8:16 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 11/11/2016
+ * 时间： 8:16 下午
  */
 
 namespace Mallto\Tool\Middleware;
@@ -25,7 +25,7 @@ use Mallto\Tool\Utils\SignUtils;
  *
  *
  *
- * Class AuthenticateAdmin
+ * AuthenticateAdmin 类
  *
  * @package App\Http\Middleware
  */
@@ -37,7 +37,7 @@ class AuthenticateSign
 
 
     /**
-     * Handle an incoming request.
+     * 处理传入请求。
      *
      * @param         $request
      * @param Closure $next
@@ -50,7 +50,7 @@ class AuthenticateSign
         $inputs = $request->all();
         $key = null;
         if (SignUtils::verifySign($inputs, $key)) {
-            //pass
+            //通过
             return $next($request);
         } else {
             throw new SignException(trans("errors.sign_error"));

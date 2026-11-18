@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Lottery;
@@ -9,10 +9,10 @@ use Mallto\Tool\Exception\InternalHttpException;
 
 /**
  * 抽奖
- * Created by PhpStorm.
- * User: never615
- * Date: 06/05/2017
- * Time: 4:19 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 06/05/2017
+ * 时间： 4:19 下午
  */
 class Lottery
 {

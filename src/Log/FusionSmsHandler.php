@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /**
- * Copyright (c) 2022. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2022. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Log;
@@ -16,12 +16,12 @@ use Monolog\Utils;
 
 /**
  * 日志处理类,通过 fusion 通道发短信.
- * Sends fusion sms notifications
+ * 发送融合短信通知
  *
- * Created by PhpStorm.
- * User: never615
- * Date: 02/11/2022
- * Time: 12:25 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 02/11/2022
+ * 时间： 12:25 下午
  */
 class FusionSmsHandler extends AbstractProcessingHandler
 {

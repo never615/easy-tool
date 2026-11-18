@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\Queue;
 
 use Illuminate\Queue\Console\RetryCommand;
 
-/** Preserve framework retry semantics; overload must not delete failed-job evidence. */
+/** 保留框架重试语义，过载不得删除失败任务证据。 */
 class BoundedQueueRetryCommand extends RetryCommand
 {
     public function __construct() { parent::__construct(); }

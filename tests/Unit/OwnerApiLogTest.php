@@ -358,7 +358,7 @@ final class OwnerApiLogTest extends TestCase
         $this->assertSame(0, $tester->getStatusCode());
         $this->assertCount(3, $deletes);
         foreach ($deletes as $query) {
-            // One cutoff binding plus at most two selected primary keys.
+            // 一个截止值绑定参数，加上最多两个选中主键。
             $this->assertLessThanOrEqual(3, count($query['bindings']));
         }
         $this->assertStringContainsString('Deleted: 5', $tester->getDisplay());

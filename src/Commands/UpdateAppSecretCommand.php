@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Commands;
@@ -10,7 +10,7 @@ use Mallto\Tool\Domain\App\AppSecretUsecase;
 
 /**
  * 更新应用的秘钥
- * Class UpdateAppSecret
+ * UpdateAppSecret 类
  *
  * @package Mallto\Tool\Commands
  */
@@ -18,21 +18,21 @@ class UpdateAppSecretCommand extends Command
 {
 
     /**
-     * The console command name.
+     * 控制台命令名称。
      *
      * @var string
      */
     protected $name = 'tool:update_app_secret';
 
     /**
-     * The console command description.
+     * 控制台命令说明。
      *
      * @var string
      */
     protected $description = '更新app的秘钥';
 
     /**
-     * Install directory.
+     * 安装目录。
      *
      * @var string
      */
@@ -45,7 +45,7 @@ class UpdateAppSecretCommand extends Command
 
 
     /**
-     * UpdateAppSecret constructor.
+     * UpdateAppSecret 构造函数。
      *
      * @param AppSecretUsecase $appSecretUsecase
      */
@@ -58,7 +58,7 @@ class UpdateAppSecretCommand extends Command
 
 
     /**
-     * Execute the console command.
+     * 执行控制台命令。
      *
      * @return void
      */

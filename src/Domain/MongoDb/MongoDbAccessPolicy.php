@@ -41,8 +41,8 @@ class MongoDbAccessPolicy
                 FILTER_VALIDATE_BOOLEAN
             );
         } catch (Throwable) {
-            // Fresh installs may evaluate providers before the global-config table exists.
-            // Connection/bootstrap availability remains owned by the environment baseline.
+            // 全新安装时，可能在全局配置表创建前执行服务提供者。
+            // 连接和启动可用性仍由环境基线控制。
             return $baseline;
         }
     }

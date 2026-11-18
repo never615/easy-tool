@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2026. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2026. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Processes;
@@ -29,8 +29,8 @@ use Throwable;
  * 扩展方式：在业务包中继承本类并覆盖 collectExtraStats()，
  * 然后在 config/laravels.php 的 processes 中将 class 替换为子类。
  *
- * User: never615 <never615.com>
- * Date: 2026/3/22
+ * 作者： never615 <never615.com>
+ * 日期： 2026/3/22
  */
 class SwooleStatsCollectorProcess implements CustomProcessInterface
 {
@@ -89,7 +89,7 @@ class SwooleStatsCollectorProcess implements CustomProcessInterface
                         $extra['runtime_config_cache'] = app(RuntimeConfigSwooleStore::class)->metricsSnapshot()
                             ?? ['status' => 'unavailable'];
                     } catch (Throwable) {
-                        // Runtime cache diagnostics are optional and must not block the base snapshot.
+                        // 运行时缓存诊断是可选项，不得阻塞基础快照。
                         $extra['runtime_config_cache'] = ['status' => 'unavailable'];
                     }
                 }

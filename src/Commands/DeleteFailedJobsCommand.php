@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Commands;
@@ -17,21 +17,21 @@ class DeleteFailedJobsCommand extends Command
 {
 
     /**
-     * The console command name.
+     * 控制台命令名称。
      *
      * @var string
      */
     protected $signature = 'tool:delete_failed_jobs_log';
 
     /**
-     * The console command description.
+     * 控制台命令说明。
      *
      * @var string
      */
     protected $description = '清理日志';
 
     /**
-     * Install directory.
+     * 安装目录。
      *
      * @var string
      */
@@ -39,7 +39,7 @@ class DeleteFailedJobsCommand extends Command
 
 
     /**
-     * Execute the console command.
+     * 执行控制台命令。
      *
      * @return void
      */

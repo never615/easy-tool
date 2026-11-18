@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Sms;
@@ -13,10 +13,10 @@ use Mallto\Tool\Exception\ThirdPartException;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2018/8/1
- * Time: 下午7:50
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2018/8/1
+ * 时间： 下午7:50
  */
 class AliyunSms extends AbstractAPI implements Sms
 {
@@ -203,13 +203,13 @@ class AliyunSms extends AbstractAPI implements Sms
     public
     function querySendDetails()
     {
-        // TODO: Implement querySendDetails() method.
+        // 待办：实现 querySendDetails() 方法。
     }
 
 
     /**
      * 不同的实现需要重写此方法 标准的json请求使用
-     * Check the array data errors, and Throw exception when the contents contains error.
+     * 检查数组中的错误，内容包含错误时抛出异常。
      *
      * @param array $contents
      *

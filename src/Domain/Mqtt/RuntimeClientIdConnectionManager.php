@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Mqtt;
@@ -146,12 +146,12 @@ class RuntimeClientIdConnectionManager
             $name
         );
 
-        // Four environment characters are enough to distinguish the deployment
-        // while leaving room for the connection name and random suffix.
+        // 环境名前四个字符足以区分部署，
+        // 同时为连接名和随机后缀预留空间。
         $runtimeClientIdPrefix = substr(trim((string)$runtimeClientIdPrefix), 0, 4);
 
-        // Keep the environment first and the connection name second so both are
-        // visible in broker-side client lists when the generated id is truncated.
+        // 环境名放在最前，连接名放在其后，使生成的标识被截断时，两者仍能
+        // 在代理端客户端列表中可见。
         $runtimeClientIdPrefix = implode('-', array_filter([
             $runtimeClientIdPrefix,
             $connectionName,
@@ -204,7 +204,7 @@ class RuntimeClientIdConnectionManager
             ->setTlsClientCertificateKeyPassphrase(Arr::get($config, 'tls.client_certificate_key_passphrase'));
 
         $tlsAlpn = Arr::get($config, 'tls.alpn');
-        // Older deployed php-mqtt/client versions do not expose ALPN settings.
+        // 旧版部署中的 php-mqtt/client 未提供 ALPN 设置。
         if (is_string($tlsAlpn) && method_exists($settings, 'setTlsAlpn')) {
             $settings = $settings->setTlsAlpn($tlsAlpn);
         }

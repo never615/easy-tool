@@ -3,10 +3,10 @@
 namespace Mallto\Tool\Mail;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 18/01/2018
- * Time: 5:38 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 18/01/2018
+ * 时间： 5:38 下午
  */
 
 use GuzzleHttp\Client;

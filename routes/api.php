@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API 路由
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
+| 可以在此为应用注册 API 路由。这些
+| 路由由 RouteServiceProvider 加载到一个分组中，
+| 该分组使用 api 中间件组。现在可以构建 API。
 |
 */
 

@@ -9,7 +9,7 @@ use Illuminate\Redis\RedisManager;
 use Illuminate\Support\ConfigurationUrlParser;
 use RuntimeException;
 
-/** Separate process-owned socket to the exact same endpoint/DB/prefix, with bounded I/O. */
+/** 进程独占套接字，连接完全相同的端点、数据库和前缀，并限制 I/O 耗时。 */
 final class HighQueueRedisConnection
 {
     private static int $pid = 0;
@@ -28,7 +28,7 @@ final class HighQueueRedisConnection
 
     public static function get(Factory $redis, ?string $name, bool $configuredTimeouts = false)
     {
-        // Alternate factories (including test doubles) retain their own transport contract.
+        // 其他工厂（包括测试替身）保留各自的传输合同。
         if (!$redis instanceof RedisManager) return $redis->connection($name);
         if (self::$pid !== getmypid()) {
             self::$connections = [];
@@ -46,11 +46,11 @@ final class HighQueueRedisConnection
         if (in_array(strtolower($base['driver'] ?? ''), ['tcp', 'tls'], true)) $base['scheme'] = strtolower($base['driver']);
         unset($base['driver']);
         $options = array_merge((array) config('database.redis.options', []), (array) ($base['options'] ?? []));
-        // Preserve existing per-connection budgets for reliable queues (notably
-        // Mongo history's 1s socket). Never allow an infinite admission wait.
+        // 保留可靠队列现有的逐连接预算（尤其是
+        // Mongo 历史记录的 1 秒套接字超时）。不允许无限等待准入。
         $timeout = $configuredTimeouts ? max(0.2, (float) ($options['timeout'] ?? $base['timeout'] ?? 1)) : 0.2;
         $readTimeout = $configuredTimeouts ? max(0.2, (float) ($options['read_timeout'] ?? $base['read_timeout'] ?? 1)) : 0.2;
-        // phpredis 5.3.x accepts OPT_MAX_RETRIES only after connect().
+        // phpredis 5.3.x 仅在 connect() 后接受 OPT_MAX_RETRIES。
         unset($base['max_retries'], $options['max_retries']);
         $base['options'] = array_merge($options, [
             'persistent' => false, 'timeout' => $timeout, 'read_timeout' => $readTimeout, 'retry_interval' => 0,
@@ -60,7 +60,7 @@ final class HighQueueRedisConnection
             $connection->disconnect();
             throw new RuntimeException('Could not disable queue admission Redis reconnect retries.');
         }
-        // No reconnect closure: an ambiguous write is never replayed. Recreate on the next probe.
+        // 不设置重连闭包：结果不明确的写入绝不重放。下次探测时再重建。
         return self::$connections[$key] = new PhpRedisConnection($connection->client());
     }
 }

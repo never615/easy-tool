@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2026. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2026. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller;
@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\DB;
  * TCP 探针仅检查端口是否可连接（Swoole Master 始终 accept），无法发现 Worker 全部阻塞的情况。
  * HTTP 探针由 Worker 处理，能真正验证应用层可用性。
  *
- * User: never615 <never615.com>
- * Date: 2026/3/29
+ * 作者： never615 <never615.com>
+ * 日期： 2026/3/29
  */
 class HealthCheckController
 {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Middleware;
@@ -23,7 +23,7 @@ use Illuminate\Http\Request;
 class TokenFromQuery
 {
     /**
-     * Handle an incoming request.
+     * 处理传入请求。
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next

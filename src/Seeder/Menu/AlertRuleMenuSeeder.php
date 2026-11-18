@@ -15,7 +15,7 @@ class AlertRuleMenuSeeder extends Seeder
     use MenuSeederMaker;
 
     /**
-     * Run the database seeds.
+     * 填充数据库初始数据。
      *
      * @return void
      */

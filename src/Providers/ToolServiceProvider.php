@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Providers;
@@ -122,7 +122,7 @@ class ToolServiceProvider extends ServiceProvider
     ];
 
     /**
-     * The application's route middleware.
+     * 应用的路由中间件。
      *
      * @var array
      */
@@ -138,7 +138,7 @@ class ToolServiceProvider extends ServiceProvider
     ];
 
     /**
-     * The application's route middleware groups.
+     * 应用的路由中间件组。
      *
      * @var array
      */
@@ -147,7 +147,7 @@ class ToolServiceProvider extends ServiceProvider
 
 
     /**
-     * Boot the service provider.
+     * 启动服务提供者。
      *
      * @return void
      */
@@ -476,7 +476,7 @@ class ToolServiceProvider extends ServiceProvider
 
 
     /**
-     * Register the service provider.
+     * 注册服务提供者。
      *
      * @return void
      */
@@ -517,7 +517,7 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->registerRouteMiddleware();
 
-        // This resolver retains only service references; config values remain dynamically read.
+        // 此解析器仅保留服务引用，配置值仍动态读取。
         $this->app->singleton(GlobalConfigRuntimeResolver::class);
 
         $this->registerMail();
@@ -733,18 +733,18 @@ class ToolServiceProvider extends ServiceProvider
 
 
     /**
-     * Register the route middleware.
+     * 注册路由中间件。
      *
      * @return void
      */
     protected function registerRouteMiddleware()
     {
-        // register middleware group.
+        // 注册中间件组。
         foreach ($this->middlewareGroups as $key => $middleware) {
             app('router')->middlewareGroup($key, $middleware);
         }
 
-        // register route middleware.
+        // 注册路由中间件。
         foreach ($this->routeMiddleware as $key => $middleware) {
             app('router')->aliasMiddleware($key, $middleware);
         }
@@ -752,7 +752,7 @@ class ToolServiceProvider extends ServiceProvider
 
 
     /**
-     * Register aliyun mail service
+     * 注册阿里云邮件服务
      */
     protected function registerMail()
     {
@@ -852,17 +852,17 @@ class ToolServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register the basic Redis default-queue backlog alert.
+     * 注册基础 Redis 默认队列积压告警。
      *
-     * This deployment-time alert is intentionally independent from the
-     * persisted queue diagnostics settings and checks only the configured
-     * Redis default queue once per minute.
+     * 此部署阶段告警刻意独立于
+     * 持久化队列诊断设置，仅检查已配置的
+     * Redis 默认队列，每分钟检查一次。
      */
     private function scheduleQueueBacklogMonitor(Schedule $schedule): void
     {
         $schedule->call(function () {
             try {
-                // Determine connection & queue
+                // 确定连接与队列
                 $connection = 'redis';
                 $queue = config('queue.connections.redis.queue', 'default');
                 $thresholds = $this->queueBacklogMonitorThresholds();
@@ -912,8 +912,8 @@ class ToolServiceProvider extends ServiceProvider
     }
 
     /**
-     * Return normalized thresholds so misordered values cannot downgrade an
-     * error backlog to a warning.
+     * 返回规范化阈值，防止顺序错误的值将错误级积压
+     * 降级为警告。
      *
      * @return array{warning_size: int, error_size: int}
      */

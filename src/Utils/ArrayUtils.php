@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright (c) 2020. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2020. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
 
 /**
- * User: never615 <never615.com>
- * Date: 2020/8/10
- * Time: 11:49 下午
+ * 作者： never615 <never615.com>
+ * 日期： 2020/8/10
+ * 时间： 11:49 下午
  */
 class ArrayUtils
 {

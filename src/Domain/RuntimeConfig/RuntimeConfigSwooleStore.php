@@ -83,7 +83,7 @@ final class RuntimeConfigSwooleStore
                 'expire' => time() + $ttl,
             ]);
         } catch (Throwable) {
-            // Missing or full Swoole tables only disable L1 acceleration.
+            // Swoole 表缺失或已满只会禁用 L1 加速。
         }
     }
 
@@ -104,11 +104,11 @@ final class RuntimeConfigSwooleStore
                 $table->del($key);
             }
         } catch (Throwable) {
-            // Missing Swoole tables only disable L1 acceleration.
+            // Swoole 表缺失只会禁用 L1 加速。
         }
     }
 
-    /** Record fixed-cardinality, Pod-local diagnostic counters without Redis I/O. */
+    /** 记录固定基数、Pod 本地的诊断计数，不进行 Redis I/O。 */
     public function recordMetric(string $metric): void
     {
         if (!in_array($metric, self::METRICS, true)
@@ -123,7 +123,7 @@ final class RuntimeConfigSwooleStore
                 $table->incr('shard:' . ((int)getmypid() % self::METRIC_SHARDS), $metric, 1);
             }
         } catch (Throwable) {
-            // Metrics must never affect cache reads or writes.
+            // 指标不得影响缓存读写。
         }
     }
 
@@ -146,7 +146,7 @@ final class RuntimeConfigSwooleStore
                 }
             }
         } catch (Throwable) {
-            // Monitoring is best-effort and does not participate in cache correctness.
+            // 监控采用尽力而为方式，不参与缓存正确性判断。
             return null;
         }
 
@@ -173,7 +173,7 @@ final class RuntimeConfigSwooleStore
 
             return true;
         } catch (Throwable) {
-            // Missing Swoole tables only disable L1 acceleration.
+            // Swoole 表缺失只会禁用 L1 加速。
             return false;
         }
     }

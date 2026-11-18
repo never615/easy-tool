@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 use Illuminate\Database\Migrations\Migration;
@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 用户每日uv
- * Class CreateMemberDayUvTable
+ * CreateMemberDayUvTable 类
  */
 class CreateUserUvTable extends Migration
 {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -31,7 +31,7 @@ class CreateUserUvTable extends Migration
 
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

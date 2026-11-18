@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Controller\Admin;
@@ -16,10 +16,10 @@ use Mallto\Tool\Domain\AppStats\AppStatsPodRepository;
  * AppStats。公开 HTML 入口只复用共享 Blade 展示旧接口已经公开的指标，不读取 Redis 内存
  * 等新增管理端数据，也不再包含任何开始/停止采集控制。
  *
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2019/2/13
- * Time: 11:32 AM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2019/2/13
+ * 时间： 11:32 上午
  */
 class SwooleStatsController
 {

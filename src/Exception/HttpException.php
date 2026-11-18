@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Exception;
@@ -19,7 +19,7 @@ class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpExceptio
 
 
     /**
-     * HttpException constructor.
+     * HttpException 构造函数。
      *
      * @param int             $statusCode http响应码
      * @param null            $message

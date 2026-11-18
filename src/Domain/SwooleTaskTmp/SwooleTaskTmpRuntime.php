@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2026. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2026. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\SwooleTaskTmp;
@@ -100,8 +100,8 @@ final class SwooleTaskTmpRuntime
                         $cleanup = $this->manualPayload($manualCleanup);
                     }
                 } elseif ($manualCleanup !== null && ! $this->requests->renew($manualCleanup['request_id'], $hostname, $instanceId, $now)) {
-                    // Do not continue deleting after this runtime loses the Redis lease. Another
-                    // runtime may have claimed the same target after the original lease expired.
+                    // 当前运行实例失去 Redis 租约后，不得继续删除。原租约过期后，另一个
+                    // 运行实例可能已认领同一目标。
                     $cleanup = $this->completeCleanup($manualCleanup['cleanup'], 'timed_out', 'lease_lost');
                     $automaticCleanupBlockedUntil = $manualCleanup['deadline_at'];
                     $manualCleanup = null;
@@ -158,7 +158,7 @@ final class SwooleTaskTmpRuntime
                     $nextSnapshotAt = $this->now() + $settings['snapshot_interval_seconds'];
                 }
 
-                // Keep backlog progress, lease renewal and stop checks independent of idle Redis polling.
+                // 积压处理、租约续期和停止检查独立于空闲 Redis 轮询。
                 $sleep(1);
             }
         } finally {
@@ -268,8 +268,8 @@ final class SwooleTaskTmpRuntime
         }
 
         if ($leaseLost) {
-            // The result might now belong to another runtime. Keep this local snapshot only;
-            // writing markRunning/markFinished could overwrite the lease holder's progress.
+            // 结果此时可能已属于另一个运行实例。仅保留当前本地快照；
+            // 写入 markRunning 或 markFinished 可能覆盖租约持有者的进度。
             return [null, $this->completeCleanup($cleanup, 'timed_out', 'lease_lost')];
         }
 

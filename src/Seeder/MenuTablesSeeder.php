@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Seeder;
@@ -21,7 +21,7 @@ class MenuTablesSeeder extends Seeder
 {
 
     /**
-     * Run the database seeds.
+     * 填充数据库初始数据。
      *
      * @return void
      */
@@ -34,7 +34,7 @@ class MenuTablesSeeder extends Seeder
         $this->call(ConfigMenuSeeder::class);
         $this->call(FeedbackMenuSeeder::class);
         $this->call(\Mallto\Tool\Seeder\Menu\AlertRuleMenuSeeder::class);
-//DummySeeder
+//填充器占位符
 
     }
 }

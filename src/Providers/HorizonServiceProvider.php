@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2020. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Providers;
@@ -21,15 +21,15 @@ use Mallto\Tool\Domain\Queue\QuietAwareHorizonWorkCommand;
 use Mallto\Tool\Domain\Queue\MigrationBatchHorizonRedisConnector;
 
 /**
- * User: never615 <never615.com>
- * Date: 2020/5/27
- * Time: 7:48 下午
+ * 作者： never615 <never615.com>
+ * 日期： 2020/5/27
+ * 时间： 7:48 下午
  */
 class HorizonServiceProvider extends HorizonApplicationServiceProvider
 {
 
     /**
-     * Bootstrap any application services.
+     * 启动应用服务。
      *
      * @return void
      */
@@ -37,8 +37,8 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         parent::boot();
 
-        // Artisan resolves this command after provider boot. Preserve custom command
-        // subclasses; only skip output formatting that --quiet already discards.
+        // Artisan 在服务提供者启动后解析此命令。保留自定义命令的
+        // 子类；仅跳过 --quiet 本就丢弃的输出格式化。
         $this->app->extend(\Laravel\Horizon\Console\WorkCommand::class, function ($command) {
             return get_class($command) === \Laravel\Horizon\Console\WorkCommand::class
                 ? QuietAwareHorizonWorkCommand::fromOriginal($command)
@@ -50,8 +50,8 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 ? new \Mallto\Tool\Domain\Queue\BoundedQueueRetryCommand() : $command;
         });
 
-        // All providers have registered by boot. Extend without resolving the
-        // repository early or replacing another application's custom implementation.
+        // 启动时所有服务提供者均已注册。扩展时不要提前解析仓库，
+        // 也不要替换其他应用的自定义实现。
         $this->app->extend(TagRepository::class, function ($repository) {
             return get_class($repository) === RedisTagRepository::class
                 ? new EmptyAwareHorizonTagRepository($repository->redis)
@@ -63,17 +63,17 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 return $repository;
             }
             $replacement = new ChunkedHorizonJobRepository($repository->redis);
-            // Preserve resolved public retention overrides and metadata fields;
-            // constructing a new repository alone would reset them to config.
+            // 保留已解析的公开保留策略覆盖值及元数据字段；
+            // 仅构建新仓库会将这些值重置为配置值。
             foreach (get_object_vars($repository) as $property => $value) {
                 $replacement->{$property} = $value;
             }
             return $replacement;
         });
 
-        // Every Redis queue is bounded, including newly configured queue names.
-        // Boot runs after Horizon registered its connector. Do not resolve queues early or
-        // replace an already-live connection; both resident applications need a restart.
+        // 所有 Redis 队列均有容量上限，包括新配置的队列名称。
+        // 启动时 Horizon 已注册连接器。不要提前解析队列，也不要
+        // 替换已建立的连接；两个常驻应用均需重启。
         $this->callAfterResolving(QueueManager::class, function ($manager): void {
             $manager->addConnector('redis', function () {
                 if (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
@@ -86,9 +86,9 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             });
         });
 
-        // Per-job console output can fill worker/supervisor pipes before handle(),
-        // consuming the Job timeout. Quiet workers retain application logs and
-        // Horizon/failed-job events; the master still reports lifecycle messages.
+        // 逐任务控制台输出可能在 handle() 前填满工作进程或监督器管道，
+        // 消耗任务超时时间。静默工作进程保留应用日志和
+        // Horizon 和失败任务事件；主进程仍上报生命周期消息。
         if (filter_var(config('horizon.worker_quiet', true), FILTER_VALIDATE_BOOLEAN)
             && !preg_match('/(?:^|\s)(?:--quiet|-q)(?:\s|$)/', WorkerCommandString::$command)) {
             WorkerCommandString::$command .= ' --quiet';
@@ -103,7 +103,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
 
 
     /**
-     * Configure the Horizon authorization services.
+     * 配置 Horizon 授权服务。
      *
      * @return void
      */
@@ -119,9 +119,9 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
 
 
     /**
-     * Register the Horizon gate.
+     * 注册 Horizon 授权规则。
      *
-     * This gate determines who can access Horizon in non-local environments.
+     * 此授权规则决定哪些用户可以在非本地环境访问 Horizon。
      *
      * @return void
      */

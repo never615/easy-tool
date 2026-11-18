@@ -150,9 +150,9 @@ class NewConfigBootstrapKeyGuard
             return true;
         }
 
-        // This registered switch controls business history admission, not the
-        // Mongo connection or buffer topology. Keep the exception exact: all
-        // other MONGODB_* keys, including capacities and credentials, stay boot-only.
+        // 此已注册开关控制业务历史数据的准入，不控制
+        // Mongo 连接或缓冲拓扑。例外必须精确：其他所有
+        // MONGODB_* 键（包括容量和凭据）仍仅在启动时读取。
         if ($envKey === 'MONGODB_HISTORY_PROTECTION_ENABLED') {
             return false;
         }

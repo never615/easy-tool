@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Exception;
@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Support\MessageBag;
 
 /**
- * Class ResourceException
+ * ResourceException 类
  *
  * @package App\Exceptions
  */
@@ -17,7 +17,7 @@ class ResourceWithCodeException extends ResourceException implements MessageBagE
 {
 
     /**
-     * MessageBag errors.
+     * 错误消息集合。
      *
      * @var \Illuminate\Support\MessageBag
      */
@@ -25,7 +25,7 @@ class ResourceWithCodeException extends ResourceException implements MessageBagE
 
 
     /**
-     * Create a new resource exception instance.
+     * 创建资源异常实例。
      *
      * @param string                               $message
      * @param \Illuminate\Support\MessageBag|array $errors
@@ -58,7 +58,7 @@ class ResourceWithCodeException extends ResourceException implements MessageBagE
 
 
     /**
-     * Get the errors message bag.
+     * 获取错误消息集合。
      *
      * @return \Illuminate\Support\MessageBag
      */
@@ -69,7 +69,7 @@ class ResourceWithCodeException extends ResourceException implements MessageBagE
 
 
     /**
-     * Determine if message bag has any errors.
+     * 判断消息集合是否包含错误。
      *
      * @return bool
      */

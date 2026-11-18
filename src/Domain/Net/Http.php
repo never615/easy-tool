@@ -8,33 +8,33 @@ use Mallto\Tool\Exception\ThirdPartException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Class Http.
+ * Http. 类
  */
 class Http
 {
 
     /**
-     * Used to identify handler defined by client code
-     * Maybe useful in the future.
+     * 用于标识客户端代码定义的处理器
+     * 未来可能有用。
      */
     const USER_DEFINED_HANDLER = 'userDefined';
 
     /**
-     * Http client.
+     * HTTP 客户端。
      *
      * @var HttpClient
      */
     protected $client;
 
     /**
-     * The middlewares.
+     * 中间件列表。
      *
      * @var array
      */
     protected $middlewares = [];
 
     /**
-     * Guzzle client default settings.
+     * Guzzle 客户端默认设置。
      *
      * @var array
      */
@@ -47,7 +47,7 @@ class Http
 
 
     /**
-     * Set guzzle default settings.
+     * 设置 Guzzle 默认配置。
      *
      * @param array $defaults
      */
@@ -58,7 +58,7 @@ class Http
 
 
     /**
-     * Return current guzzle default settings.
+     * 返回当前 Guzzle 默认设置。
      *
      * @return array
      */
@@ -69,7 +69,7 @@ class Http
 
 
     /**
-     * GET request.
+     * GET 请求。
      *
      * @param string $url
      * @param array  $options
@@ -86,7 +86,7 @@ class Http
 
 
     /**
-     * POST request.
+     * POST 请求。
      *
      * @param string       $url
      * @param array|string $options
@@ -106,7 +106,7 @@ class Http
 
 
     /**
-     * JSON request.
+     * JSON 请求。
      *
      * @param string       $url
      * @param string|array $options
@@ -141,7 +141,7 @@ class Http
 
 
     /**
-     * Upload file.
+     * 上传文件。
      *
      * @param string $url
      * @param array  $files
@@ -171,7 +171,7 @@ class Http
 
 
     /**
-     * Set GuzzleHttp\Client.
+     * 设置 GuzzleHttp\Client。
      *
      * @param \GuzzleHttp\Client $client
      *
@@ -186,7 +186,7 @@ class Http
 
 
     /**
-     * Return GuzzleHttp\Client instance.
+     * 返回 GuzzleHttp\Client 实例。
      *
      * @return \GuzzleHttp\Client
      */
@@ -209,7 +209,7 @@ class Http
 
 
     /**
-     * Add a middleware.
+     * 添加中间件。
      *
      * @param callable $middleware
      *
@@ -224,7 +224,7 @@ class Http
 
 
     /**
-     * Return all middlewares.
+     * 返回全部中间件。
      *
      * @return array
      */
@@ -235,7 +235,7 @@ class Http
 
 
     /**
-     * Make a request.
+     * 发起请求。
      *
      * @param string $url
      * @param string $method
@@ -270,7 +270,7 @@ class Http
             $body = $body->getBody();
         }
 
-        // XXX: json maybe contains special chars. So, let's FUCK the WeChat API developers ...
+        // 注意：JSON 可能包含特殊字符；此处对微信接口的相关设计表达强烈不满。
         $body = $this->fuckTheWeChatInvalidJSON($body);
 
         if (empty($body)) {
@@ -288,7 +288,7 @@ class Http
 
 
     /**
-     * Filter the invalid JSON string.
+     * 过滤无效的 JSON 字符串。
      *
      * @param \Psr\Http\Message\StreamInterface|string $invalidJSON
      *
@@ -301,7 +301,7 @@ class Http
 
 
     /**
-     * Build a handler.
+     * 构建处理器。
      *
      * @return HandlerStack
      */

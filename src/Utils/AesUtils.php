@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
@@ -12,7 +12,7 @@ use Mallto\Tool\Exception\ResourceException;
  *
  * @deprecated
  *
- * Class AesUtils
+ * AesUtils 类
  *
  * @package Mallto\Tool\Utils
  */
@@ -36,7 +36,7 @@ class AesUtils
 
 
     /**
-     * AesUtils constructor.
+     * AesUtils 构造函数。
      *
      * @param $aesKey
      */
@@ -51,13 +51,13 @@ class AesUtils
 
 
     /**
-     * Decrypt AEAD_AES_256_GCM ciphertext
+     * 解密 AEAD_AES_256_GCM 密文
      *
-     * @param string $associatedData AES GCM additional authentication data
-     * @param string $nonceStr       AES GCM nonce
-     * @param string $ciphertext     AES GCM cipher text
+     * @param string $associatedData AES GCM 附加认证数据
+     * @param string $nonceStr       AES GCM 随机数
+     * @param string $ciphertext     AES GCM 密文
      *
-     * @return string|bool      Decrypted string on success or FALSE on failure
+     * @return string|bool      成功时返回解密字符串，失败时返回 FALSE
      */
     public function decryptToString($associatedData, $nonceStr, $ciphertext)
     {
@@ -66,14 +66,14 @@ class AesUtils
             return false;
         }
 
-        // ext-sodium (default installed on >= PHP 7.2)
+        // ext-sodium 扩展（PHP 7.2 及以上默认安装）
         if (function_exists('\sodium_crypto_aead_aes256gcm_is_available') &&
             \sodium_crypto_aead_aes256gcm_is_available()) {
             return \sodium_crypto_aead_aes256gcm_decrypt($ciphertext, $associatedData, $nonceStr,
                 $this->aesKey);
         }
 
-        // ext-libsodium (need install libsodium-php 1.x via pecl)
+        // ext-libsodium（需要通过 pecl 安装 libsodium-php 1.x）
         if (function_exists('\Sodium\crypto_aead_aes256gcm_is_available') &&
             \Sodium\crypto_aead_aes256gcm_is_available()) {
             return \Sodium\crypto_aead_aes256gcm_decrypt($ciphertext, $associatedData, $nonceStr,

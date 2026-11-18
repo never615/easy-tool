@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Redis;
 use Throwable;
 
 /**
- * UUID-scoped process-local execution timings. No payloads, topics, coordinates or task IDs.
- * submit_to_worker includes both IPC hops and their waits; it is not pure Task queue time.
- * A worker heartbeat persists the final partial second after traffic stops.
+ * 按 UUID 隔离的进程本地执行计时，不含负载、主题、坐标或任务 ID。
+ * submit_to_worker 包含两次 IPC 跳转及其等待，不是纯 Task 排队时间。
+ * 流量停止后，工作进程心跳会持久化最后不足一秒的统计。
  */
 final class SwooleTaskExecutionDiagnostics
 {
-    // Fixed bound covers a 512-worker pool plus replacements without unbounded Redis growth.
+    // 固定上限覆盖 512 个工作进程及其替代进程，避免 Redis 无界增长。
     public const MAX_GENERATIONS = 2048;
     public const STAGES = ['submit_to_worker', 'monitor_started', 'handle_task', 'monitor_terminal', 'worker_total'];
     public const BUCKET_LIMITS_NS = [100000, 1000000, 5000000, 20000000, 100000000];
@@ -46,7 +46,7 @@ final class SwooleTaskExecutionDiagnostics
         return is_string($run) && preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/D', $run) === 1;
     }
 
-    /** Lazy in the actual Task worker, never create a connection or timer on the producer. */
+    /** 仅在实际 Task 工作进程中惰性初始化，不在生产者创建连接或定时器。 */
     public static function start(string $runId): ?self
     {
         try {
@@ -73,7 +73,7 @@ final class SwooleTaskExecutionDiagnostics
                     }
                 }, static fn(): float => microtime(true));
             self::$worker = $diagnostics;
-            // A missing/failed heartbeat is a health failure, not permission to fabricate a final count.
+            // 心跳缺失或失败表示健康检查失败，不能据此伪造最终计数。
             try {
                 if (!class_exists(\Swoole\Timer::class)) {
                     throw new \RuntimeException('Execution diagnostic heartbeat unavailable');
@@ -88,7 +88,7 @@ final class SwooleTaskExecutionDiagnostics
             }
             return $diagnostics;
         } catch (Throwable) {
-            return null; // Missing final stage coverage makes the independent validator reject the evidence.
+            return null; // 缺少最终阶段覆盖时，独立校验器会拒绝该证据。
         }
     }
 
@@ -106,7 +106,7 @@ final class SwooleTaskExecutionDiagnostics
         }
     }
 
-    /** Record one completed synchronous handle; monitorFailures is this handle's delta, not a cumulative value. */
+    /** 记录一次已完成的同步处理；monitorFailures 是本次处理的增量，不是累计值。 */
     public function record(string $channel, string $outcome, array $durations, int $monitorFailures = 0): void
     {
         if (!isset($this->channels[$channel]) || !in_array($outcome, ['finished', 'rejected', 'failed'], true)) {
@@ -157,7 +157,7 @@ final class SwooleTaskExecutionDiagnostics
             if (!$force && $now - $this->lastFlushAt < 1) {
                 return;
             }
-            $this->lastFlushAt = $now; // Throttle failures too; retry absolute snapshots without double-counting.
+            $this->lastFlushAt = $now; // 失败时也节流；重试绝对值快照，避免重复计数。
             ($this->writer)($this->snapshot());
         } catch (Throwable) {
             $this->failures++;

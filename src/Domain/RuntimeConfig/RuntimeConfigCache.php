@@ -22,9 +22,9 @@ final class RuntimeConfigCache
     }
 
     /**
-     * Reuse an earlier shared miss without repeating the unlocked GET.
-     * The ordinary L1 check, refill lock, locked recheck and error policy remain.
-     * Even a raced/stale miss cannot authorize loading over a newly cached value.
+     * 复用此前共享缓存的未命中结果，不重复执行未加锁的 GET。
+     * 保留普通 L1 检查、回填锁、锁内复查及错误策略。
+     * 即使竞争或过期导致未命中，也不能覆盖新缓存的值重新加载。
      * @param callable(): array{found: bool, value: mixed} $loader
      * @return array{found: bool, value: mixed}
      */
@@ -62,8 +62,8 @@ final class RuntimeConfigCache
                 } : null,
                 RuntimeConfigCacheMode::usesSwoole($mode)
                     ? function (array $value) use ($identity, &$localPublicationAttempted): void {
-                        // Mark the attempt even if L1 is unavailable: an invalidation
-                        // during unlock must never be undone by a second outer write.
+                        // 即使 L1 不可用也记录本次尝试：解锁期间发生的失效操作
+                        // 不能被外层第二次写入撤销。
                         $localPublicationAttempted = true;
                         $this->swoole->put($identity, $value);
                     } : null);
@@ -72,7 +72,7 @@ final class RuntimeConfigCache
             RuntimeConfigBranchTrace::record($identity->fingerprint(), 'shared_hit');
         }
 
-        // An L1 hit or lock-owned publication must not renew its TTL or republish across a concurrent invalidation.
+        // L1 命中或锁持有者发布时，不得续期 TTL，也不得跨越并发失效操作重新发布。
         if (RuntimeConfigCacheMode::usesSwoole($mode) && !$localHit && !$localPublicationAttempted) {
             $this->swoole->put($identity, $payload);
         }
@@ -97,8 +97,8 @@ final class RuntimeConfigCache
     }
 
     /**
-     * Preserve each identity's L1 mode, then batch only shared-cache misses.
-     * No process-local TTL is added; each call observes the same caches as remember().
+     * 保留每个身份的 L1 模式，再仅对共享缓存未命中项批量处理。
+     * 不增加进程本地 TTL；每次调用观测的缓存与 remember() 相同。
      * @param array<string, array{identity: RuntimeConfigIdentity, mode: string, loader: callable}> $entries
      * @return array<string, array{found: bool, value: mixed}>
      */
@@ -155,8 +155,8 @@ final class RuntimeConfigCache
     }
 
     /**
-     * Read available payloads without refilling optional identities. Callers can
-     * defer their ordinary remember() until a condition actually needs the value.
+     * 读取可用负载，不回填可选身份。调用方可以
+     * 延后常规 remember() 调用，直到某个条件实际需要该值。
      * @param array<string, array{identity: RuntimeConfigIdentity, mode: string}> $entries
      * @return array<string, array{found: bool, value: mixed}|null>
      */
@@ -211,8 +211,8 @@ final class RuntimeConfigCache
     public function getWithArray(RuntimeConfigIdentity $identity, string $mode, object $companion, string $key): ?array
     {
         $mode = $this->runtimeMode($mode);
-        // A valid L1 always wins. Its ordinary caller keeps metrics/TTL behavior;
-        // do not replace it with a shared observation just to combine a read.
+        // 有效的 L1 始终优先。其常规调用方保留指标和 TTL 行为；
+        // 不要仅为合并读取就用共享观测替代它。
         if (RuntimeConfigCacheMode::usesSwoole($mode) && $this->swoole->get($identity) !== null) {
             return null;
         }

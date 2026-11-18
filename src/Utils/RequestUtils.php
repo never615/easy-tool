@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2021. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2021. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
@@ -9,9 +9,9 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * User: never615 <never615.com>
- * Date: 2021/1/15
- * Time: 3:21 上午
+ * 作者： never615 <never615.com>
+ * 日期： 2021/1/15
+ * 时间： 3:21 上午
  */
 class RequestUtils
 {

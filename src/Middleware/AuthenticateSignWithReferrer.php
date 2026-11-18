@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /**
@@ -8,10 +8,10 @@
  *
  * 如果referrer不是墨兔的,则需要进行签名校验
  *
- * Created by PhpStorm.
- * User: never615
- * Date: 11/11/2016
- * Time: 8:16 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 11/11/2016
+ * 时间： 8:16 下午
  */
 
 namespace Mallto\Tool\Middleware;
@@ -25,7 +25,7 @@ use Mallto\Tool\Utils\HttpUtils;
  * 签名校验,如果referre是墨兔域名则跳过签名校验
  * 用于接口同时提供给自己的项目使用也同时提供给第三方的情况
  *
- * Class AuthenticateSignWithReferrer
+ * AuthenticateSignWithReferrer 类
  *
  * @package Mallto\Tool\Middleware
  */
@@ -39,7 +39,7 @@ class AuthenticateSignWithReferrer
 
 
     /**
-     * Handle an incoming request.
+     * 处理传入请求。
      *
      * @param Request $request
      * @param Closure $next

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Horizon\JobPayload;
 use Throwable;
 
-/** Per-queue rolling error windows shared by all producers, jobs and rejection reasons. */
+/** 按队列维护滚动错误窗口，由所有生产者、任务和拒绝原因共享。 */
 final class HighQueueAdmissionLog
 {
     private static ?\WeakMap $attempts = null;
@@ -20,14 +20,14 @@ final class HighQueueAdmissionLog
         $attempts = self::$attempts[$redis] ?? [];
         $attempt = $attempts[$window] ?? [0, 0];
         if ($attempt[0] === getmypid() && microtime(true) < $attempt[1]) return;
-        // Bound process-local bookkeeping even when producers use dynamic names.
+        // 即使生产者使用动态名称，也要限制进程本地记录的规模。
         if (count($attempts) >= 256) $attempts = [];
         $attempts[$window] = [getmypid(), microtime(true) + 60];
         self::$attempts[$redis] = $attempts;
         $logConnection = config('queue.backlog.log_redis_connection',
             config('queue.high_backlog.log_redis_connection', 'default'));
         try {
-            // Keep this control key outside the queue Redis when using the split deployment.
+            // 拆分部署时，将此控制键放在队列 Redis 之外。
             $connection = HighQueueRedisConnection::get($redis, $logConnection);
             $claimed = $connection->set('queue:admission:error-window:'.$window, 1, 'EX', 3600, 'NX');
             if (!$claimed) return;
@@ -35,13 +35,13 @@ final class HighQueueAdmissionLog
                 'queue' => $queue, 'redis_connection' => $redisConnection ?? 'default',
                 'reason' => $reason, 'limit' => $limit,
                 'job' => $payload->displayName(), 'job_id' => $payload->id(),
-                // Do not log payloads, serialized arguments, credentials or arbitrary error messages.
+                // 不要记录负载、序列化参数、凭据或任意错误消息。
                 'error_class' => $error ? get_class($error) : null,
             ]);
         } catch (Throwable) {
             HighQueueRedisConnection::forget($redis, $logConnection);
-            // No per-process fallback: it would flood logs across Pods when Redis is unavailable.
-            // Redis availability must also be monitored independently of this log.
+            // 不使用进程本地降级，否则 Redis 不可用时，各 Pod 会产生大量日志。
+            // 还必须独立于此日志监控 Redis 可用性。
         }
     }
 }

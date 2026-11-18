@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\Queue;
 
 use Illuminate\Queue\Jobs\RedisJob;
 
-/** Keep Horizon's reservation/events; cache only the returned Job's JSON view. */
+/** 保留 Horizon 的预留和事件，仅缓存返回任务的 JSON 视图。 */
 class PayloadCachingHorizonRedisQueue extends BoundedHorizonRedisQueue
 {
     protected bool $payloadCacheEnabled = false;
@@ -23,9 +23,9 @@ class PayloadCachingHorizonRedisQueue extends BoundedHorizonRedisQueue
             return $job;
         }
 
-        // Parent pop already reserved exactly once and emitted JobReserved.
-        // Preserve both original ready JSON and exact reserved JSON: attempts,
-        // release, ACK, failure records and Horizon events keep their identity.
+        // 父类 pop 已完成且仅完成一次预留，并发出 JobReserved。
+        // 同时保留原始就绪 JSON 和准确的预留 JSON，使尝试次数、
+        // 释放、ACK、失败记录和 Horizon 事件保留各自身份。
         return new CachedPayloadRedisJob($job->getContainer(), $this,
             $job->getRawBody(), $job->getReservedJob(),
             $job->getConnectionName(), $job->getQueue());

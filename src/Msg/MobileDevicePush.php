@@ -4,10 +4,10 @@ namespace Mallto\Tool\Msg;
 
 /**
  *
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2018/3/19
- * Time: 下午6:02
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2018/3/19
+ * 时间： 下午6:02
  */
 interface MobileDevicePush
 {

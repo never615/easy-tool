@@ -2,7 +2,7 @@
 
 namespace Mallto\Tool\Domain\Queue;
 
-/** Admission failed: callers must not treat an unqueued job as delivered. */
+/** 准入失败：调用方不得把未入队的任务视为已投递。 */
 class QueueAdmissionRejected extends \RuntimeException
 {
 }

@@ -68,7 +68,7 @@ final class OwnerApiLogConfigControllerTest extends TestCase
         });
         OwnerApiLogConfigDefinitions::register();
         Event::fake([GlobalConfigChanged::class]);
-        // Exercise the real model observer while replacing only its external cache boundary.
+        // 使用真实模型观察者，仅替换其外部缓存边界。
         $resolver = Mockery::mock();
         $resolver->shouldReceive('replace')->andReturnUsing(function (NewConfig $row): void {
             $this->cacheUpdates[] = ['key' => $row->key, 'payload' => GlobalConfigRuntimeResolver::payloadFor($row)];

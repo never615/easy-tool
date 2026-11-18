@@ -7,7 +7,7 @@ use Illuminate\Redis\Connections\PhpRedisConnection;
 use Laravel\Horizon\Events\JobsMigrated;
 use RuntimeException;
 
-/** Batch migration reads/writes only; reservation, blocking, ACK and release stay in Horizon. */
+/** 仅批量执行迁移读写；预留、阻塞、ACK 及释放仍由 Horizon 负责。 */
 class PipelinedHorizonRedisQueue extends PayloadCachingHorizonRedisQueue
 {
     protected function migrate($queue)
@@ -20,12 +20,12 @@ class PipelinedHorizonRedisQueue extends PayloadCachingHorizonRedisQueue
             return;
         }
 
-        // Use the installed framework's exact scripts and batch limit, not a new merged Lua.
-        // Never include pop: a migration error must not reserve a Job that cannot be returned.
+        // 使用已安装框架原有的脚本及批次上限，不新建合并后的 Lua。
+        // 不要包含 pop：迁移错误不能导致预留一个无法返回的任务。
         $delayedTime = $this->currentTime();
         $reservedTime = $this->currentTime();
         $responses = $connection->pipeline(function ($pipe) use ($queue, $delayedTime, $reservedTime): void {
-            // PhpRedis pipeline exposes the native client, whose EVAL signature differs from Laravel's.
+            // PhpRedis 管道暴露原生客户端，其 EVAL 签名与 Laravel 不同。
             $pipe->eval(LuaScripts::migrateExpiredJobs(), [
                 $queue . ':delayed', $queue, $queue . ':notify', $delayedTime, $this->migrationBatchSize,
             ], 3);
@@ -34,8 +34,8 @@ class PipelinedHorizonRedisQueue extends PayloadCachingHorizonRedisQueue
             ], 3);
         });
 
-        // A partial pipeline may have migrated Jobs already. Leave them ready, do not replay
-        // commands or pop on failure; the next normal attempt can consume them safely.
+        // 部分执行的管道可能已经迁移了任务。保留其就绪状态，不要重放
+        // 失败时不要重放命令，也不要执行 pop；下一次正常尝试可安全消费这些任务。
         if (!is_array($responses) || count($responses) !== 2
             || !is_array($responses[0]) || !is_array($responses[1])) {
             $connection->disconnect();

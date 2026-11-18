@@ -10,7 +10,7 @@ use Mallto\Tool\Exception\InternalHttpException;
 use Mallto\Tool\Exception\ThirdPartException;
 
 /**
- * Class AbstractAPI.
+ * AbstractAPI. 类
  */
 abstract class AbstractAPI extends API
 {
@@ -40,7 +40,7 @@ abstract class AbstractAPI extends API
 
 
     /**
-     * AbstractAPI constructor.
+     * AbstractAPI 构造函数。
      */
     public function __construct()
     {
@@ -84,7 +84,7 @@ abstract class AbstractAPI extends API
 
 
     /**
-     * Parse JSON from response and check error.
+     * 解析响应中的 JSON 并检查错误。
      *
      * @param string $method
      * @param array $args
@@ -113,7 +113,7 @@ abstract class AbstractAPI extends API
      * 检查响应,并返回
      *
      * 不同的实现需要重写此方法
-     * Check the array data errors, and Throw exception when the contents contains error.
+     * 检查数组中的错误，内容包含错误时抛出异常。
      *
      * @param array $contents
      *

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Log;
@@ -11,10 +11,10 @@ use Mallto\Tool\Data\ThirdApiLog;
 use Mallto\Tool\Data\OwnerApiLog;
 
 /**
- * Created by PhpStorm.
- * User: never615
- * Date: 12/01/2017
- * Time: 3:21 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615
+ * 日期： 12/01/2017
+ * 时间： 3:21 下午
  */
 class LoggerDb implements Logger
 {
@@ -23,7 +23,7 @@ class LoggerDb implements Logger
 
 
     /**
-     * LoggerAliyun constructor.
+     * LoggerAliyun 构造函数。
      */
     public function __construct()
     {
@@ -61,7 +61,7 @@ class LoggerDb implements Logger
      */
     public function logSchedule($content)
     {
-        // TODO: Implement logSchedule() method.
+        // 待办：实现 logSchedule() 方法。
     }
 
 
@@ -113,7 +113,7 @@ class LoggerDb implements Logger
                     ]));
             }
         } catch (\Exception $exception) {
-            // pass
+            // 通过
 //            Log::info($exception);
         }
     }
@@ -128,6 +128,6 @@ class LoggerDb implements Logger
      */
     public function logQueue($content)
     {
-        // TODO: Implement logQueue() method.
+        // 待办：实现 logQueue() 方法。
     }
 }

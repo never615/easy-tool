@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\RuntimeConfig;
 
 use Throwable;
 
-/** Bounded local witness for one controlled identity; never participates in cache decisions. */
+/** 针对一个受控身份提供数量受限的本地观测，绝不参与缓存决策。 */
 final class RuntimeConfigBranchTrace
 {
     private const LIMIT = 512;
@@ -28,7 +28,7 @@ final class RuntimeConfigBranchTrace
                 self::$count = 0;
             }
             $run = $control['run_id'];
-            // Changing a stage or run cannot reset this process's diagnostic budget.
+            // 切换阶段或运行批次不能重置本进程的诊断预算。
             $sequence = self::$count + 1;
             if ($sequence > self::LIMIT) {
                 return;
@@ -58,7 +58,7 @@ final class RuntimeConfigBranchTrace
             try {
                 @chmod($file, 0600);
                 if (flock($handle, LOCK_EX)) {
-                    // Also bound output across process reuse or a restarted PID.
+                    // 进程复用或 PID 重启后也要限制输出量。
                     if (fstat($handle)['size'] < 524288) {
                         fwrite($handle, json_encode($row, JSON_THROW_ON_ERROR)."\n");
                     }
@@ -68,7 +68,7 @@ final class RuntimeConfigBranchTrace
                 fclose($handle);
             }
         } catch (Throwable) {
-            // A witness must not retry work, change a value or mask an application exception.
+            // 观测逻辑不得重试任务、修改值或掩盖应用异常。
         }
     }
 
@@ -88,7 +88,7 @@ final class RuntimeConfigBranchTrace
             }
             $now = time();
             $ns = hrtime(true);
-            // Local file only, no diagnostic Redis round trip on a cache read.
+            // 仅写本地文件，缓存读取时不增加诊断 Redis 往返。
             if (self::$pid === getmypid() && $ns - self::$checkedAt < 100_000_000) {
                 return self::$cached !== null && self::$cached['expires_at'] > $now ? self::$cached : null;
             }

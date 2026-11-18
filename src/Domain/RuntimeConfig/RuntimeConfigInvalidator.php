@@ -30,7 +30,7 @@ final class RuntimeConfigInvalidator
         ];
 
         $this->database->connection()->afterCommit(function () use ($identity, $normalizedMode, $normalizedPayload): void {
-            // RuntimeConfigSharedStore::fresh uses the same identity lock as cache-miss fills.
+            // RuntimeConfigSharedStore::fresh 与缓存未命中回填使用同一个身份锁。
             $this->sharedStore->fresh($identity, static fn (): array => $normalizedPayload);
 
             if (RuntimeConfigCacheMode::usesSwoole($normalizedMode)) {

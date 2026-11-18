@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container">
-        <!-- Jumbotron -->
+        <!-- 主展示区 -->
         <div class="jumbotron">
             <h1><i class="fa fa-exclamation-triangle orange"></i> 503 系统维护中</h1>
             <a href="javascript:document.location.reload(true);"

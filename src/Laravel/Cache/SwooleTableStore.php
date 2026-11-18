@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2020. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Laravel\Cache;
@@ -8,15 +8,15 @@ namespace Mallto\Tool\Laravel\Cache;
 use Illuminate\Contracts\Cache\Store;
 
 /**
- * User: never615 <never615.com>
- * Date: 2020/12/29
- * Time: 10:42 下午
+ * 作者： never615 <never615.com>
+ * 日期： 2020/12/29
+ * 时间： 10:42 下午
  */
 class SwooleTableStore implements Store
 {
 
     /**
-     * A string that should be prepended to keys.
+     * 需要添加到键名前的字符串。
      *
      * @var string
      */
@@ -28,7 +28,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * SwooleTableStore constructor.
+     * SwooleTableStore 构造函数。
      */
     public function __construct()
     {
@@ -45,7 +45,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Retrieve an item from the cache by key.
+     * 按键读取缓存项。
      *
      * @param string|array $key
      *
@@ -71,9 +71,9 @@ class SwooleTableStore implements Store
     //}
 
     /**
-     * Retrieve multiple items from the cache by key.
+     * 按键批量读取缓存项。
      *
-     * Items not found in the cache will have a null value.
+     * 未在缓存中找到的项返回 null。
      *
      * @param array $keys
      *
@@ -86,7 +86,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Store an item in the cache for a given number of seconds.
+     * 将缓存项保存指定秒数。
      *
      * @param string $key
      * @param mixed  $value
@@ -101,7 +101,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Store multiple items in the cache for a given number of seconds.
+     * 将多个缓存项保存指定秒数。
      *
      * @param array $values
      * @param int   $seconds
@@ -115,7 +115,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Increment the value of an item in the cache.
+     * 递增缓存项的值。
      *
      * @param string $key
      * @param mixed  $value
@@ -137,7 +137,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Decrement the value of an item in the cache.
+     * 递减缓存项的值。
      *
      * @param string $key
      * @param mixed  $value
@@ -159,7 +159,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Store an item in the cache indefinitely.
+     * 永久保存缓存项。
      *
      * @param string $key
      * @param mixed  $value
@@ -182,7 +182,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Remove an item from the cache.
+     * 移除指定缓存项。
      *
      * @param string $key
      *
@@ -195,7 +195,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Remove all items from the cache.
+     * 移除全部缓存项。
      *
      * @return bool
      */
@@ -226,7 +226,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Get the cache key prefix.
+     * 获取缓存键前缀。
      *
      * @return string
      */
@@ -237,7 +237,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Set the cache key prefix.
+     * 设置缓存键前缀。
      *
      * @param string $prefix
      *
@@ -250,7 +250,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Serialize the value.
+     * 序列化值。
      *
      * @param mixed $value
      *
@@ -264,7 +264,7 @@ class SwooleTableStore implements Store
 
 
     /**
-     * Unserialize the value.
+     * 反序列化值。
      *
      * @param mixed $value
      *

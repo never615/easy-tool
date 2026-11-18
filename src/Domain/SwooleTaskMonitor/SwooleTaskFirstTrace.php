@@ -6,8 +6,8 @@ use Closure;
 use Throwable;
 
 /**
- * Bounded, default-off first actual Task evidence. This samples diagnostic records, never ingress.
- * No Redis resolution, command, timer, payload, topic, task ID or exception text is recorded.
+ * 首个真实 Task 的诊断证据，默认关闭且数量受限。仅采样诊断记录，不采样入口流量。
+ * 不记录 Redis 解析、命令、定时器、负载、主题、任务 ID 或异常文本。
  */
 final class SwooleTaskFirstTrace
 {
@@ -27,7 +27,7 @@ final class SwooleTaskFirstTrace
     ) {
     }
 
-    /** Called only with transported scalars, after an entry sample taken before this class autoloads. */
+    /** 仅使用传输后的标量调用，入口采样先于本类自动加载。 */
     public static function start(array $context, array $entry, int $workerCall, bool $workerFallback = false,
         array $transportPoints = []): ?self
     {
@@ -67,7 +67,7 @@ final class SwooleTaskFirstTrace
             $trace->captureNs = $entry['sample_ns'] ?? 0;
             return $trace;
         } catch (Throwable) {
-            return null; // Missing records invalidate coverage; they are never fabricated as zero cost.
+            return null; // 记录缺失会使覆盖无效，绝不能伪造成零开销。
         }
     }
 
@@ -76,7 +76,7 @@ final class SwooleTaskFirstTrace
         self::$current = $trace;
     }
 
-    /** Called only by already-enabled business-stage diagnostics. */
+    /** 仅由已启用的业务阶段诊断调用。 */
     public static function checkpointCurrent(string $name): void
     {
         if (self::$current !== null && in_array($name, ['cache_first_put_start', 'cache_first_put_end',
@@ -86,16 +86,16 @@ final class SwooleTaskFirstTrace
         }
     }
 
-    /** The existing manager's names only; connections() does not open a connection. */
+    /** 仅查看现有管理器的连接名；connections() 不会打开连接。 */
     private static function sample(): array
     {
         $point = self::entryPoint();
         $point['redis_connections'] = null;
-        // Container exposes no public non-resolving instance getter in Laravel 11.
+        // Laravel 11 的容器未公开无需解析即可获取实例的方法。
         self::$instancesProperty ??= new \ReflectionProperty(\Illuminate\Container\Container::class, 'instances');
         $manager = self::$instancesProperty->getValue(app())['redis'] ?? null;
         if (is_object($manager) && method_exists($manager, 'connections')) {
-            // Laravel 11 leaves connections null until its first connection is resolved.
+            // Laravel 11 在首次解析连接前，将连接集合保留为 null。
             $connections = $manager->connections();
             if ($connections !== null && !is_array($connections)) {
                 throw new \UnexpectedValueException('Invalid existing Redis connections');
@@ -107,7 +107,7 @@ final class SwooleTaskFirstTrace
         return $point;
     }
 
-    /** Also used inline by the caller before this class loads; keep the two schemas identical. */
+    /** 调用方也会在本类加载前内联使用，必须保持两处结构一致。 */
     private static function entryPoint(): array
     {
         return ['wall_ns' => hrtime(true), 'usage' => function_exists('getrusage') ? getrusage() : null,
@@ -147,7 +147,7 @@ final class SwooleTaskFirstTrace
             ($this->writer)($this->identity + ['outcome' => $outcome, 'capture_ns' => $this->captureNs,
                 'capture_failures' => $this->captureFailures, 'points' => $this->sanitizedPoints()]);
         } catch (Throwable) {
-            // A filesystem or sampler failure must not replace the original business result/Throwable.
+            // 文件系统或采样器故障不能覆盖原始业务结果或 Throwable。
         }
     }
 
@@ -170,7 +170,7 @@ final class SwooleTaskFirstTrace
                 $value = $point['usage'][$key] ?? null;
                 $clean['usage'][$key] = is_int($value) && $value >= 0 ? $value : null;
             }
-            // Entry deliberately has no Redis inspection: it precedes recorder class loading.
+            // 入口刻意不检查 Redis：此时记录器类尚未加载。
             $connections = $point['redis_connections'] ?? null;
             $clean['redis_connections'] = is_array($connections) ? [
                 'count' => is_int($connections['count'] ?? null) ? $connections['count'] : null,
@@ -190,7 +190,7 @@ final class SwooleTaskFirstTrace
         return $points;
     }
 
-    /** One exclusive file per generation/channel/ordinal: no shared append lock across workers. */
+    /** 每代、每通道、每序号独占一个文件：工作进程间不共享追加锁。 */
     private static function write(array $record): void
     {
         $before = hrtime(true);
@@ -206,8 +206,8 @@ final class SwooleTaskFirstTrace
                 return;
             }
         }
-        // Atomic directory claims bound replacements to 2048 generations without a shared append lock.
-        // Admission runs after terminal monitoring; its I/O is included in the separate writer timing.
+        // 通过原子目录占用将替代进程限制在 2048 代以内，无需共享追加锁。
+        // 准入在终态监控后执行，其 I/O 计入独立写入器耗时。
         if (self::$worker['slot'] === null) {
             self::$worker['slot'] = false;
             for ($attempt = 0; $attempt < 2048; $attempt++) {
@@ -234,7 +234,7 @@ final class SwooleTaskFirstTrace
             fclose($handle);
         }
         $endedAt = hrtime(true);
-        // Separate timing excludes this sidecar's own write; a missing sidecar is a diagnostic failure.
+        // 独立计时排除旁路文件自身的写入；旁路文件缺失属于诊断失败。
         $timing = json_encode(['bytes' => $written, 'encode_ns' => $encodedAt - $before,
             'write_ns' => $endedAt - $encodedAt], JSON_THROW_ON_ERROR);
         $sidecar = @fopen($path . '.io.json', 'xb');

@@ -9,7 +9,7 @@ use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigCache;
 use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigCacheMode;
 use Mallto\Tool\Domain\RuntimeConfig\RuntimeConfigIdentity;
 
-/** Explicitly queued test/local witness; it never creates or modifies a configuration. */
+/** 显式入队、仅供测试和本地使用的观测任务，不创建或修改配置。 */
 final class RuntimeConfigReadWitnessJob implements ShouldQueue
 {
     public int $tries = 1;

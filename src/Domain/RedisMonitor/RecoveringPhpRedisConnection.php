@@ -7,7 +7,7 @@ use Illuminate\Redis\Connections\PhpRedisConnection;
 use RedisException;
 use Throwable;
 
-/** Discard an ambiguous RESP stream without replaying a possibly committed command. */
+/** 丢弃状态不明确的 RESP 流，不重放可能已提交的命令。 */
 class RecoveringPhpRedisConnection extends PhpRedisConnection
 {
     private bool $needsReconnect = false;
@@ -24,7 +24,7 @@ class RecoveringPhpRedisConnection extends PhpRedisConnection
 
     public function command($method, array $parameters = [])
     {
-        // Skip Laravel's eager reconnect, which can reuse an unclosed persistent socket.
+        // 跳过 Laravel 的主动重连，避免复用未关闭的持久套接字。
         return $this->withRecovery(fn () => Connection::command($method, $parameters));
     }
 
@@ -97,7 +97,7 @@ class RecoveringPhpRedisConnection extends PhpRedisConnection
     public function transaction(?callable $callback = null)
     {
         try {
-            // false is a legitimate WATCH abort, so preserve it unchanged.
+            // false 是合法的 WATCH 中止结果，因此原样保留。
             return parent::transaction($callback);
         } catch (Throwable $exception) {
             $this->disconnect();
@@ -111,7 +111,7 @@ class RecoveringPhpRedisConnection extends PhpRedisConnection
         try {
             $this->client->close();
         } catch (Throwable) {
-            // Cleanup must preserve the command's original exception.
+            // 清理操作必须保留命令的原始异常。
         }
     }
 }

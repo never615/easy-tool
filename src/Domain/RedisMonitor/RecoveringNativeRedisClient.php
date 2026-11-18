@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\RedisMonitor;
 
 use RedisException;
 
-/** Retain native signatures (notably EVAL) while fencing a failed socket. */
+/** 保留原生签名（尤其是 EVAL），同时隔离故障套接字。 */
 final class RecoveringNativeRedisClient
 {
     public function __construct(private readonly object $connection)

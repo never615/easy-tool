@@ -5,7 +5,7 @@ namespace Mallto\Tool\Utils;
 /**
  * PHP DES对称加密解密实例.
  *
- * Class SignByDESUtils
+ * SignByDESUtils 类
  */
 class SignByDESUtils
 {
@@ -61,9 +61,9 @@ class SignByDESUtils
     /**
      * SHA1PRNG算法.
      *
-     * @param  [type] $key [description]
+     * @param  [type] $key [说明]
      *
-     * @return [type] [description]
+     * @return [type] [说明]
      */
     private static function _sha1prng($key)
     {

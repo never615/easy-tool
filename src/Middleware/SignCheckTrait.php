@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright (c) 2020. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2020. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /**
- * User: never615 <never615.com>
- * Date: 2020/11/14
- * Time: 11:51 上午
+ * 作者： never615 <never615.com>
+ * 日期： 2020/11/14
+ * 时间： 11:51 上午
  */
 
 namespace Mallto\Tool\Middleware;
@@ -79,7 +79,7 @@ trait SignCheckTrait
                 break;
 //            case "1": //原始版本,只有签名校验
 //                if (SignUtils::verifySign($inputs, $secret)) {
-//                    //pass
+// //通过
 //                    return $next($request);
 //                } else {
 //                    throw new SignException(trans("errors.sign_error"));
@@ -96,7 +96,7 @@ trait SignCheckTrait
 //                    //和当前时间间隔比较在15分钟内
 //                    //检查签名
 //                    if (SignUtils::verifySign2($inputs, $secret)) {
-//                        //pass
+// //通过
 //                        return $next($request);
 //                    } else {
 //                        throw new SignException(trans("errors.sign_error"));
@@ -127,7 +127,7 @@ trait SignCheckTrait
 //                        "uuid"      => $uuid,
 //                        "app_id"    => $appId,
 //                    ]), $secret)) {
-//                        //pass
+// //通过
 //                        return $next($request);
 //                    } else {
 //                        throw new SignException(trans("errors.sign_error"));
@@ -177,7 +177,7 @@ trait SignCheckTrait
                         "signature_nonce" => $signatureNonce,
                         "signature" => $signature,
                     ]), $secret)) {
-                        //pass
+                        //通过
                         Cache::put($nonce, 1, 3 * 60);
 
                         return $next($request);

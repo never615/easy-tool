@@ -4,7 +4,7 @@ namespace Mallto\Tool\Domain\RuntimeConfig;
 
 use Throwable;
 
-/** Local, bounded diagnostic evidence; never participates in cache correctness. */
+/** 数量受限的本地诊断证据，绝不参与缓存正确性判断。 */
 final class RuntimeConfigRefillTrace
 {
     private const MAX_RECORDS_PER_PROCESS = 256;
@@ -41,7 +41,7 @@ final class RuntimeConfigRefillTrace
                 return null;
             }
             $pid = getmypid();
-            // A pre-fork parent may have used the same class during startup.
+            // 派生子进程前，父进程可能已在启动阶段使用过同一个类。
             if (self::$pid !== $pid) {
                 self::$pid = $pid;
                 self::$started = 0;
@@ -91,12 +91,12 @@ final class RuntimeConfigRefillTrace
                 'lock_misses' => $this->lockMisses, 'sleep_count' => $this->sleepCount,
                 'sleep_ns' => $this->sleepNs, 'loader_count' => $this->loaderCount,
                 'loader_ns' => $this->loaderNs, 'outcome' => $outcome];
-            // File I/O is outside total_ns, but remains real diagnostic overhead.
-            // A process reaching sequence=256 has truncated subsequent evidence.
+            // 文件 I/O 不计入 total_ns，但仍属于实际诊断开销。
+            // 进程序号达到 sequence=256 时，后续证据将被截断。
             @file_put_contents($this->directory . '/' . $this->runId . '-' . $this->processId . '.jsonl',
                 json_encode($row, JSON_THROW_ON_ERROR) . "\n", FILE_APPEND | LOCK_EX);
         } catch (Throwable) {
-            // Diagnostics must not change a value, retry a loader or mask its exception.
+            // 诊断不得修改值、重试加载器或掩盖其异常。
         }
     }
 }

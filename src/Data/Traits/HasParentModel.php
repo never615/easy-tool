@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2019. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2019. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Data\Traits;
@@ -10,9 +10,9 @@ use Illuminate\Support\Str;
 use ReflectionClass;
 
 /**
- * User: never615 <never615.com>
- * Date: 2019-11-20
- * Time: 16:03
+ * 作者： never615 <never615.com>
+ * 日期： 2019-11-20
+ * 时间： 16:03
  */
 trait HasParentModel
 {

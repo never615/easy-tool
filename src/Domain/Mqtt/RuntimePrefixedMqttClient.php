@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Domain\Mqtt;
@@ -77,16 +77,16 @@ class RuntimePrefixedMqttClient extends MqttClient
             $this->confirmedLoopTiming = ['loop_started_ns' => hrtime(true),
                 'loop_sequence' => ++$this->confirmedTimingLoops];
         }
-        // Parent loop() omits the third argument. Preserve explicit caller overrides,
-        // and let the parent sleep only when no socket data is available.
+        // 父类 loop() 省略第三个参数。保留调用方的显式覆盖，
+        // 仅在套接字无可读数据时，才允许父类休眠。
         if ($allowSleep && func_num_args() < 3) {
             $sleepMicroseconds = $this->idleSleepMicroseconds;
         }
 
         try {
             parent::loopOnce($loopStartedAt, $allowSleep, $sleepMicroseconds);
-            // Flush an incomplete batch in this iteration, without waiting for
-            // another input, timer or full batch to release its tail.
+            // 本轮立即刷新尚未满的批次，无需等待
+            // 其他输入、定时器或完整批次来释放尾部消息。
             $this->flushConfirmedPublishBatch();
         } catch (\Throwable $error) {
             if ($this->confirmedPublishBatchHandler !== null) $this->abortConfirmedPublishBatch();
@@ -96,13 +96,13 @@ class RuntimePrefixedMqttClient extends MqttClient
         }
     }
 
-    /** Opt-in receipt clocks only: first 32 messages, then every 32nd, cap 256/client. */
+    /** 按需启用接收时钟：前 32 条消息，此后每 32 条采样一次，每客户端最多 256 条。 */
     public function enableConfirmedPublishTiming(): void { $this->confirmedTimingEnabled = true; }
 
-    /** Available only inside the original subscription callback; contains no source identity. */
+    /** 仅在原始订阅回调内可用，不包含数据源身份。 */
     public function confirmedPublishTiming(): ?array { return $this->confirmedCallbackTiming; }
 
-    /** Current loop and most recent fully written ACK batch; no broker-delivery claim. */
+    /** 当前循环及最近完整写入的 ACK 批次，不代表代理端交付。 */
     public function confirmedLoopTiming(): array
     {
         return $this->confirmedTimingEnabled
@@ -116,17 +116,17 @@ class RuntimePrefixedMqttClient extends MqttClient
         $data = parent::readAllAvailableDataFromSocket($withAutoReconnectIfConfigured);
         $this->confirmedLoopTiming += ['read_started_ns' => $started,
             'read_returned_ns' => hrtime(true), 'read_bytes' => strlen($data)];
-        // This is the current nonblocking read, not the arrival of every buffered
-        // byte. A partial packet may include bytes retained from an earlier loop.
+        // 此处记录本次非阻塞读取，不是每个缓冲
+        // 字节的到达时间。部分报文可能包含上一次循环保留的字节。
         return $data;
     }
 
     /**
-     * Opt-in QoS1 ingress hook. The handler calls $deliver exactly once, then
-     * confirms durable admission before returning. No PUBACK precedes its return.
-     * This is at-least-once delivery, not an exactly-once side-effect guarantee.
-     * Its optional second argument contains this bounded batch's topic/payload
-     * values for shared lookups; delivery still uses the original messages.
+     * 按需启用的 QoS1 入口钩子。处理器恰好调用一次 $deliver，然后
+     * 返回前确认已持久准入。返回前不发送 PUBACK。
+     * 这是至少一次投递，不保证副作用恰好执行一次。
+     * 可选的第二个参数包含本次有界批次的主题和负载值，
+     * 用于共享查询；投递仍使用原始消息。
      */
     public function registerConfirmedPublishBatchHandler(\Closure $handler, int $maxMessages = 8): void
     {
@@ -165,7 +165,7 @@ class RuntimePrefixedMqttClient extends MqttClient
                     || $this->confirmedPublishBatchBytes >= 262144) $this->flushConfirmedPublishBatch();
                 return;
             }
-            // Preserve ordering around control packets and non-QoS1 messages.
+            // 保留控制报文及非 QoS1 消息的顺序。
             $this->flushConfirmedPublishBatch();
             parent::handleMessage($message);
         } catch (\Throwable $error) {
@@ -215,8 +215,8 @@ class RuntimePrefixedMqttClient extends MqttClient
                 $this->confirmedPreviousBatch = $batch;
             }
         } catch (\Throwable $error) {
-            // Some Redis commands or ACK writes may have succeeded. Never retry
-            // this batch locally or send old packet IDs on a new MQTT session.
+            // 部分 Redis 命令或 ACK 写入可能已经成功。绝不在本地重试
+            // 此批次，也不能在新的 MQTT 会话发送旧报文 ID。
             $this->abortConfirmedPublishBatch();
             throw $error;
         } finally {
@@ -231,15 +231,15 @@ class RuntimePrefixedMqttClient extends MqttClient
             parent::deliverPublishedMessage($topic, $message, $qualityOfServiceLevel, $retained);
             return;
         }
-        // The upstream delivery method logs and swallows callback exceptions.
-        // Confirmed admission must propagate them and withhold this batch's ACKs.
+        // 上游投递方法会记录并吞掉回调异常。
+        // 需要确认准入时，必须向上传播异常并暂缓本批次的 ACK。
         foreach ($this->publishRepository->getSubscriptionsMatchingTopic($topic) as $subscriber) {
             if ($subscriber->getCallback() !== null) {
                 ($subscriber->getCallback())($topic, $message, $retained, $subscriber->getMatchedWildcards($topic));
             }
         }
-        // Upstream's hook runner is private. Keep its public registration and
-        // observational exception behavior when strict delivery bypasses it.
+        // 上游钩子执行器是私有的。严格投递绕过它时，保留公开注册方式及
+        // 异常仅观测的行为。
         foreach ($this->confirmedReceivedHooks as $hook) {
             try { $hook($this, $topic, $message, $qualityOfServiceLevel, $retained); }
             catch (\Throwable $error) {
@@ -313,9 +313,9 @@ class RuntimePrefixedMqttClient extends MqttClient
             return '';
         }
 
-        // Reserve four characters for the random suffix when the environment and
-        // connection name are both present; a prefix containing only the environment
-        // keeps the longer suffix through the calculation below.
+        // 环境名和连接名均存在时，为随机后缀预留四个字符；
+        // 仅含环境名的前缀
+        // 通过下方计算保留较长后缀。
         $maxPrefixLength = max(0, $this->runtimeClientIdMaxLength - 4 - 1);
         if ($maxPrefixLength === 0) {
             return '';

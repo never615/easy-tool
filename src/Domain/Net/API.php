@@ -24,14 +24,14 @@ class API
 {
 
     /**
-     * Http instance.
+     * HTTP 实例。
      *
      * @var
      */
     protected $http;
 
     /**
-     * Optional slug for logging tag.
+     * 可选日志标签标识。
      *
      * @var string|null
      */
@@ -59,7 +59,7 @@ class API
 
 
     /**
-     * Return the http instance.
+     * 返回 HTTP 实例。
      *
      * @return
      */
@@ -78,7 +78,7 @@ class API
 
 
     /**
-     * Set the http instance.
+     * 设置 HTTP 实例。
      *
      * @param Http $http
      *
@@ -93,21 +93,21 @@ class API
 
 
     /**
-     * Register Guzzle middlewares.
+     * 注册 Guzzle 中间件。
      */
     protected function registerHttpMiddlewares()
     {
-        // log
+        // 日志
         if (config('app.log.third_api')) {
             $this->http->addMiddleware($this->logMiddleware());
         }
-        // retry
+        // 重试
         $this->http->addMiddleware($this->retryMiddleware());
     }
 
 
     /**
-     * Log the request.
+     * 记录请求日志。
      *
      * @return \Closure
      */
@@ -207,7 +207,7 @@ class API
 
 
     /**
-     * Return retry middleware.
+     * 返回重试中间件。
      *
      * @return \Closure
      */
@@ -344,7 +344,7 @@ class API
 
 
     /**
-     * Determine if the request has a URI that should pass through CSRF verification.
+     * 判断请求 URI 是否应通过 CSRF 校验。
      *
      * @param \Illuminate\Http\Request $request
      *
@@ -377,7 +377,7 @@ class API
     }
 
     /**
-     * Set logging slug.
+     * 设置日志标识。
      */
     public function setSlug(string $slug)
     {
@@ -386,7 +386,7 @@ class API
     }
 
     /**
-     * Get logging slug, defaulting to class basename if not set.
+     * 获取日志标识，未设置时默认使用类的短名称。
      */
     public function getSlug(): string
     {

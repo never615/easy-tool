@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2018. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Data;
@@ -8,10 +8,10 @@ namespace Mallto\Tool\Data;
 use Mallto\Admin\Data\Traits\BaseModel;
 
 /**
- * Created by PhpStorm.
- * User: never615 <never615.com>
- * Date: 2018/11/21
- * Time: 4:07 PM
+ * 由 PhpStorm 创建。
+ * 作者： never615 <never615.com>
+ * 日期： 2018/11/21
+ * 时间： 4:07 下午
  */
 class UserUv extends BaseModel
 {

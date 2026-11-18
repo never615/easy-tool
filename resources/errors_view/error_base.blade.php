@@ -15,12 +15,12 @@
     {{--    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">--}}
     {{--    <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">--}}
     <style>
-        /* Error Page Inline Styles */
+        /* 错误页面内联样式 */
         body {
             padding-top: 20px;
         }
 
-        /* Layout */
+        /* 布局 */
         .jumbotron {
             font-size: 21px;
             font-weight: 200;
@@ -29,13 +29,13 @@
             padding: 10px 0px;
         }
 
-        /* Everything but the jumbotron gets side spacing for mobile-first views */
+        /* 移动优先布局中，为主展示区以外的内容设置两侧间距 */
         .masthead, .body-content {
             padding-left: 15px;
             padding-right: 15px;
         }
 
-        /* Main marketing message and sign up button */
+        /* 主要宣传信息与注册按钮 */
         .jumbotron {
             text-align: center;
             background-color: transparent;
@@ -46,7 +46,7 @@
             padding: 14px 24px;
         }
 
-        /* Colors */
+        /* 颜色 */
         .green {
             color: #5cb85c;
         }
@@ -68,11 +68,11 @@
     </script>
 </head>
 <body onload="javascript:loadDomain();">
-<!-- Error Page Content -->
+<!-- 错误页面内容 -->
 @section('content')
     <div class="container">
         <div class="container">
-            <!-- Jumbotron -->
+            <!-- 主展示区 -->
             <div class="jumbotron">
                 <h1><i class="fa fa-frown-o red"></i> @yield('title')</h1>
                 <p class="lead">@yield('desc')</p>
@@ -100,9 +100,9 @@
     </div>
 
 @show
-<!-- End Error Page Content -->
-<!--Scripts-->
-<!-- jQuery library -->
+<!-- 错误页面内容结束 -->
+<!--脚本-->
+<!-- jQuery 库 -->
 {{--        <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>--}}
 {{--        <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>--}}
 <script src="{{admin_asset("vendor/laravel-admin/AdminLTE/plugins/jQuery/jQuery-2.1.4.min.js") }}"></script>

@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container">
-        <!-- Jumbotron -->
+        <!-- 主展示区 -->
         <div class="jumbotron">
             <h1><i class="fa fa-clock-o orange"></i> 504 Gateway Timeout</h1>
             <p class="lead">The web server is returning an unexpected networking error for <em><span
@@ -16,7 +16,7 @@
     <div class="container">
         <div class="body-content">
 
-            <!-- Example row of columns -->
+            <!-- 示例分栏行 -->
             <div class="row">
                 <div class="col-md-6">
                     <h2>What happened?</h2>

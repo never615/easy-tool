@@ -8,7 +8,7 @@ class CreateSmsNotifiesTable extends Migration
 {
 
     /**
-     * Run the migrations.
+     * 执行迁移。
      *
      * @return void
      */
@@ -31,7 +31,7 @@ class CreateSmsNotifiesTable extends Migration
 
 
     /**
-     * Reverse the migrations.
+     * 回滚迁移。
      *
      * @return void
      */

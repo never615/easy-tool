@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2025. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2025. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 namespace Mallto\Tool\Utils;
@@ -8,9 +8,9 @@ namespace Mallto\Tool\Utils;
 use Illuminate\Support\Str;
 
 /**
- * User: never615 <never615.com>
- * Date: 2025/5/14
- * Time: 23:58
+ * 作者： never615 <never615.com>
+ * 日期： 2025/5/14
+ * 时间： 23:58
  */
 class UserAgentUtils
 {

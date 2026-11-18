@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 use Laravel\Horizon\Connectors\RedisConnector;
 use Laravel\Horizon\RedisQueue;
 
-/** Preserve Horizon's queue and lifecycle while forwarding the framework migration batch limit. */
+/** 保留 Horizon 的队列和生命周期，同时传递框架迁移批次上限。 */
 class MigrationBatchHorizonRedisConnector extends RedisConnector
 {
     public function connect(array $config)
@@ -16,7 +16,7 @@ class MigrationBatchHorizonRedisConnector extends RedisConnector
 
     protected function createQueue(array $config, string $queueClass): RedisQueue
     {
-        // Keep Horizon's explicit-null semantics for the original six parameters.
+        // 保留 Horizon 原有六个参数显式传入 null 时的语义。
         return new $queueClass(
             $this->redis, $config['queue'],
             Arr::get($config, 'connection', $this->connection),

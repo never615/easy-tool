@@ -1,16 +1,16 @@
 <?php
 /**
- * Copyright (c) 2017. Mallto.Co.Ltd.<mall-to.com> All rights reserved.
+ * 版权所有 (c) 2017. Mallto.Co.Ltd.<mall-to.com> 保留所有权利。
  */
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Web 路由
 |--------------------------------------------------------------------------
 |
-| This file is where you may define all of the routes that are handled
-| by your application. Just tell Laravel the URIs it should respond
-| to using a Closure or controller method. Build something great!
+| 此文件用于定义应用处理的全部路由。
+| 告知 Laravel 需要响应的 URI，并使用
+| 闭包或控制器方法处理请求，即可构建应用。
 |
 */
 
@@ -159,7 +159,7 @@ Route::group($attributes, function ($router) {
                         Route::resource('sms_templates', 'SmsTemplateController');
                         Route::resource('sms_codes', 'SmsCodeController');
                         Route::resource('alert_rules', 'AlertRuleController');
-//DummyRoutePlaceholder
+//路由占位符
 //卡券短信管理
                         Route::resource("coupon_sms_templates", 'CouponSmsTemplateController');
 
