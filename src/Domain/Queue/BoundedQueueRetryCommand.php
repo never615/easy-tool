@@ -25,7 +25,7 @@ class BoundedQueueRetryCommand extends RetryCommand
     {
         try {
             return parent::handle();
-        } catch (HighQueueAdmissionRejected $error) {
+        } catch (QueueAdmissionRejected $error) {
             $this->components->warn($error->getMessage());
             return self::FAILURE;
         }

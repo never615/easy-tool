@@ -23,7 +23,9 @@ LUA;
     /** Admission completes before metadata: fill identity without rolling state backwards. */
     public function pushed($connection, $queue, JobPayload $payload)
     {
-        if (empty($payload->decoded['bounded_high'])) return parent::pushed($connection, $queue, $payload);
+        if (empty($payload->decoded['bounded_queue']) && empty($payload->decoded['bounded_high'])) {
+            return parent::pushed($connection, $queue, $payload);
+        }
         $time = str_replace(',', '.', microtime(true));
         HighQueueRedisConnection::get($this->redis, 'horizon')->eval(<<<'LUA'
 local status = redis.call('HGET', KEYS[1], 'status')
