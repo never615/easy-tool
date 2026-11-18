@@ -71,32 +71,20 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             return $replacement;
         });
 
-        $hasMigrationBatch = false;
-        foreach ((array) config('queue.connections', []) as $connection) {
-            if (($connection['driver'] ?? null) === 'redis'
-                && (int) ($connection['migration_batch_size'] ?? -1) > 0) {
-                $hasMigrationBatch = true;
-                break;
-            }
-        }
-        if (filter_var(config('queue.high_backlog.enabled', true), FILTER_VALIDATE_BOOLEAN)
-            || $hasMigrationBatch
-            || filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
-            || filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
-            // Boot runs after Horizon registered its connector. Do not resolve queues early or
-            // replace an already-live connection; both resident applications need a restart.
-            $this->callAfterResolving(QueueManager::class, function ($manager): void {
-                $manager->addConnector('redis', function () {
-                    if (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
-                        && !filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
-                        return new MigrationBatchHorizonRedisConnector($this->app['redis']);
-                    }
-                    return new PipelinedHorizonRedisConnector($this->app['redis'], null,
-                        filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN),
-                        filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN));
-                });
+        // Every Redis queue is bounded, including newly configured queue names.
+        // Boot runs after Horizon registered its connector. Do not resolve queues early or
+        // replace an already-live connection; both resident applications need a restart.
+        $this->callAfterResolving(QueueManager::class, function ($manager): void {
+            $manager->addConnector('redis', function () {
+                if (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
+                    && !filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
+                    return new MigrationBatchHorizonRedisConnector($this->app['redis']);
+                }
+                return new PipelinedHorizonRedisConnector($this->app['redis'], null,
+                    filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN),
+                    filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN));
             });
-        }
+        });
 
         // Per-job console output can fill worker/supervisor pipes before handle(),
         // consuming the Job timeout. Quiet workers retain application logs and
