@@ -12,8 +12,9 @@ class CommandProcessRunner
         $stdout = ''; $stderr = ''; $bytes = 0; $truncated = false;
         $limit = min(262144, max(1, (int)config('server_commands.max_output_bytes', 262144)));
         // Put application-level options before command args, including before a user '--'.
+        // Horizon workers run with --quiet; start the child at normal verbosity while honoring its own -q/-v.
         $process = new Process([PHP_BINARY, base_path('artisan'), '--no-interaction', '--no-ansi', ...$argv],
-            base_path(), null, null, min(300, max(1, $timeout)));
+            base_path(), ['SHELL_VERBOSITY' => '0'], null, min(300, max(1, $timeout)));
         $process->disableOutput(); // Callback owns a bounded buffer; Process must not accumulate its own copy.
         $executor = ['hostname' => gethostname() ?: 'unknown', 'role' => 'horizon/server-commands',
             'worker_pid' => getmypid(), 'environment' => config('app.env'), 'php' => PHP_VERSION,
