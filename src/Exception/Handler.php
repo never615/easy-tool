@@ -16,7 +16,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Session\TokenMismatchException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
@@ -125,8 +124,13 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
-        while (DB::transactionLevel() > 0) {
-            DB::rollBack();
+        // 异常清理只检查已有连接，不能为了回滚检查再创建默认数据库连接。
+        if ($this->container->resolved('db')) {
+            foreach ($this->container->make('db')->getConnections() as $connection) {
+                while ($connection->transactionLevel() > 0) {
+                    $connection->rollBack();
+                }
+            }
         }
         if ($request->expectsJson()) {
             if (Admin::user()) {

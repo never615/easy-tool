@@ -16,7 +16,6 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\MaxAttemptsExceededException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -298,10 +297,17 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务循环前
         Queue::looping(function () {
-            while (DB::transactionLevel() > 0) {
-                //防止事务没有释放
-//                Log::info("queue rollback");
-                DB::rollBack();
+            if (!$this->app->resolved('db')) {
+                return;
+            }
+
+            // 只清理已创建的连接，避免空闲或不使用数据库的 Worker 因事务检查主动建连。
+            foreach ($this->app->make('db')->getConnections() as $connection) {
+                while ($connection->transactionLevel() > 0) {
+                    //防止事务没有释放
+//                    Log::info("queue rollback");
+                    $connection->rollBack();
+                }
             }
         });
 
