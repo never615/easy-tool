@@ -28,6 +28,12 @@
 - [队列诊断监控使用说明](queue-diagnostic-monitor-usage.md)：队列诊断监控的配置和使用方式。
 - [Redis 网络与响应诊断](redis-diagnostic.md)：只读 Redis 探针的运行方式、结果解释和安全边界。
 
+## 开发参考
+
+### 数据库与队列
+
+- [PostgreSQL 连接治理计划](plans/2026-11-18-postgres-connection-budget.md)：进行中；先避免事务清理主动建连，再依据 test 观察评估连接预算与事务池，仅 Git。
+
 ## 维护约定
 
 当前配置契约和可执行操作应维护在本索引链接的权威文档中；时点性问题记录应标明环境、时间和状态。
