@@ -6,7 +6,7 @@
 
 easy-tool `7d91c204d93e455e26d0bb171a659db9745158a2` 将队列循环和异常 render 的事务清理改为仅检查已解析 DatabaseManager 中已创建的连接。未使用数据库时不会为清理主动建连；已使用的默认及非默认连接仍逐层回滚未结束事务，回滚失败继续向上传播。
 
-计划先于代码提交，见[PostgreSQL 连接治理计划](../plans/2026-11-18-postgres-connection-budget.md)。本次不更改 persistent、进程并发、业务数据库配置或 Redis funnel；无数据库迁移。宿主仅更新异常响应测试的 mock，提交 `9a572bb5` 保存于 `codex/timezone-input-test-fix`，运行修复全部来自 easy-tool develop。
+计划先于代码提交，见[PostgreSQL 连接治理计划](../archive/plans/2026-11-18-postgres-connection-budget.md)。本次不更改 persistent、进程并发、业务数据库配置或 Redis funnel；无数据库迁移。宿主仅更新异常响应测试的 mock，提交 `9a572bb5` 已合入宿主 develop，运行修复全部来自 easy-tool develop。
 
 ## 测试与发布
 
@@ -56,6 +56,8 @@ Mongo history 在新 Horizon 初期仅 1/8 持有 PG，约 8 分钟后变为 6/8
 23:34:06 复查时 PG 实例活动条目为 338，定位结果 ready 为 1959、队首原始入队年龄约 60.5 秒。共享日志最后 1 MiB 的最近 5 分钟窗口有 1 条 ERROR、0 条连接槽不足错误；这是有界日志观察，不代表所有日志无错误。
 
 应继续按计划评估连接预算和队列消费容量，特别是 HPA 按 CPU 缩容后队列等待与失败的关系。无用建连修复验收通过，不代表共享 test 的容量及队列问题已解决。
+
+后续只读调查已核实 HPA 缩容时间线，并确认抽样任务首次领取即过期，详见[结果存储积压诊断](2026-11-19-location-result-storage-backlog.md)。本报告保留发布时的原始观察口径。
 
 ## 证据位置
 

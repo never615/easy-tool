@@ -36,13 +36,14 @@
 
 ### 数据库与队列
 
-- [PostgreSQL 连接治理计划](plans/2026-11-18-postgres-connection-budget.md)：进行中；先避免事务清理主动建连，再依据 test 观察评估连接预算与事务池，仅 Git。
+- [PostgreSQL 连接治理计划](archive/plans/2026-11-18-postgres-connection-budget.md)，阶段一已验收，原连接优化计划已归档。
 
 ## 开发与验收记录
 
 ### 数据库与队列
 
 - [事务清理避免主动建连：test 验收](reports/2026-11-18-lazy-transaction-guard-test.md)：守卫回归、部署版本与连接观察；记录容量问题和对比限制。
+- [location-result-storage 积压诊断](reports/2026-11-19-location-result-storage-backlog.md)：CPU HPA 缩容、首次领取即过期及专用消费者容量试验建议。
 
 ## 维护约定
 
