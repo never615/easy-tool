@@ -45,10 +45,11 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 : $command;
         });
 
-        $this->app->extend(\Illuminate\Queue\Console\RetryCommand::class, function ($command) {
-            return get_class($command) === \Illuminate\Queue\Console\RetryCommand::class
-                ? new \Mallto\Tool\Domain\Queue\BoundedQueueRetryCommand() : $command;
-        });
+        // Suspended on develop until the isolated queue performance work is accepted.
+        // $this->app->extend(\Illuminate\Queue\Console\RetryCommand::class, function ($command) {
+        //     return get_class($command) === \Illuminate\Queue\Console\RetryCommand::class
+        //         ? new \Mallto\Tool\Domain\Queue\BoundedQueueRetryCommand() : $command;
+        // });
 
         // All providers have registered by boot. Extend without resolving the
         // repository early or replacing another application's custom implementation.
@@ -58,20 +59,22 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 : $repository;
         });
 
-        $this->app->extend(JobRepository::class, function ($repository) {
-            if (get_class($repository) !== RedisJobRepository::class) {
-                return $repository;
-            }
-            $replacement = new ChunkedHorizonJobRepository($repository->redis);
-            // Preserve resolved public retention overrides and metadata fields;
-            // constructing a new repository alone would reset them to config.
-            foreach (get_object_vars($repository) as $property => $value) {
-                $replacement->{$property} = $value;
-            }
-            return $replacement;
-        });
+        // Suspended on develop until the isolated queue performance work is accepted.
+        // $this->app->extend(JobRepository::class, function ($repository) {
+        //     if (get_class($repository) !== RedisJobRepository::class) {
+        //         return $repository;
+        //     }
+        //     $replacement = new ChunkedHorizonJobRepository($repository->redis);
+        //     // Preserve resolved public retention overrides and metadata fields;
+        //     // constructing a new repository alone would reset them to config.
+        //     foreach (get_object_vars($repository) as $property => $value) {
+        //         $replacement->{$property} = $value;
+        //     }
+        //     return $replacement;
+        // });
 
-        // When protection is enabled, every Redis queue is bounded, including new names.
+        // Queue protection is suspended; the connector preserves native Horizon queues
+        // and forwards only the existing migration batch/consumer optimization settings.
         // Boot runs after Horizon registered its connector. Do not resolve queues early or
         // replace an already-live connection; both resident applications need a restart.
         $this->callAfterResolving(QueueManager::class, function ($manager): void {

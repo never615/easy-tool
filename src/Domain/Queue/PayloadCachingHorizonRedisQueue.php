@@ -3,9 +3,12 @@
 namespace Mallto\Tool\Domain\Queue;
 
 use Illuminate\Queue\Jobs\RedisJob;
+use Laravel\Horizon\RedisQueue;
 
 /** Keep Horizon's reservation/events; cache only the returned Job's JSON view. */
-class PayloadCachingHorizonRedisQueue extends BoundedHorizonRedisQueue
+// Admission inheritance is suspended; preserve the independent opt-in consumer optimizations.
+// class PayloadCachingHorizonRedisQueue extends BoundedHorizonRedisQueue
+class PayloadCachingHorizonRedisQueue extends RedisQueue
 {
     protected bool $payloadCacheEnabled = false;
 
