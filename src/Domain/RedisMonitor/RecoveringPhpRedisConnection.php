@@ -25,7 +25,14 @@ class RecoveringPhpRedisConnection extends PhpRedisConnection
     public function command($method, array $parameters = [])
     {
         // 跳过 Laravel 的主动重连，避免复用未关闭的持久套接字。
-        return $this->withRecovery(fn () => Connection::command($method, $parameters));
+        return $this->withRecovery(function () use ($method, $parameters) {
+            $result = Connection::command($method, $parameters);
+            if (strtolower($method) === 'smembers' && $result === false) {
+                throw new RedisException('Invalid Redis SMEMBERS response; connection discarded');
+            }
+
+            return $result;
+        });
     }
 
     private function withRecovery(callable $operation)
