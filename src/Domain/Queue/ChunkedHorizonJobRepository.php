@@ -23,6 +23,12 @@ LUA;
     /** 准入先于元数据写入完成：补全身份信息时不要回退状态。 */
     public function pushed($connection, $queue, JobPayload $payload)
     {
+        // 配置在事件处理期间变化时，仍补写已准入任务的元数据。
+        // 旧重试载荷上的标记本身不会启用保护。
+        if (!QueueBacklogProtection::enabled()
+            && !(app()->bound('queue.high_metadata_context') && app('queue.high_metadata_context') === true)) {
+            return parent::pushed($connection, $queue, $payload);
+        }
         if (empty($payload->decoded['bounded_queue']) && empty($payload->decoded['bounded_high'])) {
             return parent::pushed($connection, $queue, $payload);
         }

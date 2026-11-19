@@ -45,10 +45,11 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 : $command;
         });
 
-        $this->app->extend(\Illuminate\Queue\Console\RetryCommand::class, function ($command) {
-            return get_class($command) === \Illuminate\Queue\Console\RetryCommand::class
-                ? new \Mallto\Tool\Domain\Queue\BoundedQueueRetryCommand() : $command;
-        });
+        // Suspended on develop until the isolated queue performance work is accepted.
+        // $this->app->extend(\Illuminate\Queue\Console\RetryCommand::class, function ($command) {
+        //     return get_class($command) === \Illuminate\Queue\Console\RetryCommand::class
+        //         ? new \Mallto\Tool\Domain\Queue\BoundedQueueRetryCommand() : $command;
+        // });
 
         // 启动时所有服务提供者均已注册。扩展时不要提前解析仓库，
         // 也不要替换其他应用的自定义实现。
@@ -58,20 +59,21 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 : $repository;
         });
 
-        $this->app->extend(JobRepository::class, function ($repository) {
-            if (get_class($repository) !== RedisJobRepository::class) {
-                return $repository;
-            }
-            $replacement = new ChunkedHorizonJobRepository($repository->redis);
-            // 保留已解析的公开保留策略覆盖值及元数据字段；
-            // 仅构建新仓库会将这些值重置为配置值。
-            foreach (get_object_vars($repository) as $property => $value) {
-                $replacement->{$property} = $value;
-            }
-            return $replacement;
-        });
+        // Suspended on develop until the isolated queue performance work is accepted.
+        // $this->app->extend(JobRepository::class, function ($repository) {
+        //     if (get_class($repository) !== RedisJobRepository::class) {
+        //         return $repository;
+        //     }
+        //     $replacement = new ChunkedHorizonJobRepository($repository->redis);
+        //     // 保留已解析的公开保留策略覆盖值及元数据字段；
+        //     // 仅构建新仓库会将这些值重置为配置值。
+        //     foreach (get_object_vars($repository) as $property => $value) {
+        //         $replacement->{$property} = $value;
+        //     }
+        //     return $replacement;
+        // });
 
-        // 所有 Redis 队列均有容量上限，包括新配置的队列名称。
+        // 准入保护已暂停。连接器沿用原生 Horizon 入队路径，仅传递迁移批量与消费优化配置。
         // 启动时 Horizon 已注册连接器。不要提前解析队列，也不要
         // 替换已建立的连接；两个常驻应用均需重启。
         $this->callAfterResolving(QueueManager::class, function ($manager): void {

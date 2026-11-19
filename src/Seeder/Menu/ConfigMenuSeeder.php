@@ -70,6 +70,9 @@ class ConfigMenuSeeder extends Seeder
         $this->updateOrCreate(
             "new_configs.publish_restart", $configCenterMenu->id, 80, "发布启动配置", "fa-refresh");
 
+        $this->updateOrCreate(
+            "server_commands.index", $configCenterMenu->id, 85, "服务器命令", "fa-terminal");
+
         $traditionalConfigMenu = $this->updateOrCreate(
             "traditional_configs", $configCenterMenu->id, 90, "传统配置", "fa-archive");
 

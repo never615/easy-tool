@@ -9,14 +9,12 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\MaxAttemptsExceededException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -71,6 +69,7 @@ use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticConfig;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueDiagnosticRecorder;
 use Mallto\Tool\Domain\QueueDiagnostic\QueueEventLogContext;
 use Mallto\Tool\Domain\PostgresMonitor\PostgresDatabaseMonitor;
+use Mallto\Tool\Domain\Database\PostgresSessionConnector;
 use Mallto\Tool\Domain\RedisMonitor\RedisMemoryMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisInstanceMonitor;
 use Mallto\Tool\Domain\RedisMonitor\RedisMonitorTargets;
@@ -119,6 +118,7 @@ class ToolServiceProvider extends ServiceProvider
         PublishNewConfigCommand::class,
         AuditGlobalConfigOverridesCommand::class,
         AdoptGlobalConfigOverridesCommand::class,
+        \Mallto\Tool\Commands\PruneServerCommandsCommand::class,
     ];
 
     /**
@@ -190,7 +190,6 @@ class ToolServiceProvider extends ServiceProvider
         $this->queueBoot();
         $this->scheduleBoot();
 
-        $this->configurePostgresTimeouts();
         $this->registerTransactionGuard();
 
 
@@ -298,10 +297,17 @@ class ToolServiceProvider extends ServiceProvider
 
         //任务循环前
         Queue::looping(function () {
-            while (DB::transactionLevel() > 0) {
-                //防止事务没有释放
-//                Log::info("queue rollback");
-                DB::rollBack();
+            if (!$this->app->resolved('db')) {
+                return;
+            }
+
+            // 只清理已创建的连接，避免空闲或不使用数据库的 Worker 因事务检查主动建连。
+            foreach ($this->app->make('db')->getConnections() as $connection) {
+                while ($connection->transactionLevel() > 0) {
+                    //防止事务没有释放
+//                    Log::info("queue rollback");
+                    $connection->rollBack();
+                }
             }
         });
 
@@ -410,7 +416,7 @@ class ToolServiceProvider extends ServiceProvider
 
 
     /**
-     * 监听 PostgreSQL 连接建立事件，设置会话级超时参数。
+     * 注册 PostgreSQL PDO 连接器，在真实建连及重连时设置会话级超时参数。
      *
      * LaravelS 常驻 Worker + PDO 持久连接场景下，若某个请求的查询因锁等待无限阻塞，
      * 会导致该 Worker 永远无法处理新请求，最终 accept queue 满溢、健康探针 timeout。
@@ -421,23 +427,18 @@ class ToolServiceProvider extends ServiceProvider
      * 对应 config/database.php：lock_timeout（默认 8s）、statement_timeout（默认 30s）
      * 需要绕过超时的场景（如数据迁移）可在执行前 SET LOCAL statement_timeout = 0
      */
-    private function configurePostgresTimeouts(): void
+    private function registerPostgresConnector(): void
     {
-        $lockTimeout      = config('database.connections.pgsql.lock_timeout', '8s');
-        $statementTimeout = config('database.connections.pgsql.statement_timeout', '30s');
-
-        Event::listen(ConnectionEstablished::class, function (ConnectionEstablished $event) use ($lockTimeout, $statementTimeout) {
-            if ($event->connection->getDriverName() !== 'pgsql') {
-                return;
-            }
-            try {
-                // SET（会话级），确保整个连接生效
-                $event->connection->unprepared("SET lock_timeout = '{$lockTimeout}'");
-                $event->connection->unprepared("SET statement_timeout = '{$statementTimeout}'");
-            } catch (\Throwable $e) {
-                // 超时参数设置失败不阻断业务，但需记录
-                Log::error('[ToolServiceProvider] PostgreSQL timeout config failed: ' . $e->getMessage());
-            }
+        // ConnectionEstablished fires for a lazy Connection object. Session SQL
+        // belongs to actual PDO initialization, including subsequent reconnects.
+        $this->app->bind('db.connector.pgsql', function ($app) {
+            return new PostgresSessionConnector(
+                [
+                    'lock_timeout' => $app['config']->get('database.connections.pgsql.lock_timeout', '8s'),
+                    'statement_timeout' => $app['config']->get('database.connections.pgsql.statement_timeout', '30s'),
+                ],
+                $app->make('log')
+            );
         });
     }
 
@@ -482,6 +483,14 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->registerPostgresConnector();
+
+        $this->mergeConfigFrom(__DIR__ . '/../../config/server_commands.php', 'server_commands');
+        $this->app->singleton(\Mallto\Tool\Domain\ServerCommands\CommandPresetRegistry::class, function () {
+            $registry = new \Mallto\Tool\Domain\ServerCommands\CommandPresetRegistry();
+            $registry->registerDefaults();
+            return $registry;
+        });
         $this->mergeConfigFrom(__DIR__ . '/../../config/new_config.php', 'new_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/runtime_config.php', 'runtime_config');
         $this->mergeConfigFrom(__DIR__ . '/../../config/pagination.php', 'easy_tool.pagination');
@@ -783,6 +792,8 @@ class ToolServiceProvider extends ServiceProvider
 
             $this->scheduleAppSecretRotation($schedule);
             $this->scheduleOwnerApiLogCleanup($schedule);
+            $schedule->command('tool:server-commands:prune')->dailyAt('04:20')
+                ->onOneServer()->withoutOverlapping()->runInBackground();
 
             $schedule->command('sanctum:prune-expired --hours=24')
                 ->onOneServer()

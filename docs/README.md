@@ -11,6 +11,10 @@
 
 ## 运维实施
 
+### 通用配置与命令
+
+- [服务器命令中心操作手册](operations/server-commands.md)：启用和权限、预设与任意 Artisan、结果查看、故障占用恢复及停用。
+
 ### 接口日志
 
 - [自有接口日志实施维护说明](owner-api-log-maintenance.md)：日志存储、部署默认配置、生效验证、每日清理与排障。
@@ -27,6 +31,19 @@
 - [MQTT 空闲休眠](mqtt-idle-sleep.md)：MQTT 订阅进程空闲处理说明。
 - [队列诊断监控使用说明](queue-diagnostic-monitor-usage.md)：队列诊断监控的配置和使用方式。
 - [Redis 网络与响应诊断](redis-diagnostic.md)：只读 Redis 探针的运行方式、结果解释和安全边界。
+
+## 开发参考
+
+### 数据库与队列
+
+- [PostgreSQL 连接治理计划](archive/plans/2026-11-18-postgres-connection-budget.md)，阶段一已验收，原连接优化计划已归档。
+
+## 开发与验收记录
+
+### 数据库与队列
+
+- [事务清理避免主动建连：test 验收](reports/2026-11-18-lazy-transaction-guard-test.md)：守卫回归、部署版本与连接观察；记录容量问题和对比限制。
+- [location-result-storage 积压诊断](reports/2026-11-19-location-result-storage-backlog.md)：CPU HPA 缩容、首次领取即过期及专用消费者容量试验建议。
 
 ## 维护约定
 

@@ -11,6 +11,8 @@ class BoundedQueueRetryCommand extends RetryCommand
 
     protected function retryJob($job)
     {
+        if (!QueueBacklogProtection::enabled()) return parent::retryJob($job);
+
         $previous = $this->laravel->bound('queue.high_retry_context')
             ? $this->laravel->make('queue.high_retry_context') : false;
         $this->laravel->instance('queue.high_retry_context', true);
