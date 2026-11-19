@@ -40,12 +40,14 @@ final class PostgresSessionConnectorTest extends TestCase
         $app->instance('events', new Dispatcher($app));
         (new \ReflectionMethod(ToolServiceProvider::class, 'registerPostgresConnector'))
             ->invoke(new ToolServiceProvider($app));
-        $this->assertInstanceOf(PostgresSessionConnector::class, $app->make('db.connector.pgsql'));
+        $registered = $app->make('db.connector.pgsql');
+        $this->assertInstanceOf(PostgresSessionConnector::class, $registered);
+        $defaults = (new \ReflectionProperty(PostgresSessionConnector::class, 'defaults'))->getValue($registered);
         $state = (object) ['pdos' => [], 'openFailure' => null, 'timeoutFailure' => false];
-        $app->bind('db.connector.pgsql', fn () => new class($state, $logger) extends PostgresSessionConnector {
-            public function __construct(private object $state, SessionTestLogger $logger)
+        $app->bind('db.connector.pgsql', fn () => new class($state, $logger, $defaults) extends PostgresSessionConnector {
+            public function __construct(private object $state, SessionTestLogger $logger, array $defaults)
             {
-                parent::__construct(['lock_timeout' => '8s', 'statement_timeout' => '30s'], $logger);
+                parent::__construct($defaults, $logger);
             }
             public function createConnection($dsn, array $config, array $options)
             {
@@ -107,13 +109,23 @@ final class PostgresSessionConnectorTest extends TestCase
 
     public function test_read_and_write_pdos_are_both_initialized(): void
     {
-        [$manager, $state] = $this->manager(['read' => ['host' => 'read.invalid'], 'write' => ['host' => 'write.invalid']]);
+        [$manager, $state] = $this->manager([
+            'read' => ['host' => 'read.invalid', 'lock_timeout' => '1s', 'statement_timeout' => '2s'],
+            'write' => ['host' => 'write.invalid', 'lock_timeout' => '3s', 'statement_timeout' => '4s'],
+        ]);
         $connection = $manager->connection();
         $this->assertSame([], $state->pdos);
         $connection->getReadPdo();
         $connection->getPdo();
         $this->assertCount(2, $state->pdos);
-        $this->assertSame($state->pdos[0]->executed, $state->pdos[1]->executed);
+        $this->assertSame([
+            ['select set_config(?, ?, false)', ['lock_timeout', '1s']],
+            ['select set_config(?, ?, false)', ['statement_timeout', '2s']],
+        ], array_slice($state->pdos[0]->executed, -2));
+        $this->assertSame([
+            ['select set_config(?, ?, false)', ['lock_timeout', '3s']],
+            ['select set_config(?, ?, false)', ['statement_timeout', '4s']],
+        ], array_slice($state->pdos[1]->executed, -2));
     }
 
     public function test_zero_values_are_preserved_and_values_are_bound(): void
@@ -128,15 +140,23 @@ final class PostgresSessionConnectorTest extends TestCase
 
     public function test_defaults_apply_when_alias_has_no_timeout_options(): void
     {
-        [$manager, $state, $logger, $app] = $this->manager();
+        [$manager, $state, $logger, $app] = $this->manager(['lock_timeout' => '6s', 'statement_timeout' => '17s']);
         $config = $manager->connection()->getConfig();
         unset($config['lock_timeout'], $config['statement_timeout']);
         $app['config']->set('database.connections.alias', $config);
         $manager->connection('alias')->getPdo();
         $this->assertSame([
-            ['select set_config(?, ?, false)', ['lock_timeout', '8s']],
-            ['select set_config(?, ?, false)', ['statement_timeout', '30s']],
+            ['select set_config(?, ?, false)', ['lock_timeout', '6s']],
+            ['select set_config(?, ?, false)', ['statement_timeout', '17s']],
         ], array_slice($state->pdos[0]->executed, -2));
+        $config['lock_timeout'] = '2s';
+        $config['statement_timeout'] = '9s';
+        $app['config']->set('database.connections.overridden', $config);
+        $manager->connection('overridden')->getPdo();
+        $this->assertSame([
+            ['select set_config(?, ?, false)', ['lock_timeout', '2s']],
+            ['select set_config(?, ?, false)', ['statement_timeout', '9s']],
+        ], array_slice($state->pdos[1]->executed, -2));
     }
 
     public function test_timeout_failure_is_best_effort_and_does_not_log_driver_text(): void
