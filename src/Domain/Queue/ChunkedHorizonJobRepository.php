@@ -23,6 +23,12 @@ LUA;
     /** Admission completes before metadata: fill identity without rolling state backwards. */
     public function pushed($connection, $queue, JobPayload $payload)
     {
+        // Finish metadata for an already-admitted job even if configuration changed
+        // during its event. Old retry payload markers alone must not enable protection.
+        if (!QueueBacklogProtection::enabled()
+            && !(app()->bound('queue.high_metadata_context') && app('queue.high_metadata_context') === true)) {
+            return parent::pushed($connection, $queue, $payload);
+        }
         if (empty($payload->decoded['bounded_queue']) && empty($payload->decoded['bounded_high'])) {
             return parent::pushed($connection, $queue, $payload);
         }

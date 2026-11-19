@@ -71,7 +71,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             return $replacement;
         });
 
-        // Every Redis queue is bounded, including newly configured queue names.
+        // When protection is enabled, every Redis queue is bounded, including new names.
         // Boot runs after Horizon registered its connector. Do not resolve queues early or
         // replace an already-live connection; both resident applications need a restart.
         $this->callAfterResolving(QueueManager::class, function ($manager): void {

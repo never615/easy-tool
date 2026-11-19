@@ -63,6 +63,8 @@ LUA;
 
     public function pushRaw($payload, $queue = null, array $options = [])
     {
+        if (!QueueBacklogProtection::enabled()) return parent::pushRaw($payload, $queue, $options);
+
         $payload = (new JobPayload($payload))->prepare($this->lastPushed)->set(['bounded_queue' => true]);
         if ($this->container?->bound('queue.high_retry_context')
             && $this->container->make('queue.high_retry_context') === true) {
@@ -74,6 +76,8 @@ LUA;
 
     public function later($delay, $job, $data = '', $queue = null)
     {
+        if (!QueueBacklogProtection::enabled()) return parent::later($delay, $job, $data, $queue);
+
         $args = version_compare(Application::VERSION, '12.11.0', '>=')
             ? [$job, $queue, $data, $delay] : [$job, $queue, $data];
         $payload = (new JobPayload($this->createPayload(...$args)))->prepare($job)->set(['bounded_queue' => true]);
@@ -86,6 +90,8 @@ LUA;
 
     public function bulk($jobs, $data = '', $queue = null)
     {
+        if (!QueueBacklogProtection::enabled()) return parent::bulk($jobs, $data, $queue);
+
         // Parent wraps pushes in MULTI/pipeline, hiding individual admission responses.
         // Each item instead has an acknowledged atomic admission; partial acceptance is intentional.
         foreach ((array) $jobs as $job) {
@@ -96,12 +102,14 @@ LUA;
 
     protected function raiseJobQueuedEvent($queue, $jobId, $job, $payload, $delay)
     {
-        if ($jobId === false) return;
+        if ($jobId === false && QueueBacklogProtection::enabled()) return;
         parent::raiseJobQueuedEvent($queue, $jobId, $job, $payload, $delay);
     }
 
     public function deleteAndRelease($queue, $job, $delay)
     {
+        if (!QueueBacklogProtection::enabled()) return parent::deleteAndRelease($queue, $job, $delay);
+
         $key = $this->getQueue($queue);
         // A late worker must not recreate work already migrated from its expired
         // reservation. Only an existing reservation may move into delayed.
