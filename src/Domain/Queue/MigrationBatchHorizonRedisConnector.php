@@ -11,6 +11,9 @@ class MigrationBatchHorizonRedisConnector extends RedisConnector
 {
     public function connect(array $config)
     {
+        // A resident connection may outlive a control change. The bounded class
+        // itself takes the native bypass before serialization/admission when off;
+        // choosing the native class here would make a later enable ineffective.
         return $this->createQueue($config, BoundedHorizonRedisQueue::class);
     }
 
