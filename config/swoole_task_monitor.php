@@ -18,4 +18,13 @@ return [
         'run_id' => env('SWOOLE_TASK_FIRST_TRACE_RUN_ID', ''),
         'per_channel' => 2,
     ],
+    // Temporary local/test observations only. Default off; restart LaravelS when changing these.
+    // expires_at is an absolute Unix timestamp, at most 120 seconds in the future.
+    'sql_diagnostics' => [
+        'enabled' => filter_var(env('SWOOLE_TASK_SQL_DIAGNOSTICS_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'run_id' => env('SWOOLE_TASK_SQL_DIAGNOSTICS_RUN_ID', ''),
+        'expires_at' => (int)env('SWOOLE_TASK_SQL_DIAGNOSTICS_EXPIRES_AT', 0),
+        'sample_every' => (int)env('SWOOLE_TASK_SQL_DIAGNOSTICS_SAMPLE_EVERY', 100),
+        'max_samples' => (int)env('SWOOLE_TASK_SQL_DIAGNOSTICS_MAX_SAMPLES', 20),
+    ],
 ];

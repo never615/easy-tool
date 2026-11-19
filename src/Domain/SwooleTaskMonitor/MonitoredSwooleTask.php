@@ -96,12 +96,23 @@ abstract class MonitoredSwooleTask extends Task
             $durations['monitor_started'] = $businessAt - $startedAt;
         }
 
+        $sqlDiagnostics = null;
+        try {
+            $sqlDiagnostics = SwooleTaskSqlDiagnostics::begin(static::class);
+        } catch (Throwable) {
+            // Include autoload/call-boundary failures in the diagnostic fail-open guarantee.
+        }
         try {
             $this->handleTask();
         } catch (Throwable $exception) {
             $outcome = 'failed';
             throw $exception;
         } finally {
+            try {
+                $sqlDiagnostics?->finish($outcome === 'failed');
+            } catch (Throwable) {
+                // Never replace the original business Throwable with an observation failure.
+            }
             $firstTrace?->checkpoint('after_business');
             $terminalAt = $diagnostics?->begin();
             if ($businessAt !== null && $terminalAt !== null) {
