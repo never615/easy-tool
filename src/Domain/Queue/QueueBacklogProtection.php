@@ -7,11 +7,11 @@ final class QueueBacklogProtection
 {
     public static function enabled(): bool
     {
-        // Only an explicit false disables protection; malformed settings keep it on.
-        $setting = config('queue.backlog.enabled', true);
+        // Performance acceptance is pending; enable only by explicit configuration.
+        $setting = config('queue.backlog.enabled', false);
         if (is_string($setting)) $setting = trim($setting);
-        if ($setting === null || $setting === '') return true;
+        if ($setting === null || $setting === '') return false;
         return filter_var($setting,
-            FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+            FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     }
 }
