@@ -393,7 +393,7 @@
                 dead_stream_total: '预留 Dead Stream 长度（dead_stream_total）',
                 dead_stream_enabled: 'Dead Stream 自动写入（dead_stream_enabled）',
                 profile: '历史存储介质预设',
-                global_default_enabled: '历史保护全局默认开启（项目可覆盖）',
+                global_default_enabled: '部署级历史保护开关',
                 concurrency_limit: '历史操作共享槽位上限',
                 active_writes: '当前占用历史操作槽位',
                 entries: '历史缓冲条数',
@@ -816,7 +816,7 @@
                 mongodb_monitor_sampling_failed: 'MongoDB 采样失败',
                 mongodb_monitor_state_read_failed: 'MongoDB 状态读取失败',
                 mqtt_publish_stream_read_failed: 'MQTT Publish Stream 状态读取失败',
-                mongodb_history_protection_default_disabled: '全局默认关闭；显式启用项目及在途任务仍共享以下状态',
+                mongodb_history_protection_default_disabled: '当前部署的历史保护已关闭，仍可查看已有缓冲和在途任务状态',
                 mongodb_history_protection_state_read_failed: 'Mongo 历史保护 Redis 状态不可用'
             }[message] || '运行状态异常');
 
