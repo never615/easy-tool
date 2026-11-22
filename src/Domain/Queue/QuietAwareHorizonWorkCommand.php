@@ -17,7 +17,19 @@ class QuietAwareHorizonWorkCommand extends WorkCommand
 
     protected function runWorker($connection, $queue)
     {
-        $overrides = $this->laravel['config']->get('horizon.worker_queue_overrides', []);
+        $config = $this->laravel['config'];
+        if ($config->get('queue.connections.'.$connection.'.driver') === 'horizon-shared') {
+            $shared = $this->laravel['queue']->connection($connection);
+            $original = $this->worker;
+            $this->worker = SharedHorizonWorker::fromOriginal($original, $shared, $queue);
+            try {
+                return parent::runWorker($connection, $queue);
+            } finally {
+                $this->worker = $original;
+            }
+        }
+
+        $overrides = $config->get('horizon.worker_queue_overrides', []);
         $override = $overrides[$connection][$queue] ?? null;
         if ($override !== null) {
             // Each auto-balanced worker consumes one queue. Leave workers with
