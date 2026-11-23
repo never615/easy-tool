@@ -19,6 +19,7 @@ use Mallto\Tool\Domain\Queue\EmptyAwareHorizonTagRepository;
 use Mallto\Tool\Domain\Queue\PipelinedHorizonRedisConnector;
 use Mallto\Tool\Domain\Queue\QuietAwareHorizonWorkCommand;
 use Mallto\Tool\Domain\Queue\MigrationBatchHorizonRedisConnector;
+use Mallto\Tool\Domain\Queue\SharedHorizonConnector;
 
 /**
  * 作者： never615 <never615.com>
@@ -77,6 +78,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         // 启动时 Horizon 已注册连接器。不要提前解析队列，也不要
         // 替换已建立的连接；两个常驻应用均需重启。
         $this->callAfterResolving(QueueManager::class, function ($manager): void {
+            $manager->addConnector('horizon-shared', fn () => new SharedHorizonConnector($manager));
             $manager->addConnector('redis', function () {
                 if (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
                     && !filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
