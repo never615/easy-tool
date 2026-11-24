@@ -233,6 +233,10 @@
             };
 
             const statusKey = (status) => {
+                if (status === 'ok') {
+                    return 'normal';
+                }
+
                 const allowed = [
                     'normal', 'online', 'warning', 'delayed', 'error', 'expired',
                     'waiting', 'disabled', 'maintenance', 'unavailable', 'pending', 'running', 'succeeded',
