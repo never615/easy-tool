@@ -7,6 +7,8 @@ final class RedisMonitorTargets
     /** 按端点解析别名；INFO 描述实例，不描述逻辑数据库。 */
     public static function resolve(array $targets, array $redis): array
     {
+        $probeConfig = $redis['redis-monitor'] ?? [];
+        $readTimeout = $probeConfig['read_timeout'] ?? 0.1;
         $resolved = [];
         foreach ($targets as $role => $name) {
             if (!is_string($name) || !is_array($redis[$name] ?? null)) {
@@ -38,8 +40,11 @@ final class RedisMonitorTargets
             $profile['options'] = [];
             // phpredis 5.3.x 在 connect() 前拒绝 OPT_MAX_RETRIES，应在已连接的探针上设置。
             $profile = array_merge($profile, [
-                'persistent' => false, 'timeout' => 0.2, 'read_timeout' => 0.1,
-                'read_write_timeout' => 0.1, 'retry_interval' => 0,
+                'persistent' => false,
+                'timeout' => $probeConfig['timeout'] ?? 0.2,
+                'read_timeout' => $readTimeout,
+                'read_write_timeout' => $probeConfig['read_write_timeout'] ?? $readTimeout,
+                'retry_interval' => 0,
             ]);
             $resolved[$identity] = [
                 'id' => substr($identity, 0, 16),
