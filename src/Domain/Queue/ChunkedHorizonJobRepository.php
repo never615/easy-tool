@@ -36,6 +36,16 @@ LUA;
         HighQueueRedisConnection::get($this->redis, 'horizon')->eval(<<<'LUA'
 local status = redis.call('HGET', KEYS[1], 'status')
 local fields = {'id', 'connection', 'queue', 'name', 'payload', 'created_at', 'updated_at'}
+if not status and redis.call('EXISTS', KEYS[1]) == 0 then
+    redis.call('HSET', KEYS[1], 'id', ARGV[1], 'connection', ARGV[2], 'queue', ARGV[3],
+        'name', ARGV[4], 'payload', ARGV[5], 'created_at', ARGV[6], 'updated_at', ARGV[7],
+        'status', 'pending')
+    redis.call('EXPIREAT', KEYS[1], ARGV[9])
+    redis.call('ZADD', KEYS[2], 'NX', ARGV[8], ARGV[1])
+    redis.call('ZADD', KEYS[3], 'NX', ARGV[8], ARGV[1])
+    return 1
+end
+-- Worker metadata may already exist even when the status field is absent.
 for i, field in ipairs(fields) do redis.call('HSETNX', KEYS[1], field, ARGV[i]) end
 redis.call('ZADD', KEYS[2], 'NX', ARGV[8], ARGV[1])
 if not status then

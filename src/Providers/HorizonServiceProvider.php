@@ -60,28 +60,29 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
                 : $repository;
         });
 
-        // Suspended on develop until the isolated queue performance work is accepted.
-        // $this->app->extend(JobRepository::class, function ($repository) {
-        //     if (get_class($repository) !== RedisJobRepository::class) {
-        //         return $repository;
-        //     }
-        //     $replacement = new ChunkedHorizonJobRepository($repository->redis);
-        //     // 保留已解析的公开保留策略覆盖值及元数据字段；
-        //     // 仅构建新仓库会将这些值重置为配置值。
-        //     foreach (get_object_vars($repository) as $property => $value) {
-        //         $replacement->{$property} = $value;
-        //     }
-        //     return $replacement;
-        // });
+        if (config('location.locator_update.lance_durable_handoff', false) === true) {
+            $this->app->extend(JobRepository::class, function ($repository) {
+                if (get_class($repository) !== RedisJobRepository::class) {
+                    return $repository;
+                }
+                $replacement = new ChunkedHorizonJobRepository($repository->redis);
+                // 保留已解析的公开保留策略覆盖值及元数据字段。
+                foreach (get_object_vars($repository) as $property => $value) {
+                    $replacement->{$property} = $value;
+                }
+                return $replacement;
+            });
+        }
 
-        // 准入保护已暂停。连接器沿用原生 Horizon 入队路径，仅传递迁移批量与消费优化配置。
+        // 持久交接需要同一连接支持冻结载荷和幂等准入。
         // 启动时 Horizon 已注册连接器。不要提前解析队列，也不要
         // 替换已建立的连接；两个常驻应用均需重启。
         $this->callAfterResolving(QueueManager::class, function ($manager): void {
             $manager->addConnector('horizon-shared', fn () => new SharedHorizonConnector($manager));
             $manager->addConnector('redis', function () {
-                if (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
-                    && !filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN)) {
+                if (config('location.locator_update.lance_durable_handoff', false) === true
+                    || (!filter_var(config('horizon.redis_migration_pipeline', false), FILTER_VALIDATE_BOOLEAN)
+                        && !filter_var(config('horizon.redis_payload_cache', false), FILTER_VALIDATE_BOOLEAN))) {
                     return new MigrationBatchHorizonRedisConnector($this->app['redis']);
                 }
                 return new PipelinedHorizonRedisConnector($this->app['redis'], null,

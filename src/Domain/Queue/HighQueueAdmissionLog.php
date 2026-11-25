@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Horizon\JobPayload;
 use Throwable;
 
-/** 按队列维护滚动错误窗口，由所有生产者、任务和拒绝原因共享。 */
+/** 同一队列和原因的滚动错误窗口由所有生产者共享。 */
 final class HighQueueAdmissionLog
 {
     private static ?\WeakMap $attempts = null;
@@ -16,7 +16,8 @@ final class HighQueueAdmissionLog
         ?Throwable $error = null, string $queue = 'high', ?string $redisConnection = null): void
     {
         self::$attempts ??= new \WeakMap();
-        $window = hash('sha256', ($redisConnection ?? 'default').':'.$queue);
+        // Horizon 元数据异常发生在队列接纳之后，不能压住真正的拒收证据。
+        $window = hash('sha256', ($redisConnection ?? 'default').':'.$queue.':'.$reason);
         $attempts = self::$attempts[$redis] ?? [];
         $attempt = $attempts[$window] ?? [0, 0];
         if ($attempt[0] === getmypid() && microtime(true) < $attempt[1]) return;

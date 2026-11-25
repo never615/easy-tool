@@ -13,9 +13,20 @@ use Throwable;
 /** 跨生产者准入；原生队列状态是唯一容量账本。 */
 class BoundedHorizonRedisQueue extends RedisQueue
 {
-    private float $blockedUntil = 0;
+    public const LOCATOR_HANDOFF_QUEUE = 'lance-locator-update';
+    /** @var array<int, float> 独立的 high 短超时连接和普通连接各自熔断。 */
+    private array $blockedUntil = [];
 
     private const ADMIT = <<<'LUA'
+if #KEYS == 5 then
+    local now = tonumber(redis.call('TIME')[1])
+    if now >= tonumber(ARGV[5]) then return -1 end
+    local receipt = redis.call('GET', KEYS[5])
+    if receipt then
+        if receipt ~= ARGV[4] then return redis.error_reply('conflicting admission receipt') end
+        return 2
+    end
+end
 local count = redis.call('LLEN', KEYS[1]) + redis.call('ZCARD', KEYS[2]) + redis.call('ZCARD', KEYS[3])
 if count >= tonumber(ARGV[1]) then return 0 end
 -- 写入前校验通知：Lua 错误不会回滚此前的写入。
@@ -23,12 +34,47 @@ local notifyType = redis.call('TYPE', KEYS[4]).ok
 if notifyType ~= 'none' and notifyType ~= 'list' then return redis.error_reply('invalid queue notify type') end
 if ARGV[3] == 'ready' then
     redis.call('RPUSH', KEYS[1], ARGV[2])
+    if #KEYS == 5 then
+        -- No other Redis command can consume this tail before the script exits.
+        local receipt = redis.pcall('SET', KEYS[5], ARGV[4], 'EXAT', tonumber(ARGV[5]) + 60)
+        if receipt.err then
+            redis.call('RPOP', KEYS[1])
+            return receipt
+        end
+    end
     redis.call('RPUSH', KEYS[4], 1)
 else
     redis.call('ZADD', KEYS[2], ARGV[3], ARGV[2])
 end
 return 1
 LUA;
+
+    /** Freeze the exact bytes for a durable handoff before attempting queue admission. */
+    public function prepareHighHandoff(object $job, bool $dedicatedLocatorQueue = false): string
+    {
+        $queue = $dedicatedLocatorQueue ? self::LOCATOR_HANDOFF_QUEUE : 'high';
+        $metadata = ['bounded_queue' => true];
+        if ($dedicatedLocatorQueue) $metadata['handoff_queue'] = $queue;
+        return (new JobPayload($this->createPayload($job, $this->getQueue($queue), '')))
+            ->prepare($job)->set($metadata)->value;
+    }
+
+    /** Call only with the original prepared bytes and deadline from the durable handoff. */
+    public function admitHighHandoff(string $prepared, int $deadline): bool
+    {
+        $payload = new JobPayload($prepared);
+        $id = $payload->decoded['uuid'] ?? null;
+        // Old rows have no route field and must replay to their original high receipt.
+        $queue = array_key_exists('handoff_queue', $payload->decoded)
+            ? $payload->decoded['handoff_queue'] : 'high';
+        if (!is_string($id) || !preg_match('/\A[0-9a-f-]{36}\z/D', $id)
+            || ($payload->decoded['attempts'] ?? null) !== 0
+            || ($payload->decoded['bounded_queue'] ?? null) !== true
+            || !in_array($queue, ['high', self::LOCATOR_HANDOFF_QUEUE], true)) {
+            throw new \InvalidArgumentException('Invalid prepared high handoff');
+        }
+        return $this->admit($payload, $queue, 'ready', $deadline) !== false;
+    }
 
     private function queueName($queue): string
     {
@@ -106,6 +152,20 @@ LUA;
         parent::raiseJobQueuedEvent($queue, $jobId, $job, $payload, $delay);
     }
 
+    protected function createPayload($job, $queue, $data = '')
+    {
+        $end = QueueAdmissionTiming::begin('payload');
+        if ($end === null) return parent::createPayload($job, $queue, $data);
+        $returned = false;
+        try {
+            $payload = parent::createPayload($job, $queue, $data);
+            $returned = true;
+            return $payload;
+        } finally {
+            QueueAdmissionTiming::finish($end, $returned);
+        }
+    }
+
     public function deleteAndRelease($queue, $job, $delay)
     {
         if (!QueueBacklogProtection::enabled()) return parent::deleteAndRelease($queue, $job, $delay);
@@ -123,27 +183,43 @@ LUA, 2, $key.':delayed', $key.':reserved', $job->getReservedJob(), $this->availa
         if ($released === 1) $this->event($key, new JobReleased($job->getReservedJob(), $delay));
     }
 
-    private function admit(JobPayload $payload, $queue, $availableAt)
+    private function admit(JobPayload $payload, $queue, $availableAt, ?int $deadline = null)
     {
-        if (microtime(true) < $this->blockedUntil) return false;
-        $limit = $this->limit($queue, 'max_jobs', 100000);
         $name = $this->queueName($queue);
+        $configuredTimeouts = !in_array($name, ['high', self::LOCATOR_HANDOFF_QUEUE], true);
+        $transport = (int) $configuredTimeouts;
+        if (microtime(true) < ($this->blockedUntil[$transport] ?? 0)) return false;
+        $limit = $this->limit($queue, 'max_jobs', 100000);
         if (strlen($payload->value) > $this->limit($queue, 'max_payload_bytes', 1048576)) {
             HighQueueAdmissionLog::write($this->redis, 'payload_size', $payload, $limit, null, $name, $this->connection);
             return false;
         }
         try {
             $key = $this->getQueue($queue);
-            $result = HighQueueRedisConnection::get($this->redis, $this->connection, $name !== 'high')->eval(self::ADMIT, 4,
-                $key, $key.':delayed', $key.':reserved', $key.':notify',
-                $limit, $payload->value, $availableAt);
+            $keys = [$key, $key.':delayed', $key.':reserved', $key.':notify'];
+            $arguments = [$limit, $payload->value, $availableAt];
+            if ($deadline !== null) {
+                $keys[] = $key.':handoff:'.$payload->id();
+                $arguments[] = hash('sha256', $payload->value);
+                $arguments[] = $deadline;
+            }
+            $admissionTimer = QueueAdmissionTiming::begin('admit');
+            try {
+                $result = HighQueueRedisConnection::get($this->redis, $this->connection, $configuredTimeouts)
+                    ->eval(self::ADMIT, count($keys), ...$keys, ...$arguments);
+            } finally {
+                QueueAdmissionTiming::finish($admissionTimer, ($result ?? null) === 1 || ($result ?? null) === 2,
+                    $admissionTimer !== null ? strlen($payload->value) : null);
+            }
+            if ($result === 2) return $payload->id();
+            if ($result === -1) return false;
             if ($result !== 1) {
                 HighQueueAdmissionLog::write($this->redis, $result === 0 ? 'capacity' : 'unacknowledged', $payload, $limit, null, $name, $this->connection);
                 return false;
             }
         } catch (Throwable $error) {
-            HighQueueRedisConnection::forget($this->redis, $this->connection);
-            $this->blockedUntil = microtime(true) + 2;
+            HighQueueRedisConnection::forget($this->redis, $this->connection, $configuredTimeouts);
+            $this->blockedUntil[$transport] = microtime(true) + 2;
             // 不要重试结果不明确的写入，也不要回退为同步执行业务。
             HighQueueAdmissionLog::write($this->redis, 'redis_error', $payload, $limit, $error, $name, $this->connection);
             return false;
@@ -151,16 +227,20 @@ LUA, 2, $key.':delayed', $key.':reserved', $job->getReservedJob(), $this->availa
         $previousMetadataContext = $this->container?->bound('queue.high_metadata_context')
             ? $this->container->make('queue.high_metadata_context') : false;
         $this->container?->instance('queue.high_metadata_context', true);
+        $metadataTimer = QueueAdmissionTiming::begin('metadata');
+        $metadataReturned = false;
         try {
             // 被拒绝的任务不得写入 Horizon。ChunkedHorizonJobRepository
             // 防止延迟的 pending 更新作用于已预留或已完成的任务。
             $this->event($key, new JobPending($payload->value));
             $this->event($key, new JobPushed($payload->value));
+            $metadataReturned = true;
         } catch (Throwable $error) {
             HighQueueRedisConnection::forget($this->redis, 'horizon');
             // 队列已接受任务。元数据失败不能导致重复重试。
             HighQueueAdmissionLog::write($this->redis, 'horizon_metadata', $payload, $limit, $error, $name, $this->connection);
         } finally {
+            QueueAdmissionTiming::finish($metadataTimer, $metadataReturned);
             $this->container?->instance('queue.high_metadata_context', $previousMetadataContext);
         }
         return $payload->id();

@@ -15,10 +15,15 @@ final class HighQueueRedisConnection
     private static int $pid = 0;
     private static array $connections = [];
 
-    public static function forget(Factory $redis, ?string $name): void
+    public static function forget(Factory $redis, ?string $name, ?bool $configuredTimeouts = null): void
     {
         $key = spl_object_id($redis).':'.($name ?? 'default');
-        foreach ([$key, $key.':configured'] as $socketKey) {
+        $socketKeys = match ($configuredTimeouts) {
+            true => [$key.':configured'],
+            false => [$key],
+            null => [$key, $key.':configured'],
+        };
+        foreach ($socketKeys as $socketKey) {
             if (isset(self::$connections[$socketKey])) {
                 try { self::$connections[$socketKey]->disconnect(); } catch (\Throwable) {}
                 unset(self::$connections[$socketKey]);

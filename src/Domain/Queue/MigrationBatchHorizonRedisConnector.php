@@ -11,14 +11,12 @@ class MigrationBatchHorizonRedisConnector extends RedisConnector
 {
     public function connect(array $config)
     {
-        // Historical bounded registration (suspended):
-        // A resident connection may outlive a control change. The bounded class
-        // itself takes the native bypass before serialization/admission when off;
-        // choosing the native class here would make a later enable ineffective.
-        // Admission is suspended on develop. Keep its implementation for later review,
-        // but instantiate native Horizon directly so no per-job guard runs.
-        // return $this->createQueue($config, BoundedHorizonRedisQueue::class);
-        return $this->createQueue($config, RedisQueue::class);
+        if (config('location.locator_update.lance_durable_handoff', false) !== true) {
+            return $this->createQueue($config, RedisQueue::class);
+        }
+        $trace = config('lance_task_frame_receipts.capacity_budget') === true
+            && config('location.alarm_event_trace.consumer_queue_timing') === true;
+        return $this->createQueue($config, $trace ? SampledHorizonConsumerQueue::class : BoundedHorizonRedisQueue::class);
     }
 
     protected function createQueue(array $config, string $queueClass): RedisQueue
